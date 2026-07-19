@@ -2552,10 +2552,10 @@ Geen markdown, geen codeblokken, alleen de JSON.`;
                 const maxTM = pptMaxTekensPerRegel(PREVIEW_MIN_FONT);
                 const maxEff = Math.max(1, Math.floor(vakHoogtePt / (PREVIEW_MIN_FONT * 1.2)));
                 let deel = [], ec = 0;
-                regelsArr.forEach(r => {
-                    const ev = pptWoordWrap([r], maxTM).length;
-                    if (deel.length > 0 && ec + ev > maxEff) { result.push({ regels: deel, fontSize: pptBerekenFontSize(deel, fSize) }); deel = []; ec = 0; }
-                    deel.push(r); ec += ev;
+                const gewrapteRegels = pptWoordWrap(regelsArr, maxTM);
+                gewrapteRegels.forEach(r => {
+                    if (deel.length > 0 && ec + 1 > maxEff) { result.push({ regels: deel, fontSize: pptBerekenFontSize(deel, fSize) }); deel = []; ec = 0; }
+                    deel.push(r); ec += 1;
                 });
                 if (deel.length) result.push({ regels: deel, fontSize: pptBerekenFontSize(deel, fSize) });
             } else {
