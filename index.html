@@ -512,7 +512,7 @@
     };
 
     // --- 2. START VARIABELEN ---
-    const apiKey = "AQ.Ab8RN6JZF7p0Rctw48R7Uo30OC_lQg8hJp4aK6sJU_1NgsuJtA";
+    const PROXY_URL = "https://gemini-proxy.kerkapp.workers.dev";
     let liturgieVolgorde = [];
     let gevondenModel = ""; 
     
@@ -564,7 +564,7 @@
     async function ontdekAI() {
         const kiezer = document.getElementById('modelKiezer');
         try {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+            const res = await fetch(`${PROXY_URL}/v1beta/models`);
             const data = await res.json();
             const geldigeModellen = data.models.filter(m => m.supportedGenerationMethods.includes("generateContent"));
             
@@ -1285,7 +1285,7 @@ Bijbelliederen`;
             // NIEUW: Striktere prompt voor de AI om echt ALLE verzen te eisen
             const aiPrompt = "Geef de VOLLEDIGE, letterlijke tekst (inclusief ALLE coupletten/verzen) van het christelijke lied: '" + titel + "'. Geef uitsluitend de liedtekst, geen introductie of verdere uitleg. Belangrijk: gebruik een DUBBELE witregel (enter) tussen elk couplet of vers zodat ik ze goed kan splitsen.";
             
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${gevondenModel}:generateContent?key=${apiKey}`, {
+            const response = await fetch(`${PROXY_URL}/v1beta/${gevondenModel}:generateContent`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ contents: [{ parts: [{ text: aiPrompt }] }] })
             });
@@ -1411,7 +1411,7 @@ Regels:
 - Wees 100% nauwkeurig — dit wordt in een kerkdienst op de beamer getoond.
 - Als het een heel hoofdstuk is, geef dan alle verzen.`;
 
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${gevondenModel}:generateContent?key=${apiKey}`, {
+            const response = await fetch(`${PROXY_URL}/v1beta/${gevondenModel}:generateContent`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     contents: [{ parts: [{ text: prompt }] }],
@@ -2043,7 +2043,7 @@ Brontekst:
 ${tekst}
 """`;
 
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${gevondenModel}:generateContent?key=${apiKey}`, {
+            const response = await fetch(`${PROXY_URL}/v1beta/${gevondenModel}:generateContent`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     contents: [{ role: "user", parts: [{ text: prompt }] }],
@@ -2285,7 +2285,7 @@ Geen markdown, geen codeblokken, alleen de JSON.`;
         try {
             if (!gevondenModel) throw new Error("AI Model is nog niet verbonden.");
 
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${gevondenModel}:generateContent?key=${apiKey}`, {
+            const response = await fetch(`${PROXY_URL}/v1beta/${gevondenModel}:generateContent`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     contents: chatHistory,
