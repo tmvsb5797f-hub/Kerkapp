@@ -114,6 +114,20 @@
     .drag-handle { cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none; }
     .drag-handle:active { cursor: grabbing; }
     .touch-ghost { position: fixed; z-index: 9999; pointer-events: none; opacity: 0.85; box-shadow: 0 12px 40px rgba(0,0,0,0.18); border-radius: 18px; transform: scale(1.03); }
+
+    /* --- Chat Highlight Animatie --- */
+    .chat-highlight {
+        animation: chatHighlightPulse 2s ease-in-out infinite;
+        outline: 3px solid #007AFF;
+        outline-offset: 4px;
+        border-radius: 12px;
+        position: relative;
+        z-index: 30;
+    }
+    @keyframes chatHighlightPulse {
+        0%, 100% { outline-color: #007AFF; box-shadow: 0 0 0 0 rgba(0,122,255,0.4); }
+        50% { outline-color: #5AC8FA; box-shadow: 0 0 20px 4px rgba(0,122,255,0.2); }
+    }
 </style>
 </head>
 <body class="text-[#1D1D1F] min-h-screen flex flex-col relative pb-32">
@@ -367,31 +381,36 @@
     </button>
 </div>
 <div class="fixed bottom-6 left-6 z-50">
-    <button onclick="toggleChat()" aria-label="Open de code-assistent chat" class="bg-[#34C759] text-white w-14 h-14 rounded-full shadow-xl flex items-center justify-center hover:scale-105 transition-transform duration-300 border border-green-400" title="Vraag de AI om hulp met de code">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+    <button onclick="toggleChat()" aria-label="Vraag de assistent om hulp" class="bg-[#007AFF] text-white w-14 h-14 rounded-full shadow-xl flex items-center justify-center hover:scale-105 transition-transform duration-300 border border-blue-400" title="Hulp nodig? Stel een vraag!">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
     </button>
 </div>
 
-<div id="chatWindow" class="fixed bottom-24 left-6 z-50 hidden flex-col w-80 max-w-[calc(100vw-3rem)] h-96 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden transition-all">
-    <div class="bg-[#34C759] p-3 text-white font-bold flex justify-between items-center shadow-sm">
+<div id="chatWindow" class="fixed bottom-24 left-6 z-50 hidden flex-col w-80 max-w-[calc(100vw-3rem)] h-[28rem] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden transition-all">
+    <div class="bg-[#007AFF] p-3 text-white font-bold flex justify-between items-center shadow-sm">
         <div class="flex items-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-            <span class="text-sm">App Code Assistent</span>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <span class="text-sm">Hulp Assistent</span>
         </div>
         <button onclick="toggleChat()" class="text-white hover:text-gray-200 transition-colors">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
     </div>
-    
+
     <div id="chatMessages" class="flex-grow p-4 overflow-y-auto bg-gray-50 flex flex-col gap-3 text-sm">
-        <div class="bg-white p-3 rounded-xl rounded-tl-none shadow-sm border border-gray-100 text-gray-700 self-start max-w-[90%] leading-relaxed">
-            Hallo Sem! Ik ben de AI die jouw app aandrijft. Ik heb toegang tot de hele HTML/JS code van deze pagina. Wat wil je weten of veranderen?
+        <div class="bg-white p-3 rounded-xl rounded-tl-none shadow-sm border border-gray-100 text-gray-700 self-start max-w-[90%] leading-relaxed text-[13px]">
+            Hallo! Ik help je met de Liturgie app. Vraag me bijvoorbeeld:
+            <ul class="mt-2 space-y-1 text-[12px] text-gray-500">
+                <li class="cursor-pointer hover:text-[#007AFF]" onclick="document.getElementById('chatInput').value='Hoe voeg ik een lied toe?'; stuurChatBericht();">• "Hoe voeg ik een lied toe?"</li>
+                <li class="cursor-pointer hover:text-[#007AFF]" onclick="document.getElementById('chatInput').value='Waar kan ik de volgorde aanpassen?'; stuurChatBericht();">• "Waar pas ik de volgorde aan?"</li>
+                <li class="cursor-pointer hover:text-[#007AFF]" onclick="document.getElementById('chatInput').value='Hoe exporteer ik naar PowerPoint?'; stuurChatBericht();">• "Hoe exporteer ik naar PowerPoint?"</li>
+            </ul>
         </div>
     </div>
-    
+
     <div class="p-3 bg-white border-t border-gray-100 flex gap-2">
-        <input id="chatInput" type="text" class="flex-grow bg-[#F5F5F7] rounded-xl px-4 py-2 text-[13px] font-medium outline-none focus:ring-2 focus:ring-green-400 border border-transparent transition-all" placeholder="Stel een vraag..." onkeypress="if(event.key === 'Enter') stuurChatBericht()">
-        <button onclick="stuurChatBericht()" class="bg-[#34C759] text-white p-2.5 rounded-xl hover:bg-green-600 transition-colors shadow-sm">
+        <input id="chatInput" type="text" class="flex-grow bg-[#F5F5F7] rounded-xl px-4 py-2 text-[13px] font-medium outline-none focus:ring-2 focus:ring-blue-300 border border-transparent transition-all" placeholder="Stel een vraag over de app..." onkeypress="if(event.key === 'Enter') stuurChatBericht()">
+        <button onclick="stuurChatBericht()" class="bg-[#007AFF] text-white p-2.5 rounded-xl hover:bg-blue-600 transition-colors shadow-sm">
             <svg class="w-4 h-4 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
         </button>
     </div>
@@ -2155,7 +2174,45 @@ ${tekst}
             haalBijbelViaAI(titel.replace(" (HSV)", "").trim());
         }
     }
-// --- FUNCTIES VOOR DE CODE ASSISTANT CHATBOT ---
+// --- FUNCTIES VOOR DE HULP ASSISTENT CHATBOT ---
+    const APP_ONDERDELEN = [
+        { id: "datumInput", naam: "Datum invoerveld", sectie: "Dienst Gegevens", beschrijving: "Hier vul je de datum van de kerkdienst in (bijv. 'Zondag 18-1-2026'). Dit komt op de welkomstdia." },
+        { id: "voorgangerInput", naam: "Voorganger invoerveld", sectie: "Dienst Gegevens", beschrijving: "Hier vul je de naam van de voorganger in. Dit komt op de welkomstdia." },
+        { id: "liedInput", naam: "Liederen zoekbalk", sectie: "Liederen & Psalmen", beschrijving: "Typ hier een liednaam of afkorting (bijv. 'wk 15', 'oth 314', 'psalm 23'). Er verschijnt een lijst waaruit je kunt kiezen." },
+        { id: "bijbelInput", naam: "Bijbeltekst invoerveld", sectie: "Bijbel Via AI", beschrijving: "Typ hier een Bijbelverwijzing (bijv. 'Genesis 1:1-15') en druk op Enter. De HSV-tekst wordt automatisch opgehaald." },
+        { id: "volgordeLijst", naam: "Liturgie volgordelijst", sectie: "Volgorde", beschrijving: "Hier verschijnen alle toegevoegde items. Je kunt ze slepen om de volgorde te veranderen, bewerken met het potloodje, of verwijderen met het prullenbakje." },
+        { id: "previewVak", naam: "Slide preview", sectie: "Preview", beschrijving: "Dit zwarte vak toont een voorbeeld van hoe je tekst eruit ziet op de beamer." },
+        { id: "fontSizeSelect", naam: "Lettergrootte instelling", sectie: "Instellingen", beschrijving: "Hiermee kies je hoe groot de tekst wordt in de PowerPoint (standaard 40pt)." },
+        { id: "linesSelect", naam: "Regels per dia instelling", sectie: "Instellingen", beschrijving: "Hiermee bepaal je hoeveel regels tekst op één dia komen. 'Per Vers' splitst automatisch op witregels." }
+    ];
+
+    const CHAT_ACTIES = [
+        { actie: "importeren", id: "importModal", beschrijving: "De 'Plak Liturgie' knop opent een venster waar je een hele liturgie kunt plakken. De AI herkent automatisch liederen en bijbelteksten." },
+        { actie: "foto", id: "imageFile", beschrijving: "Met 'Foto Dia' kun je een afbeelding uploaden die als dia in de presentatie komt." },
+        { actie: "lege_dia", id: null, beschrijving: "Met 'Lege Dia' voeg je een zwarte pauze-dia toe (handig voor de preek of collecte)." },
+        { actie: "exporteren", id: null, beschrijving: "De grote blauwe 'Exporteer PowerPoint' knop rechtsonder maakt een kant-en-klare .pptx die je direct kunt openen." },
+        { actie: "rondleiding", id: "rondleidingKnop", beschrijving: "Het vraagteken-knopje rechtsonder start een interactieve rondleiding die de hele app uitlegt." },
+        { actie: "leegmaken", id: "volgordeLijst", beschrijving: "Klik op 'Leegmaken' rechtsboven de volgordelijst om alles te wissen en opnieuw te beginnen." }
+    ];
+
+    let highlightTimeout = null;
+
+    function highlightElement(elementId) {
+        if (!elementId) return;
+        const el = document.getElementById(elementId);
+        if (!el) return;
+
+        if (highlightTimeout) clearTimeout(highlightTimeout);
+        document.querySelectorAll('.chat-highlight').forEach(e => e.classList.remove('chat-highlight'));
+
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('chat-highlight');
+
+        highlightTimeout = setTimeout(() => {
+            el.classList.remove('chat-highlight');
+        }, 4000);
+    }
+
     window.toggleChat = function() {
         const chat = document.getElementById('chatWindow');
         chat.classList.toggle('hidden');
@@ -2173,8 +2230,7 @@ ${tekst}
         if (!message) return;
 
         const chatMessages = document.getElementById('chatMessages');
-        
-        // 1. Voeg jouw bericht toe aan het scherm (geëscaped tegen XSS)
+
         chatMessages.innerHTML += `
             <div class="bg-[#007AFF] text-white p-3 rounded-xl rounded-tr-none shadow-sm self-end max-w-[90%] break-words leading-relaxed text-[13px]">
                 ${escapeHtml(message)}
@@ -2182,62 +2238,103 @@ ${tekst}
         input.value = '';
         chatMessages.scrollTop = chatMessages.scrollHeight;
 
-        // 2. Laat zien dat de AI aan het typen is
         const laadId = "load_" + Date.now();
         chatMessages.innerHTML += `
-            <div id="${laadId}" class="bg-white p-3 rounded-xl rounded-tl-none shadow-sm border border-gray-100 text-green-600 self-start max-w-[90%] italic text-[12px] font-medium flex items-center gap-2">
-                <span class="w-2 h-2 bg-green-500 rounded-full animate-bounce"></span> Code analyseren...
+            <div id="${laadId}" class="bg-white p-3 rounded-xl rounded-tl-none shadow-sm border border-gray-100 text-blue-600 self-start max-w-[90%] italic text-[12px] font-medium flex items-center gap-2">
+                <span class="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></span> Even denken...
             </div>`;
         chatMessages.scrollTop = chatMessages.scrollHeight;
 
-        // 3. Stuur de actuele HTML code mee bij het eerste bericht!
-        let promptText = message;
+        let systeemPrompt = "";
         if (chatHistory.length === 0) {
-            // Dit haalt letterlijk de live code van je pagina op...
-            let htmlCode = document.documentElement.outerHTML;
-            // ...maar we STRIPPEN eerst alle geheimen eruit, zodat je API-sleutels
-            // en Firebase-config nooit in de AI-logs belanden.
-            htmlCode = redactGeheimen(htmlCode);
-            promptText = `Je bent de AI assistent voor het project 'Liturgie Assistent Pro'. De gebruiker heeft je een vraag gesteld over de code of de functionaliteit. Hieronder krijg je de VOLLEDIGE, actuele HTML en JavaScript code van de app (met geheimen weggehaald). Gebruik dit als context om de vraag perfect te beantwoorden. Geef korte, duidelijke antwoorden. Als je code voorstelt, geef dan exact aan waar het vervangen moet worden.\n\n--- BEGIN CODE ---\n${htmlCode}\n--- EINDE CODE ---\n\nVraag van de gebruiker: ${message}`;
+            const onderdelenTekst = APP_ONDERDELEN.map(o => `- "${o.naam}" (id: ${o.id}, sectie: ${o.sectie}): ${o.beschrijving}`).join('\n');
+            const actiesTekst = CHAT_ACTIES.map(a => `- ${a.actie} (id: ${a.id || 'geen'}): ${a.beschrijving}`).join('\n');
+
+            systeemPrompt = `Je bent de vriendelijke hulp-assistent van de app "Liturgie Assistent Pro". Deze app helpt kerkmensen om een PowerPoint-presentatie te maken voor de kerkdienst (liederen, bijbelteksten, afbeeldingen).
+
+Je taak:
+- Beantwoord vragen over hoe de app werkt in korte, duidelijke zinnen (max 3-4 zinnen).
+- Verwijs naar specifieke onderdelen van de app.
+- Geef ALTIJD een "highlight" veld terug met het element-id dat je wilt aanwijzen (of null als er niets past).
+
+De app heeft deze onderdelen:
+${onderdelenTekst}
+
+Extra acties:
+${actiesTekst}
+
+Workflow:
+1. Vul datum en voorganger in (welkomstdia)
+2. Zoek liederen via de zoekbalk (sectie 1)
+3. Zoek bijbelteksten via het invoerveld + Enter (sectie 2)
+4. Bekijk en herschik de volgorde (sectie 3)
+5. Klik "Exporteer PowerPoint" om het bestand te downloaden
+
+Antwoord UITSLUITEND in geldig JSON met deze structuur:
+{"antwoord": "je antwoord hier", "highlight": "element-id of null"}
+
+Geen markdown, geen codeblokken, alleen de JSON.`;
         }
 
-        chatHistory.push({ role: "user", parts: [{ text: promptText }] });
+        const userMessage = chatHistory.length === 0
+            ? systeemPrompt + "\n\nVraag van de gebruiker: " + message
+            : message;
+
+        chatHistory.push({ role: "user", parts: [{ text: userMessage }] });
 
         try {
-            // Gebruik het model dat al voor de liturgie was opgestart!
             if (!gevondenModel) throw new Error("AI Model is nog niet verbonden.");
-            
+
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${gevondenModel}:generateContent?key=${apiKey}`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ contents: chatHistory })
+                body: JSON.stringify({
+                    contents: chatHistory,
+                    generationConfig: { responseMimeType: "application/json", temperature: 0.3 }
+                })
             });
             const data = await response.json();
-            
+
             document.getElementById(laadId).remove();
 
             if (data.error) {
-                chatMessages.innerHTML += `<div class="bg-red-50 p-3 rounded-xl rounded-tl-none border border-red-100 text-red-600 self-start max-w-[90%] text-[13px] font-bold">Fout: ${data.error.message}</div>`;
-            } else if (data.candidates && data.candidates.length > 0) {
-                let aiResponse = data.candidates[0].content.parts[0].text;
-                chatHistory.push({ role: "model", parts: [{ text: aiResponse }] });
+                chatMessages.innerHTML += `<div class="bg-red-50 p-3 rounded-xl rounded-tl-none border border-red-100 text-red-600 self-start max-w-[90%] text-[13px] font-bold">Fout: ${escapeHtml(data.error.message)}</div>`;
+            } else if (data.candidates && data.candidates[0]) {
+                let rawText = data.candidates[0].content.parts[0].text.trim();
+                chatHistory.push({ role: "model", parts: [{ text: rawText }] });
 
-                // Eerst ALLE HTML in het AI-antwoord neutraliseren (voorkomt XSS),
-                // daarna pas onze eigen opmaak (vet + codeblokjes) toepassen.
-                aiResponse = escapeHtml(aiResponse);
+                let antwoord = "";
+                let highlightId = null;
 
-                // Maak de output een beetje netjes op (vetgedrukt en code-blokjes)
-                aiResponse = aiResponse.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
-                aiResponse = aiResponse.replace(/```(html|javascript|css)?(.*?)```/gs, '<pre class="bg-gray-800 text-green-400 p-3 rounded-lg text-[10px] overflow-x-auto mt-2 mb-2 border border-gray-700 font-mono"><code>$2</code></pre>');
-                aiResponse = aiResponse.replace(/\n/g, '<br>');
+                try {
+                    const parsed = JSON.parse(rawText);
+                    antwoord = parsed.antwoord || rawText;
+                    highlightId = parsed.highlight || null;
+                } catch(e) {
+                    antwoord = rawText;
+                }
+
+                let displayText = escapeHtml(antwoord);
+                displayText = displayText.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+                displayText = displayText.replace(/\n/g, '<br>');
+
+                let highlightKnop = '';
+                if (highlightId && document.getElementById(highlightId)) {
+                    highlightKnop = `<button onclick="highlightElement('${highlightId}')" class="mt-2 text-[11px] font-semibold text-[#007AFF] bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        Laat zien in de app
+                    </button>`;
+                    highlightElement(highlightId);
+                }
 
                 chatMessages.innerHTML += `
                     <div class="bg-white p-3 rounded-xl rounded-tl-none shadow-sm border border-gray-100 text-gray-800 self-start max-w-[90%] leading-relaxed text-[13px]">
-                        ${aiResponse}
+                        ${displayText}
+                        ${highlightKnop}
                     </div>`;
             }
-        } catch (err) { 
+        } catch (err) {
             document.getElementById(laadId).remove();
-            chatMessages.innerHTML += `<div class="bg-red-50 p-3 rounded-xl rounded-tl-none border border-red-100 text-red-600 self-start max-w-[90%] text-[13px] font-bold">Systeemfout: ${err.message}</div>`;
+            chatMessages.innerHTML += `<div class="bg-red-50 p-3 rounded-xl rounded-tl-none border border-red-100 text-red-600 self-start max-w-[90%] text-[13px] font-bold">Fout: ${escapeHtml(err.message)}</div>`;
         }
         chatMessages.scrollTop = chatMessages.scrollHeight;
     };
