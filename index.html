@@ -2581,7 +2581,7 @@ Geen markdown, geen codeblokken, alleen de JSON.`;
 
         let blokken = [];
         if (item.type === "Schriftlezing") {
-            const MAX_CHAR = 250;
+            const MAX_CHAR = 180;
             let bron = item.tekst.replace(/(?=\[\d+\]|\b\d+\.\s|^\d+\s|\n\d+\s)/gm, '\n')
                 .split('\n').map(r => r.trim()).filter(r => r);
             let tot = bron.reduce((s, r) => s + r.length, 0);
@@ -3001,8 +3001,6 @@ window.maakPowerPoint = function() {
             return;
         }
 
-        let slideTextBlocks = [];
-
         // WAARSCHUWING BIJ LEEG ITEM
         if (!item.tekst || item.tekst.trim() === "") {
             let slide = pres.addSlide();
@@ -3012,58 +3010,6 @@ window.maakPowerPoint = function() {
             return;
         }
 
-        // --- SPLITSEN ---
-        if (item.type === "Schriftlezing") {
-            const MAX_CHAR_PER_DIA = 250;
-            let ruweTekst = item.tekst.replace(/(?=\[\d+\]|\b\d+\.\s|^\d+\s|\n\d+\s)/gm, '\n');
-            let bronRegels = ruweTekst.split('\n').map(r => r.trim()).filter(r => r !== '');
-            let totaalChars = bronRegels.reduce((s, r) => s + r.length, 0);
-            let aantalDias = Math.max(1, Math.ceil(totaalChars / MAX_CHAR_PER_DIA));
-            let doelPerDia = totaalChars / aantalDias;
-
-            let huidigBlok = [];
-            let huidigeChars = 0;
-            bronRegels.forEach((regel) => {
-                if (huidigBlok.length > 0 && huidigeChars + regel.length > doelPerDia * 1.15 && slideTextBlocks.length < aantalDias - 1) {
-                    slideTextBlocks.push(huidigBlok.join('\n'));
-                    huidigBlok = [];
-                    huidigeChars = 0;
-                }
-                huidigBlok.push(regel);
-                huidigeChars += regel.length;
-            });
-            if (huidigBlok.length > 0) slideTextBlocks.push(huidigBlok.join('\n'));
-        } else {
-            if (splitMethod === "auto") {
-                if (item.tekst.includes("\n\n")) {
-                    slideTextBlocks = item.tekst.split(/\n[ \t]*\n/).filter(v => v.trim());
-                } else {
-                    let regels = item.tekst.split('\n').filter(l => l.trim() !== '');
-                    for (let i = 0; i < regels.length; i += 4) {
-                        slideTextBlocks.push(regels.slice(i, i + 4).join('\n'));
-                    }
-                }
-            } else {
-                let numLines = parseInt(splitMethod);
-                let regels = item.tekst.split('\n').filter(l => l.trim() !== '');
-                for (let i = 0; i < regels.length; i += numLines) {
-                    slideTextBlocks.push(regels.slice(i, i + numLines).join('\n'));
-                }
-            }
-            if (slideTextBlocks.length >= 2) {
-                let laatsteRegels = slideTextBlocks[slideTextBlocks.length - 1].split('\n').length;
-                let voorlaatstRegels = slideTextBlocks[slideTextBlocks.length - 2].split('\n').length;
-                if (laatsteRegels <= 1 && voorlaatstRegels >= 3) {
-                    let alleRegels = slideTextBlocks[slideTextBlocks.length - 2].split('\n')
-                        .concat(slideTextBlocks[slideTextBlocks.length - 1].split('\n'));
-                    let midden = Math.ceil(alleRegels.length / 2);
-                    slideTextBlocks[slideTextBlocks.length - 2] = alleRegels.slice(0, midden).join('\n');
-                    slideTextBlocks[slideTextBlocks.length - 1] = alleRegels.slice(midden).join('\n');
-                }
-            }
-        }
-
-        // --- TEKENEN via gedeelde preview engine ---
         const tx = item.tekstX ?? TEKST_DEF_X;
         const ty = item.tekstY ?? TEKST_DEF_Y;
         const subSlides = berekenSubSlidesVoorItem(item);
