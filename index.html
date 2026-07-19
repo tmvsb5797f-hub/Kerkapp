@@ -14,11 +14,31 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
 
 <style>
-    body { 
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+    body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         background-color: #F5F5F7;
         -webkit-font-smoothing: antialiased;
+        transition: background-color 0.3s, color 0.3s;
     }
+    body.dark-mode {
+        background-color: #1C1C1E;
+        color: #F5F5F7;
+    }
+    body.dark-mode .bg-white { background-color: #2C2C2E !important; }
+    body.dark-mode .bg-gray-50, body.dark-mode .bg-\[\#F5F5F7\] { background-color: #1C1C1E !important; }
+    body.dark-mode .bg-\[\#F5F5F7\] { background-color: #1C1C1E !important; }
+    body.dark-mode .text-\[\#1D1D1F\] { color: #F5F5F7 !important; }
+    body.dark-mode .text-gray-700, body.dark-mode .text-gray-600, body.dark-mode .text-gray-500 { color: #A1A1A6 !important; }
+    body.dark-mode .text-gray-400, body.dark-mode .text-gray-300 { color: #8E8E93 !important; }
+    body.dark-mode .border-gray-100, body.dark-mode .border-gray-200 { border-color: #3A3A3C !important; }
+    body.dark-mode .shadow-2xl, body.dark-mode .shadow-xl { box-shadow: 0 4px 24px rgba(0,0,0,0.4) !important; }
+    body.dark-mode .apple-input, body.dark-mode input, body.dark-mode select, body.dark-mode textarea {
+        background-color: #3A3A3C !important; color: #F5F5F7 !important; border-color: #48484A !important;
+    }
+    body.dark-mode .apple-input::placeholder, body.dark-mode input::placeholder, body.dark-mode textarea::placeholder { color: #8E8E93 !important; }
+    body.dark-mode #infoModal .bg-gray-50 { background-color: #3A3A3C !important; }
+    body.dark-mode #infoModal .text-gray-700 { color: #E5E5EA !important; }
+    body.dark-mode #infoModal .bg-gradient-to-r { background: linear-gradient(to right, #1a2744, #1e2a4a) !important; }
     ::-webkit-scrollbar { width: 8px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #E5E5EA; border-radius: 10px; }
@@ -417,8 +437,51 @@
     </div>
 </main>
 
-<div class="hidden md:block fixed bottom-8 left-12 z-40 pointer-events-none">
-    <p class="text-[10px] text-[#86868B] font-bold tracking-widest uppercase opacity-70">Made by Sem</p>
+<div class="fixed bottom-8 left-6 md:left-12 z-40 flex items-center gap-2">
+    <p class="text-[10px] text-[#86868B] font-bold tracking-widest uppercase opacity-70 hidden md:block">Made by Sem</p>
+    <button onclick="document.getElementById('infoModal').classList.remove('hidden')" aria-label="Over deze app" title="Over deze app" class="w-8 h-8 rounded-full bg-white/80 backdrop-blur border border-gray-200 flex items-center justify-center hover:scale-110 transition-transform shadow-sm">
+        <svg class="w-4 h-4 text-[#86868B]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+    </button>
+</div>
+
+<div id="infoModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
+    <div class="bg-white dark:bg-gray-900 rounded-[24px] shadow-2xl w-11/12 max-w-sm overflow-hidden flex flex-col transform transition-all">
+        <div class="p-5 border-b border-gray-100 flex justify-between items-center">
+            <h3 class="text-lg font-bold text-[#1D1D1F]">Over deze app</h3>
+            <button onclick="document.getElementById('infoModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 p-1">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div class="p-5 flex flex-col gap-5">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                    <span class="text-sm font-medium text-[#1D1D1F]">Donkere modus</span>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode()" class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#007AFF]"></div>
+                </label>
+            </div>
+            <div class="bg-gray-50 rounded-2xl p-4 flex flex-col gap-2">
+                <div class="flex items-center gap-2 text-xs text-gray-500">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>Laatste update: <strong class="text-gray-700">19 juli 2026</strong></span>
+                </div>
+                <div class="flex items-center gap-2 text-xs text-gray-500">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                    <span>Versie <strong class="text-gray-700">2.0</strong></span>
+                </div>
+            </div>
+            <div class="text-center">
+                <p class="text-sm font-semibold text-[#1D1D1F]">Gemaakt door Sem</p>
+                <p class="text-xs text-gray-400 mt-0.5">met hulp van Claude AI</p>
+            </div>
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-4 text-center">
+                <p class="text-sm text-[#007AFF] font-medium italic">"Techniek in dienst van de eredienst"</p>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div id="toastMelding" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 translate-y-24 opacity-0 z-[200] bg-[#34C759] text-white px-6 py-3 rounded-full shadow-lg font-medium text-[14px] flex items-center gap-2 transition-all duration-500 pointer-events-none">
@@ -529,6 +592,19 @@
 
     // --- OPSLAG: liturgie bewaren tussen sessies ---
     const LITURGIE_OPSLAG_SLEUTEL = 'liturgieAssistentVolgorde';
+
+    function toggleDarkMode() {
+        const on = document.getElementById('darkModeToggle').checked;
+        document.body.classList.toggle('dark-mode', on);
+        localStorage.setItem('darkMode', on ? '1' : '0');
+    }
+    (function() {
+        if (localStorage.getItem('darkMode') === '1') {
+            document.body.classList.add('dark-mode');
+            const cb = document.getElementById('darkModeToggle');
+            if (cb) cb.checked = true;
+        }
+    })();
 
     function bewaarLiturgie() {
         try {
