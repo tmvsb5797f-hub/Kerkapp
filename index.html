@@ -1,0 +1,2621 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Liturgie Assistent Pro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/libs/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.min.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+
+<style>
+    body { 
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+        background-color: #F5F5F7;
+        -webkit-font-smoothing: antialiased;
+    }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #E5E5EA; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #D1D1D6; }
+    .apple-input:focus { outline: none; box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.15); border-color: #007AFF; }
+    
+    .apple-select {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2386868B'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 1rem;
+        padding-right: 2.5rem;
+    }
+
+    /* --- Geanimeerde Rondleiding (Uitleg Modal) --- */
+    .uitleg-cursor {
+        width: 24px;
+        height: 24px;
+        position: absolute;
+        z-index: 50;
+        transform: translate(-50%, -50%);
+        transition: left 0.8s cubic-bezier(0.25, 1, 0.5, 1), top 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+        pointer-events: none;
+    }
+    .uitleg-ripple {
+        position: absolute;
+        top: 50%; left: 50%;
+        width: 28px;
+        height: 28px;
+        background: rgba(0, 122, 255, 0.4);
+        border-radius: 50%;
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 1;
+        pointer-events: none;
+    }
+    .uitleg-cursor.klik .uitleg-ripple {
+        animation: uitlegRipple 0.6s ease-out;
+    }
+    @keyframes uitlegRipple {
+        0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+        100% { transform: translate(-50%, -50%) scale(2.2); opacity: 0; }
+    }
+    .uitleg-input {
+        transition: all 0.3s;
+    }
+    .uitleg-input.focused {
+        border-color: #007AFF !important;
+        box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.15);
+    }
+    .uitleg-dropdown {
+        opacity: 0;
+        transform: translateY(-8px);
+        transition: all 0.3s;
+        pointer-events: none;
+    }
+    .uitleg-dropdown.show { opacity: 1; transform: translateY(0); }
+    .uitleg-dropdown-item { transition: background-color 0.2s, color 0.2s; }
+    .uitleg-dropdown-item.hovered { background-color: #F5F5F7; }
+    .uitleg-dropdown-item.success { background-color: #34C759 !important; color: white !important; font-weight: bold; }
+    .uitleg-caret {
+        display: inline-block;
+        width: 2px;
+        height: 1em;
+        background: #007AFF;
+        margin-left: 2px;
+        vertical-align: -0.15em;
+        animation: uitlegBlink 1s step-end infinite;
+    }
+    @keyframes uitlegBlink { 50% { opacity: 0; } }
+    .uitleg-item-move { transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1); }
+    .uitleg-glow { box-shadow: 0 0 0 4px rgba(0,122,255,0.25); border-color: #007AFF !important; }
+    .uitleg-toast {
+        position: absolute;
+        bottom: 10px; left: 50%;
+        transform: translateX(-50%) translateY(24px);
+        opacity: 0;
+        transition: all 0.5s;
+        background: #34C759; color: white;
+        padding: 8px 18px; border-radius: 999px;
+        font-size: 12px; font-weight: 600;
+        display: flex; align-items: center; gap: 6px;
+        box-shadow: 0 4px 16px rgba(52,199,89,0.35);
+        white-space: nowrap;
+    }
+    .uitleg-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #uitlegDots span { transition: all 0.3s; }
+
+    /* --- Drag-and-Drop Volgorde --- */
+    .volgorde-item { transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; }
+    .volgorde-item.dragging { opacity: 0.4; transform: scale(0.97); }
+    .volgorde-item.drag-over { border-color: #007AFF !important; box-shadow: 0 -3px 0 0 #007AFF, 0 4px 16px rgba(0,0,0,0.06); }
+    .drag-handle { cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none; }
+    .drag-handle:active { cursor: grabbing; }
+    .touch-ghost { position: fixed; z-index: 9999; pointer-events: none; opacity: 0.85; box-shadow: 0 12px 40px rgba(0,0,0,0.18); border-radius: 18px; transform: scale(1.03); }
+</style>
+</head>
+<body class="text-[#1D1D1F] min-h-screen flex flex-col relative pb-32">
+
+<div id="controleModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
+    <div class="bg-white rounded-[24px] shadow-2xl w-11/12 max-w-lg overflow-hidden flex flex-col transform transition-all">
+        <div class="p-4 md:p-6 border-b border-gray-100 flex justify-between items-center">
+            <h3 id="modalTitel" class="text-lg font-bold text-[#1D1D1F]">Controleer Tekst</h3>
+            <button onclick="sluitModal()" class="text-gray-400 hover:text-gray-600 p-1">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div id="modalTekstContainer" class="p-4 md:p-6 overflow-y-auto max-h-60 bg-gray-50">
+            <p id="modalTekst" class="text-[14px] leading-relaxed text-gray-700 whitespace-pre-line"></p>
+        </div>
+        <div id="modalKnoppen1" class="p-4 md:p-6 flex flex-col md:flex-row gap-3 md:justify-end bg-white">
+            <button onclick="kiesNee()" class="w-full md:w-auto px-5 py-3 md:py-2.5 rounded-full text-sm font-semibold text-[#FF3B30] bg-red-50 hover:bg-red-100 transition-colors">Nee, klopt niet</button>
+            <button id="knopJa" onclick="kiesJa()" class="w-full md:w-auto px-5 py-3 md:py-2.5 rounded-full text-sm font-semibold text-white bg-[#34C759] hover:bg-green-600 transition-colors shadow-md">Ja, Opslaan in de Cloud</button>
+        </div>
+        <div id="modalKnoppen2" class="p-4 md:p-6 hidden flex-col gap-3 bg-white">
+            <p class="text-sm text-gray-500 font-medium text-center mb-2">Wat wil je met deze tekst doen?</p>
+            <button onclick="kiesHandmatig()" class="w-full py-3 rounded-xl text-sm font-semibold text-[#007AFF] bg-blue-50 hover:bg-blue-100 transition-colors">Zelf tekst typen/plakken</button>
+            <button onclick="kiesLeeg()" class="w-full py-3 rounded-xl text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">Overslaan (Lege dia voor later)</button>
+        </div>
+        <div id="modalKnoppen3" class="p-4 md:p-6 hidden flex-col gap-3 bg-white border-t border-gray-100">
+            <a id="liedbundelKnop" href="#" onclick="openLiedbundelOnline(); return false;" class="hidden w-full py-2.5 rounded-xl text-sm font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors text-center items-center justify-center gap-2">
+                🔗 Open Liedbundel Online &amp; log in
+            </a>
+            <p class="text-[10px] text-gray-400 uppercase font-bold mb-1">Tip: Gebruik een lege regel (enter) tussen verzen voor aparte dia's</p>
+            <textarea id="handmatigeTekst" rows="6" class="w-full bg-[#F5F5F7] border border-transparent rounded-xl py-3 px-4 text-[14px] apple-input transition-all resize-none"></textarea>
+            <button id="opslaanKnop" onclick="slaHandmatigOp()" class="w-full py-3 mt-2 rounded-xl text-sm font-semibold text-white bg-[#34C759] hover:bg-green-600 transition-colors shadow-md">Opslaan in Cloud & Toevoegen</button>
+        </div>
+    </div>
+</div>
+
+<div id="versModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
+    <div class="bg-white rounded-[24px] shadow-2xl w-11/12 max-w-lg overflow-hidden flex flex-col transform transition-all">
+        <div class="p-4 md:p-6 border-b border-gray-100 flex justify-between items-center">
+            <h3 id="versModalTitel" class="text-lg font-bold text-[#1D1D1F]">Kies de verzen</h3>
+            <button onclick="sluitVersModal()" class="text-gray-400 hover:text-gray-600 p-1">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div id="versLijst" class="p-4 md:p-6 overflow-y-auto max-h-80 bg-gray-50 flex flex-col gap-3">
+        </div>
+        <div class="p-4 md:p-6 flex justify-end bg-white border-t border-gray-100">
+            <button onclick="voegGeselecteerdeVerzenToe()" class="w-full md:w-auto px-5 py-3 md:py-2.5 rounded-full text-sm font-semibold text-white bg-[#007AFF] hover:bg-blue-600 transition-colors shadow-md">Toevoegen aan Liturgie</button>
+        </div>
+    </div>
+</div>
+<div id="importModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
+    <div class="bg-white rounded-[24px] shadow-2xl w-11/12 max-w-lg overflow-hidden flex flex-col transform transition-all">
+        <div class="p-4 md:p-6 border-b border-gray-100 flex justify-between items-center">
+            <h3 class="text-lg font-bold text-[#1D1D1F]">Slim Importeren</h3>
+            <button onclick="sluitImportModal()" class="text-gray-400 hover:text-gray-600 p-1">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        
+        <div id="importStap1" class="p-4 md:p-6 flex flex-col gap-3">
+            <p class="text-[13px] text-gray-500 font-medium">Plak hier de complete liturgie (bijv. vanuit Word of WhatsApp). Ik zoek automatisch de Bijbelteksten en Liederen eruit.</p>
+            <textarea id="importTekst" rows="8" class="w-full bg-[#F5F5F7] border border-transparent rounded-xl p-4 text-[13px] apple-input transition-all resize-none" placeholder="Plak je tekst hier..."></textarea>
+            <button onclick="analyseerImport()" class="w-full py-3 mt-2 rounded-xl text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 transition-colors shadow-md">Analyseer Tekst</button>
+        </div>
+        
+        <div id="importStap2" class="p-4 md:p-6 hidden flex-col gap-3">
+            <p class="text-[13px] text-gray-500 font-medium mb-1">Controleer de gevonden onderdelen. Vink uit wat niet klopt.</p>
+            <div id="importResultaten" class="overflow-y-auto max-h-60 bg-gray-50 rounded-xl p-2 flex flex-col gap-2">
+                </div>
+            <button onclick="voegImportToe()" class="w-full py-3 mt-2 rounded-xl text-sm font-semibold text-white bg-[#34C759] hover:bg-green-600 transition-colors shadow-md">Geselecteerde Items Toevoegen</button>
+        </div>
+    </div>
+</div>
+
+<div id="uitlegModal" class="fixed inset-0 z-[200] hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4" onclick="if(event.target === this) sluitUitleg()">
+    <div class="bg-white rounded-[24px] shadow-2xl w-full max-w-xl overflow-hidden flex flex-col transform transition-all max-h-[92vh]">
+        <div class="p-4 md:p-5 border-b border-gray-100 flex justify-between items-center flex-shrink-0">
+            <span class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider">Hoe werkt de app?</span>
+            <div class="flex items-center gap-1">
+                <button onclick="sluitUitleg()" class="text-[12px] font-semibold text-gray-400 hover:text-gray-700 px-3 py-1 rounded-full hover:bg-gray-100 transition-colors">Sla over</button>
+                <button onclick="sluitUitleg()" title="Sluiten" class="text-gray-400 hover:text-gray-600 p-1">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="p-5 md:p-8 overflow-y-auto">
+            <div class="text-center mb-5 min-h-[70px]">
+                <h3 id="uitlegSceneTitel" class="text-xl md:text-2xl font-bold text-[#1D1D1F] transition-opacity duration-300">Welkom!</h3>
+                <p id="uitlegSceneTekst" class="text-gray-500 mt-2 text-[13px] md:text-[15px] leading-relaxed transition-opacity duration-300">&nbsp;</p>
+            </div>
+
+            <div class="relative bg-[#F5F5F7] rounded-[20px] border border-gray-100 overflow-hidden" style="min-height: 260px;">
+                <div id="uitlegDemoInner" class="relative p-6 md:p-8" style="min-height: 260px;"></div>
+            </div>
+        </div>
+
+        <div class="p-4 md:p-6 border-t border-gray-100 flex items-center justify-between gap-3 bg-white flex-shrink-0">
+            <div id="uitlegDots" class="flex gap-1.5"></div>
+            <div class="flex gap-2">
+                <button id="uitlegVorigeKnop" onclick="uitlegVorige()" class="px-4 py-2.5 rounded-full text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">Vorige</button>
+                <button id="uitlegVolgendeKnop" onclick="uitlegVolgende()" class="px-5 py-2.5 rounded-full text-sm font-semibold text-white bg-[#007AFF] hover:bg-blue-600 transition-colors shadow-md">Volgende</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<header class="mb-8 md:mb-14 pt-8 px-4 md:px-12 max-w-[1400px] mx-auto w-full flex flex-col md:flex-row md:justify-between md:items-end gap-5">
+    <div>
+        <h1 class="text-2xl md:text-3xl font-bold tracking-tight mb-1">Liturgie Assistent <span class="text-[#007AFF]">Pro</span></h1>
+        
+        <div class="flex items-center gap-3 mt-3 flex-wrap">
+            <div class="flex items-center gap-1.5 text-[#86868B] text-sm font-medium">
+                <svg class="w-4 h-4 text-[#007AFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                <span>Instellingen:</span>
+            </div>
+            <select id="fontSizeSelect" class="bg-white border border-gray-200 text-gray-700 text-sm rounded-lg pl-3 pr-8 py-1.5 focus:ring-[#007AFF] focus:border-[#007AFF] outline-none shadow-sm cursor-pointer apple-select">
+                <option value="32">Grootte: 32 pt</option>
+                <option value="36">Grootte: 36 pt</option>
+                <option value="38">Grootte: 38 pt</option>
+                <option value="40" selected>Grootte: 40 pt</option>
+                <option value="42">Grootte: 42 pt</option>
+            </select>
+            <select id="linesSelect" class="bg-white border border-gray-200 text-gray-700 text-sm rounded-lg pl-3 pr-8 py-1.5 focus:ring-[#007AFF] focus:border-[#007AFF] outline-none shadow-sm cursor-pointer apple-select">
+                <option value="auto" selected>Per Vers (witregel)</option>
+                <option value="4">4 Regels per dia</option>
+                <option value="5">5 Regels per dia</option>
+                <option value="6">6 Regels per dia</option>
+                <option value="8">8 Regels per dia</option>
+            </select>
+        </div>
+        
+    </div>
+    <div class="flex flex-col items-start md:items-end gap-3 w-full md:w-auto mt-4 md:mt-0">
+        
+        <div class="flex flex-wrap gap-2 items-center w-full md:w-auto">
+            <select id="modelKiezer" class="bg-white px-4 py-1.5 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-gray-100 text-[12px] font-semibold text-[#007AFF] apple-select cursor-pointer hidden outline-none transition-all hover:bg-gray-50 w-full md:w-auto">
+                <option>Modellen laden...</option>
+            </select>
+
+            <div class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-gray-100 transition-all flex-grow md:flex-grow-0 justify-center">
+                <span id="statusDot" class="w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse"></span>
+                <span id="statusBadge" class="text-[12px] font-semibold text-gray-600 tracking-wide">AI Verbinden...</span>
+            </div>
+
+            <div class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-gray-100 transition-all flex-grow md:flex-grow-0 justify-center">
+                <span id="cloudDot" class="w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse"></span>
+                <span id="cloudBadge" class="text-[12px] font-semibold text-gray-600 tracking-wide">Cloud Verbinden...</span>
+            </div>
+        </div>
+
+        <div class="w-full md:min-w-[200px] space-y-1.5 pr-1 mt-1">
+            <div class="flex justify-between text-[9px] font-bold uppercase text-[#86868B] tracking-wider">
+                <span>AI Capaciteit (Reset per min)</span><span id="quotaPercentage">100%</span>
+            </div>
+            <div class="w-full bg-[#E5E5EA] h-1.5 rounded-full overflow-hidden">
+                <div id="quotaBar" class="bg-[#34C759] h-full transition-all duration-500 ease-out" style="width: 100%"></div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<main class="flex-grow px-4 md:px-12 max-w-[1400px] mx-auto w-full">
+<section class="mb-6">
+        <h2 class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider mb-2 ml-2">0. Dienst Gegevens (Voor Welkomst Dia)</h2>
+        <div class="bg-white p-4 rounded-[20px] shadow-[0_4px_24px_rgba(0,0,0,0.04)] flex flex-col md:flex-row gap-4">
+            <div class="flex-1">
+                <input id="datumInput" type="text" class="w-full bg-[#F5F5F7] border border-transparent rounded-xl py-2.5 px-4 text-sm font-medium placeholder-gray-400 apple-input transition-all" placeholder="Bijv: Zondag 18-1-2026"/>
+            </div>
+            <div class="flex-1">
+                <input id="voorgangerInput" type="text" class="w-full bg-[#F5F5F7] border border-transparent rounded-xl py-2.5 px-4 text-sm font-medium placeholder-gray-400 apple-input transition-all" placeholder="Bijv: ds. Mark Bot"/>
+            </div>
+        </div>
+    </section>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 items-start">
+        
+       <section>
+            <h2 class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider mb-2 md:mb-3 ml-2">1. Liederen & Psalmen</h2>
+            <div class="bg-white p-4 md:p-6 rounded-[20px] md:rounded-[24px] shadow-[0_4px_24px_rgba(0,0,0,0.04)] relative">
+                <div class="relative">
+                    <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    <input id="liedInput" autocomplete="off" class="w-full bg-[#F5F5F7] border border-transparent rounded-xl py-3.5 pl-12 pr-4 text-[14px] md:text-[15px] font-medium placeholder-gray-400 apple-input transition-all" placeholder="Bijv: 'wk 15', 'oth 314' of 'psalm 23'..." type="text"/>
+                </div>
+                <p class="text-[11px] text-gray-400 mt-2 ml-1 leading-snug">Tip: Afkortingen zoals 'wk' of 'oth' werken ook! Staat je lied er écht niet tussen? Typ de titel in en klik onderaan de lijst op '+ Voeg toe'.</p>
+                <div id="suggestieLied" class="absolute z-50 w-[calc(100%-2rem)] md:w-[calc(100%-3rem)] bg-white/95 backdrop-blur-xl mt-2 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-gray-100 hidden max-h-64 overflow-y-auto"></div>
+            </div>
+        </section>
+
+        <section>
+            <h2 class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider mb-2 md:mb-3 ml-2">2. Bijbel (HSV) Via AI</h2>
+            <div class="bg-white p-4 md:p-6 rounded-[20px] md:rounded-[24px] shadow-[0_4px_24px_rgba(0,0,0,0.04)] relative flex flex-col gap-4">
+                
+                <div class="relative">
+                    <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477-4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                    <input id="bijbelInput" autocomplete="off" class="w-full bg-[#F5F5F7] border border-transparent rounded-xl py-3.5 pl-12 pr-4 text-[14px] md:text-[15px] font-medium placeholder-gray-400 apple-input transition-all" placeholder="Bijv: Genesis 1:1-15" type="text"/>
+                </div>
+                <div id="suggestieBijbel" class="absolute z-50 w-[calc(100%-2rem)] md:w-[calc(100%-3rem)] bg-white/95 backdrop-blur-xl mt-2 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-gray-100 hidden max-h-64 overflow-y-auto"></div>
+<div class="flex gap-2">
+                    <button onclick="openImportModal()" class="flex-1 bg-purple-50 text-purple-600 py-3 rounded-xl text-xs md:text-sm font-semibold flex items-center justify-center gap-2 hover:bg-purple-100 transition-all shadow-sm border border-purple-100">
+                        <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        Plak Liturgie
+                    </button>
+                    
+                    <button onclick="document.getElementById('imageFile').click()" class="flex-1 bg-blue-50 text-[#007AFF] py-3 rounded-xl text-xs md:text-sm font-semibold flex items-center justify-center gap-2 hover:bg-blue-100 transition-all">
+                        <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        Foto Dia
+                    </button>
+                    <input id="imageFile" type="file" class="hidden" accept="image/*" onchange="uploadFoto(event)"/>
+                    
+                    <button onclick="voegLegeDiaToe()" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl text-xs md:text-sm font-semibold flex items-center justify-center gap-2 hover:bg-gray-200 transition-all">
+                        <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
+                        Lege Dia
+                    </button>
+                </div>
+
+                <div class="mt-2 aspect-video bg-black rounded-xl flex flex-col relative overflow-hidden shadow-inner border border-gray-800">
+                    <div class="absolute top-2 left-3 text-[8px] text-gray-500 uppercase tracking-widest font-bold z-10">Slide Preview</div>
+                    <div id="previewVak" class="flex-grow flex items-center justify-center p-4 text-center overflow-y-auto text-white text-[12px] font-medium leading-relaxed italic opacity-70">
+                        Typ of selecteer een lied, bijbeltekst of media
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <section>
+            <div class="flex items-center justify-between mb-2 md:mb-3 ml-2 pr-1">
+                <h2 class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider">3. Volgorde</h2>
+                <button onclick="wisLiturgie()" class="text-[11px] font-semibold text-gray-400 hover:text-[#FF3B30] transition-colors">Leegmaken</button>
+            </div>
+            <div id="volgordeLijst" class="space-y-3">
+                <div class="bg-transparent border-2 border-dashed border-gray-200 rounded-[16px] md:rounded-[20px] p-6 md:p-8 text-center text-gray-400 font-medium text-[12px] md:text-[13px]">Nog geen items toegevoegd</div>
+            </div>
+        </section>
+    </div>
+</main>
+
+<div class="hidden md:block fixed bottom-8 left-12 z-40 pointer-events-none">
+    <p class="text-[10px] text-[#86868B] font-bold tracking-widest uppercase opacity-70">Made by Sem</p>
+</div>
+
+<div id="toastMelding" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 translate-y-24 opacity-0 z-[200] bg-[#34C759] text-white px-6 py-3 rounded-full shadow-lg font-medium text-[14px] flex items-center gap-2 transition-all duration-500 pointer-events-none">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+    <span id="toastTekst">Succesvol opgeslagen!</span>
+</div>
+
+<div class="fixed bottom-24 right-6 md:bottom-6 md:right-[300px] z-50">
+    <button id="rondleidingKnop" onclick="startUitleg()" aria-label="Start de rondleiding: hoe werkt deze app?" title="Hoe werkt deze app? Start de rondleiding" class="relative bg-white text-[#1D1D1F] w-14 h-14 rounded-full shadow-xl flex items-center justify-center hover:scale-105 transition-transform duration-300 border border-gray-200">
+        <span id="rondleidingPulse" class="hidden absolute inset-0 rounded-full bg-[#007AFF] opacity-40 animate-ping"></span>
+        <svg class="w-7 h-7 text-[#007AFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+    </button>
+</div>
+<div class="fixed bottom-6 left-6 z-50">
+    <button onclick="toggleChat()" aria-label="Open de code-assistent chat" class="bg-[#34C759] text-white w-14 h-14 rounded-full shadow-xl flex items-center justify-center hover:scale-105 transition-transform duration-300 border border-green-400" title="Vraag de AI om hulp met de code">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+    </button>
+</div>
+
+<div id="chatWindow" class="fixed bottom-24 left-6 z-50 hidden flex-col w-80 max-w-[calc(100vw-3rem)] h-96 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden transition-all">
+    <div class="bg-[#34C759] p-3 text-white font-bold flex justify-between items-center shadow-sm">
+        <div class="flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+            <span class="text-sm">App Code Assistent</span>
+        </div>
+        <button onclick="toggleChat()" class="text-white hover:text-gray-200 transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+    </div>
+    
+    <div id="chatMessages" class="flex-grow p-4 overflow-y-auto bg-gray-50 flex flex-col gap-3 text-sm">
+        <div class="bg-white p-3 rounded-xl rounded-tl-none shadow-sm border border-gray-100 text-gray-700 self-start max-w-[90%] leading-relaxed">
+            Hallo Sem! Ik ben de AI die jouw app aandrijft. Ik heb toegang tot de hele HTML/JS code van deze pagina. Wat wil je weten of veranderen?
+        </div>
+    </div>
+    
+    <div class="p-3 bg-white border-t border-gray-100 flex gap-2">
+        <input id="chatInput" type="text" class="flex-grow bg-[#F5F5F7] rounded-xl px-4 py-2 text-[13px] font-medium outline-none focus:ring-2 focus:ring-green-400 border border-transparent transition-all" placeholder="Stel een vraag..." onkeypress="if(event.key === 'Enter') stuurChatBericht()">
+        <button onclick="stuurChatBericht()" class="bg-[#34C759] text-white p-2.5 rounded-xl hover:bg-green-600 transition-colors shadow-sm">
+            <svg class="w-4 h-4 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+        </button>
+    </div>
+</div>
+
+<div class="fixed bottom-6 right-6 z-50">
+    <button onclick="maakPowerPoint()" class="bg-[#007AFF] text-white px-8 py-4 rounded-full shadow-2xl flex items-center gap-3 hover:scale-105 transition-transform duration-300 border border-blue-400">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+        <span class="font-bold text-[15px] tracking-wide">Exporteer PowerPoint</span>
+    </button>
+</div>
+
+<script>
+    // --- 1. FIREBASE CONFIGURATIE ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyAf1Llfi2lQd55wSbj9f8rjr8GQbugt_fM",
+        authDomain: "liturgieassistent.firebaseapp.com",
+        projectId: "liturgieassistent",
+        storageBucket: "liturgieassistent.firebasestorage.app",
+        messagingSenderId: "690315405552",
+        appId: "1:690315405552:web:203b68a5a9d1834ab73a35"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    // --- ANONIEME AUTHENTICATIE ---
+    // We loggen anoniem in zodat de Firestore-regels schrijven kunnen beperken tot
+    // ingelogde gebruikers (request.auth != null). De gebruiker merkt hier niets van;
+    // er is geen wachtwoord of account nodig. `authKlaar` is een belofte die pas
+    // klaar is als de login rond is, zodat opslaan naar de Cloud daar netjes op wacht.
+    const authKlaar = auth.signInAnonymously()
+        .then(() => { console.log("Anoniem ingelogd bij Firebase."); return true; })
+        .catch((e) => {
+            console.error("Anonieme login mislukt:", e);
+            // Veelvoorkomend: 'Anonymous sign-in' staat nog uit in de Firebase Console
+            // (Authentication → Sign-in method → Anonymous → inschakelen).
+            setCloudStatus('err', e.code === 'auth/operation-not-allowed'
+                ? 'Auth uit (Console)'
+                : 'Login mislukt');
+            return false;
+        });
+
+    // --- BEVEILIGINGS-HELPERS ---
+    // Zet gevaarlijke tekens om, zodat door de gebruiker/AI aangeleverde tekst
+    // nooit als HTML wordt uitgevoerd (voorkomt kapotte weergave én XSS).
+    function escapeHtml(str) {
+        return String(str == null ? "" : str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    // Haalt API-sleutels en Firebase-config uit een stuk tekst, zodat geheimen
+    // nooit meegestuurd worden naar de AI-chat.
+    function redactGeheimen(tekst) {
+        return String(tekst)
+            .replace(/AIzaSy[A-Za-z0-9_\-]{20,}/g, "«API-SLEUTEL VERWIJDERD»")
+            .replace(/const\s+firebaseConfig\s*=\s*\{[\s\S]*?\};/, "const firebaseConfig = { /* «CONFIG VERWIJDERD» */ };");
+    }
+
+    // --- OPSLAG: liturgie bewaren tussen sessies ---
+    const LITURGIE_OPSLAG_SLEUTEL = 'liturgieAssistentVolgorde';
+
+    function bewaarLiturgie() {
+        try {
+            localStorage.setItem(LITURGIE_OPSLAG_SLEUTEL, JSON.stringify(liturgieVolgorde));
+        } catch (e) {
+            // Meestal: opslag vol (bijv. veel foto-dia's). App blijft gewoon werken,
+            // alleen automatisch herstel na een refresh is dan niet gegarandeerd.
+            console.warn("Kon liturgie niet lokaal opslaan:", e);
+        }
+    }
+
+    function herstelLiturgie() {
+        try {
+            const opgeslagen = localStorage.getItem(LITURGIE_OPSLAG_SLEUTEL);
+            if (!opgeslagen) return;
+            const data = JSON.parse(opgeslagen);
+            if (Array.isArray(data) && data.length > 0) {
+                liturgieVolgorde = data;
+                window.tekenVolgorde();
+            }
+        } catch (e) {
+            console.warn("Kon opgeslagen liturgie niet herstellen:", e);
+        }
+    }
+
+    window.wisLiturgie = function() {
+        if (liturgieVolgorde.length === 0) return;
+        if (!confirm("Weet je zeker dat je de hele liturgielijst wilt leegmaken?")) return;
+        liturgieVolgorde = [];
+        try { localStorage.removeItem(LITURGIE_OPSLAG_SLEUTEL); } catch (e) {}
+        window.tekenVolgorde();
+        window.toonToast("Liturgie leeggemaakt.", "success");
+    };
+
+    // --- 2. START VARIABELEN ---
+    const apiKey = "AIzaSyBWKaKwhsG3AbaRfp1migBNOBtWB0pfIkk";
+    let liturgieVolgorde = [];
+    let gevondenModel = ""; 
+    
+    window.liederenDatabase = {};
+    
+    let isAanHetBewerken = false;
+    let huidigeBewerkIndex = -1;
+
+    let tijdelijkeTitel = "";
+    let tijdelijkeTekst = "";
+    let tijdelijkeType = "Zang"; 
+    
+    let tijdelijkeLiedVerzen = []; // Nieuw voor vers-selectie
+    let importWachtrij = []; // Wachtrij voor import-items die nog tekst nodig hebben
+
+    // --- 3. QUOTA MANAGER ---
+    let maxQuota = 15;
+    let huidigeQuota = 15;
+    function updateQuotaUI() {
+        const bar = document.getElementById('quotaBar');
+        const text = document.getElementById('quotaPercentage');
+        const perc = (huidigeQuota / maxQuota) * 100;
+        bar.style.width = perc + "%";
+        text.innerText = Math.round(perc) + "%";
+        if (perc > 50) { bar.className = "bg-[#34C759] h-full transition-all duration-500 ease-out"; }
+        else if (perc > 20) { bar.className = "bg-[#FFCC00] h-full transition-all duration-500 ease-out"; }
+        else { bar.className = "bg-[#FF3B30] h-full transition-all duration-500 ease-out"; }
+    }
+    setInterval(() => { if (huidigeQuota < maxQuota) { huidigeQuota++; updateQuotaUI(); } }, 4000);
+
+    const bijbelBoeken = ["Genesis", "Exodus", "Leviticus", "Numeri", "Deuteronomium", "Jozua", "Richteren", "Ruth", "1 Samuël", "2 Samuël", "1 Koningen", "2 Koningen", "1 Kronieken", "2 Kronieken", "Ezra", "Nehemia", "Esther", "Job", "Psalmen", "Spreuken", "Prediker", "Hooglied", "Jesaja", "Jeremia", "Klaagliederen", "Ezechiël", "Daniël", "Hosea", "Joël", "Amos", "Obadja", "Jona", "Micha", "Nahum", "Habakuk", "Zefanja", "Haggai", "Zacharia", "Maleachi", "Mattheüs", "Markus", "Lukas", "Johannes", "Handelingen", "Romeinen", "1 Korinthe", "2 Korinthe", "Galaten", "Efeze", "Filippenzen", "Kolossensen", "1 Thessalonicensen", "2 Thessalonicensen", "1 Timotheüs", "2 Timotheüs", "Titus", "Filemon", "Hebreeën", "Jakobus", "1 Petrus", "2 Petrus", "1 Johannes", "2 Johannes", "3 Johannes", "Judas", "Openbaring"];
+
+    function setAiStatus(status, tekst) {
+        const badgeText = document.getElementById('statusBadge');
+        const badgeDot = document.getElementById('statusDot');
+        badgeText.innerText = tekst;
+        if(status === 'ok') badgeDot.className = "w-2.5 h-2.5 rounded-full bg-[#34C759] shadow-[0_0_8px_rgba(52,199,89,0.6)]";
+        if(status === 'err') badgeDot.className = "w-2.5 h-2.5 rounded-full bg-[#FF3B30] shadow-[0_0_8px_rgba(255,59,48,0.6)]";
+    }
+
+    function setCloudStatus(status, tekst) {
+        const badgeText = document.getElementById('cloudBadge');
+        const badgeDot = document.getElementById('cloudDot');
+        badgeText.innerText = tekst;
+        if(status === 'ok') badgeDot.className = "w-2.5 h-2.5 rounded-full bg-[#007AFF] shadow-[0_0_8px_rgba(0,122,255,0.6)]";
+        if(status === 'err') badgeDot.className = "w-2.5 h-2.5 rounded-full bg-[#FF3B30] shadow-[0_0_8px_rgba(255,59,48,0.6)]";
+    }
+
+    async function ontdekAI() {
+        const kiezer = document.getElementById('modelKiezer');
+        try {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+            const data = await res.json();
+            const geldigeModellen = data.models.filter(m => m.supportedGenerationMethods.includes("generateContent"));
+            
+            kiezer.innerHTML = '';
+            geldigeModellen.forEach(m => {
+                let opt = document.createElement('option');
+                opt.value = m.name;
+                opt.text = m.displayName || m.name.replace('models/', '');
+                kiezer.appendChild(opt);
+            });
+
+            let best = geldigeModellen.find(m => m.name.includes("3.1") && m.name.includes("lite")) 
+                    || geldigeModellen.find(m => m.name.includes("flash") && !m.name.includes("2.0"))
+                    || geldigeModellen[0];
+            
+            if(best) {
+                kiezer.value = best.name;
+                gevondenModel = best.name;
+                setAiStatus('ok', 'Systeem Gereed');
+                kiezer.classList.remove('hidden'); 
+            }
+            kiezer.addEventListener('change', (e) => { gevondenModel = e.target.value; });
+        } catch (err) {
+            setAiStatus('err', 'Sleutel Fout');
+        }
+    }
+
+    async function laadCloudDatabase() {
+        const ingelogd = await authKlaar; // login afwachten voor een eerlijke statusmelding
+        try {
+            const snapshotLiederen = await db.collection("liederen").get();
+            snapshotLiederen.forEach((doc) => {
+                window.liederenDatabase[doc.id] = doc.data().tekst;
+            });
+            // Lezen lukt (mogelijk publiek), maar zonder login kan er niets worden
+            // opgeslagen. Dat maken we in de badge zichtbaar.
+            if (ingelogd) {
+                setCloudStatus('ok', 'Cloud Actief');
+            } else {
+                setCloudStatus('err', 'Alleen lezen (login uit)');
+            }
+        } catch(error) {
+            setCloudStatus('err', 'Cloud Fout');
+        }
+    }
+
+    function bouwZoekLijst() {
+        let alleLiedTitels = Object.keys(window.liederenDatabase);
+        const weerklankTekst = `
+1 Gelukkig wie niet deelneemt aan 't beraad
+2 Wat drijft de volken, wat bezielt ze toch?
+3 Mijn vijand, Here, staat
+4 Laat als ik roep mij op U hopen
+4a Geef antwoord op mijn biddend vragen
+5 O Here, wil mijn woorden horen
+6 Bewijs, Heer, mij genade
+6a O Heer, straf mij niet langer
+7 Here mijn God, Gij hoedt mijn leven
+7a Heer, mijn God, U bent mijn toevlucht
+8 Heer, onze Heer, hoe heerlijk en verheven
+8a Heer, onze Heer, uw naam is hoog verheven
+9 Ik zal met heel mijn hart, o Heer
+10 Waarom, o Heer, blijft U van verre staan?
+11 De Here is mijn toevlucht en mijn sterkte
+11a Bij U, Heer, wil ik schuilen
+12 Breng redding, Heer, de vroomheid is geweken
+13 Hoelang, o Heer, vergeet Gij mij
+13a Hoe lang laat U mij nog alleen
+14 De dwaas zegt in zijn hart: Er is geen God (Hoekstra)
+15 Heer, wie mag wonen in uw tent
+16 Bewaar mij, Heer, mijn toeverlaat zijt Gij!
+16a Bescherm mij, God, 'k ben veilig slechts bij U
+17 Hoor, Heer, Gij God van trouw en recht
+18 Ik heb U lief van ganser harte, Here
+19 Het ruime firmament maakt wijd en zijd bekend
+20 Moge de Heer u antwoord geven (Hoekstra)
+20a Moge de Here u verhoren
+21 O Heer, de koning is verblijd
+22 Mijn God, mijn God, waarom verlaat Gij mij (Hoekstra/Nolles)
+22a Waarom hebt U mij verlaten?
+23 De Here wil mijn trouwe herder wezen
+23a De Heer is mijn Herder!
+24 De aarde en haar volheid zijn
+25 'k Hef mijn ziel in vast vertrouwen
+26 O Here, doe mij recht!
+27 De Here is mijn licht, wat kan mij deren
+28 Ik roep tot U, mijn rots, mijn Here!
+29 Hemelingen, buigt u neer
+30 U zal ik loven, trouwe Heer
+31 Bij U, o Heer, zoek ik bescherming
+32 Welzalig hij wiens zonde is vergeven
+33 Zing vrolijk, loof de naam des Heren
+34 Ik loof de Heer altijd
+35 Twist met mijn twisters, Here God
+36 De zonde spreekt haar vleiend woord
+37 Wees niet jaloers op hen die onrecht plegen
+37a Wees niet jaloers op wie met God niet leven
+38 Blijf mij niet in toorn kastijden
+39 Ik dacht: ik zal de rechte wegen gaan
+39a Ik dacht: 'Ik zal mijn weg bewaren'
+40 Met heel mijn hart heb ik de Heer verwacht
+41 Heil hem die de geringe helpt in nood
+41a Zalig de mens, die denkt aan armen
+42 Heer, een hert in dorre streken
+42a Evenals een moede hinde
+43 O God, kom mijn geding beslechten
+44 Wij hoorden, Heer, met eigen oren (Hasper)
+44a Wij hoorden, Heer, met eigen oren (de Vries/Hasper)
+45 Hoe is mijn hart vervuld van blijde dingen
+46 God is een toevlucht en een sterkte
+47 Juich, o volken, juich, handklap en betuig
+48 De Heer is groot en hoog geëerd
+49 Gij volken, overal ter wereld, hoor!
+50 De Heer die leeft, de God der goden spreekt
+51 Ontferm U God, ontferm U, hoor mijn klacht
+51a Wees mij genadig, toon uw goedheid, Heer
+52 Waarom beroemt u zich op 't kwade
+53 De dwaas zegt bij zichzelf in overmoed
+53a De dwaze mensen denken in hun hart
+54 O God, verlos mij door uw naam
+55 O God, neem mijn gebed ter ore
+55a Mijn God, wil naar mijn smeken horen
+56 Wees mij genadig, God, wees mij nabij
+57 Wees mij genadig, Heer, wees mij nabij
+58 Gij hoge raad, bijeengekomen
+58a Zeg, machtigen der wereld
+59 Kom, Heer, mij uit de hand bevrijden
+59a O God, bevrijd mij van de macht
+60 O God, hoe hebt U ons bedroefd
+61 Wil, o God, mijn smeking horen
+62 Voorwaar, ik keer mij stil tot God
+63 Mijn God, Gij zijt mijn toeverlaat
+64 Behoed mij, Heer, hoor naar mijn klagen!
+65 De lofzang klinkt uit Sions zalen
+65a De stilte draagt mijn stem naar boven
+66 Breek, aarde, uit in jubelzangen
+67 De Here God zij ons genadig
+68 De Heer staat op in majesteit
+69 O God, verlos mij, red mij uit mijn nood
+70 Haast U om mij te redden, God!
+71 Bij U, o Heer, berg ik mijn leven
+72 O God, wil aan de koning schenken
+73 Ja, God is goed voor Israël (Muns)
+74 Waarom, o God verstoot U voor altijd
+75 U alleen, U loven wij (Hasper)
+76 Heel Juda kent Gods naam en eer
+77 Laat mijn klacht ten hemel stijgen!
+78 Mijn volk, hoor toe en neem mijn leer ter ore
+79 O God, nu zijn de heidenen gekomen (Muns)
+80 O herder, die uw volk wilt leiden
+81 Jubel voor de Heer
+82 God staat in 't midden van de goden
+83 Houd U niet stil, zwijg niet, o God
+84 Hoe lieflijk is uw huis, o Heer!
+85 Gij was goedgunstig voor uw land, o Heer
+86 Hoor mij, Heer, wil antwoord zenden
+87 Jeruzalem, de Godsstad hier beneden
+88 Heer, die mijn heil, mijn helper zijt
+88a Heer, God, mijn redder, 'k roep U alle dagen
+89 Ik zal zo lang ik leef bezingen in mijn lied
+90 Gij zijt geweest, o Heer, en Gij zult wezen
+91 Hij die op Gods bescherming wacht
+92 Waarlijk, dit is rechtvaardig
+93 De Heer is Koning, Hij regeert alleen
+94 Verschijn in lichtglans, God der wrake!
+95 Kom, laat ons juichen voor de Heer
+96 Zing een nieuw lied voor God de Here (Nolles)
+97 De Heer alleen regeert
+98 Zing een nieuw lied voor God de Here
+99 God is Koning
+100 Juich, alle volken, prijs de Heer!
+101 Ik zing, HEER, om uw trouw en recht te eren
+102 Heer, hoor mijn gebed, laat blijken
+102a God, luister naar mijn bidden
+103 Zegen, mijn ziel, de grote naam des Heren
+104 Mijn ziel, verheerlijk God om zijne macht
+105 Loof, loof verheugd de Heer der heren
+106 Loof nu de Heer, want Hij is goed
+107 Loof, loof de Heer gestadig
+108 Mijn hart is, Heer, in U gerust
+109 God die ik loof te allen tijde
+110 Zo heeft de HERE tot mijn Heer gesproken
+111 Loof, halleluja, loof de Heer (Psalm 111)
+112 God zij geloofd en hoog geprezen
+112a Geluk zal ieder mens beleven
+113 Prijs, halleluja, prijs de Heer
+114 Toen Israël uit Egypteland ging
+114a Toen Israël uit Egypte kwam
+115 Niet ons, o Heer, maar uw naam geef de eer
+116 God heb ik lief, want die getrouwe Heer (De Vries)
+117 Loof, alle volken, loof de Heer
+118 Laat ieder 's Heren goedheid prijzen
+119 Welzalig wie de rechte wegen gaan
+120 Ik riep tot God in bange dagen
+120a Ik heb tot God gebeden
+121 Ik sla mijn ogen op en zie
+122 Ik was verheugd, toen men mij zei
+123 Ik sla naar U, die in de hemel zit
+124 Heel Israël getuige, blij van geest
+125 Wie op de Here God vertrouwen
+126 Toen God ons weer naar Sion bracht
+127 Wanneer de Heer het huis niet bouwt
+128 Welzalig zullen wezen wie in Gods wegen gaan
+129 Zij hebben immer van mijn jeugd af aan
+129a Hoe zij ook tegenwerkten
+130 Uit diepten van ellende (Hasper)
+130a Uit diepten van ellende roep ik om hulp, o Heer
+131 O Heer, er is geen trots in mij
+132 O Heer, gedenk aan Davids leed
+133 Zie toch hoe goed, hoe lieflijk is 't dat zonen
+134 Kom allen, dienaars van de Heer
+134a Loof, loof nu aller heren Heer
+135 Loof de Here, prijs zijn naam
+136 Loof de Heer, want Hij is goed (Hoekstra)
+137 Aan Babels stromen zaten wij gevangen
+138 Ik zal met heel mijn hart uw eer
+139 Heer, die mij ziet zoals ik ben
+140 Heer, red mij van de boze mensen
+141 U, Heer, roep ik, U geldt mijn smeken
+142 Tot God, de Here, roep ik luid
+143 O Here, hoor naar mijn gebeden
+144 Gezegend zij de Heer, die te allen tijde
+145 Mijn God en Koning, aller vorsten Heer
+146 Ik wil zingen al mijn dagen
+147 Lof zij de Heer, goed is het leven
+148 Loof, halleluja, loof de Heer (Psalm 148)
+149 Halleluja! laat opgetogen
+150 Loof de Heer uw God alom
+Bijbelliederen`; 
+
+        let isLied = false;
+        weerklankTekst.split('\n').forEach(regel => {
+            regel = regel.trim();
+            if (!regel) return;
+            if (regel === "Bijbelliederen") { isLied = true; return; }
+            const match = regel.match(/^(\d+[a-z]?)\s+(.*)$/);
+            if (match) {
+                const prefix = isLied ? "Weerklank Lied" : "Weerklank Psalm";
+                alleLiedTitels.push(`${prefix} ${match[1]} - ${match[2]}`);
+            }
+        });
+
+        for(let i=1; i<=150; i++) alleLiedTitels.push("DNP Psalm " + i);
+        for(let i=1; i<=150; i++) alleLiedTitels.push("Psalm " + i);
+        
+        const othLijst = [
+            "Op Toonhoogte 385, A B C", "Op Toonhoogte 375, Aan de oever van het meer", "Op Toonhoogte 168, Aan uw voeten Heer", 
+            "Op Toonhoogte 211, Abba, Vader, U alleen", "Op Toonhoogte 365, Abraham, Abraham", "Op Toonhoogte 264, Agnus Dei", 
+            "Op Toonhoogte 272, Al legt de hele stad aan stukken", "Op Toonhoogte 386, Al ziet geen mens je zitten", 
+            "Op Toonhoogte 140, Al zou de vijgeboom niet bloeien", "Op Toonhoogte 175, Alleen met God", "Op Toonhoogte 59, Alles komt goed", 
+            "Op Toonhoogte 454, Alles wat je wilt", "Op Toonhoogte 45, Als een hert dat verlangt naar water", "Op Toonhoogte 184, Als er vergeving is", 
+            "Op Toonhoogte 350, Als je samen", "Op Toonhoogte 387, Als je bang bent of onzeker", "Op Toonhoogte 376, Als je bidt zal Hij je geven", 
+            "Op Toonhoogte 388, Als je geen liefde hebt voor elkaar", "Op Toonhoogte 389, Als je gelooft in de Here Jezus", 
+            "Op Toonhoogte 351, Alzo lief had God de wereld", "Op Toonhoogte 343, Ancient words", "Op Toonhoogte 293, Avondmaal", 
+            "Op Toonhoogte 108, Because He lives", "Op Toonhoogte 160, Belofte", "Op Toonhoogte 193, Bij een schip in de storm", 
+            "Op Toonhoogte 126, Ben je groot of ben je klein", "Op Toonhoogte 391, Bewaar de eenheid", "Op Toonhoogte 62, Blaas de bazuin en sla de trom", 
+            "Op Toonhoogte 251, Bless the Lord my soul", "Op Toonhoogte 392, Blij, blij, m'n hartje is zo blij", 
+            "Op Toonhoogte 131, Blijf mij nabij, wanneer het duister daalt", "Op Toonhoogte 309, Breng dank aan de Eeuwige", 
+            "Op Toonhoogte 212, Bron van licht en leven", "Op Toonhoogte 87, Christus, onze Heer, verrezen", 
+            "Op Toonhoogte 46, Create in me a clean heart", "Op Toonhoogte 141, Daar zacht een toon, daar klinkt een stem", 
+            "Op Toonhoogte 88, Dag aan dag", "Op Toonhoogte 338, Dag en nacht", "Op Toonhoogte 253, Dank U, Here Jezus", 
+            "Op Toonhoogte 181, Dank, dank U", "Op Toonhoogte 254, Dank voor de wond'ren die gebeuren", 
+            "Op Toonhoogte 266, Dank U voor deze nieuwe morgen", "Op Toonhoogte 393, Dankt, dankt nu allen God", 
+            "Op Toonhoogte 384, De Heer is mijn Herder", "Op Toonhoogte 142, De Heer is waarlijk opgestaan", 
+            "Op Toonhoogte 189, De hemel vertelt", "Op Toonhoogte 220, DE HEER woont in een stralend licht", 
+            "Op Toonhoogte 90, De hemel zal niet wachten", "Op Toonhoogte 194, De Here zegene jou", "Op Toonhoogte 284, De muren van Jericho", 
+            "Op Toonhoogte 213, De muziek vervaagt", "Op Toonhoogte 141, De naam van onze God", "Op Toonhoogte 338, De wijzen, de wijzen", 
+            "Op Toonhoogte 293, Dit breekbaar brood", "Op Toonhoogte 124, Dit is de dag", "Op Toonhoogte 310, Dit is mijn gebod", 
+            "Op Toonhoogte 397, Dit is mijn hand en dat mijn voet", "Op Toonhoogte 187, Dwars door het vuur", 
+            "Op Toonhoogte 457, Een parel in Gods hand", "Op Toonhoogte 398, Een rivier vol van vrede", 
+            "Op Toonhoogte 143, Een vaste burcht is onze God", "Op Toonhoogte 377, Een wijs man bouwde zijn huis op de rots", 
+            "Op Toonhoogte 327, Eer zij God in onze dagen", "Op Toonhoogte 340, Elk oog zal Hem zien", 
+            "Op Toonhoogte 144, Elke dag wil ik zingen van uw liefde", "Op Toonhoogte 378, Er is een dag", 
+            "Op Toonhoogte 330, Er is een Verlosser", "Op Toonhoogte 243, Father, I adore You", 
+            "Op Toonhoogte 195, Geef vrede, Heer, geef vrede", "Op Toonhoogte 256, Geen andere naam", 
+            "Op Toonhoogte 114, Geest van hierboven", "Op Toonhoogte 147, Genade, zo oneindig groot", 
+            "Op Toonhoogte 258, Geprezen zij de Heer die eeuwig leeft", "Op Toonhoogte 342, Glorie aan God", 
+            "Op Toonhoogte 264, Hallelujah", "Op Toonhoogte 405, Heb je al gehoord", "Op Toonhoogte 267, Heer, God U loven wij", 
+            "Op Toonhoogte 183, Heer, ik kom tot U", "Op Toonhoogte 268, Heer, ik prijs uw grote naam", 
+            "Op Toonhoogte 409, Heer, ik wil U aanbidden", "Op Toonhoogte 198, Heer, machtig God, ik loof U", 
+            "Op Toonhoogte 269, Heer, U bent mijn leven", "Op Toonhoogte 315, Heer, uw bloed dat reinigt mij", 
+            "Op Toonhoogte 218, Heer, uw licht en uw liefde schijnen", "Op Toonhoogte 115, Heilig, heilig, heilig! Heer, God almachtig", 
+            "Op Toonhoogte 93, Het is volbracht", "Op Toonhoogte 414, Hij is Heer", "Op Toonhoogte 354, Hij leeft", 
+            "Op Toonhoogte 382, Hoe groot zijt Gij", "Op Toonhoogte 173, Holy words", "Op Toonhoogte 418, Ik ben veilig in Jezus' armen", 
+            "Op Toonhoogte 151, Ik bouw op U", "Op Toonhoogte 153, Ik geloof in God de Vader", "Op Toonhoogte 221, Ik kniel neer en belijd", 
+            "Op Toonhoogte 271, Ik wil juichen voor U, mijn Heer", "Op Toonhoogte 70, In Bethlehem's stal", 
+            "Op Toonhoogte 224, In momenten als deze", "Op Toonhoogte 430, Je hoeft niet bang te zijn", 
+            "Op Toonhoogte 331, Jezus is de morgenster", "Op Toonhoogte 201, Jezus vol liefde", 
+            "Op Toonhoogte 318, Jezus, alles geef ik U", "Op Toonhoogte 234, Juich voor de Heer", 
+            "Op Toonhoogte 272, Juicht, want Jezus is Heer", "Op Toonhoogte 119, Kom heilige Geest", 
+            "Op Toonhoogte 230, Kom, nu is de tijd, aanbid Hem", "Op Toonhoogte 73, Komt allen tezamen", 
+            "Op Toonhoogte 332, Kroon Hem met gouden kroon", "Op Toonhoogte 320, Laat uw glorie zien", 
+            "Op Toonhoogte 282, Lof zij de Heer, de almachtige Koning der ere", "Op Toonhoogte 144, Majesteit", 
+            "Op Toonhoogte 281, Mijn Vader, dank U wel", "Op Toonhoogte 132, Mijn vrede laat ik u", 
+            "Op Toonhoogte 235, Neem mijn leven, laat het, Heer", "Op Toonhoogte 236, Niemand is als U", 
+            "Op Toonhoogte 107, O kom, o kom, Immanuël", "Op Toonhoogte 283, Omdat Hij leeft", 
+            "Op Toonhoogte 301, Samen in de naam van Jezus", "Op Toonhoogte 83, Stille nacht, heilige nacht", 
+            "Op Toonhoogte 177, Thy word", "Op Toonhoogte 159, U alleen wil ik aanbidden", "Op Toonhoogte 61, U zij de glorie", 
+            "Op Toonhoogte 290, Vader van de schepping", "Op Toonhoogte 135, Vrede van God", 
+            "Op Toonhoogte 355, Wat de toekomst brengen moge", "Op Toonhoogte 165, Welk een Vriend is onze Jezus", 
+            "Op Toonhoogte 467, Zoekt eerst het Koninkrijk van God"
+        ];
+        
+        alleLiedTitels = alleLiedTitels.concat(othLijst);
+        // Dedupliceer ongevoelig voor hoofdletters/dubbele spaties (houdt de eerste variant).
+        // Let op: liederen met hetzelfde nummer maar een ANDERE titel blijven bewust staan;
+        // dat zijn databron-verschillen die we niet zomaar willen weggooien.
+        const gezien = new Set();
+        const uniek = [];
+        for (const t of alleLiedTitels) {
+            const sleutel = t.toLowerCase().replace(/\s+/g, ' ').trim();
+            if (!gezien.has(sleutel)) { gezien.add(sleutel); uniek.push(t); }
+        }
+        return uniek;
+    }
+
+   function setupAutocomplete(inputId, suggestieId, dataLijst, onSelect) {
+        const input = document.getElementById(inputId);
+        const container = document.getElementById(suggestieId);
+
+        document.addEventListener('click', (e) => {
+            if (!container.contains(e.target) && e.target !== input) {
+                container.classList.add('hidden');
+            }
+        });
+
+        input.addEventListener('input', () => {
+            const rawTerm = input.value;
+            let term = rawTerm.trim().toLowerCase();
+            container.innerHTML = '';
+            if (!term) { container.classList.add('hidden'); return; }
+            
+            // --- SLIMME ZOEK ALIASSEN (Afkortingen) ---
+            term = term.replace(/\both\b/g, "op toonhoogte");
+            term = term.replace(/\bwk\b/g, "weerklank");
+            term = term.replace(/\bopw\b/g, "opwekking");
+            term = term.replace(/\bps\b/g, "psalm");
+            term = term.replace(/\blw\b/g, "weerklank lied");
+
+            // --- SLIM ZOEKALGORITME ---
+            // Splits de zoekterm op in losse woorden. 
+            // Bijv: "Weerklank 15" -> ["weerklank", "15"]
+            const searchWords = term.split(/\s+/);
+            
+            const matches = dataLijst.filter(t => {
+                const lowerT = t.toLowerCase();
+                // Check of ELK los getypt woordje ergens in de titel voorkomt
+                return searchWords.every(word => lowerT.includes(word));
+            }).slice(0, 10);
+
+            const exactMatch = dataLijst.some(t => t.toLowerCase() === term);
+            let hasItems = false;
+
+            if (matches.length > 0) {
+                hasItems = true;
+                container.classList.remove('hidden');
+                matches.forEach((m, index) => {
+                    const d = document.createElement('div');
+                    d.className = `p-3 flex justify-between items-center hover:bg-[#F5F5F7] transition-colors ${index !== matches.length -1 ? 'border-b border-gray-100' : ''}`;
+
+                    const textSpan = document.createElement('span');
+                    textSpan.className = 'text-[14px] font-medium text-gray-800 cursor-pointer flex-grow py-1';
+                    textSpan.innerText = m;
+                    textSpan.onclick = () => onSelect(m, false);
+
+                    const addButton = document.createElement('button');
+                    addButton.className = 'ml-3 p-2 rounded-full bg-blue-50 text-[#007AFF] hover:bg-blue-100 transition-colors flex-shrink-0';
+                    addButton.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>`;
+                    addButton.title = "Toevoegen en verder zoeken";
+
+                    addButton.onclick = (e) => {
+                        e.stopPropagation(); 
+                        onSelect(m, true);
+                        
+                        const originalHtml = addButton.innerHTML;
+                        addButton.innerHTML = `<svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>`;
+                        addButton.classList.replace('bg-blue-50', 'bg-green-50');
+                        setTimeout(() => {
+                            addButton.innerHTML = originalHtml;
+                            addButton.classList.replace('bg-green-50', 'bg-blue-50');
+                        }, 1000);
+                    };
+
+                    d.appendChild(textSpan);
+                    d.appendChild(addButton);
+                    container.appendChild(d);
+                });
+            }
+
+            // NIEUW: Als de zoekterm niet exact in de lijst staat, voeg een "Toevoegen" knop toe
+            if (!exactMatch && rawTerm.trim().length > 1) {
+                hasItems = true;
+                container.classList.remove('hidden');
+                
+                const addDiv = document.createElement('div');
+                addDiv.className = 'p-3 flex justify-between items-center hover:bg-blue-50 bg-blue-50/30 transition-colors border-t border-blue-100 cursor-pointer';
+                
+                const textSpan = document.createElement('span');
+                textSpan.className = 'text-[14px] font-bold text-[#007AFF] flex-grow py-1';
+                textSpan.innerText = `+ Zoek / Voeg toe: "${rawTerm}"`;
+                
+                addDiv.onclick = () => {
+                    // Voeg toe aan tijdelijke lijst zodat hij later in de sessie wel direct gevonden wordt
+                    if (!dataLijst.includes(rawTerm)) dataLijst.push(rawTerm);
+                    onSelect(rawTerm, false);
+                };
+
+                addDiv.appendChild(textSpan);
+                container.appendChild(addDiv);
+            }
+
+            if (!hasItems) {
+                container.classList.add('hidden');
+            }
+        });
+    }
+
+  async function slaLiedOpInCloud(titel, tekst) {
+        window.liederenDatabase[titel] = tekst;
+        try {
+            await authKlaar; // wacht tot de anonieme login rond is (nodig voor schrijven)
+            await db.collection("liederen").doc(titel).set({ tekst: tekst }, { merge: true });
+            window.toonToast(`'${titel}' succesvol opgeslagen in de database!`, "success"); 
+        } catch(error) {
+            console.error("Fout bij opslaan Lied:", error);
+            window.toonToast("Fout: Geen toegang tot Firebase (Check je Regels!)", "error");
+        }
+    }
+
+    async function slaBijbelOpInCloud(referentie, tekst) {
+        try {
+            await authKlaar; // wacht tot de anonieme login rond is (nodig voor schrijven)
+            await db.collection("bijbel_hsv").doc(referentie).set({ tekst: tekst }, { merge: true });
+            window.toonToast(`'${referentie}' succesvol opgeslagen in de database!`, "success"); 
+        } catch(error) {
+            console.error("Fout bij opslaan Bijbeltekst:", error);
+            window.toonToast("Fout: Geen toegang tot Firebase (Check je Regels!)", "error");
+        }
+    }
+
+    window.toonToast = function(bericht, type = "success") {
+        const toast = document.getElementById('toastMelding');
+        document.getElementById('toastTekst').innerText = bericht;
+        
+        // Check of het een foutmelding is of niet
+        if (type === "error") {
+            toast.classList.replace('bg-[#34C759]', 'bg-[#FF3B30]'); // Maak de knop rood
+        } else {
+            toast.classList.replace('bg-[#FF3B30]', 'bg-[#34C759]'); // Maak de knop groen
+        }
+        
+        // Schuif hem omhoog en maak hem zichtbaar
+        toast.classList.remove('translate-y-24', 'opacity-0');
+        
+        // Wacht 5 seconden en verberg hem weer
+        setTimeout(() => {
+            toast.classList.add('translate-y-24', 'opacity-0');
+        }, 5000);
+    }
+
+    // --- FUNCTIES VOOR DE REGULIERE MODAL ---
+    window.toonControleModal = function(titel, tekst, type = "Zang") {
+        tijdelijkeTitel = titel;
+        tijdelijkeTekst = tekst;
+        tijdelijkeType = type;
+        
+        document.getElementById('modalTitel').innerText = (type === "Zang" ? "Controleer Lied: " : "Controleer Bijbeltekst: ") + titel;
+        
+        if (type === "Zang") {
+            document.getElementById('knopJa').innerText = "Ja, Opslaan in de Cloud";
+            document.getElementById('opslaanKnop').innerText = "Opslaan in Cloud & Toevoegen";
+        } else {
+            document.getElementById('knopJa').innerText = "Ja, Toevoegen aan Liturgie";
+            document.getElementById('opslaanKnop').innerText = "Tekst Toevoegen aan Liturgie";
+        }
+
+        document.getElementById('modalTekst').innerText = tekst;
+        document.getElementById('modalTekstContainer').classList.remove('hidden');
+        document.getElementById('modalKnoppen1').classList.remove('hidden');
+        document.getElementById('modalKnoppen1').classList.add('flex');
+        document.getElementById('modalKnoppen1').classList.add('md:flex');
+        document.getElementById('modalKnoppen2').classList.add('hidden');
+        document.getElementById('modalKnoppen2').classList.remove('flex');
+        document.getElementById('modalKnoppen3').classList.add('hidden');
+        document.getElementById('modalKnoppen3').classList.remove('flex');
+        document.getElementById('controleModal').classList.remove('hidden');
+    }
+
+    window.openLiedbundelOnline = function() {
+        const url = "https://liedbundelsonline.nl/nl/lied-zoeken?bundles%5B0%5D=WK&bundles%5B1%5D=OTH";
+        window.open(url, "liedbundelonline", "width=1000,height=850,noopener,noreferrer");
+    }
+
+    function updateLiedbundelKnop(titel, type) {
+        const knop = document.getElementById('liedbundelKnop');
+        const relevant = type === "Zang" && /weerklank|op toonhoogte/i.test(titel || "");
+        knop.classList.toggle('hidden', !relevant);
+        knop.classList.toggle('flex', relevant);
+    }
+
+    window.openBewerkScherm = function(index) {
+        isAanHetBewerken = true;
+        huidigeBewerkIndex = index;
+        tijdelijkeTitel = liturgieVolgorde[index].titel;
+        tijdelijkeTekst = liturgieVolgorde[index].tekst;
+        tijdelijkeType = liturgieVolgorde[index].type;
+        
+        document.getElementById('modalTitel').innerText = "Bewerk: " + tijdelijkeTitel;
+        document.getElementById('handmatigeTekst').value = tijdelijkeTekst;
+        
+        document.getElementById('modalTekstContainer').classList.add('hidden');
+        document.getElementById('modalKnoppen1').classList.add('hidden');
+        document.getElementById('modalKnoppen1').classList.remove('flex');
+        document.getElementById('modalKnoppen1').classList.remove('md:flex');
+        document.getElementById('modalKnoppen2').classList.add('hidden');
+        document.getElementById('modalKnoppen2').classList.remove('flex');
+        
+        document.getElementById('modalKnoppen3').classList.remove('hidden');
+        document.getElementById('modalKnoppen3').classList.add('flex');
+        updateLiedbundelKnop(tijdelijkeTitel, tijdelijkeType);
+        
+        document.getElementById('opslaanKnop').innerText = (tijdelijkeType === "Zang") ? "Wijziging Opslaan in Cloud" : "Wijziging Opslaan";
+        document.getElementById('controleModal').classList.remove('hidden');
+    }
+
+    window.sluitModal = function() {
+        document.getElementById('controleModal').classList.add('hidden');
+        isAanHetBewerken = false;
+        setTimeout(() => verwerkVolgendeImportItem(), 300);
+    }
+
+    window.kiesJa = function() {
+        if (tijdelijkeType === "Zang") {
+            slaLiedOpInCloud(tijdelijkeTitel, tijdelijkeTekst);
+        } else if (tijdelijkeType === "Schriftlezing" && tijdelijkeTekst.trim()) {
+            slaBijbelOpInCloud(tijdelijkeTitel.replace(" (HSV)", ""), tijdelijkeTekst);
+        }
+        liturgieVolgorde.push({ type: tijdelijkeType, titel: tijdelijkeTitel, tekst: tijdelijkeTekst });
+        window.tekenVolgorde();
+        window.sluitModal();
+    }
+
+    window.kiesNee = function() {
+        document.getElementById('modalKnoppen1').classList.add('hidden');
+        document.getElementById('modalKnoppen1').classList.remove('flex');
+        document.getElementById('modalKnoppen1').classList.remove('md:flex');
+        document.getElementById('modalKnoppen2').classList.remove('hidden');
+        document.getElementById('modalKnoppen2').classList.add('flex');
+        document.getElementById('modalTekstContainer').classList.add('hidden');
+    }
+
+    window.kiesLeeg = function() {
+        liturgieVolgorde.push({ type: tijdelijkeType, titel: tijdelijkeTitel, tekst: " " });
+        window.tekenVolgorde();
+        window.sluitModal();
+    }
+
+    window.kiesHandmatig = function() {
+        // Verberg de bovenkant (Tekst preview en Ja/Nee knoppen)
+        document.getElementById('modalTekstContainer').classList.add('hidden');
+        document.getElementById('modalKnoppen1').classList.add('hidden');
+        document.getElementById('modalKnoppen1').classList.remove('flex', 'md:flex');
+        document.getElementById('modalKnoppen2').classList.add('hidden');
+        document.getElementById('modalKnoppen2').classList.remove('flex');
+        
+        // Toon alleen het onderste grijze invulvak en de opslaan knop
+        document.getElementById('modalKnoppen3').classList.remove('hidden');
+        document.getElementById('modalKnoppen3').classList.add('flex');
+        updateLiedbundelKnop(tijdelijkeTitel, tijdelijkeType);
+        
+        document.getElementById('handmatigeTekst').value = tijdelijkeTekst;
+        document.getElementById('handmatigeTekst').placeholder = "Plak hier de Bijbeltekst of eigen tekst...";
+    }
+
+    window.slaHandmatigOp = function() {
+        const nieuweTekst = document.getElementById('handmatigeTekst').value.trim();
+        
+        if (isAanHetBewerken) {
+            if (liturgieVolgorde[huidigeBewerkIndex].type === "Zang") {
+                slaLiedOpInCloud(tijdelijkeTitel, nieuweTekst);
+            } else if (liturgieVolgorde[huidigeBewerkIndex].type === "Schriftlezing") {
+                slaBijbelOpInCloud(tijdelijkeTitel.replace(" (HSV)", ""), nieuweTekst);
+            }
+            liturgieVolgorde[huidigeBewerkIndex].tekst = nieuweTekst;
+        } else {
+            if (tijdelijkeType === "Zang") {
+                slaLiedOpInCloud(tijdelijkeTitel, nieuweTekst);
+            } else if (tijdelijkeType === "Schriftlezing") {
+                slaBijbelOpInCloud(tijdelijkeTitel.replace(" (HSV)", ""), nieuweTekst);
+            }
+            liturgieVolgorde.push({ type: tijdelijkeType, titel: tijdelijkeTitel, tekst: nieuweTekst });
+        }
+        
+        window.tekenVolgorde();
+        window.sluitModal();
+    }
+
+    // --- FUNCTIES VOOR DE VERS-KIEZER MODAL ---
+    window.sluitVersModal = function() {
+        document.getElementById('versModal').classList.add('hidden');
+        setTimeout(() => verwerkVolgendeImportItem(), 300);
+    }
+
+    window.toonVersSelectie = function(titel, tekst) {
+        tijdelijkeTitel = titel; // Bewaar titel voor opslaan
+        document.getElementById('versModalTitel').innerText = "Kies verzen voor: " + titel;
+        const versLijst = document.getElementById('versLijst');
+        versLijst.innerHTML = '';
+        
+        // Splits de tekst op in verzen (gebaseerd op dubbele witregels)
+        tijdelijkeLiedVerzen = tekst.split(/\n[ \t]*\n/).filter(v => v.trim() !== '');
+
+        tijdelijkeLiedVerzen.forEach((vers, index) => {
+            // Laat alleen de eerste zin zien als preview
+            let previewText = vers.split('\n')[0]; 
+            if(previewText.length > 50) previewText = previewText.substring(0, 50) + "...";
+
+            versLijst.innerHTML += `
+                <label class="flex items-start gap-3 p-3 bg-white border border-gray-200 rounded-xl cursor-pointer hover:bg-blue-50 transition-colors">
+                    <input type="checkbox" id="versCheck_${index}" value="${index}" checked class="mt-1 w-5 h-5 text-[#007AFF] rounded border-gray-300 focus:ring-[#007AFF]">
+                    <div class="flex flex-col">
+                        <span class="text-sm font-bold text-gray-800">Vers ${index + 1}</span>
+                        <span class="text-xs text-gray-500 italic">${escapeHtml(previewText)}</span>
+                    </div>
+                </label>
+            `;
+        });
+
+        document.getElementById('versModal').classList.remove('hidden');
+    }
+
+    window.voegGeselecteerdeVerzenToe = function() {
+        let geselecteerdeTekst = [];
+        tijdelijkeLiedVerzen.forEach((vers, index) => {
+            let checkbox = document.getElementById(`versCheck_${index}`);
+            if (checkbox && checkbox.checked) {
+                geselecteerdeTekst.push(vers);
+            }
+        });
+
+        if (geselecteerdeTekst.length > 0) {
+            liturgieVolgorde.push({ 
+                type: "Zang", 
+                titel: tijdelijkeTitel,
+                tekst: geselecteerdeTekst.join('\n\n') 
+            });
+            window.tekenVolgorde();
+        }
+        sluitVersModal();
+    }
+
+    // --- LIEDEREN VERWERKEN ---
+
+    window.handleLiedSelectie = async (titel, keepOpen = false) => {
+        const preview = document.getElementById('previewVak');
+        
+        if (!keepOpen) {
+            document.getElementById('liedInput').value = '';
+            document.getElementById('suggestieLied').classList.add('hidden');
+        }
+
+        // Als het liedje al in de cloud staat, direct naar de vers-kiezer!
+        if (window.liederenDatabase[titel]) {
+            let tekst = window.liederenDatabase[titel];
+            let lines = tekst.split('\n');
+            let emptyLines = lines.filter(l => l.trim() === '').length;
+            let textLines = lines.filter(l => l.trim() !== '').length;
+            if (emptyLines >= textLines - 2 && textLines > 2) {
+                tekst = lines.filter(l => l.trim() !== '').join('\n');
+            }
+            window.toonVersSelectie(titel, tekst);
+            return;
+        }
+
+        // Auteursrechtelijk beschermde bundels: nooit AI laten gokken.
+        // Direct naar het plakscherm, zodat de tekst uit de eigen licentie
+        // (Liedbundel Online / liedbundels.nu) wordt geplakt en meteen goed in de Cloud staat.
+        const isBeschermdeBundel = /weerklank|op toonhoogte|\bdnp\b/i.test(titel);
+        if (isBeschermdeBundel) {
+            tijdelijkeTitel = titel;
+            tijdelijkeTekst = "";
+            tijdelijkeType = "Zang";
+            isAanHetBewerken = false;
+
+            document.getElementById('modalTitel').innerText = "Plak tekst: " + titel;
+            document.getElementById('handmatigeTekst').value = "";
+            document.getElementById('handmatigeTekst').placeholder = "Haal de tekst op via Liedbundel Online (liedbundels.nu) en plak 'm hier...";
+
+            document.getElementById('modalTekstContainer').classList.add('hidden');
+            document.getElementById('modalKnoppen1').classList.add('hidden');
+            document.getElementById('modalKnoppen1').classList.remove('flex', 'md:flex');
+            document.getElementById('modalKnoppen2').classList.add('hidden');
+            document.getElementById('modalKnoppen2').classList.remove('flex');
+            document.getElementById('modalKnoppen3').classList.remove('hidden');
+            document.getElementById('modalKnoppen3').classList.add('flex');
+            updateLiedbundelKnop(tijdelijkeTitel, tijdelijkeType);
+            document.getElementById('opslaanKnop').innerText = "Opslaan in Cloud & Toevoegen";
+
+            document.getElementById('controleModal').classList.remove('hidden');
+            preview.innerHTML = `<span class="text-white text-[12px] text-center px-4 italic opacity-60">Plak de tekst vanuit Liedbundel Online in het venster...</span>`;
+            return;
+        }
+
+        if (huidigeQuota <= 0) { preview.innerHTML = `<span class="text-[#FFCC00] font-bold">Wacht op AI Capaciteit...</span>`; return; }
+        if (!gevondenModel) { preview.innerHTML = `<span class="text-[#FF3B30] font-bold">Geen model geselecteerd.</span>`; return; }
+
+        // NIEUW: Explicitiete foutmelding en uitleg aan de gebruiker
+        preview.innerHTML = `
+            <div class="flex flex-col items-center justify-center gap-2">
+                <span class="text-[#FF3B30] font-bold text-[14px]">⚠️ Niet in de Cloud gevonden!</span>
+                <span class="text-[#007AFF] font-medium animate-pulse text-[12px]">AI vraagt nu de VOLLEDIGE tekst (alle verzen) op voor: <b>${escapeHtml(titel)}</b>...</span>
+            </div>
+        `;
+
+        try {
+            huidigeQuota--; updateQuotaUI();
+            
+            // NIEUW: Striktere prompt voor de AI om echt ALLE verzen te eisen
+            const aiPrompt = "Geef de VOLLEDIGE, letterlijke tekst (inclusief ALLE coupletten/verzen) van het christelijke lied: '" + titel + "'. Geef uitsluitend de liedtekst, geen introductie of verdere uitleg. Belangrijk: gebruik een DUBBELE witregel (enter) tussen elk couplet of vers zodat ik ze goed kan splitsen.";
+            
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${gevondenModel}:generateContent?key=${apiKey}`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contents: [{ parts: [{ text: aiPrompt }] }] })
+            });
+            const data = await response.json();
+            
+            if (data.error) {
+                preview.innerHTML = `<span class="text-[#FF3B30] font-bold">Fout in AI Model:</span><br>${data.error.message}`;
+            } else if (data.candidates && data.candidates.length > 0) {
+                const resultaat = data.candidates[0].content.parts[0].text.trim();
+                slaLiedOpInCloud(titel, resultaat); // Sla op in de achtergrond
+                window.toonVersSelectie(titel, resultaat); // Open vers-kiezer
+            }
+        } catch (err) { 
+            preview.innerHTML = `<span class="text-[#FF3B30] font-bold">Code Fout:</span><br>${err.message}`; 
+        }
+    };
+
+    // --- BIJBEL VIA API (bolls.life HSV17) + AI FALLBACK ---
+    // Zet een versaanduiding zoals "1, 4", "1-4", "3-5, 8" of "" om in een Set van
+    // versnummers. Geeft null terug bij een leeg spec (= het hele hoofdstuk).
+    function parseVersSpec(spec) {
+        spec = (spec || "").trim();
+        if (!spec) return null; // heel hoofdstuk
+        const verzen = new Set();
+        spec.split(',').forEach(deel => {
+            deel = deel.trim();
+            if (!deel) return;
+            const range = deel.match(/^(\d+)\s*[-–—]\s*(\d+)$/);
+            if (range) {
+                let a = parseInt(range[1]), b = parseInt(range[2]);
+                if (a > b) [a, b] = [b, a];
+                for (let v = a; v <= b; v++) verzen.add(v);
+            } else {
+                const enkel = deel.match(/^(\d+)/);
+                if (enkel) verzen.add(parseInt(enkel[1]));
+            }
+        });
+        return verzen.size > 0 ? verzen : null;
+    }
+
+    function parseBijbelRef(referentie) {
+        const ref = referentie.replace(/\(HSV\)/gi, '').trim();
+        // Boek + hoofdstuk, met optioneel een dubbele punt en een versaanduiding.
+        // Werkt voor: "Psalm 100", "Psalm 100:1", "Psalm 100:1-4",
+        //             "Psalm 100: 1, 4" en "Johannes 3:1-16".
+        const match = ref.match(/^(.+?)\s+(\d+)(?:\s*:\s*(.+))?$/);
+        if (!match) return null;
+        const boek = match[1].trim();
+        const hoofdstuk = parseInt(match[2]);
+        const verzenSet = parseVersSpec(match[3]);
+        return { boek, hoofdstuk, verzenSet };
+    }
+
+    function boekNaarNummer(boekNaam) {
+        const idx = bijbelBoeken.findIndex(b => b.toLowerCase() === boekNaam.toLowerCase());
+        if (idx >= 0) return idx + 1;
+        const partiel = bijbelBoeken.findIndex(b => b.toLowerCase().startsWith(boekNaam.toLowerCase()));
+        return partiel >= 0 ? partiel + 1 : null;
+    }
+
+    async function haalBijbelViaAPI(referentie) {
+        const parsed = parseBijbelRef(referentie);
+        if (!parsed) return null;
+        const boekNr = boekNaarNummer(parsed.boek);
+        if (!boekNr) return null;
+
+        const res = await fetch(`https://bolls.life/get-chapter/HSV17/${boekNr}/${parsed.hoofdstuk}/`);
+        if (!res.ok) return null;
+        const verzen = await res.json();
+        if (!Array.isArray(verzen) || verzen.length === 0) return null;
+
+        // Geen versaanduiding? Dan het hele hoofdstuk. Anders alleen de gekozen verzen
+        // (ondersteunt losse verzen én komma-lijsten, bijv. "1, 4").
+        const gefilterd = parsed.verzenSet
+            ? verzen.filter(v => parsed.verzenSet.has(v.verse))
+            : verzen;
+        if (gefilterd.length === 0) return null;
+        return gefilterd.map(v => {
+            let t = v.text
+                .replace(/<[^>]*>/g, '')
+                .replace(/[Ⓐ-ⓩ①-⑳⓪-⓿]/g, '')
+                .replace(/[¹²³⁰-₟]/g, '')
+                .replace(/[†‡§¶※⸮⁂⁋⁓]/g, '')
+                .replace(/\[\d+\]/g, '')
+                .replace(/\s{2,}/g, ' ')
+                .trim();
+            return v.verse + ' ' + t;
+        }).join('\n');
+    }
+
+    async function haalBijbelViaAI(referentie) {
+        const preview = document.getElementById('previewVak');
+        preview.innerHTML = `
+            <div class="flex flex-col items-center justify-center gap-2">
+                <span class="text-[#007AFF] font-medium animate-pulse text-[12px]">HSV ophalen: <b>${escapeHtml(referentie)}</b>...</span>
+            </div>`;
+
+        // Stap 1: Probeer de echte HSV API (bolls.life)
+        try {
+            const apiTekst = await haalBijbelViaAPI(referentie);
+            if (apiTekst && apiTekst.length > 10) {
+                preview.innerHTML = `<div class="text-white text-[11px] text-center px-4 italic opacity-80 whitespace-pre-line">${escapeHtml(apiTekst.split('\n').slice(0, 4).join('\n'))}...</div>`;
+                window.toonControleModal(referentie + " (HSV)", apiTekst, "Schriftlezing");
+                return;
+            }
+        } catch(e) { console.warn("Bijbel API niet bereikbaar, val terug op AI:", e); }
+
+        // Stap 2: Fallback naar AI
+        if (!gevondenModel || huidigeQuota <= 0) {
+            window.toonControleModal(referentie + " (HSV)", "", "Schriftlezing");
+            window.kiesHandmatig();
+            return;
+        }
+
+        try {
+            huidigeQuota--; updateQuotaUI();
+            preview.innerHTML = `<div class="flex flex-col items-center justify-center gap-2"><span class="text-[#FFCC00] font-medium animate-pulse text-[12px]">API niet beschikbaar — AI zoekt <b>${escapeHtml(referentie)}</b> (HSV)...</span></div>`;
+
+            const prompt = `Geef de EXACTE, LETTERLIJKE tekst van ${referentie} uit de Herziene Statenvertaling (HSV) van de Bijbel.
+Regels:
+- Geef ALLEEN de bijbeltekst zelf, geen inleiding, geen uitleg, geen kopjes.
+- Begin elk vers op een nieuwe regel, met het versnummer ervoor (bijv. "1 In het begin schiep God...").
+- Wees 100% nauwkeurig — dit wordt in een kerkdienst op de beamer getoond.
+- Als het een heel hoofdstuk is, geef dan alle verzen.`;
+
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${gevondenModel}:generateContent?key=${apiKey}`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: { temperature: 0.1 }
+                })
+            });
+            const data = await response.json();
+
+            if (data.candidates && data.candidates[0]) {
+                const tekst = data.candidates[0].content.parts[0].text.trim();
+                preview.innerHTML = `<div class="text-white text-[11px] text-center px-4 italic opacity-80 whitespace-pre-line">${escapeHtml(tekst.split('\n').slice(0, 4).join('\n'))}...</div>`;
+                window.toonControleModal(referentie + " (HSV)", tekst, "Schriftlezing");
+            } else {
+                window.toonControleModal(referentie + " (HSV)", "", "Schriftlezing");
+                window.kiesHandmatig();
+            }
+        } catch(err) {
+            console.error("Bijbel AI fout:", err);
+            window.toonControleModal(referentie + " (HSV)", "", "Schriftlezing");
+            window.kiesHandmatig();
+        }
+    }
+
+    // --- BIJBEL & INTRO JS ONLOAD ---
+    window.onload = async function() {
+        herstelLiturgie(); // eerder gemaakte liturgie terugzetten na een refresh
+        ontdekAI().then(() => { console.log("AI Modellen geladen."); });
+
+        // Eerste bezoek? Start de rondleiding automatisch en toon een zachte hint op de knop.
+        try {
+            if (!localStorage.getItem('liturgieAssistentTourGezien')) {
+                const pulse = document.getElementById('rondleidingPulse');
+                if (pulse) pulse.classList.remove('hidden');
+                setTimeout(() => {
+                    if (!localStorage.getItem('liturgieAssistentTourGezien')) window.startUitleg();
+                }, 1200);
+            }
+        } catch(e) {}
+                
+        laadCloudDatabase().then(() => {
+            const completeLijst = bouwZoekLijst();
+            setupAutocomplete('liedInput', 'suggestieLied', completeLijst, window.handleLiedSelectie);
+        });
+
+        // Bijbel Autocomplete
+        setupAutocomplete('bijbelInput', 'suggestieBijbel', bijbelBoeken, (boek, keepOpen) => {
+            const input = document.getElementById('bijbelInput');
+            input.value = boek + " ";
+            input.focus();
+            if(!keepOpen) document.getElementById('suggestieBijbel').classList.add('hidden');
+        });
+
+       // Event listener voor de Bijbel input (MET database check + AI fallback)
+        document.getElementById('bijbelInput').addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter') {
+                const invoer = e.target.value.trim();
+                if (!invoer) return;
+
+                document.getElementById('suggestieBijbel').classList.add('hidden');
+                e.target.value = "";
+
+                try {
+                    const doc = await db.collection("bijbel_hsv").doc(invoer).get();
+
+                    if (doc.exists && doc.data().tekst) {
+                        window.toonControleModal(invoer + " (HSV)", doc.data().tekst, "Schriftlezing");
+                    } else {
+                        await haalBijbelViaAI(invoer);
+                    }
+                } catch (error) {
+                    console.error("Fout bij ophalen database:", error);
+                    await haalBijbelViaAI(invoer);
+                }
+            }
+        });
+    };
+
+    // =====================================================================
+    // --- GEANIMEERDE RONDLEIDING (vervangt intro.js) ---
+    // =====================================================================
+    let uitlegRunId = 0;
+    let uitlegHuidigeStap = 0;
+
+    function uitlegSleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+    function uitlegGeldig(runId) { return runId === uitlegRunId; }
+
+    function uitlegZetTekst(titel, tekst) {
+        const t = document.getElementById('uitlegSceneTitel');
+        const d = document.getElementById('uitlegSceneTekst');
+        if (!t || !d) return;
+        t.style.opacity = 0;
+        d.style.opacity = 0;
+        setTimeout(() => {
+            t.innerText = titel;
+            d.innerText = tekst;
+            t.style.opacity = 1;
+            d.style.opacity = 1;
+        }, 250);
+    }
+
+    function uitlegCursorHtml(x, y) {
+        return `<div id="uitlegCursor" class="uitleg-cursor" style="left:${x}%; top:${y}%;">
+            <div class="uitleg-ripple"></div>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.25));">
+                <path d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86a.5.5 0 0 1 .35-.15h6.42c.45 0 .67-.54.35-.85L6.35 3.35c-.24-.24-.85-.07-.85.41z" fill="white" stroke="#1D1D1F" stroke-width="1.5" stroke-linejoin="round"/>
+            </svg>
+        </div>`;
+    }
+    function uitlegMuis(x, y) {
+        const c = document.getElementById('uitlegCursor');
+        if (c) { c.style.left = x + '%'; c.style.top = y + '%'; }
+    }
+    function uitlegKlik() {
+        const c = document.getElementById('uitlegCursor');
+        if (!c) return;
+        c.classList.remove('klik'); void c.offsetWidth; c.classList.add('klik');
+        setTimeout(() => c && c.classList.remove('klik'), 500);
+    }
+    async function uitlegTypen(elId, tekst, runId, snelheid = 55) {
+        const el = document.getElementById(elId);
+        if (!el) return;
+        el.innerText = '';
+        for (let i = 0; i < tekst.length; i++) {
+            if (!uitlegGeldig(runId)) return;
+            el.innerText += tekst[i];
+            await uitlegSleep(snelheid);
+        }
+    }
+
+    // --- Scene 0: Welkom ---
+    function render0(el) {
+        el.innerHTML = `
+        <div class="w-full h-full flex flex-col items-center justify-center gap-4 py-4">
+            <div class="relative w-20 h-20 flex items-center justify-center">
+                <span class="absolute inset-0 rounded-full bg-[#007AFF] opacity-30 animate-ping"></span>
+                <div class="relative bg-[#007AFF] w-16 h-16 rounded-full flex items-center justify-center shadow-lg">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z"></path></svg>
+                </div>
+            </div>
+            <p class="text-[13px] text-gray-400 font-medium text-center">Liturgie Assistent Pro</p>
+        </div>`;
+    }
+    async function animate0(runId) { /* rustige puls, verder geen JS-animatie nodig */ }
+
+    // --- Scene 1: Dienst Gegevens ---
+    function render1(el) {
+        el.innerHTML = `
+        <div class="w-full">
+            <div class="flex flex-col md:flex-row gap-3">
+                <div class="flex-1">
+                    <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block ml-1">Datum</label>
+                    <div id="ut-datum" class="uitleg-input w-full bg-white border-2 border-transparent rounded-xl py-2.5 px-4 text-sm font-medium h-11 flex items-center"><span id="ut-datum-tekst" class="text-gray-400">Bijv: Zondag 18-1-2026</span></div>
+                </div>
+                <div class="flex-1">
+                    <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block ml-1">Voorganger</label>
+                    <div id="ut-voorganger" class="uitleg-input w-full bg-white border-2 border-transparent rounded-xl py-2.5 px-4 text-sm font-medium h-11 flex items-center"><span id="ut-voorganger-tekst" class="text-gray-400">Bijv: ds. Mark Bot</span></div>
+                </div>
+            </div>
+            ${uitlegCursorHtml(85, 92)}
+        </div>`;
+    }
+    async function animate1(runId) {
+        while (uitlegGeldig(runId)) {
+            const datumBox = document.getElementById('ut-datum');
+            const voorgBox = document.getElementById('ut-voorganger');
+            const datumTxt = document.getElementById('ut-datum-tekst');
+            const voorgTxt = document.getElementById('ut-voorganger-tekst');
+            datumBox.classList.remove('focused'); voorgBox.classList.remove('focused');
+            datumTxt.innerText = 'Bijv: Zondag 18-1-2026'; datumTxt.className = 'text-gray-400';
+            voorgTxt.innerText = 'Bijv: ds. Mark Bot'; voorgTxt.className = 'text-gray-400';
+            uitlegMuis(85, 92);
+            await uitlegSleep(1200); if (!uitlegGeldig(runId)) return;
+
+            uitlegMuis(28, 38);
+            await uitlegSleep(800); if (!uitlegGeldig(runId)) return;
+            uitlegKlik();
+            datumBox.classList.add('focused');
+            datumTxt.innerText = ''; datumTxt.className = 'text-gray-800';
+            await uitlegSleep(300); if (!uitlegGeldig(runId)) return;
+            await uitlegTypen('ut-datum-tekst', 'Zondag 18 januari 2026', runId, 45);
+            if (!uitlegGeldig(runId)) return;
+            datumBox.classList.remove('focused');
+            await uitlegSleep(500); if (!uitlegGeldig(runId)) return;
+
+            uitlegMuis(72, 38);
+            await uitlegSleep(700); if (!uitlegGeldig(runId)) return;
+            uitlegKlik();
+            voorgBox.classList.add('focused');
+            voorgTxt.innerText = ''; voorgTxt.className = 'text-gray-800';
+            await uitlegSleep(300); if (!uitlegGeldig(runId)) return;
+            await uitlegTypen('ut-voorganger-tekst', 'ds. Mark Bot', runId, 55);
+            if (!uitlegGeldig(runId)) return;
+            voorgBox.classList.remove('focused');
+
+            await uitlegSleep(2200); if (!uitlegGeldig(runId)) return;
+            uitlegMuis(85, 92);
+            await uitlegSleep(1800); if (!uitlegGeldig(runId)) return;
+        }
+    }
+
+    // --- Scene 2: Liederen Zoeken ---
+    function render2(el) {
+        el.innerHTML = `
+        <div class="w-full relative">
+            <div class="relative">
+                <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <div id="ut-liedbox" class="uitleg-input w-full bg-white border-2 border-transparent rounded-xl py-3 pl-10 pr-4 text-[14px] font-medium text-gray-800 flex items-center h-11">
+                    <span id="ut-liedtext" class="text-gray-400">Bijv: 'wk 15', 'psalm 23'...</span>
+                </div>
+            </div>
+            <div id="ut-liedmenu" class="uitleg-dropdown absolute z-20 w-full bg-white mt-2 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-gray-100 overflow-hidden">
+                <div id="ut-liediten" class="uitleg-dropdown-item p-3 text-[13px] font-medium text-gray-800 flex justify-between items-center">
+                    <span>Weerklank 14 - Groot is Uw trouw</span>
+                    <span class="text-blue-500 text-[11px] font-bold bg-blue-50 px-2 py-1 rounded-md">+ Voeg toe</span>
+                </div>
+            </div>
+            ${uitlegCursorHtml(85, 88)}
+        </div>`;
+    }
+    async function animate2(runId) {
+        while (uitlegGeldig(runId)) {
+            const box = document.getElementById('ut-liedbox');
+            const txt = document.getElementById('ut-liedtext');
+            const menu = document.getElementById('ut-liedmenu');
+            const item = document.getElementById('ut-liediten');
+            box.classList.remove('focused'); menu.classList.remove('show');
+            item.classList.remove('hovered', 'success');
+            item.innerHTML = `<span>Weerklank 14 - Groot is Uw trouw</span><span class="text-blue-500 text-[11px] font-bold bg-blue-50 px-2 py-1 rounded-md">+ Voeg toe</span>`;
+            txt.innerText = "Bijv: 'wk 15', 'psalm 23'..."; txt.className = "text-gray-400";
+            uitlegMuis(85, 88);
+            await uitlegSleep(1300); if (!uitlegGeldig(runId)) return;
+
+            uitlegMuis(30, 25);
+            await uitlegSleep(800); if (!uitlegGeldig(runId)) return;
+            uitlegKlik();
+            box.classList.add('focused');
+            txt.innerText = ''; txt.className = 'text-gray-800';
+            await uitlegSleep(300); if (!uitlegGeldig(runId)) return;
+            for (const ch of 'weerklank 14') {
+                if (!uitlegGeldig(runId)) return;
+                txt.innerText += ch;
+                await uitlegSleep(70);
+            }
+            await uitlegSleep(400); if (!uitlegGeldig(runId)) return;
+
+            menu.classList.add('show');
+            uitlegZetTekst("2. Kies uit de lijst", "Klik op het juiste lied in de lijst om het toe te voegen aan je liturgie.");
+            await uitlegSleep(700); if (!uitlegGeldig(runId)) return;
+
+            uitlegMuis(50, 62);
+            await uitlegSleep(700); if (!uitlegGeldig(runId)) return;
+            item.classList.add('hovered');
+            await uitlegSleep(400); if (!uitlegGeldig(runId)) return;
+            uitlegKlik();
+            item.classList.remove('hovered'); item.classList.add('success');
+            item.innerHTML = `<span>Toegevoegd aan liturgie! ✅</span>`;
+            uitlegZetTekst("Toegevoegd!", "Het lied staat nu klaar in je liturgielijst hieronder.");
+            await uitlegSleep(2200); if (!uitlegGeldig(runId)) return;
+            uitlegMuis(85, 88);
+            await uitlegSleep(1500); if (!uitlegGeldig(runId)) return;
+        }
+    }
+
+    // --- Scene 3: Bijbel & Media ---
+    function render3(el) {
+        el.innerHTML = `
+        <div class="w-full">
+            <div class="relative">
+                <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                <div id="ut-bijbelbox" class="uitleg-input w-full bg-white border-2 border-transparent rounded-xl py-3 pl-10 pr-4 text-[14px] font-medium text-gray-800 flex items-center h-11">
+                    <span id="ut-bijbeltext" class="text-gray-400">Bijv: Genesis 1:1-15</span>
+                </div>
+            </div>
+            <div class="flex gap-2 mt-3">
+                <div id="ut-knop-plak" class="uitleg-input flex-1 bg-purple-50 text-purple-600 py-2 rounded-xl text-[11px] font-semibold flex items-center justify-center text-center border-2 border-transparent">Plak Liturgie</div>
+                <div class="flex-1 bg-blue-50 text-[#007AFF] py-2 rounded-xl text-[11px] font-semibold flex items-center justify-center text-center">Foto Dia</div>
+                <div class="flex-1 bg-gray-100 text-gray-600 py-2 rounded-xl text-[11px] font-semibold flex items-center justify-center text-center">Lege Dia</div>
+            </div>
+            <div class="mt-3 aspect-video bg-black rounded-xl flex items-center justify-center p-3 text-center overflow-hidden">
+                <p id="ut-preview" class="text-white text-[11px] font-medium leading-relaxed italic opacity-70">Typ of selecteer een lied, bijbeltekst of media</p>
+            </div>
+            ${uitlegCursorHtml(85, 92)}
+        </div>`;
+    }
+    async function animate3(runId) {
+        while (uitlegGeldig(runId)) {
+            const txt = document.getElementById('ut-bijbeltext');
+            const box = document.getElementById('ut-bijbelbox');
+            const preview = document.getElementById('ut-preview');
+            const plakknop = document.getElementById('ut-knop-plak');
+            box.classList.remove('focused'); plakknop.classList.remove('uitleg-glow');
+            txt.innerText = 'Bijv: Genesis 1:1-15'; txt.className = 'text-gray-400';
+            preview.innerText = 'Typ of selecteer een lied, bijbeltekst of media'; preview.style.opacity = 0.7;
+            uitlegMuis(85, 92);
+            await uitlegSleep(1300); if (!uitlegGeldig(runId)) return;
+
+            uitlegMuis(30, 20);
+            await uitlegSleep(800); if (!uitlegGeldig(runId)) return;
+            uitlegKlik();
+            box.classList.add('focused');
+            txt.innerText = ''; txt.className = 'text-gray-800';
+            await uitlegSleep(300); if (!uitlegGeldig(runId)) return;
+            for (const ch of 'Genesis 1:1-15') {
+                if (!uitlegGeldig(runId)) return;
+                txt.innerText += ch;
+                await uitlegSleep(55);
+            }
+            await uitlegSleep(500); if (!uitlegGeldig(runId)) return;
+
+            preview.style.transition = 'opacity 0.3s';
+            preview.style.opacity = 0;
+            await uitlegSleep(300); if (!uitlegGeldig(runId)) return;
+            preview.innerText = '"In het begin schiep God de hemel en de aarde..."';
+            preview.style.opacity = 1;
+            uitlegZetTekst("Automatisch geladen", "De foutloze HSV-tekst wordt direct in je slide-voorbeeld gezet.");
+            await uitlegSleep(1600); if (!uitlegGeldig(runId)) return;
+
+            uitlegMuis(20, 74);
+            await uitlegSleep(700); if (!uitlegGeldig(runId)) return;
+            plakknop.classList.add('uitleg-glow');
+            uitlegZetTekst("Tip: Slim Importeren", "Heb je de hele liturgie al als tekst? Plak 'm hier in één keer.");
+            await uitlegSleep(2000); if (!uitlegGeldig(runId)) return;
+            uitlegMuis(85, 92);
+            await uitlegSleep(1500); if (!uitlegGeldig(runId)) return;
+        }
+    }
+
+    // --- Scene 4: Slim Importeren ---
+    function render4(el) {
+        el.innerHTML = `
+        <div class="w-full">
+            <div id="ut-importwrap" class="bg-white rounded-xl p-3 text-[11px] text-gray-500 leading-relaxed whitespace-pre-line border-2 border-transparent uitleg-input" style="min-height:90px;">
+                <span id="ut-importtext" class="text-gray-300">Plak hier de complete liturgie...</span>
+            </div>
+            <div id="ut-analyseknop" class="mt-3 w-full py-2.5 rounded-xl text-[12px] font-semibold text-white bg-purple-600 text-center">Analyseer Tekst</div>
+            <div id="ut-resultaten" class="mt-3 flex flex-col gap-2"></div>
+            ${uitlegCursorHtml(85, 92)}
+        </div>`;
+    }
+    async function animate4(runId) {
+        const voorbeeldtekst = "Votum & Groet\nPsalm 100: 1, 4\nSchriftlezing: Johannes 3:1-16\nWeerklank 14";
+        const gevonden = [
+            { label: "Zang", titel: "Psalm 100: 1, 4" },
+            { label: "Schriftlezing", titel: "Johannes 3:1-16" },
+            { label: "Zang", titel: "Weerklank 14" }
+        ];
+        while (uitlegGeldig(runId)) {
+            const wrap = document.getElementById('ut-importwrap');
+            const txt = document.getElementById('ut-importtext');
+            const knop = document.getElementById('ut-analyseknop');
+            const res = document.getElementById('ut-resultaten');
+            wrap.classList.remove('focused');
+            txt.innerText = 'Plak hier de complete liturgie...'; txt.className = 'text-gray-300';
+            knop.style.transform = ''; res.innerHTML = '';
+            uitlegMuis(85, 92);
+            await uitlegSleep(1300); if (!uitlegGeldig(runId)) return;
+
+            uitlegMuis(45, 30);
+            await uitlegSleep(700); if (!uitlegGeldig(runId)) return;
+            uitlegKlik();
+            wrap.classList.add('focused');
+            txt.innerText = ''; txt.className = 'text-gray-700';
+            for (const ch of voorbeeldtekst) {
+                if (!uitlegGeldig(runId)) return;
+                txt.innerText += ch;
+                await uitlegSleep(14);
+            }
+            await uitlegSleep(500); if (!uitlegGeldig(runId)) return;
+            wrap.classList.remove('focused');
+
+            uitlegMuis(50, 68);
+            await uitlegSleep(700); if (!uitlegGeldig(runId)) return;
+            uitlegKlik();
+            knop.style.transform = 'scale(0.97)';
+            uitlegZetTekst("Even analyseren...", "De AI zoekt automatisch alle liederen en Bijbelteksten uit je tekst.");
+            await uitlegSleep(300); if (!uitlegGeldig(runId)) return;
+            knop.style.transform = '';
+
+            await uitlegSleep(500); if (!uitlegGeldig(runId)) return;
+            uitlegZetTekst("Gevonden!", "Controleer de gevonden onderdelen en voeg ze in één keer toe.");
+            for (const g of gevonden) {
+                if (!uitlegGeldig(runId)) return;
+                const rij = document.createElement('div');
+                rij.className = 'bg-white rounded-lg px-3 py-2 flex items-center gap-2 text-[11px] font-medium text-gray-700 shadow-sm';
+                rij.innerHTML = `<svg class="w-3.5 h-3.5 text-[#34C759] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                    <span class="text-[9px] font-bold uppercase text-gray-400">${g.label}</span> ${g.titel}`;
+                res.appendChild(rij);
+                await uitlegSleep(350);
+            }
+            await uitlegSleep(2000); if (!uitlegGeldig(runId)) return;
+            uitlegMuis(85, 92);
+            await uitlegSleep(1500); if (!uitlegGeldig(runId)) return;
+        }
+    }
+
+    // --- Scene 5: Jouw Liturgie (Volgorde) ---
+    function render5(el) {
+        el.innerHTML = `
+        <div class="w-full flex flex-col gap-2" id="ut-lijst">
+            <div id="ut-item-0" class="uitleg-item-move bg-white rounded-xl px-3 py-2.5 flex items-center gap-2 shadow-sm text-[12px] font-medium text-gray-700">
+                <svg class="w-4 h-4 text-gray-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg>
+                <span class="flex-grow">1. Votum & Groet</span>
+                <svg class="w-3.5 h-3.5 text-[#007AFF] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828z"></path></svg>
+            </div>
+            <div id="ut-item-1" class="uitleg-item-move bg-white rounded-xl px-3 py-2.5 flex items-center gap-2 shadow-sm text-[12px] font-medium text-gray-700">
+                <svg class="w-4 h-4 text-gray-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg>
+                <span class="flex-grow">2. Psalm 100: 1, 4</span>
+                <svg class="w-3.5 h-3.5 text-[#007AFF] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828z"></path></svg>
+            </div>
+            <div id="ut-item-2" class="uitleg-item-move bg-white rounded-xl px-3 py-2.5 flex items-center gap-2 shadow-sm text-[12px] font-medium text-gray-700">
+                <svg class="w-4 h-4 text-gray-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg>
+                <span class="flex-grow">3. Schriftlezing: Joh. 3</span>
+                <svg class="w-3.5 h-3.5 text-[#007AFF] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828z"></path></svg>
+            </div>
+            ${uitlegCursorHtml(15, 30)}
+        </div>`;
+    }
+    async function animate5(runId) {
+        while (uitlegGeldig(runId)) {
+            const it0 = document.getElementById('ut-item-0');
+            const it1 = document.getElementById('ut-item-1');
+            it0.style.transform = ''; it1.style.transform = '';
+            it0.style.boxShadow = ''; it1.style.boxShadow = '';
+            uitlegMuis(15, 30);
+            await uitlegSleep(1300); if (!uitlegGeldig(runId)) return;
+
+            uitlegMuis(15, 55);
+            await uitlegSleep(700); if (!uitlegGeldig(runId)) return;
+            uitlegKlik();
+            it1.style.boxShadow = '0 8px 20px rgba(0,0,0,0.15)';
+            await uitlegSleep(200); if (!uitlegGeldig(runId)) return;
+
+            it1.style.transform = 'translateY(-52px)';
+            it0.style.transform = 'translateY(52px)';
+            uitlegMuis(15, 30);
+            uitlegZetTekst("Slepen & Herschikken", "Pak een item op om de volgorde van je liturgie aan te passen.");
+            await uitlegSleep(900); if (!uitlegGeldig(runId)) return;
+            it1.style.boxShadow = '';
+
+            await uitlegSleep(1000); if (!uitlegGeldig(runId)) return;
+            uitlegMuis(88, 30);
+            await uitlegSleep(700); if (!uitlegGeldig(runId)) return;
+            uitlegKlik();
+            uitlegZetTekst("Bewerken", "Klik op het blauwe potloodje om de tekst van een onderdeel aan te passen.");
+            await uitlegSleep(2200); if (!uitlegGeldig(runId)) return;
+
+            it0.style.transform = ''; it1.style.transform = '';
+            uitlegMuis(15, 30);
+            await uitlegSleep(1500); if (!uitlegGeldig(runId)) return;
+        }
+    }
+
+    // --- Scene 6: Klaar / Exporteren ---
+    function render6(el) {
+        el.innerHTML = `
+        <div class="w-full h-full flex flex-col items-center justify-center gap-4 py-6 relative">
+            <div id="ut-exportknop" class="uitleg-input bg-[#007AFF] text-white px-6 py-3.5 rounded-full shadow-xl flex items-center gap-2 border-2 border-transparent">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                <span class="font-bold text-[13px]">Exporteer PowerPoint</span>
+            </div>
+            <div id="ut-toast" class="uitleg-toast">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                PowerPoint gereed!
+            </div>
+            ${uitlegCursorHtml(80, 25)}
+        </div>`;
+    }
+    async function animate6(runId) {
+        while (uitlegGeldig(runId)) {
+            const knop = document.getElementById('ut-exportknop');
+            const toast = document.getElementById('ut-toast');
+            knop.classList.remove('focused'); knop.style.transform = '';
+            toast.classList.remove('show');
+            uitlegMuis(80, 25);
+            await uitlegSleep(1300); if (!uitlegGeldig(runId)) return;
+
+            uitlegMuis(50, 45);
+            await uitlegSleep(800); if (!uitlegGeldig(runId)) return;
+            uitlegKlik();
+            knop.style.transform = 'scale(0.96)';
+            await uitlegSleep(200); if (!uitlegGeldig(runId)) return;
+            knop.style.transform = '';
+
+            await uitlegSleep(500); if (!uitlegGeldig(runId)) return;
+            toast.classList.add('show');
+            uitlegZetTekst("Klaar voor de dienst!", "Je PowerPoint staat klaar om te downloaden - succes met de voorbereiding!");
+            await uitlegSleep(2800); if (!uitlegGeldig(runId)) return;
+            toast.classList.remove('show');
+            uitlegMuis(80, 25);
+            await uitlegSleep(1200); if (!uitlegGeldig(runId)) return;
+        }
+    }
+
+    const uitlegScenes = [
+        { titel: "Welkom!", tekst: "Deze korte rondleiding laat in ongeveer een minuut zien hoe je een complete liturgie en PowerPoint maakt. Klik op 'Volgende' om te beginnen.", render: render0, animate: animate0 },
+        { titel: "0. Dienst Gegevens", tekst: "Vul de datum en de voorganger in - deze komen op de allereerste welkomstdia te staan.", render: render1, animate: animate1 },
+        { titel: "1. Liederen Zoeken", tekst: "Typ een liednaam of afkorting zoals 'wk 14' - de AI snapt direct wat je bedoelt.", render: render2, animate: animate2 },
+        { titel: "2. Bijbel & Media", tekst: "Typ de Bijbeltekst en druk op Enter. Zo voeg je ook foto's of lege dia's toe.", render: render3, animate: animate3 },
+        { titel: "Snelkoppeling: Slim Importeren", tekst: "Plak de hele liturgie in één keer - de AI herkent zelf liederen en Schriftlezingen.", render: render4, animate: animate4 },
+        { titel: "3. Jouw Liturgie", tekst: "Hier verschijnt alles wat je toevoegt. Sleep items om de volgorde aan te passen.", render: render5, animate: animate5 },
+        { titel: "Klaar? Exporteer!", tekst: "Klik op deze knop en de app bouwt automatisch een kant-en-klare PowerPoint voor de beamer.", render: render6, animate: animate6 }
+    ];
+
+    function uitlegBouwDots() {
+        const dots = document.getElementById('uitlegDots');
+        dots.innerHTML = '';
+        uitlegScenes.forEach((s, i) => {
+            const d = document.createElement('button');
+            d.title = 'Stap ' + (i + 1);
+            d.className = 'h-2 rounded-full transition-all ' + (i === uitlegHuidigeStap ? 'bg-[#007AFF] w-5' : 'bg-gray-200 w-2 hover:bg-gray-300');
+            d.onclick = () => uitlegGaNaarStap(i);
+            dots.appendChild(d);
+        });
+    }
+
+    function uitlegGaNaarStap(index) {
+        uitlegRunId++; // stopt de lopende animatie-loop van de vorige stap
+        const myRunId = uitlegRunId;
+        uitlegHuidigeStap = index;
+        const scene = uitlegScenes[index];
+
+        document.getElementById('uitlegSceneTitel').innerText = scene.titel;
+        document.getElementById('uitlegSceneTekst').innerText = scene.tekst;
+        document.getElementById('uitlegSceneTitel').style.opacity = 1;
+        document.getElementById('uitlegSceneTekst').style.opacity = 1;
+
+        const inner = document.getElementById('uitlegDemoInner');
+        scene.render(inner);
+
+        const vorigeKnop = document.getElementById('uitlegVorigeKnop');
+        const volgendeKnop = document.getElementById('uitlegVolgendeKnop');
+        vorigeKnop.style.visibility = index === 0 ? 'hidden' : 'visible';
+        volgendeKnop.innerText = index === uitlegScenes.length - 1 ? 'Klaar' : 'Volgende';
+
+        uitlegBouwDots();
+        scene.animate(myRunId);
+    }
+
+    window.uitlegVolgende = function() {
+        if (uitlegHuidigeStap === uitlegScenes.length - 1) { sluitUitleg(); return; }
+        uitlegGaNaarStap(uitlegHuidigeStap + 1);
+    };
+    window.uitlegVorige = function() {
+        if (uitlegHuidigeStap === 0) return;
+        uitlegGaNaarStap(uitlegHuidigeStap - 1);
+    };
+    window.sluitUitleg = function() {
+        uitlegRunId++; // stopt elke lopende animatie
+        document.getElementById('uitlegModal').classList.add('hidden');
+        document.getElementById('uitlegModal').classList.remove('flex');
+    };
+
+    window.startUitleg = function() {
+        try { localStorage.setItem('liturgieAssistentTourGezien', '1'); } catch(e) {}
+        const pulse = document.getElementById('rondleidingPulse');
+        if (pulse) pulse.classList.add('hidden');
+
+        document.getElementById('uitlegModal').classList.remove('hidden');
+        document.getElementById('uitlegModal').classList.add('flex');
+        uitlegGaNaarStap(0);
+    };
+
+    // Toetsenbordbediening (alleen actief als de rondleiding open staat)
+    document.addEventListener('keydown', (e) => {
+        const modal = document.getElementById('uitlegModal');
+        if (!modal || modal.classList.contains('hidden')) return;
+        if (e.key === 'Escape') { e.preventDefault(); sluitUitleg(); }
+        else if (e.key === 'ArrowRight') { e.preventDefault(); uitlegVolgende(); }
+        else if (e.key === 'ArrowLeft') { e.preventDefault(); uitlegVorige(); }
+    });
+// --- FUNCTIES VOOR DE SLIMME IMPORTER ---
+    window.gevondenImportItems = [];
+    
+    window.openImportModal = function() {
+        document.getElementById('importTekst').value = '';
+        document.getElementById('importStap1').classList.remove('hidden');
+        document.getElementById('importStap1').classList.add('flex');
+        document.getElementById('importStap2').classList.add('hidden');
+        document.getElementById('importStap2').classList.remove('flex');
+        document.getElementById('importModal').classList.remove('hidden');
+    }
+
+    window.sluitImportModal = function() {
+        document.getElementById('importModal').classList.add('hidden');
+    }
+
+  window.analyseerImport = async function() {
+        const tekst = document.getElementById('importTekst').value;
+        if (!tekst.trim()) return;
+        window.gevondenImportItems = [];
+        const resultatenDiv = document.getElementById('importResultaten');
+        resultatenDiv.innerHTML = '';
+
+        const knop = document.querySelector('#importStap1 button');
+        const origineleKnopTekst = knop.innerText;
+        knop.innerText = "AI leest de liturgie...";
+        knop.disabled = true;
+
+        try {
+            if (!gevondenModel) throw new Error("Het AI-model is nog niet verbonden. Wacht een paar seconden en probeer opnieuw.");
+
+            // Haal de complete lijst met perfecte titels op, als referentie voor de AI
+            let alleBekendeTitels = bouwZoekLijst();
+            let dbTitels = Object.keys(window.liederenDatabase);
+            let referentieTitels = [...new Set([...alleBekendeTitels, ...dbTitels])].slice(0, 500).join(", ");
+
+            const prompt = `Je analyseert een kerkelijke liturgie die is geplakt vanuit Word, WhatsApp of e-mail. Het format verschilt per voorganger (opsomming, lopende tekst, tabel, met of zonder sleutelwoorden), dus lees de hele tekst inhoudelijk.
+
+Herken UITSLUITEND twee soorten onderdelen, in de volgorde waarin ze voorkomen:
+1. "Zang" — een psalm, lied of gezang dat gezongen wordt (Psalm, Weerklank, Op Toonhoogte, DNP, Opwekking, etc.).
+2. "Schriftlezing" — een Bijbelgedeelte dat gelezen wordt (Bijbelboek + hoofdstuk/vers).
+
+Negeer alles wat geen lied of Schriftlezing is (namen, mededelingen, collecte, votum, zegen, etc.).
+
+Geldige Bijbelboeken (schrijf exact zo): ${bijbelBoeken.join(", ")}.
+
+Bekende liedtitels ter referentie — gebruik EXACT deze schrijfwijze wanneer je een match herkent, ook bij afkortingen, spatiefouten of andere volgorde in de brontekst: ${referentieTitels}
+
+Regels voor de titel in je antwoord:
+- Zang, wel herkend in de referentielijst: gebruik exact die schrijfwijze.
+- Zang, niet herkend: schrijf zo netjes mogelijk uit (bijv. "Weerklank 123", "Op Toonhoogte 45", "Psalm 84 vers 1 en 2").
+- Schriftlezing: exact als "<Bijbelboek> <hoofdstuk>:<verzen> (HSV)", bijv. "Johannes 3:1-16 (HSV)".
+- Geef ook het originele stukje brontekst terug in "origineel", zodat de gebruiker kan controleren.
+
+Geef UITSLUITEND geldige JSON terug: een array van objecten met de keys "type", "titel", "origineel". Geen uitleg, geen markdown-codeblok, alleen de JSON array. Als er niets te herkennen valt, geef een lege array [] terug.
+
+Brontekst:
+"""
+${tekst}
+"""`;
+
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${gevondenModel}:generateContent?key=${apiKey}`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: [{ role: "user", parts: [{ text: prompt }] }],
+                    generationConfig: { responseMimeType: "application/json", temperature: 0.1 }
+                })
+            });
+            const data = await response.json();
+            if (data.error) throw new Error(data.error.message);
+
+            let ruweJson = (data.candidates?.[0]?.content?.parts?.[0]?.text || "[]").trim();
+            ruweJson = ruweJson.replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();
+            let herkendeItems = JSON.parse(ruweJson);
+
+            // Voor elk herkend item: kijk of de tekst al klaarstaat in de Cloud
+            for (let item of herkendeItems) {
+                if (item.type !== "Zang" && item.type !== "Schriftlezing") continue;
+                let titel = (item.titel || "").trim();
+                if (!titel) continue;
+                let definitieveTekst = " ";
+                let inCloud = false;
+
+                if (item.type === "Zang") {
+                    if (window.liederenDatabase[titel]) {
+                        definitieveTekst = window.liederenDatabase[titel];
+                        inCloud = true;
+                    }
+                } else {
+                    let zoekTitel = titel.replace(" (HSV)", "").trim();
+                    try {
+                        const doc = await db.collection("bijbel_hsv").doc(zoekTitel).get();
+                        if (doc.exists && doc.data().tekst) {
+                            definitieveTekst = doc.data().tekst;
+                            inCloud = true;
+                        }
+                    } catch(e) {}
+                }
+
+                window.gevondenImportItems.push({ type: item.type, titel, origineel: item.origineel || titel, inCloud, definitieveTekst });
+            }
+        } catch (err) {
+            knop.innerText = origineleKnopTekst;
+            knop.disabled = false;
+            window.toonToast("AI-analyse is mislukt: " + err.message, "error");
+            return;
+        }
+
+        knop.innerText = origineleKnopTekst;
+        knop.disabled = false;
+
+        if (window.gevondenImportItems.length === 0) {
+            window.toonToast("Geen liederen of bijbelteksten herkend. Controleer de geplakte tekst.", "error");
+            return;
+        }
+
+        window.gevondenImportItems.forEach((item, index) => {
+            let icon = item.type === "Zang" ? "🎵" : "📖";
+            
+            let statusBadge = item.inCloud
+                ? '<span class="text-green-600 bg-green-50 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide">✅ In Cloud</span>'
+                : '<span class="text-red-500 bg-red-50 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide">⚠️ Nog ophalen</span>';
+
+            let liedbundelLink = '';
+            if (!item.inCloud && item.type === "Zang" && /weerklank|op toonhoogte|\bdnp\b/i.test(item.titel)) {
+                liedbundelLink = `<a href="#" onclick="event.preventDefault(); event.stopPropagation(); openLiedbundelOnline();" class="text-[11px] font-semibold text-purple-600 hover:text-purple-800 flex items-center gap-1 mt-1">🔗 Open Liedbundel Online</a>`;
+            }
+
+            resultatenDiv.innerHTML += `
+                <label class="flex items-start gap-3 p-3 bg-white border border-gray-200 rounded-xl cursor-pointer hover:bg-purple-50 transition-colors shadow-sm">
+                    <input type="checkbox" id="importCheck_${index}" checked class="mt-1 w-5 h-5 text-purple-600 rounded border-gray-300">
+                    <div class="flex flex-col w-full">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-[13px] font-bold text-gray-800">${icon} ${escapeHtml(item.titel)}</span>
+                            ${statusBadge}
+                        </div>
+                        <span class="text-[11px] text-gray-400 italic truncate" title="${escapeHtml(item.origineel)}">${escapeHtml(item.origineel)}</span>
+                        ${liedbundelLink}
+                    </div>
+                </label>
+            `;
+        });
+
+        document.getElementById('importStap1').classList.add('hidden');
+        document.getElementById('importStap1').classList.remove('flex');
+        document.getElementById('importStap2').classList.remove('hidden');
+        document.getElementById('importStap2').classList.add('flex');
+    }
+    window.voegImportToe = function() {
+        let directItems = [];
+        let teVerwerken = [];
+
+        window.gevondenImportItems.forEach((item, index) => {
+            let checkbox = document.getElementById(`importCheck_${index}`);
+            if (checkbox && checkbox.checked) {
+                if (item.inCloud && item.definitieveTekst.trim() && item.type !== "Zang") {
+                    directItems.push(item);
+                } else {
+                    teVerwerken.push(item);
+                }
+            }
+        });
+
+        directItems.forEach(item => {
+            liturgieVolgorde.push({ type: item.type, titel: item.titel, tekst: item.definitieveTekst });
+        });
+
+        window.tekenVolgorde();
+        window.sluitImportModal();
+
+        if (directItems.length > 0 && teVerwerken.length === 0) {
+            window.toonToast("Liturgie geïmporteerd!", "success");
+        } else if (directItems.length > 0) {
+            window.toonToast(`${directItems.length} item(s) toegevoegd — ${teVerwerken.length} nog invullen`, "success");
+        }
+
+        importWachtrij = teVerwerken;
+        setTimeout(() => verwerkVolgendeImportItem(), 400);
+    }
+
+    window.verwerkVolgendeImportItem = function() {
+        if (importWachtrij.length === 0) return;
+        let item = importWachtrij.shift();
+
+        if (item.type === "Zang") {
+            window.handleLiedSelectie(item.titel, false);
+        } else if (item.type === "Schriftlezing") {
+            let titel = item.titel;
+            if (!titel.includes("(HSV)")) titel = titel + " (HSV)";
+            haalBijbelViaAI(titel.replace(" (HSV)", "").trim());
+        }
+    }
+// --- FUNCTIES VOOR DE CODE ASSISTANT CHATBOT ---
+    window.toggleChat = function() {
+        const chat = document.getElementById('chatWindow');
+        chat.classList.toggle('hidden');
+        chat.classList.toggle('flex');
+        if(!chat.classList.contains('hidden')) {
+            document.getElementById('chatInput').focus();
+        }
+    };
+
+    let chatHistory = [];
+
+    window.stuurChatBericht = async function() {
+        const input = document.getElementById('chatInput');
+        const message = input.value.trim();
+        if (!message) return;
+
+        const chatMessages = document.getElementById('chatMessages');
+        
+        // 1. Voeg jouw bericht toe aan het scherm (geëscaped tegen XSS)
+        chatMessages.innerHTML += `
+            <div class="bg-[#007AFF] text-white p-3 rounded-xl rounded-tr-none shadow-sm self-end max-w-[90%] break-words leading-relaxed text-[13px]">
+                ${escapeHtml(message)}
+            </div>`;
+        input.value = '';
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        // 2. Laat zien dat de AI aan het typen is
+        const laadId = "load_" + Date.now();
+        chatMessages.innerHTML += `
+            <div id="${laadId}" class="bg-white p-3 rounded-xl rounded-tl-none shadow-sm border border-gray-100 text-green-600 self-start max-w-[90%] italic text-[12px] font-medium flex items-center gap-2">
+                <span class="w-2 h-2 bg-green-500 rounded-full animate-bounce"></span> Code analyseren...
+            </div>`;
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        // 3. Stuur de actuele HTML code mee bij het eerste bericht!
+        let promptText = message;
+        if (chatHistory.length === 0) {
+            // Dit haalt letterlijk de live code van je pagina op...
+            let htmlCode = document.documentElement.outerHTML;
+            // ...maar we STRIPPEN eerst alle geheimen eruit, zodat je API-sleutels
+            // en Firebase-config nooit in de AI-logs belanden.
+            htmlCode = redactGeheimen(htmlCode);
+            promptText = `Je bent de AI assistent voor het project 'Liturgie Assistent Pro'. De gebruiker heeft je een vraag gesteld over de code of de functionaliteit. Hieronder krijg je de VOLLEDIGE, actuele HTML en JavaScript code van de app (met geheimen weggehaald). Gebruik dit als context om de vraag perfect te beantwoorden. Geef korte, duidelijke antwoorden. Als je code voorstelt, geef dan exact aan waar het vervangen moet worden.\n\n--- BEGIN CODE ---\n${htmlCode}\n--- EINDE CODE ---\n\nVraag van de gebruiker: ${message}`;
+        }
+
+        chatHistory.push({ role: "user", parts: [{ text: promptText }] });
+
+        try {
+            // Gebruik het model dat al voor de liturgie was opgestart!
+            if (!gevondenModel) throw new Error("AI Model is nog niet verbonden.");
+            
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${gevondenModel}:generateContent?key=${apiKey}`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contents: chatHistory })
+            });
+            const data = await response.json();
+            
+            document.getElementById(laadId).remove();
+
+            if (data.error) {
+                chatMessages.innerHTML += `<div class="bg-red-50 p-3 rounded-xl rounded-tl-none border border-red-100 text-red-600 self-start max-w-[90%] text-[13px] font-bold">Fout: ${data.error.message}</div>`;
+            } else if (data.candidates && data.candidates.length > 0) {
+                let aiResponse = data.candidates[0].content.parts[0].text;
+                chatHistory.push({ role: "model", parts: [{ text: aiResponse }] });
+
+                // Eerst ALLE HTML in het AI-antwoord neutraliseren (voorkomt XSS),
+                // daarna pas onze eigen opmaak (vet + codeblokjes) toepassen.
+                aiResponse = escapeHtml(aiResponse);
+
+                // Maak de output een beetje netjes op (vetgedrukt en code-blokjes)
+                aiResponse = aiResponse.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+                aiResponse = aiResponse.replace(/```(html|javascript|css)?(.*?)```/gs, '<pre class="bg-gray-800 text-green-400 p-3 rounded-lg text-[10px] overflow-x-auto mt-2 mb-2 border border-gray-700 font-mono"><code>$2</code></pre>');
+                aiResponse = aiResponse.replace(/\n/g, '<br>');
+
+                chatMessages.innerHTML += `
+                    <div class="bg-white p-3 rounded-xl rounded-tl-none shadow-sm border border-gray-100 text-gray-800 self-start max-w-[90%] leading-relaxed text-[13px]">
+                        ${aiResponse}
+                    </div>`;
+            }
+        } catch (err) { 
+            document.getElementById(laadId).remove();
+            chatMessages.innerHTML += `<div class="bg-red-50 p-3 rounded-xl rounded-tl-none border border-red-100 text-red-600 self-start max-w-[90%] text-[13px] font-bold">Systeemfout: ${err.message}</div>`;
+        }
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    };
+
+    window.uploadFoto = function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const base64 = e.target.result;
+            liturgieVolgorde.push({ type: "Foto", titel: "Afbeelding: " + file.name, tekst: base64 });
+            window.tekenVolgorde();
+            document.getElementById('previewVak').innerHTML = `<img src="${base64}" class="max-h-full rounded-lg object-contain"/>`;
+        };
+        reader.readAsDataURL(file);
+        event.target.value = ''; 
+    };
+
+    window.voegLegeDiaToe = function() {
+        liturgieVolgorde.push({ type: "Leeg", titel: "Zwarte Dia (Pauze)", tekst: " " });
+        window.tekenVolgorde();
+        document.getElementById('previewVak').innerHTML = `<div class="w-full h-full bg-black border border-gray-700"></div>`;
+    }
+
+    window.tekenVolgorde = function() {
+        bewaarLiturgie(); // elke wijziging meteen lokaal opslaan
+        const lijst = document.getElementById('volgordeLijst');
+        if (liturgieVolgorde.length === 0) {
+            lijst.innerHTML = '<div class="bg-transparent border-2 border-dashed border-gray-200 rounded-[16px] md:rounded-[20px] p-6 md:p-8 text-center text-gray-400 font-medium text-[12px] md:text-[13px]">Nog geen items toegevoegd</div>';
+            document.getElementById('previewVak').innerHTML = '<div class="text-white text-[12px] text-center px-4 italic opacity-40">Typ of selecteer een lied, bijbeltekst of media</div>';
+            return;
+        }
+        
+        lijst.innerHTML = "";
+        liturgieVolgorde.forEach((item, index) => {
+            const isZang = item.type === "Zang";
+            let icon = '';
+            if(item.type === 'Foto') icon = '📸 ';
+            else if(item.type === 'Leeg') icon = '⬛ ';
+
+            lijst.innerHTML += `
+            <div draggable="true" data-index="${index}" class="volgorde-item bg-white flex items-center gap-3 p-4 rounded-[18px] shadow-[0_2px_12px_rgba(0,0,0,0.03)] border-2 border-gray-100 group transition-all hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)]">
+                <div class="drag-handle text-gray-300 group-hover:text-gray-400 transition-colors p-1"
+                     ontouchstart="touchDragStart(event, ${index})" ontouchmove="touchDragMove(event)" ontouchend="touchDragEnd(event)">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </div>
+                <div class="flex-grow overflow-hidden pl-1 md:pl-2">
+                    <span class="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider">${icon}${escapeHtml(item.type)}</span>
+                    <h3 class="font-semibold text-[#1D1D1F] text-[13px] md:text-[14px] truncate">${escapeHtml(item.titel)}</h3>
+                </div>
+                
+                <button onclick="openBewerkScherm(${index})" aria-label="Tekst bewerken van ${escapeHtml(item.titel)}" class="p-2 text-[#007AFF] bg-blue-50 hover:bg-blue-100 rounded-full transition-all flex-shrink-0 ${item.type === 'Foto' || item.type === 'Leeg' ? 'hidden' : ''}" title="Tekst bewerken">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                </button>
+                
+                <button onclick="verwijder(${index})" aria-label="Verwijder ${escapeHtml(item.titel)}" class="p-2 text-gray-300 hover:text-[#FF3B30] hover:bg-red-50 rounded-full transition-all" title="Verwijder">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
+            </div>`;
+        });
+
+        // Laat de laatst toegevoegde actie zien in de preview
+        const lastItem = liturgieVolgorde[liturgieVolgorde.length - 1];
+        if (lastItem.type === 'Foto') {
+            document.getElementById('previewVak').innerHTML = `<img src="${lastItem.tekst}" class="max-h-full rounded-lg object-contain"/>`;
+        } else if (lastItem.type === 'Leeg' || lastItem.tekst === " ") {
+            document.getElementById('previewVak').innerHTML = `<div class="w-full h-full bg-black border border-gray-700"></div>`;
+        } else {
+            let eersteVers = lastItem.tekst.split(/\n[ \t]*\n/)[0]; // Pak alleen het eerste couplet/vers
+            document.getElementById('previewVak').innerHTML = `<div class="text-white text-[11px] md:text-[12px] text-center px-4 italic opacity-80 whitespace-pre-line">${escapeHtml(eersteVers)}</div>`;
+        }
+    }
+
+    window.verwijder = function(i) { liturgieVolgorde.splice(i, 1); window.tekenVolgorde(); };
+
+    // --- DRAG AND DROP (Desktop) ---
+    let dragSrcIndex = null;
+    (function() {
+        const lijst = document.getElementById('volgordeLijst');
+        lijst.addEventListener('dragstart', e => {
+            const item = e.target.closest('.volgorde-item');
+            if (!item) return;
+            dragSrcIndex = parseInt(item.dataset.index);
+            item.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        });
+        lijst.addEventListener('dragover', e => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            const item = e.target.closest('.volgorde-item');
+            if (!item) return;
+            document.querySelectorAll('.volgorde-item').forEach(el => el.classList.remove('drag-over'));
+            if (parseInt(item.dataset.index) !== dragSrcIndex) item.classList.add('drag-over');
+        });
+        lijst.addEventListener('dragleave', e => {
+            const item = e.target.closest('.volgorde-item');
+            if (item) item.classList.remove('drag-over');
+        });
+        lijst.addEventListener('drop', e => {
+            e.preventDefault();
+            const item = e.target.closest('.volgorde-item');
+            if (!item || dragSrcIndex === null) return;
+            const dropIndex = parseInt(item.dataset.index);
+            if (dropIndex === dragSrcIndex) return;
+            const [moved] = liturgieVolgorde.splice(dragSrcIndex, 1);
+            liturgieVolgorde.splice(dropIndex, 0, moved);
+            window.tekenVolgorde();
+        });
+        lijst.addEventListener('dragend', () => {
+            dragSrcIndex = null;
+            document.querySelectorAll('.volgorde-item').forEach(el => el.classList.remove('dragging', 'drag-over'));
+        });
+    })();
+
+    // --- DRAG AND DROP (Touch / Mobiel) ---
+    let touchDragIdx = null;
+    let touchGhost = null;
+    window.touchDragStart = function(e, index) {
+        touchDragIdx = index;
+        const item = e.target.closest('.volgorde-item');
+        if (!item) return;
+        e.preventDefault();
+        item.classList.add('dragging');
+        touchGhost = item.cloneNode(true);
+        touchGhost.className = 'touch-ghost';
+        touchGhost.style.width = item.offsetWidth + 'px';
+        touchGhost.style.left = item.getBoundingClientRect().left + 'px';
+        touchGhost.style.top = (e.touches[0].clientY - 30) + 'px';
+        document.body.appendChild(touchGhost);
+    };
+    window.touchDragMove = function(e) {
+        if (touchDragIdx === null || !touchGhost) return;
+        e.preventDefault();
+        const y = e.touches[0].clientY;
+        touchGhost.style.top = (y - 30) + 'px';
+        document.querySelectorAll('.volgorde-item').forEach(el => {
+            el.classList.remove('drag-over');
+            const r = el.getBoundingClientRect();
+            const i = parseInt(el.dataset.index);
+            if (i !== touchDragIdx && y > r.top && y < r.bottom) el.classList.add('drag-over');
+        });
+    };
+    window.touchDragEnd = function(e) {
+        if (touchDragIdx === null) return;
+        let dropIdx = touchDragIdx;
+        document.querySelectorAll('.volgorde-item.drag-over').forEach(el => { dropIdx = parseInt(el.dataset.index); });
+        if (dropIdx !== touchDragIdx) {
+            const [moved] = liturgieVolgorde.splice(touchDragIdx, 1);
+            liturgieVolgorde.splice(dropIdx, 0, moved);
+        }
+        if (touchGhost) { touchGhost.remove(); touchGhost = null; }
+        document.querySelectorAll('.volgorde-item').forEach(el => el.classList.remove('dragging', 'drag-over'));
+        touchDragIdx = null;
+        window.tekenVolgorde();
+    };
+window.maakPowerPoint = function() {
+    if (liturgieVolgorde.length === 0) { window.toonToast("Voeg eerst een item toe aan de volgorde.", "error"); return; }
+    
+    // --- 1. ICONEN DEFINIËREN (Hersteld) ---
+    const base64Voorganger = "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iOTYiIGhlaWdodD0iOTYiIHhtbDpzcGFjZT0icHJlc2VydmUiIG92ZXJmbG93PSJoaWRkZW4iPgogIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKC00NTYgLTk2KSI+CiAgICA8Zz4KICAgICAgPHBhdGggZD0iTTUwMC45NDYgMTU2IDUwNy4wNjYgMTU2IDUwOS4wMDYgMTUwIDQ5OS4wMDYgMTUwIDUwMC45NDYgMTU2WiIgZmlsbD0iI0ZGRkZGRiIgZmlsbC1ydWxlPSJub256ZXJvIiBmaWxsLW9wYWNpdHk9IjEiPjwvcGF0aD4KICAgICAgPHBhdGggZD0iTTUwMS4wOTYgMTU4IDQ5OS43MzYgMTc3LjczIDUwNC4wMDYgMTgyIDUwOC4yNzYgMTc3LjczIDUwNi45MTYgMTU4IDUwMS4wOTYgMTU4WiIgZmlsbD0iI0ZGRkZGRiIgZmlsbC1ydWxlPSJub256ZXJvIiBmaWxsLW9wYWNpdHk9IjEiPjwvcGF0aD4KICAgICAgPHBhdGggZD0iTTUzNiAxNjAuOTZDNTM1Ljk0NCAxNTguMDI2IDUzNC41NzMgMTU1LjI3MyA1MzIuMjY2IDE1My40NiA1MjguNTMgMTUwLjQwMiA1MjQuMTM5IDE0OC41MTQgNTE5LjUzIDE0Ni44NjZMNTE0LjYyNSAxNDQuODUzQzUxNC4yNSAxNDQuNjk5IDUxNC4wMDUgMTQ0LjMzMyA1MTQuMDA1IDE0My45MjhMNTE0LjAwNSAxNDEuNDc0QzUxNy43MDggMTM4LjUxIDUxOS45MDIgMTM0LjA1MyA1MTkuOTkxIDEyOS4zMTFMNTIyLjUzOSAxMjQuOTRDNTIyLjkyMSAxMjQuMDM5IDUyMy4wNzQgMTIzLjA1OCA1MjIuOTg1IDEyMi4wODMgNTIyLjQwNSAxMTUuNTI5IDUxMS40MzEgMTA5Ljc2IDUxMi41MTQgMTA2Ljg4MyA1MTIuMDM3IDEwNi42NTkgNTExLjQ3NyAxMDYuNzA5IDUxMS4wNDggMTA3LjAxNEw1MTAuMDM4IDEwNy43MTQgNTA4LjkyMSAxMDYuMTg3QzUwOC41NzcgMTA1LjcwNSA1MDguMDYgMTA1LjM3NiA1MDcuNDc4IDEwNS4yNjggNTA2LjQzOCAxMDUuMDg4IDUwNS4zODQgMTA0Ljk5OSA1MDQuMzI4IDEwNSA0OTUuMzIxIDEwNS4wMDEgNDg3LjU5IDExMS40MSA0ODUuOTE4IDEyMC4yNkw0ODUuODc4IDEyMC40NzhDNDg1LjM5MiAxMjMuMDc1IDQ4NC4zODcgMTI1LjU0NyA0ODIuOTIyIDEyNy43NDVMNDg4LjAxIDEyNy43NDVMNDg4LjAxIDEyOUM0ODguMDEgMTMzLjg1IDQ5MC4yMTQgMTM4LjQzNiA0OTQgMTQxLjQ2N0w0OTQgMTQzLjkyM0M0OTQgMTQ0LjMyOCA0OTMuNzU1IDE0NC42OTQgNDkzLjM4IDE0NC44NDhMNDg4LjQ4IDE0Ni44NTdDNDgzLjg2OCAxNDguNTA2IDQ3OS40OCAxNTAuMzkxIDQ3NS43NjYgMTUzLjQyOCA0NzMuNDMzIDE1NS4yNTQgNDcyLjA1MSAxNTguMDM4IDQ3Mi4wMDYgMTYxTDQ3Mi4wMDYgMTc4LjUgNDcyLjgwNiAxNzkuMUM0NzcuMTkxIDE4Mi4zODkgNDg4Ljc4OCAxODMuNDQ5IDQ5NS4zMDYgMTgzLjc4OEw0OTcuNjU5IDE4My45MSA0OTMuNzY3IDE0OS4wMSA0OTQuODk4IDE0OC41NDZDNDk2Ljc3NyAxNDcuNzggNDk4LjAwNCAxNDUuOTUyIDQ5OCAxNDMuOTIzTDQ5OCAxNDMuODIzQzUwMS44NDggMTQ1LjM5NCA1MDYuMTU4IDE0NS4zOTQgNTEwLjAwNiAxNDMuODIzTDUxMC4wMDYgMTQzLjkyM0M1MTAuMDAxIDE0NS45NTIgNTExLjIyNyAxNDcuNzgxIDUxMy4xMDYgMTQ4LjU0OEw1MTQuMjM3IDE0OS4wMTIgNTEwLjM0NCAxODMuOTEyIDUxMi42OTYgMTgzLjc5QzUxOS4yMTkgMTgzLjQ1MSA1MzAuODE2IDE4Mi4zOSA1MzUuMjAyIDE3OS4xMDJMNTM2LjAwMiAxNzguNTAyWk00OTIuMDEgMTI5IDQ5Mi4wMSAxMjcuNzQ1IDQ5OC45NzkgMTI3Ljc0NUM1MDkuMjU5IDEyNy43NDUgNTA3Ljg2MSAxMTkuNTUyIDUxMi4zNTkgMTE4LjM3OSA1MTMuNTk1IDExOC4xNDkgNTE0Ljg3MiAxMTguMzEzIDUxNi4wMSAxMTguODQ5TDUxNi4wMSAxMjlDNTE2LjAxIDEzNS42MjcgNTEwLjYzNyAxNDEgNTA0LjAxIDE0MSA0OTcuMzgzIDE0MSA0OTIuMDEgMTM1LjYyNyA0OTIuMDEgMTI5Wk01MjguMDA1IDE2NiA1MTkuMDA1IDE2NiA1MTkuMDA1IDE2NCA1MjguMDA1IDE2NFoiIGZpbGw9IiNGRkZGRkYiIGZpbGwtcnVsZT0ibm9uemVybyIgZmlsbC1vcGFjaXR5PSIxIj48L3BhdGg+CiAgICA8L2c+CiAgPC9nPgo8L3N2Zz4K";
+    const base64Muziek = "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iOTYiIGhlaWdodD0iOTciIHhtbDpzcGFjZT0icHJlc2VydmUiIG92ZXJmbG93PSJoaWRkZW4iPgogIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKC00MzIgLTIyMSkiPgogICAgPGc+CiAgICAgIDxnPgogICAgICAgIDxnPgogICAgICAgICAgPGc+CiAgICAgICAgICAgIDxwYXRoIGQ9Ik00ODguNDcgMjQwLjkzQzQ4Ni41NjIgMjM5LjY5MSA0ODUuMDQ5IDIzNy45MzIgNDg0LjExIDIzNS44Nkw0ODQuMTEgMjMzLjk0QzQ4NC4xMSAyMzIuMDA3IDQ4Mi41NDMgMjMwLjQ0IDQ4MC42MSAyMzAuNDQgNDc3LjY3NyAyMzAuNDQgNDc3LjExIDIzMi4wMDcgNDc3LjExIDIzMy45NEw0NzcuMTEgMjg3LjE2QzQ3My43MDggMjg2LjU4IDQ3MC4yMTMgMjg2LjkyNiA0NjYuOTkgMjg4LjE2IDQ1OS4zNSAyOTAuOTMgNDU0LjY2IDI5Ny4zMSA0NTYuNSAzMDIuNCA0NTguMzQgMzA3LjQ5IDQ2Ni4wNCAzMDkuNCA0NzMuNjggMzA2LjYxIDQ3OSAzMDQuNjQgNDgyLjg3IDMwMSA0ODQuMTEgMjk3LjE4TDQ4NC4xMSAyNTkuM0M0ODQuNzYxIDI1OS44NTQgNDg1LjQ1NyAyNjAuMzUyIDQ4Ni4xOSAyNjAuNzkgNDk3LjkzIDI2Ny43MyA0OTEuNDQgMjc5IDQ5Ny4yIDI3OSA1MDQuNDUgMjc5LjA2IDUwNC43NSAyNTEuNzggNDg4LjQ3IDI0MC45M1oiIGZpbGw9IiNGRkZGRkYiIGZpbGwtcnVsZT0ibm9uemVybyIgZmlsbC1vcGFjaXR5PSIxIj48L3BhdGg+CiAgICAgICAgICA8L2c+CiAgICAgICAgPC9nPgogICAgICA8L2c+CiAgICA8L2c+CiAgPC9nPgo8L3N2Zz4K";
+    const base64Boek = "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iOTYiIGhlaWdodD0iOTciIHhtbDpzcGFjZT0icHJlc2VydmUiIG92ZXJmbG93PSJoaWRkZW4iPgogIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKC03MiAtMzU2KSI+CiAgICA8Zz4KICAgICAgPGc+CiAgICAgICAgPGc+CiAgICAgICAgICA8Zz4KICAgICAgICAgICAgPHBhdGggZD0iTTEyOCAzODkgMTQzIDM4OSAxNDMgMzkxIDEyOCAzOTFaIiBmaWxsPSIjRkZGRkZGIiBmaWxsLXJ1bGU9Im5vbnplcm8iIGZpbGwtb3BhY2l0eT0iMSI+PC9wYXRoPgogICAgICAgICAgICA8cGF0aCBkPSJNMTI4IDM5NSAxNDMgMzk1IDE0MyAzOTcgMTI4IDM5N1oiIGZpbGw9IiNGRkZGRkYiIGZpbGwtcnVsZT0ibm9uemVybyIgZmlsbC1vcGFjaXR5PSIxIj48L3BhdGg+CiAgICAgICAgICAgIDxwYXRoIGQ9Ik0xMjggNDAxIDEzOCA0MDEgMTM4IDQwMyAxMjggNDAzWiIgZmlsbD0iI0ZGRkZGRiIgZmlsbC1ydWxlPSJub256ZXJvIiBmaWxsLW9wYWNpdHk9IjEiPjwvcGF0aD4KICAgICAgICAgICAgPHBhdGggZD0iTTE1OSAzODEgMTUzIDM4MSAxNTMgMzc2LjZDMTUzIDM3Ni4xNzMgMTUyLjcyOSAzNzUuNzkzIDE1Mi4zMjUgMzc1LjY1NCAxNDEuODQgMzcyLjE1NCAxMzAuNTA4IDM3Mi4xMTUgMTIwIDM3NS41NDQgMTA5LjQ5MiAzNzIuMTE1IDk4LjE1OTkgMzcyLjE1MyA4Ny42NzUgMzc1LjY1MyA4Ny4yNzA3IDM3NS43OTIgODYuOTk5NCAzNzYuMTcyIDg3IDM3Ni42TDg3IDM4MSA4MSAzODFDODAuNDQ3NyAzODEgODAgMzgxLjQ0OCA4MCAzODJMODAgNDMwQzgwIDQzMC41NTIgODAuNDQ3NyA0MzEgODEgNDMxTDExMy4xIDQzMUMxMTMuNTIgNDMyLjc1OSAxMTUuMDkyIDQzNCAxMTYuOSA0MzRMMTIzLjEgNDM0QzEyNC45MDggNDM0IDEyNi40IDQzMi43NTkgMTI2LjkgNDMxTDE1OSA0MzFDMTU5LjU1MiA0MzEgMTYwIDQzMC41NTIgMTYwIDQzMEwxNjAgMzgyQzE2MCAzODEuNDQ4IDE1OS41NTIgMzgxIDE1OSAzODFaTTE1MSAzNzcuMzIgMTUxIDQyMy4yMkMxNDEuMjIgNDIwLjI1NiAxMzAuNzggNDIwLjI1NiAxMjEgNDIzLjIyTDEyMSAzNzcuMzJDMTMwLjc2MSAzNzQuMjI3IDE0MS4yMzkgMzc0LjIyNyAxNTEgMzc3LjMyWk04OSAzNzcuMzJDOTguNzYwOCAzNzQuMjI3IDEwOS4yMzkgMzc0LjIyNyAxMTkgMzc3LjMyTDExOSA0MjMuMjJDMTA5LjIyIDQyMC4yNTYgOTguNzgwNCA0MjAuMjU2IDg5IDQyMy4yMlpNMTU4IDQyOSAxMjYgNDI5QzEyNS40NDggNDI5IDEyNSA0MjkuNDQ4IDEyNSA0MzBMMTI1IDQzMC4xQzEyNSA0MzEuMTQ5IDEyNC4xNDkgNDMyIDEyMy4xIDQzMkwxMTYuOSA0MzJDMTE1Ljg1MSA0MzIgMTE1IDQzMS4xNDkgMTE1IDQzMC4xTDExNSA0MzBDMTE1IDQyOS40NDggMTE0LjU1MiA0MjkgMTE0IDQyOUw4MiA0MjkgODIgMzgzIDg3IDM4MyA4NyA0MjQuNls4Ni45OTk4IDQyNS4xNTIgODcuNDQ3NCA0MjUuNiA4Ny45OTk3IDQyNS42IDg4LjExMDQgNDI1LjYgODguMjIwMyA0MjUuNTgyIDg4LjMyNSA0MjUuNTQ2IDk4LjQ5OTUgNDIyLjE1MyAxMDkuNTAxIDQyMi4xNTMgMTE5LjY3NSA0MjUuNTQ2IDExOS42OTEgNDI1LjU1IDExOS43MDggNDI1LjU1MiAxMTkuNzI1IDQyNS41NTQgMTE5LjY3OSA0MjUuNTc2IDExOS44NzUgNDI1LjU4OSAxMTkuOTUyIDQyNS41OTIgMTE5Ljk2OCA0MjUuNTkyIDExOS45ODQgNDI1LjYgMTIwIDQyNS42IDEyMC4wMTYgNDI1LjYgMTIwLjAyNSA0MjUuNTk1IDEyMC4wMzcgNDI1LjU5NCAxMjAuMTEzIDQyNS41OTIgMTIwLjE4OSA0MjUuNTggMTIwLjI2MiA0MjUuNTYgMTIwLjI3OCA0MjUuNTYgMTIwLjI5NSA0MjUuNTU0IDEyMC4zMTIgNDI1LjU0OUwxMjAuMzI1IDQyNS41NDlDMTMwLjQ5OSA0MjIuMTU2IDE0MS41MDEgNDIyLjE1NiAxNTEuNjc1IDQyNS41NDkgMTUxLjc4IDQyNS41ODQgMTUxLjg5IDQyNS42MDEgMTUyIDQyNS42IDE1Mi41NTIgNDI1LjYgMTUzIDQyNS4xNTIgMTUzIDQyNC42TDE1MyAzODMgMTU4IDM4M1oiIGZpbGw9IiNGRkZGRkYiIGZpbGwtcnVsZT0ibm9uemVybyIgZmlsbC1vcGFjaXR5PSIxIj48L3BhdGg+CiAgICAgICAgICA8L2c+CiAgICAgICAgPC9nPgogICAgICA8L2c+CiAgICA8L2c+CiAgPC9nPgo8L3N2Zz4K";
+
+    // --- 2. PRESENTATIE INITIALISEREN ---
+    let pres = new PptxGenJS();
+    pres.layout = 'LAYOUT_16x9';
+
+    const fSize = Math.min(40, Math.max(30, parseInt(document.getElementById('fontSizeSelect').value) || 40));
+    const splitMethod = document.getElementById('linesSelect').value;
+
+    // --- 3. WELKOMST DIA ---
+    let welcomeSlide = pres.addSlide();
+    welcomeSlide.background = { color: "000000" };
+
+    const datum = document.getElementById('datumInput').value || "";
+    const voorganger = document.getElementById('voorgangerInput').value || "";
+
+    welcomeSlide.addText("Welkom", { x: 0.5, y: 0.8, w: 5, h: 1, color: "FFFFFF", fontSize: 54, fontFace: "Arial", bold: true, align: "left" });
+    if (datum) {
+        welcomeSlide.addText(datum, { x: 0.5, y: 1.8, w: 5, h: 0.5, color: "CCCCCC", fontSize: 20, fontFace: "Arial", align: "left" });
+    }
+
+    if (voorganger) {
+        welcomeSlide.addImage({ data: "data:image/svg+xml;base64," + base64Voorganger, x: 5.4, y: 1.25, w: 0.4, h: 0.4 });
+        welcomeSlide.addText(voorganger, { x: 6.0, y: 1.2, w: 3.5, h: 0.6, color: "FFFFFF", fontSize: 22, fontFace: "Arial", align: "left" });
+    }
+
+    const zangLijst = liturgieVolgorde.filter(item => item.type === "Zang").map(item => {
+        let t = item.titel.split(' - ')[0];
+        return t.replace("Weerklank Lied", "Lw").replace("Weerklank Psalm", "Ps").replace("Op Toonhoogte", "OTH").replace("DNP Psalm", "Ps DNP").replace("Psalm", "Ps").trim();
+    });
+    
+    if (zangLijst.length > 0) {
+        welcomeSlide.addImage({ data: "data:image/svg+xml;base64," + base64Muziek, x: 5.4, y: 2.15, w: 0.4, h: 0.4 });
+        welcomeSlide.addText(zangLijst.join('\n'), { x: 6.0, y: 2.1, w: 3.5, h: 2.5, color: "FFFFFF", fontSize: 18, fontFace: "Arial", align: "left", valign: "top", lineSpacing: 28 });
+    }
+
+    const bijbelLijst = liturgieVolgorde.filter(item => item.type === "Schriftlezing").map(item => item.titel.replace(" (HSV)", ""));
+    if (bijbelLijst.length > 0) {
+        welcomeSlide.addImage({ data: "data:image/svg+xml;base64," + base64Boek, x: 0.5, y: 4.7, w: 0.4, h: 0.4 });
+        welcomeSlide.addText(bijbelLijst.join(' & '), { x: 1.1, y: 4.6, w: 8.5, h: 0.6, color: "FFFFFF", fontSize: 20, fontFace: "Arial", bold: true, align: "left" });
+    }
+
+    // --- 4. LITURGIE DIA'S LUS ---
+    liturgieVolgorde.forEach(item => {
+        if (item.type === "Leeg") {
+            let slide = pres.addSlide();
+            slide.background = { color: "000000" };
+            return;
+        }
+
+        if (item.type === "Foto") {
+            let slide = pres.addSlide();
+            slide.background = { color: "000000" };
+            slide.addImage({ data: item.tekst, x: 0, y: 0, w: '100%', h: '100%', sizing: { type: 'contain' } });
+            return;
+        }
+
+        let slideTextBlocks = [];
+
+        // WAARSCHUWING BIJ LEEG ITEM
+        if (!item.tekst || item.tekst.trim() === "") {
+            let slide = pres.addSlide();
+            slide.background = { color: "000000" };
+            slide.addText(item.titel, { x: 0.5, y: 0.3, w: 9, h: 0.4, color: "AAAAAA", fontSize: 18, fontFace: "Arial", align: "left" });
+            slide.addText("⚠️ Tekst nog niet ingevuld", { x: 0.5, y: 2, w: 9, h: 1, color: "FF3B30", fontSize: 32, fontFace: "Arial", align: "center", bold: true });
+            return;
+        }
+
+        // --- SPLITSEN ---
+        if (item.type === "Schriftlezing") {
+            const MAX_CHAR_PER_DIA = 350;
+            let ruweTekst = item.tekst.replace(/(?=\[\d+\]|\b\d+\.\s|^\d+\s|\n\d+\s)/gm, '\n');
+            let bronRegels = ruweTekst.split('\n').map(r => r.trim()).filter(r => r !== '');
+            let totaalChars = bronRegels.reduce((s, r) => s + r.length, 0);
+            let aantalDias = Math.max(1, Math.ceil(totaalChars / MAX_CHAR_PER_DIA));
+            let doelPerDia = totaalChars / aantalDias;
+
+            let huidigBlok = [];
+            let huidigeChars = 0;
+            bronRegels.forEach((regel) => {
+                if (huidigBlok.length > 0 && huidigeChars + regel.length > doelPerDia * 1.15 && slideTextBlocks.length < aantalDias - 1) {
+                    slideTextBlocks.push(huidigBlok.join('\n'));
+                    huidigBlok = [];
+                    huidigeChars = 0;
+                }
+                huidigBlok.push(regel);
+                huidigeChars += regel.length;
+            });
+            if (huidigBlok.length > 0) slideTextBlocks.push(huidigBlok.join('\n'));
+        } else {
+            if (splitMethod === "auto") {
+                if (item.tekst.includes("\n\n")) {
+                    slideTextBlocks = item.tekst.split(/\n[ \t]*\n/).filter(v => v.trim());
+                } else {
+                    let regels = item.tekst.split('\n').filter(l => l.trim() !== '');
+                    for (let i = 0; i < regels.length; i += 4) {
+                        slideTextBlocks.push(regels.slice(i, i + 4).join('\n'));
+                    }
+                }
+            } else {
+                let numLines = parseInt(splitMethod);
+                let regels = item.tekst.split('\n').filter(l => l.trim() !== '');
+                for (let i = 0; i < regels.length; i += numLines) {
+                    slideTextBlocks.push(regels.slice(i, i + numLines).join('\n'));
+                }
+            }
+            if (slideTextBlocks.length >= 2) {
+                let laatsteRegels = slideTextBlocks[slideTextBlocks.length - 1].split('\n').length;
+                let voorlaatstRegels = slideTextBlocks[slideTextBlocks.length - 2].split('\n').length;
+                if (laatsteRegels <= 1 && voorlaatstRegels >= 3) {
+                    let alleRegels = slideTextBlocks[slideTextBlocks.length - 2].split('\n')
+                        .concat(slideTextBlocks[slideTextBlocks.length - 1].split('\n'));
+                    let midden = Math.ceil(alleRegels.length / 2);
+                    slideTextBlocks[slideTextBlocks.length - 2] = alleRegels.slice(0, midden).join('\n');
+                    slideTextBlocks[slideTextBlocks.length - 1] = alleRegels.slice(midden).join('\n');
+                }
+            }
+        }
+
+        // --- TEKENEN (Voor elk blok van DIT item) ---
+        // Veilige zone: het kruis in de vaste OBS-achtergrond staat op ca. 73%-88% van de
+        // diabreedte (7.3"-8.8" op een 10" brede 16:9-dia). De tekst blijft daarom binnen
+        // 0.4"-7.0" zodat regels daar nooit doorheen lopen. Pas deze twee getallen aan
+        // (x en w hieronder) als de achtergrond ooit verandert.
+        const VAK_BREEDTE_INCH = 6.6;
+        const vakHoogtePt = 4.4 * 72 * 0.92;   // hoogte van het tekstvak in punten, met kleine marge
+        const MIN_LEESBAAR = 30;               // onder deze grootte liever splitsen dan verkleinen
+        const ABSOLUUT_MINIMUM = 30;           // font altijd minimaal 30pt, liever meer dia's
+
+        // Ruwe schatting van het aantal tekens dat op één regel past bij een gegeven
+        // lettergrootte, zodat we ook rekening houden met regels die PowerPoint zelf
+        // afbreekt (bijv. "Laat ons steeds vol verwachting leven" in de smalle kolom).
+        function maxTekensPerRegel(fontSize) {
+            const bruikbareBreedtePt = VAK_BREEDTE_INCH * 72 - 14; // min. interne marge van het tekstvak
+            return Math.max(8, Math.floor(bruikbareBreedtePt / (fontSize * 0.52)));
+        }
+
+        function woordWrap(regelsArr, maxTekens) {
+            let resultaat = [];
+            regelsArr.forEach(regel => {
+                if (regel.length <= maxTekens) { resultaat.push(regel); return; }
+                let woorden = regel.split(' ');
+                let huidig = '';
+                woorden.forEach(w => {
+                    let kandidaat = huidig ? huidig + ' ' + w : w;
+                    if (kandidaat.length > maxTekens && huidig) {
+                        resultaat.push(huidig);
+                        huidig = w;
+                    } else {
+                        huidig = kandidaat;
+                    }
+                });
+                if (huidig) resultaat.push(huidig);
+            });
+            return resultaat;
+        }
+
+        // Zoekt de grootste lettergrootte (tot fSize) waarbij de tekst, inclusief door
+        // PowerPoint afgebroken regels, nog binnen het vak past.
+        function berekenFontSize(regelsArr) {
+            for (let proefGrootte = fSize; proefGrootte >= ABSOLUUT_MINIMUM; proefGrootte--) {
+                const effRegels = woordWrap(regelsArr, maxTekensPerRegel(proefGrootte)).length;
+                if (effRegels * proefGrootte * 1.2 <= vakHoogtePt) return proefGrootte;
+            }
+            return ABSOLUUT_MINIMUM;
+        }
+
+        slideTextBlocks.forEach((blok) => {
+            // Het versnummer (bijv. "186:4") hoeft niet apart in de tekst: die staat al
+            // linksboven in de titel. Regels die alleen uit zo'n nummer bestaan, laten we weg.
+            let regelsArr = blok.split('\n').filter(r => !/^\d+\s*:\s*\d+\.?$/.test(r.trim()));
+            if (regelsArr.length === 0) return;
+
+            let subBlokken = [regelsArr];
+
+            // Past dit couplet niet leesbaar (>= 28pt) op één dia? Verdeel het dan over meerdere
+            // dia's, zodat de lettergrootte altijd zo dicht mogelijk bij de ingestelde grootte
+            // (standaard 40pt) blijft — belangrijk voor de leesbaarheid voor oudere kerkgangers.
+            if (berekenFontSize(regelsArr) < MIN_LEESBAAR) {
+                const maxTekensMin = maxTekensPerRegel(MIN_LEESBAAR);
+                const maxEffRegelsPerDia = Math.max(1, Math.floor(vakHoogtePt / (MIN_LEESBAAR * 1.2)));
+                subBlokken = [];
+                let huidigDeel = [];
+                let huidigEffCount = 0;
+                regelsArr.forEach(regel => {
+                    const effVanRegel = woordWrap([regel], maxTekensMin).length;
+                    if (huidigDeel.length > 0 && huidigEffCount + effVanRegel > maxEffRegelsPerDia) {
+                        subBlokken.push(huidigDeel);
+                        huidigDeel = [];
+                        huidigEffCount = 0;
+                    }
+                    huidigDeel.push(regel);
+                    huidigEffCount += effVanRegel;
+                });
+                if (huidigDeel.length > 0) subBlokken.push(huidigDeel);
+            }
+
+            subBlokken.forEach((subRegels) => {
+                const dynamischeFSize = berekenFontSize(subRegels);
+                let slide = pres.addSlide();
+                slide.background = { color: "000000" };
+                slide.addText(item.titel, { x: 0.4, y: 0.3, w: 6.6, h: 0.4, color: "FFFFFF", fontSize: 18, bold: true, fontFace: "Arial", align: "left", valign: "top" });
+                slide.addText(subRegels.join('\n'), { 
+                    x: 0.4, y: 0.9, w: 6.6, h: 4.4, 
+                    color: "FFFFFF", fontSize: dynamischeFSize, 
+                    align: "center", valign: "middle", 
+                    fontFace: "Arial", lineSpacing: dynamischeFSize * 1.2
+                });
+            });
+        });
+    });
+
+    // --- 5. EXPORT ---
+    pres.writeFile("Liturgie_Presentatie.pptx")
+        .then(fileName => { window.toonToast("PowerPoint gereed!", "success"); })
+        .catch(err => { window.toonToast("Export fout: " + err, "error"); });
+};
+</script>
+</body>
+</html>
