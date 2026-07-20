@@ -452,14 +452,14 @@
 </div>
 
 <div id="infoModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
-    <div class="bg-white dark:bg-gray-900 rounded-[24px] shadow-2xl w-11/12 max-w-sm overflow-hidden flex flex-col transform transition-all">
-        <div class="p-5 border-b border-gray-100 flex justify-between items-center">
+    <div class="bg-white dark:bg-gray-900 rounded-[24px] shadow-2xl w-11/12 max-w-sm overflow-hidden flex flex-col transform transition-all max-h-[90vh]">
+        <div class="p-5 border-b border-gray-100 flex justify-between items-center flex-shrink-0">
             <h3 class="text-lg font-bold text-[#1D1D1F]">Over deze app</h3>
             <button onclick="document.getElementById('infoModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 p-1">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
-        <div class="p-5 flex flex-col gap-5">
+        <div class="p-5 flex flex-col gap-5 overflow-y-auto">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
@@ -490,6 +490,15 @@
             </div>
             <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-4 text-center">
                 <p class="text-sm text-[#007AFF] font-medium italic">"Techniek in dienst van de eredienst"</p>
+            </div>
+            <div class="border-t border-gray-100 pt-4">
+                <div class="flex items-center gap-2 mb-2">
+                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                    <span class="text-sm font-semibold text-[#1D1D1F]">Idee of bug melden?</span>
+                </div>
+                <p class="text-xs text-gray-400 mb-2">Laat het weten - je bericht komt direct bij Sem terecht.</p>
+                <textarea id="feedbackInput" rows="3" placeholder="Typ hier je idee of het probleem..." class="w-full bg-[#F5F5F7] border border-transparent rounded-xl py-2.5 px-3 text-sm placeholder-gray-400 apple-input transition-all resize-none"></textarea>
+                <button id="feedbackKnop" onclick="verstuurFeedback()" class="w-full mt-2 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#007AFF] hover:bg-blue-600 transition-colors shadow-sm disabled:opacity-50">Versturen</button>
             </div>
         </div>
     </div>
@@ -603,6 +612,31 @@
             el.innerHTML = '<strong class="text-gray-700">' + aantal.toLocaleString('nl-NL') + ' keer geopend</strong>';
         }
     }
+
+    window.verstuurFeedback = async function() {
+        const input = document.getElementById('feedbackInput');
+        const knop = document.getElementById('feedbackKnop');
+        const bericht = input.value.trim();
+        if (!bericht) { input.focus(); return; }
+        knop.disabled = true;
+        knop.innerText = 'Versturen...';
+        try {
+            await db.collection("feedback").add({
+                bericht: bericht,
+                datum: firebase.firestore.FieldValue.serverTimestamp(),
+                userAgent: navigator.userAgent
+            });
+            input.value = '';
+            knop.innerText = 'Verstuurd! ✓';
+            if (window.toonToast) window.toonToast("Bedankt voor je bericht!", "success");
+            setTimeout(() => { knop.innerText = 'Versturen'; knop.disabled = false; }, 2000);
+        } catch (e) {
+            console.error("Feedback versturen mislukt:", e);
+            knop.innerText = 'Versturen';
+            knop.disabled = false;
+            if (window.toonToast) window.toonToast("Versturen mislukt, probeer later opnieuw.", "error");
+        }
+    };
 
     (async function haalLaatsteUpdate() {
         try {
