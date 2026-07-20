@@ -630,6 +630,18 @@
                 datum: firebase.firestore.FieldValue.serverTimestamp(),
                 userAgent: navigator.userAgent
             });
+            // E-mailmelding naar Sem (web3forms). Faalt dit, dan blijft het bericht
+            // gewoon in Firestore staan - de gebruiker merkt er niets van.
+            fetch("https://api.web3forms.com/submit", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                body: JSON.stringify({
+                    access_key: "da56e2ee-c688-47b5-81fd-dbdb65d92201",
+                    subject: "Nieuwe feedback - Liturgie Assistent",
+                    from_name: "Liturgie Assistent",
+                    message: bericht + "\n\n---\nApparaat: " + navigator.userAgent
+                })
+            }).catch(err => console.warn("E-mailmelding mislukt:", err));
             input.value = '';
             knop.innerText = 'Verstuurd! ✓';
             if (window.toonToast) window.toonToast("Bedankt voor je bericht!", "success");
