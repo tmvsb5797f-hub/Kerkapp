@@ -472,6 +472,10 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
                     <span>Versie <strong class="text-gray-700">2.0</strong></span>
                 </div>
+                <div class="flex items-center gap-2 text-xs text-gray-500">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    <span id="bezoekTeller"><strong class="text-gray-700">laden...</strong></span>
+                </div>
             </div>
             <div class="text-center">
                 <p class="text-sm font-semibold text-[#1D1D1F]">Gemaakt door Sem</p>
@@ -559,16 +563,39 @@
     // er is geen wachtwoord of account nodig. `authKlaar` is een belofte die pas
     // klaar is als de login rond is, zodat opslaan naar de Cloud daar netjes op wacht.
     const authKlaar = auth.signInAnonymously()
-        .then(() => { console.log("Anoniem ingelogd bij Firebase."); return true; })
+        .then(() => { console.log("Anoniem ingelogd bij Firebase."); registreerBezoek(); return true; })
         .catch((e) => {
             console.error("Anonieme login mislukt:", e);
-            // Veelvoorkomend: 'Anonymous sign-in' staat nog uit in de Firebase Console
-            // (Authentication → Sign-in method → Anonymous → inschakelen).
             setCloudStatus('err', e.code === 'auth/operation-not-allowed'
                 ? 'Auth uit (Console)'
                 : 'Login mislukt');
             return false;
         });
+
+    async function registreerBezoek() {
+        try {
+            const ref = db.collection("stats").doc("bezoeken");
+            await db.runTransaction(async (tx) => {
+                const doc = await tx.get(ref);
+                const huidig = doc.exists ? (doc.data().totaal || 0) : 0;
+                tx.set(ref, { totaal: huidig + 1 }, { merge: true });
+                toonBezoekTeller(huidig + 1);
+            });
+        } catch (e) {
+            console.warn("Bezoekteller mislukt:", e);
+            toonBezoekTeller(null);
+        }
+    }
+
+    function toonBezoekTeller(aantal) {
+        const el = document.getElementById('bezoekTeller');
+        if (!el) return;
+        if (aantal === null) {
+            el.innerHTML = '<span class="text-gray-400">niet beschikbaar</span>';
+        } else {
+            el.innerHTML = '<strong class="text-gray-700">' + aantal.toLocaleString('nl-NL') + ' keer geopend</strong>';
+        }
+    }
 
     // --- BEVEILIGINGS-HELPERS ---
     // Zet gevaarlijke tekens om, zodat door de gebruiker/AI aangeleverde tekst
