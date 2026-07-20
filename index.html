@@ -359,7 +359,7 @@
             </div>
         </div>
     </section>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-start">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-stretch">
 
        <section>
             <h2 class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider mb-2 md:mb-3 ml-2">1. Liederen & Psalmen</h2>
@@ -388,20 +388,20 @@
 
     <section class="mt-4 mb-2">
         <div class="flex flex-wrap gap-2">
-            <button onclick="openImportModal()" class="flex-1 min-w-[140px] bg-purple-50 text-purple-600 py-3 rounded-xl text-xs md:text-sm font-semibold flex items-center justify-center gap-2 hover:bg-purple-100 transition-all shadow-sm border border-purple-100">
+            <button onclick="openImportModal()" class="flex-1 min-w-[140px] bg-purple-100 text-purple-700 py-3 rounded-xl text-xs md:text-sm font-semibold flex items-center justify-center gap-2 hover:bg-purple-200 transition-all shadow-sm border border-purple-200">
                 <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                 Plak Liturgie
             </button>
-            <button onclick="document.getElementById('imageFile').click()" class="flex-1 min-w-[120px] bg-blue-50 text-[#007AFF] py-3 rounded-xl text-xs md:text-sm font-semibold flex items-center justify-center gap-2 hover:bg-blue-100 transition-all">
+            <button onclick="document.getElementById('imageFile').click()" class="flex-1 min-w-[120px] bg-blue-100 text-blue-700 py-3 rounded-xl text-xs md:text-sm font-semibold flex items-center justify-center gap-2 hover:bg-blue-200 transition-all shadow-sm border border-blue-200">
                 <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                 Foto Dia
             </button>
             <input id="imageFile" type="file" class="hidden" accept="image/*" onchange="uploadFoto(event)"/>
-            <button onclick="voegLegeDiaToe()" class="flex-1 min-w-[110px] bg-gray-100 text-gray-700 py-3 rounded-xl text-xs md:text-sm font-semibold flex items-center justify-center gap-2 hover:bg-gray-200 transition-all">
+            <button onclick="voegLegeDiaToe()" class="flex-1 min-w-[110px] bg-gray-200 text-gray-700 py-3 rounded-xl text-xs md:text-sm font-semibold flex items-center justify-center gap-2 hover:bg-gray-300 transition-all shadow-sm border border-gray-300">
                 <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
                 Lege Dia
             </button>
-            <button onclick="document.getElementById('tikkieFile').click()" class="flex-1 min-w-[140px] bg-green-50 text-green-600 py-3 rounded-xl text-xs md:text-sm font-semibold flex items-center justify-center gap-2 hover:bg-green-100 transition-all shadow-sm border border-green-100">
+            <button onclick="document.getElementById('tikkieFile').click()" class="flex-1 min-w-[140px] bg-green-100 text-green-700 py-3 rounded-xl text-xs md:text-sm font-semibold flex items-center justify-center gap-2 hover:bg-green-200 transition-all shadow-sm border border-green-200">
                 <svg class="w-4 h-4 md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="3" height="3"></rect><line x1="21" y1="14" x2="21" y2="14.01"></line><line x1="21" y1="21" x2="21" y2="21.01"></line><line x1="14" y1="21" x2="14" y2="21.01"></line><line x1="17" y1="17" x2="21" y2="17"></line><line x1="17" y1="21" x2="17" y2="17"></line></svg>
                 Tikkie QR
             </button>
@@ -2556,7 +2556,7 @@ Geen markdown, geen codeblokken, alleen de JSON.`;
             const img = new Image();
             img.onload = function() {
                 const qrData = extractQR(img);
-                liturgieVolgorde.push({ type: "Foto", titel: "Tikkie QR Code", tekst: qrData });
+                liturgieVolgorde.push({ type: "QR", titel: "Tikkie QR Code", tekst: qrData, qrSize: 3.5 });
                 window.tekenVolgorde();
                 toonToast("QR code toegevoegd!");
             };
@@ -2692,7 +2692,7 @@ Geen markdown, geen codeblokken, alleen de JSON.`;
     function berekenSubSlidesVoorItem(item) {
         const fSize = parseInt(document.getElementById('fontSizeSelect').value) || 40;
         const splitMethod = document.getElementById('linesSelect').value;
-        if (!item.tekst || item.tekst.trim() === '' || item.type === 'Foto' || item.type === 'Leeg') {
+        if (!item.tekst || item.tekst.trim() === '' || item.type === 'Foto' || item.type === 'Leeg' || item.type === 'QR') {
             return [{ regels: [], fontSize: fSize }];
         }
 
@@ -2794,6 +2794,83 @@ Geen markdown, geen codeblokken, alleen de JSON.`;
         if (item.type === 'Foto') {
             preview.innerHTML = `<img src="${item.tekst}" class="w-full h-full object-contain"/>`;
             fitInd.classList.add('hidden'); nav.classList.add('hidden'); hint.classList.add('hidden');
+            return;
+        }
+        if (item.type === 'QR') {
+            const canvas2 = document.getElementById('slideCanvas');
+            if (isLivestream()) {
+                canvas2.style.backgroundImage = `url('${LIVESTREAM_BG}')`;
+                canvas2.style.backgroundSize = 'cover'; canvas2.style.backgroundPosition = 'center';
+                canvas2.style.backgroundColor = 'transparent';
+            } else { canvas2.style.backgroundImage = 'none'; canvas2.style.backgroundColor = 'black'; }
+
+            const qrSizeInch = item.qrSize || 3.5;
+            const qrSizePct = (qrSizeInch / SLIDE_W * 100).toFixed(2);
+            const qrX = item.tekstX ?? ((SLIDE_W - qrSizeInch) / 2);
+            const qrY = item.tekstY ?? ((SLIDE_H - qrSizeInch) / 2);
+            const qrLeftPct = (qrX / SLIDE_W * 100).toFixed(2);
+            const qrTopPct = (qrY / SLIDE_H * 100).toFixed(2);
+
+            preview.innerHTML = `
+                <div id="qrPreviewBox" class="absolute cursor-default" style="left:${qrLeftPct}%;top:${qrTopPct}%;width:${qrSizePct}%;border:1px dashed transparent;border-radius:6px">
+                    <img src="${item.tekst}" class="w-full h-auto rounded-lg shadow-lg" style="pointer-events:none"/>
+                </div>`;
+            fitInd.classList.add('hidden'); nav.classList.add('hidden');
+            hint.innerHTML = 'Dubbelklik om te verplaatsen · Scrollwiel om te schalen';
+            hint.classList.remove('hidden');
+
+            const qrBox = document.getElementById('qrPreviewBox');
+            if (qrBox) {
+                qrBox.addEventListener('dblclick', (e) => {
+                    e.preventDefault();
+                    qrBox.style.borderColor = '#34C759';
+                    qrBox.style.cursor = 'grab';
+                    qrBox.style.boxShadow = '0 0 0 1px rgba(52,199,89,0.4)';
+
+                    function startDrag(ev) {
+                        ev.preventDefault();
+                        qrBox.style.cursor = 'grabbing';
+                        const rect = canvas.getBoundingClientRect();
+                        const ox = (ev.touches ? ev.touches[0].clientX : ev.clientX) - qrBox.getBoundingClientRect().left;
+                        const oy = (ev.touches ? ev.touches[0].clientY : ev.clientY) - qrBox.getBoundingClientRect().top;
+                        function move(me) {
+                            me.preventDefault();
+                            const mx = (me.touches ? me.touches[0].clientX : me.clientX);
+                            const my = (me.touches ? me.touches[0].clientY : me.clientY);
+                            let nx = (mx - ox - rect.left) / rect.width * 100;
+                            let ny = (my - oy - rect.top) / rect.height * 100;
+                            nx = Math.max(0, Math.min(nx, 100 - parseFloat(qrSizePct)));
+                            ny = Math.max(0, Math.min(ny, 100 - parseFloat(qrSizePct)));
+                            qrBox.style.left = nx + '%'; qrBox.style.top = ny + '%';
+                        }
+                        function stop() {
+                            qrBox.style.cursor = 'grab';
+                            item.tekstX = parseFloat((parseFloat(qrBox.style.left) / 100 * SLIDE_W).toFixed(2));
+                            item.tekstY = parseFloat((parseFloat(qrBox.style.top) / 100 * SLIDE_H).toFixed(2));
+                            bewaarLiturgie();
+                            document.removeEventListener('mousemove', move);
+                            document.removeEventListener('mouseup', stop);
+                            document.removeEventListener('touchmove', move);
+                            document.removeEventListener('touchend', stop);
+                        }
+                        document.addEventListener('mousemove', move);
+                        document.addEventListener('mouseup', stop);
+                        document.addEventListener('touchmove', move, { passive: false });
+                        document.addEventListener('touchend', stop);
+                    }
+                    qrBox.onmousedown = startDrag;
+                    qrBox.ontouchstart = startDrag;
+                });
+
+                canvas.addEventListener('wheel', (e) => {
+                    if (!document.querySelector('#qrPreviewBox[style*="border-color"]')) return;
+                    e.preventDefault();
+                    const delta = e.deltaY > 0 ? -0.25 : 0.25;
+                    item.qrSize = Math.max(1, Math.min(8, (item.qrSize || 3.5) + delta));
+                    bewaarLiturgie();
+                    tekenSlidePreview();
+                }, { passive: false });
+            }
             return;
         }
         if (item.type === 'Leeg' || !item.tekst || item.tekst.trim() === '' || item.tekst === ' ') {
@@ -2939,6 +3016,7 @@ Geen markdown, geen codeblokken, alleen de JSON.`;
         liturgieVolgorde.forEach((item, index) => {
             let icon = '';
             if(item.type === 'Foto') icon = '📸 ';
+            else if(item.type === 'QR') icon = '💳 ';
             else if(item.type === 'Leeg') icon = '⬛ ';
 
             const isActive = index === previewItemIdx;
@@ -2954,7 +3032,7 @@ Geen markdown, geen codeblokken, alleen de JSON.`;
                     <h3 class="font-semibold text-[#1D1D1F] text-[13px] md:text-[14px] truncate">${escapeHtml(item.titel)}</h3>
                 </div>
 
-                <button onclick="event.stopPropagation(); openBewerkScherm(${index})" aria-label="Tekst bewerken van ${escapeHtml(item.titel)}" class="p-2 text-[#007AFF] bg-blue-50 hover:bg-blue-100 rounded-full transition-all flex-shrink-0 ${item.type === 'Foto' || item.type === 'Leeg' ? 'hidden' : ''}" title="Tekst bewerken">
+                <button onclick="event.stopPropagation(); openBewerkScherm(${index})" aria-label="Tekst bewerken van ${escapeHtml(item.titel)}" class="p-2 text-[#007AFF] bg-blue-50 hover:bg-blue-100 rounded-full transition-all flex-shrink-0 ${item.type === 'Foto' || item.type === 'Leeg' || item.type === 'QR' ? 'hidden' : ''}" title="Tekst bewerken">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                 </button>
 
@@ -3115,6 +3193,16 @@ window.maakPowerPoint = function() {
             let slide = pres.addSlide();
             slide.background = pptBg;
             slide.addImage({ data: item.tekst, x: 0, y: 0, w: '100%', h: '100%', sizing: { type: 'contain' } });
+            return;
+        }
+
+        if (item.type === "QR") {
+            let slide = pres.addSlide();
+            slide.background = pptBg;
+            const qrS = item.qrSize || 3.5;
+            const qrX = item.tekstX ?? ((SLIDE_W - qrS) / 2);
+            const qrY = item.tekstY ?? ((SLIDE_H - qrS) / 2);
+            slide.addImage({ data: item.tekst, x: qrX, y: qrY, w: qrS, h: qrS });
             return;
         }
 
