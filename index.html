@@ -228,7 +228,10 @@
 <div id="uitlegModal" class="fixed inset-0 z-[200] hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4" onclick="if(event.target === this) sluitUitleg()">
     <div class="bg-white rounded-[24px] shadow-2xl w-full max-w-xl overflow-hidden flex flex-col transform transition-all max-h-[92vh]">
         <div class="p-4 md:p-5 border-b border-gray-100 flex justify-between items-center flex-shrink-0">
-            <span class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider">Hoe werkt de app?</span>
+            <div class="flex items-center gap-2">
+                <span class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider">Hoe werkt de app?</span>
+                <span id="uitlegStapTeller" class="text-[10px] font-bold text-[#007AFF] bg-blue-50 px-2 py-0.5 rounded-full tabular-nums">1 / 7</span>
+            </div>
             <div class="flex items-center gap-1">
                 <button onclick="sluitUitleg()" class="text-[12px] font-semibold text-gray-400 hover:text-gray-700 px-3 py-1 rounded-full hover:bg-gray-100 transition-colors">Sla over</button>
                 <button onclick="sluitUitleg()" title="Sluiten" class="text-gray-400 hover:text-gray-600 p-1">
@@ -1890,10 +1893,11 @@ Bijbelliederen`;
                     <span id="ut-bijbeltext" class="text-gray-400">Bijv: Genesis 1:1-15</span>
                 </div>
             </div>
-            <div class="flex gap-2 mt-3">
-                <div id="ut-knop-plak" class="uitleg-input flex-1 bg-purple-50 text-purple-600 py-2 rounded-xl text-[11px] font-semibold flex items-center justify-center text-center border-2 border-transparent">Plak Liturgie</div>
-                <div class="flex-1 bg-blue-50 text-[#007AFF] py-2 rounded-xl text-[11px] font-semibold flex items-center justify-center text-center">Foto Dia</div>
-                <div class="flex-1 bg-gray-100 text-gray-600 py-2 rounded-xl text-[11px] font-semibold flex items-center justify-center text-center">Lege Dia</div>
+            <div class="flex flex-wrap gap-2 mt-3">
+                <div id="ut-knop-plak" class="uitleg-input flex-1 min-w-[80px] bg-purple-100 text-purple-700 py-2 rounded-xl text-[11px] font-semibold flex items-center justify-center text-center border-2 border-transparent">Plak Liturgie</div>
+                <div class="flex-1 min-w-[70px] bg-blue-100 text-blue-700 py-2 rounded-xl text-[11px] font-semibold flex items-center justify-center text-center">Foto Dia</div>
+                <div class="flex-1 min-w-[70px] bg-gray-200 text-gray-700 py-2 rounded-xl text-[11px] font-semibold flex items-center justify-center text-center">Lege Dia</div>
+                <div class="flex-1 min-w-[80px] bg-green-100 text-green-700 py-2 rounded-xl text-[11px] font-semibold flex items-center justify-center text-center">Tikkie QR</div>
             </div>
             <div class="mt-3 aspect-video bg-black rounded-xl flex items-center justify-center p-3 text-center overflow-hidden">
                 <p id="ut-preview" class="text-white text-[11px] font-medium leading-relaxed italic opacity-70">Typ of selecteer een lied, bijbeltekst of media</p>
@@ -2110,13 +2114,207 @@ Bijbelliederen`;
         }
     }
 
+    // Nep-QR patroon (puur visueel voor de rondleiding, scant niet echt)
+    function uitlegFakeQR(size) {
+        const patroon = [
+            "1111111011101111111","1000001010101000001","1011101000101011101",
+            "1011101011101011101","1011101010001011101","1000001001101000001",
+            "1111111010101111111","0000000011100000000","1101011010110110101",
+            "0010110001011001010","1101001110100101101","0100010101011010010",
+            "1110111011101110111","0000000110100011010","1111111010110101101",
+            "1000001011100110010","1011101000101101101","1011101011010010010","1011101101101110111"
+        ];
+        const n = patroon.length, cell = size / n;
+        let rects = '';
+        for (let r = 0; r < n; r++) for (let c = 0; c < n; c++)
+            if (patroon[r][c] === '1') rects += `<rect x="${(c*cell).toFixed(2)}" y="${(r*cell).toFixed(2)}" width="${cell.toFixed(2)}" height="${cell.toFixed(2)}" fill="#1D1D1F"/>`;
+        return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" style="background:#fff;border-radius:6px;padding:4px;box-sizing:border-box">${rects}</svg>`;
+    }
+
+    // --- Scene: Instellingen & Livestream ---
+    function renderInstellingen(el) {
+        el.innerHTML = `
+        <div class="w-full flex flex-col gap-3">
+            <div class="flex flex-wrap gap-2 justify-center">
+                <div class="bg-white border border-gray-200 rounded-xl px-3 py-2 text-[11px] font-semibold text-gray-700 flex items-center gap-1.5 shadow-sm">Lettertype: <span class="text-[#007AFF]">Arial</span></div>
+                <div class="bg-white border border-gray-200 rounded-xl px-3 py-2 text-[11px] font-semibold text-gray-700 flex items-center gap-1.5 shadow-sm">Grootte: <span class="text-[#007AFF]">40pt</span></div>
+                <div id="ut-livestream" class="bg-white border-2 border-transparent rounded-xl px-3 py-2 text-[11px] font-semibold text-gray-700 flex items-center gap-2 shadow-sm uitleg-input">
+                    Livestream
+                    <span id="ut-lsdot" class="w-8 h-4 rounded-full bg-gray-300 relative transition-colors"><span id="ut-lsknob" class="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-all"></span></span>
+                </div>
+            </div>
+            <div id="ut-lspreview" class="aspect-video bg-black rounded-xl flex items-center justify-center transition-all overflow-hidden relative">
+                <span id="ut-lspreview-txt" class="text-white text-[12px] font-semibold">Voorbeeld dia</span>
+            </div>
+            ${uitlegCursorHtml(85, 92)}
+        </div>`;
+    }
+    async function animateInstellingen(runId) {
+        while (uitlegGeldig(runId)) {
+            const box = document.getElementById('ut-livestream');
+            const dot = document.getElementById('ut-lsdot');
+            const knob = document.getElementById('ut-lsknob');
+            const preview = document.getElementById('ut-lspreview');
+            box.classList.remove('focused');
+            dot.style.background = '#D1D5DB'; knob.style.left = '2px';
+            preview.style.background = '#000'; preview.style.backgroundImage = 'none';
+            uitlegMuis(85, 92);
+            await uitlegSleep(1400); if (!uitlegGeldig(runId)) return;
+
+            uitlegMuis(70, 22);
+            await uitlegSleep(900); if (!uitlegGeldig(runId)) return;
+            uitlegKlik();
+            box.classList.add('focused');
+            dot.style.background = '#34C759'; knob.style.left = '18px';
+            preview.style.backgroundImage = 'linear-gradient(135deg,#1e3a8a,#3b0764)';
+            preview.style.backgroundSize = 'cover';
+            uitlegZetTekst("Livestream-modus", "Zet je dienst uit via de livestream? Dan krijgt elke dia automatisch de mooie livestream-achtergrond.");
+            await uitlegSleep(2600); if (!uitlegGeldig(runId)) return;
+
+            uitlegZetTekst("Instellingen", "Kies bovenaan het lettertype, de lettergrootte en hoe de coupletten worden verdeeld.");
+            uitlegMuis(85, 92);
+            await uitlegSleep(2200); if (!uitlegGeldig(runId)) return;
+        }
+    }
+
+    // --- Scene: Slide Preview & Tekst positioneren ---
+    function renderPreview(el) {
+        el.innerHTML = `
+        <div class="w-full">
+            <div id="ut-slide" class="relative aspect-video bg-black rounded-xl overflow-hidden shadow-inner">
+                <div class="absolute top-2 left-3 text-white/70 text-[9px] font-bold">Psalm 84 : 1</div>
+                <div id="ut-slidetext" class="absolute text-white text-center text-[13px] font-semibold leading-snug px-2" style="left:18%;top:34%;width:64%;border:1px dashed transparent;border-radius:6px;transition:border-color .2s,box-shadow .2s">Hoe lieflijk is uw huis,<br>o HEER der legerscharen</div>
+            </div>
+            <p class="text-center text-[10px] text-gray-400 mt-2 italic">Live voorbeeld van je dia</p>
+            ${uitlegCursorHtml(50, 40)}
+        </div>`;
+    }
+    async function animatePreview(runId) {
+        while (uitlegGeldig(runId)) {
+            const box = document.getElementById('ut-slidetext');
+            box.style.left = '18%'; box.style.top = '34%';
+            box.style.borderColor = 'transparent'; box.style.boxShadow = 'none';
+            uitlegMuis(50, 45);
+            uitlegZetTekst("Live voorbeeld", "Alles wat je toevoegt zie je meteen precies zoals het op de beamer komt - 1-op-1 met de PowerPoint.");
+            await uitlegSleep(2200); if (!uitlegGeldig(runId)) return;
+
+            uitlegKlik(); await uitlegSleep(120); uitlegKlik();
+            box.style.borderColor = '#007AFF'; box.style.boxShadow = '0 0 0 1px rgba(0,122,255,0.4)';
+            uitlegZetTekst("Dubbelklik om te verplaatsen", "Staat de tekst niet mooi? Dubbelklik erop en sleep hem naar de perfecte plek.");
+            await uitlegSleep(1600); if (!uitlegGeldig(runId)) return;
+
+            uitlegMuis(50, 62);
+            box.style.top = '52%';
+            await uitlegSleep(1000); if (!uitlegGeldig(runId)) return;
+            uitlegMuis(38, 60);
+            box.style.left = '10%'; box.style.top = '50%';
+            await uitlegSleep(1400); if (!uitlegGeldig(runId)) return;
+            box.style.borderColor = 'transparent'; box.style.boxShadow = 'none';
+            await uitlegSleep(1400); if (!uitlegGeldig(runId)) return;
+        }
+    }
+
+    // --- Scene: Tikkie QR voor de collecte ---
+    function renderQR(el) {
+        el.innerHTML = `
+        <div class="w-full">
+            <div id="ut-qrknop" class="uitleg-input bg-green-100 text-green-700 py-2.5 rounded-xl text-[12px] font-semibold flex items-center justify-center gap-2 border-2 border-transparent mb-3">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="3" height="3"></rect></svg>
+                Tikkie QR
+            </div>
+            <div id="ut-qrslide" class="relative aspect-video bg-black rounded-xl overflow-hidden flex items-center justify-center">
+                <div class="absolute top-2 left-3 text-white/70 text-[9px] font-bold">Collecte</div>
+                <div id="ut-qrimg" class="transition-all duration-500" style="width:0px;opacity:0">${uitlegFakeQR(110)}</div>
+            </div>
+            ${uitlegCursorHtml(50, 18)}
+        </div>`;
+    }
+    async function animateQR(runId) {
+        while (uitlegGeldig(runId)) {
+            const knop = document.getElementById('ut-qrknop');
+            const img = document.getElementById('ut-qrimg');
+            knop.classList.remove('focused'); knop.style.transform = '';
+            img.style.width = '0px'; img.style.opacity = '0';
+            uitlegMuis(50, 20);
+            uitlegZetTekst("Tikkie QR voor de collecte", "Maak een screenshot van je Tikkie en upload 'm - de app knipt automatisch alleen de QR-code eruit.");
+            await uitlegSleep(2400); if (!uitlegGeldig(runId)) return;
+
+            uitlegMuis(50, 18);
+            await uitlegSleep(700); if (!uitlegGeldig(runId)) return;
+            uitlegKlik();
+            knop.classList.add('focused'); knop.style.transform = 'scale(0.97)';
+            await uitlegSleep(300); knop.style.transform = '';
+            await uitlegSleep(400); if (!uitlegGeldig(runId)) return;
+            img.style.width = '110px'; img.style.opacity = '1';
+            uitlegZetTekst("Netjes op de dia", "De QR verschijnt gecentreerd op een eigen dia. Met scrollen maak je 'm groter of kleiner en met slepen zet je 'm precies goed.");
+            await uitlegSleep(3000); if (!uitlegGeldig(runId)) return;
+        }
+    }
+
+    // --- Scene: Hulp altijd bij de hand ---
+    function renderHulp(el) {
+        el.innerHTML = `
+        <div class="w-full flex flex-col items-center gap-3 py-2 relative" style="min-height:200px">
+            <div id="ut-chatwin" class="w-full max-w-[260px] bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden transition-all duration-300" style="opacity:0;transform:translateY(12px)">
+                <div class="bg-[#007AFF] text-white text-[11px] font-bold px-3 py-2 flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+                    Hulp Assistent
+                </div>
+                <div class="p-3 flex flex-col gap-2 bg-gray-50">
+                    <div class="self-end bg-[#007AFF] text-white text-[10px] px-2.5 py-1.5 rounded-xl rounded-br-none max-w-[80%]">Waar pas ik de volgorde aan?</div>
+                    <div id="ut-chatantwoord" class="self-start bg-white text-gray-700 text-[10px] px-2.5 py-1.5 rounded-xl rounded-bl-none max-w-[85%] shadow-sm" style="opacity:0">Dat kan bij <b>3. Volgorde</b> - ik licht 'm even voor je op! ✨</div>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 mt-1">
+                <div id="ut-chatbtn" class="uitleg-input w-11 h-11 rounded-full bg-[#007AFF] text-white flex items-center justify-center shadow-lg border-2 border-transparent">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+                </div>
+                <div id="ut-infobtn" class="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center shadow-sm text-gray-500">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+            </div>
+            ${uitlegCursorHtml(42, 88)}
+        </div>`;
+    }
+    async function animateHulp(runId) {
+        while (uitlegGeldig(runId)) {
+            const win = document.getElementById('ut-chatwin');
+            const antw = document.getElementById('ut-chatantwoord');
+            const info = document.getElementById('ut-infobtn');
+            win.style.opacity = '0'; win.style.transform = 'translateY(12px)';
+            antw.style.opacity = '0'; info.style.boxShadow = '';
+            uitlegMuis(42, 88);
+            uitlegZetTekst("Hulp altijd bij de hand", "Vastgelopen? Klik linksonder op het chat-icoon en stel gewoon je vraag in gewone taal.");
+            await uitlegSleep(1800); if (!uitlegGeldig(runId)) return;
+
+            uitlegMuis(42, 84);
+            await uitlegSleep(600); if (!uitlegGeldig(runId)) return;
+            uitlegKlik();
+            win.style.opacity = '1'; win.style.transform = 'translateY(0)';
+            await uitlegSleep(900); if (!uitlegGeldig(runId)) return;
+            antw.style.transition = 'opacity .4s'; antw.style.opacity = '1';
+            uitlegZetTekst("De assistent wijst het aan", "Hij legt niet alleen uit waar iets zit, maar laat de knop ook oplichten in de app.");
+            await uitlegSleep(2600); if (!uitlegGeldig(runId)) return;
+
+            uitlegMuis(58, 84);
+            await uitlegSleep(700); if (!uitlegGeldig(runId)) return;
+            info.style.boxShadow = '0 0 0 3px rgba(0,122,255,0.3)';
+            uitlegZetTekst("Info & donkere modus", "Via de i-knop vind je de donkere modus, de laatste update en hoe vaak de app is gebruikt.");
+            await uitlegSleep(2600); if (!uitlegGeldig(runId)) return;
+        }
+    }
+
     const uitlegScenes = [
-        { titel: "Welkom!", tekst: "Deze korte rondleiding laat in ongeveer een minuut zien hoe je een complete liturgie en PowerPoint maakt. Klik op 'Volgende' om te beginnen.", render: render0, animate: animate0 },
+        { titel: "Welkom!", tekst: "Deze rondleiding laat in een paar minuten zien hoe je een complete liturgie en PowerPoint maakt - inclusief slimme extra's zoals de Tikkie QR en de instellingen. Klik op 'Volgende' om te beginnen.", render: render0, animate: animate0 },
         { titel: "0. Dienst Gegevens", tekst: "Vul de datum en de voorganger in - deze komen op de allereerste welkomstdia te staan.", render: render1, animate: animate1 },
         { titel: "1. Liederen Zoeken", tekst: "Typ een liednaam of afkorting zoals 'wk 14' - de AI snapt direct wat je bedoelt.", render: render2, animate: animate2 },
         { titel: "2. Bijbel & Media", tekst: "Typ de Bijbeltekst en druk op Enter. Zo voeg je ook foto's of lege dia's toe.", render: render3, animate: animate3 },
         { titel: "Snelkoppeling: Slim Importeren", tekst: "Plak de hele liturgie in één keer - de AI herkent zelf liederen en Schriftlezingen.", render: render4, animate: animate4 },
+        { titel: "Instellingen & Livestream", tekst: "Stel het lettertype en de grootte in, en kies of de dia's voor de beamer of de livestream zijn.", render: renderInstellingen, animate: animateInstellingen },
+        { titel: "Live Voorbeeld & Positie", tekst: "Bekijk elke dia live en zet de tekst met dubbelklik precies op de goede plek.", render: renderPreview, animate: animatePreview },
+        { titel: "Tikkie QR voor de Collecte", tekst: "Voeg met één klik een nette QR-dia toe voor de digitale collecte.", render: renderQR, animate: animateQR },
         { titel: "3. Jouw Liturgie", tekst: "Hier verschijnt alles wat je toevoegt. Sleep items om de volgorde aan te passen.", render: render5, animate: animate5 },
+        { titel: "Hulp Altijd Bij De Hand", tekst: "De hulp-assistent en de info-knop staan altijd voor je klaar.", render: renderHulp, animate: animateHulp },
         { titel: "Klaar? Exporteer!", tekst: "Klik op deze knop en de app bouwt automatisch een kant-en-klare PowerPoint voor de beamer.", render: render6, animate: animate6 }
     ];
 
@@ -2142,6 +2340,8 @@ Bijbelliederen`;
         document.getElementById('uitlegSceneTekst').innerText = scene.tekst;
         document.getElementById('uitlegSceneTitel').style.opacity = 1;
         document.getElementById('uitlegSceneTekst').style.opacity = 1;
+        const teller = document.getElementById('uitlegStapTeller');
+        if (teller) teller.innerText = (index + 1) + ' / ' + uitlegScenes.length;
 
         const inner = document.getElementById('uitlegDemoInner');
         scene.render(inner);
