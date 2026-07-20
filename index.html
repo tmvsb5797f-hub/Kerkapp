@@ -1855,6 +1855,20 @@ Bijbelliederen`;
         const c = document.getElementById('uitlegCursor');
         if (c) { c.style.left = x + '%'; c.style.top = y + '%'; }
     }
+    // Beweegt de cursor exact naar het midden van een element (nauwkeuriger dan
+    // handmatige percentages, zodat klikken altijd op de juiste plek landen).
+    function uitlegMuisNaarEl(id) {
+        const c = document.getElementById('uitlegCursor');
+        const t = document.getElementById(id);
+        const wrap = document.getElementById('uitlegDemoInner');
+        if (!c || !t || !wrap) return;
+        const tr = t.getBoundingClientRect();
+        const wr = wrap.getBoundingClientRect();
+        if (!tr.width || !wr.width) return;
+        const x = ((tr.left + tr.width / 2) - wr.left) / wr.width * 100;
+        const y = ((tr.top + tr.height / 2) - wr.top) / wr.height * 100;
+        c.style.left = x + '%'; c.style.top = y + '%';
+    }
     function uitlegKlik() {
         const c = document.getElementById('uitlegCursor');
         if (!c) return;
@@ -1889,19 +1903,42 @@ Bijbelliederen`;
 
     // --- Scene 1: Dienst Gegevens ---
     function render1(el) {
+        const jaar = 2026, maand = 0; // januari 2026
+        const offset = new Date(jaar, maand, 1).getDay();
+        const dim = new Date(jaar, maand + 1, 0).getDate();
+        let cellen = '';
+        for (let i = 0; i < offset; i++) cellen += '<span></span>';
+        for (let d = 1; d <= dim; d++) {
+            const doel = d === 18; // een zondag
+            cellen += `<span ${doel ? 'id="ut-doeldag"' : ''} class="w-6 h-6 mx-auto flex items-center justify-center rounded-full text-[11px] text-gray-700 transition-colors">${d}</span>`;
+        }
         el.innerHTML = `
         <div class="w-full">
             <div class="flex flex-col md:flex-row gap-3">
                 <div class="flex-1">
                     <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block ml-1">Datum</label>
-                    <div id="ut-datum" class="uitleg-input w-full bg-white border-2 border-transparent rounded-xl py-2.5 px-4 text-sm font-medium h-11 flex items-center"><span id="ut-datum-tekst" class="text-gray-400">Bijv: Zondag 18-1-2026</span></div>
+                    <div id="ut-datum" class="uitleg-input w-full bg-white border-2 border-transparent rounded-xl py-2.5 px-4 text-sm font-medium h-11 flex items-center justify-between">
+                        <span id="ut-datum-tekst" class="text-gray-400">Klik om datum te kiezen</span>
+                        <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    </div>
                 </div>
                 <div class="flex-1">
                     <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block ml-1">Voorganger</label>
                     <div id="ut-voorganger" class="uitleg-input w-full bg-white border-2 border-transparent rounded-xl py-2.5 px-4 text-sm font-medium h-11 flex items-center"><span id="ut-voorganger-tekst" class="text-gray-400">Bijv: ds. Mark Bot</span></div>
                 </div>
             </div>
-            ${uitlegCursorHtml(85, 92)}
+            <div id="ut-kalender" class="bg-white rounded-2xl shadow-lg border border-gray-100 p-3 mt-2 origin-top transition-all duration-300" style="max-width:220px;opacity:0;transform:scaleY(0.85);pointer-events:none">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="w-5 h-5 flex items-center justify-center rounded-full text-gray-400 text-xs">‹</span>
+                    <span class="text-[12px] font-bold text-[#1D1D1F]">Januari 2026</span>
+                    <span class="w-5 h-5 flex items-center justify-center rounded-full text-gray-400 text-xs">›</span>
+                </div>
+                <div class="grid grid-cols-7 gap-0.5 text-center text-[9px] font-bold text-gray-400 mb-1">
+                    <span>Zo</span><span>Ma</span><span>Di</span><span>Wo</span><span>Do</span><span>Vr</span><span>Za</span>
+                </div>
+                <div class="grid grid-cols-7 gap-0.5 text-center">${cellen}</div>
+            </div>
+            ${uitlegCursorHtml(50, 92)}
         </div>`;
     }
     async function animate1(runId) {
@@ -1910,36 +1947,49 @@ Bijbelliederen`;
             const voorgBox = document.getElementById('ut-voorganger');
             const datumTxt = document.getElementById('ut-datum-tekst');
             const voorgTxt = document.getElementById('ut-voorganger-tekst');
+            const kal = document.getElementById('ut-kalender');
+            const doel = document.getElementById('ut-doeldag');
             datumBox.classList.remove('focused'); voorgBox.classList.remove('focused');
-            datumTxt.innerText = 'Bijv: Zondag 18-1-2026'; datumTxt.className = 'text-gray-400';
+            datumTxt.innerText = 'Klik om datum te kiezen'; datumTxt.className = 'text-gray-400';
             voorgTxt.innerText = 'Bijv: ds. Mark Bot'; voorgTxt.className = 'text-gray-400';
-            uitlegMuis(85, 92);
+            kal.style.opacity = '0'; kal.style.transform = 'scaleY(0.85)';
+            if (doel) { doel.style.background = ''; doel.style.color = ''; }
+            uitlegMuis(50, 92);
             await uitlegSleep(1200); if (!uitlegGeldig(runId)) return;
 
-            uitlegMuis(28, 38);
-            await uitlegSleep(800); if (!uitlegGeldig(runId)) return;
+            // Klik op het datumveld -> de agenda klapt open
+            uitlegMuisNaarEl('ut-datum');
+            await uitlegSleep(850); if (!uitlegGeldig(runId)) return;
             uitlegKlik();
             datumBox.classList.add('focused');
-            datumTxt.innerText = ''; datumTxt.className = 'text-gray-800';
-            await uitlegSleep(300); if (!uitlegGeldig(runId)) return;
-            await uitlegTypen('ut-datum-tekst', 'Zondag 18 januari 2026', runId, 45);
-            if (!uitlegGeldig(runId)) return;
-            datumBox.classList.remove('focused');
-            await uitlegSleep(500); if (!uitlegGeldig(runId)) return;
+            kal.style.opacity = '1'; kal.style.transform = 'scaleY(1)';
+            uitlegZetTekst("Datum uit de agenda", "Klik op het datumveld en kies de juiste zondag - typen hoeft niet.");
+            await uitlegSleep(1100); if (!uitlegGeldig(runId)) return;
 
-            uitlegMuis(72, 38);
-            await uitlegSleep(700); if (!uitlegGeldig(runId)) return;
+            // Beweeg naar de zondag en klik hem aan
+            uitlegMuisNaarEl('ut-doeldag');
+            await uitlegSleep(950); if (!uitlegGeldig(runId)) return;
+            if (doel) { doel.style.background = '#007AFF'; doel.style.color = '#fff'; }
+            uitlegKlik();
+            await uitlegSleep(450); if (!uitlegGeldig(runId)) return;
+            datumTxt.innerText = 'Zondag 18-1-2026'; datumTxt.className = 'text-gray-800';
+            kal.style.opacity = '0'; kal.style.transform = 'scaleY(0.85)';
+            datumBox.classList.remove('focused');
+            await uitlegSleep(900); if (!uitlegGeldig(runId)) return;
+
+            // Voorganger typ je gewoon in
+            uitlegMuisNaarEl('ut-voorganger');
+            await uitlegSleep(750); if (!uitlegGeldig(runId)) return;
             uitlegKlik();
             voorgBox.classList.add('focused');
             voorgTxt.innerText = ''; voorgTxt.className = 'text-gray-800';
+            uitlegZetTekst("Voorganger erbij", "De naam van de voorganger typ je in - samen komen ze op de welkomstdia.");
             await uitlegSleep(300); if (!uitlegGeldig(runId)) return;
             await uitlegTypen('ut-voorganger-tekst', 'ds. Mark Bot', runId, 55);
             if (!uitlegGeldig(runId)) return;
             voorgBox.classList.remove('focused');
 
-            await uitlegSleep(2200); if (!uitlegGeldig(runId)) return;
-            uitlegMuis(85, 92);
-            await uitlegSleep(1800); if (!uitlegGeldig(runId)) return;
+            await uitlegSleep(2400); if (!uitlegGeldig(runId)) return;
         }
     }
 
@@ -1975,7 +2025,7 @@ Bijbelliederen`;
             uitlegMuis(85, 88);
             await uitlegSleep(1300); if (!uitlegGeldig(runId)) return;
 
-            uitlegMuis(30, 25);
+            uitlegMuisNaarEl('ut-liedbox');
             await uitlegSleep(800); if (!uitlegGeldig(runId)) return;
             uitlegKlik();
             box.classList.add('focused');
@@ -1992,7 +2042,7 @@ Bijbelliederen`;
             uitlegZetTekst("2. Kies uit de lijst", "Klik op het juiste lied in de lijst om het toe te voegen aan je liturgie.");
             await uitlegSleep(700); if (!uitlegGeldig(runId)) return;
 
-            uitlegMuis(50, 62);
+            uitlegMuisNaarEl('ut-liediten');
             await uitlegSleep(700); if (!uitlegGeldig(runId)) return;
             item.classList.add('hovered');
             await uitlegSleep(400); if (!uitlegGeldig(runId)) return;
@@ -2040,7 +2090,7 @@ Bijbelliederen`;
             uitlegMuis(85, 92);
             await uitlegSleep(1300); if (!uitlegGeldig(runId)) return;
 
-            uitlegMuis(30, 20);
+            uitlegMuisNaarEl('ut-bijbelbox');
             await uitlegSleep(800); if (!uitlegGeldig(runId)) return;
             uitlegKlik();
             box.classList.add('focused');
@@ -2061,7 +2111,7 @@ Bijbelliederen`;
             uitlegZetTekst("Automatisch geladen", "De foutloze HSV-tekst wordt direct in je slide-voorbeeld gezet.");
             await uitlegSleep(1600); if (!uitlegGeldig(runId)) return;
 
-            uitlegMuis(20, 74);
+            uitlegMuisNaarEl('ut-knop-plak');
             await uitlegSleep(700); if (!uitlegGeldig(runId)) return;
             plakknop.classList.add('uitleg-glow');
             uitlegZetTekst("Tip: Slim Importeren", "Heb je de hele liturgie al als tekst? Plak 'm hier in één keer.");
@@ -2101,7 +2151,7 @@ Bijbelliederen`;
             uitlegMuis(85, 92);
             await uitlegSleep(1300); if (!uitlegGeldig(runId)) return;
 
-            uitlegMuis(45, 30);
+            uitlegMuisNaarEl('ut-importwrap');
             await uitlegSleep(700); if (!uitlegGeldig(runId)) return;
             uitlegKlik();
             wrap.classList.add('focused');
@@ -2114,7 +2164,7 @@ Bijbelliederen`;
             await uitlegSleep(500); if (!uitlegGeldig(runId)) return;
             wrap.classList.remove('focused');
 
-            uitlegMuis(50, 68);
+            uitlegMuisNaarEl('ut-analyseknop');
             await uitlegSleep(700); if (!uitlegGeldig(runId)) return;
             uitlegKlik();
             knop.style.transform = 'scale(0.97)';
