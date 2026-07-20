@@ -498,7 +498,11 @@
                 </div>
                 <p class="text-xs text-gray-400 mb-2">Laat het weten - je bericht komt direct bij Sem terecht.</p>
                 <textarea id="feedbackInput" rows="3" placeholder="Typ hier je idee of het probleem..." class="w-full bg-[#F5F5F7] border border-transparent rounded-xl py-2.5 px-3 text-sm placeholder-gray-400 apple-input transition-all resize-none"></textarea>
-                <button id="feedbackKnop" onclick="verstuurFeedback()" class="w-full mt-2 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#007AFF] hover:bg-blue-600 transition-colors shadow-sm disabled:opacity-50">Versturen</button>
+                <div class="flex gap-2 mt-2">
+                    <button id="feedbackKnop" onclick="verstuurFeedback()" class="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#007AFF] hover:bg-blue-600 transition-colors shadow-sm disabled:opacity-50">Versturen</button>
+                    <button id="feedbackZienKnop" onclick="toonFeedbackLijst()" class="flex-1 py-2.5 rounded-xl text-sm font-semibold text-[#007AFF] bg-blue-50 hover:bg-blue-100 transition-colors">Feedback zien</button>
+                </div>
+                <div id="feedbackLijst" class="mt-3 hidden flex-col gap-2 max-h-52 overflow-y-auto"></div>
             </div>
         </div>
     </div>
@@ -635,6 +639,43 @@
             knop.innerText = 'Versturen';
             knop.disabled = false;
             if (window.toonToast) window.toonToast("Versturen mislukt, probeer later opnieuw.", "error");
+        }
+    };
+
+    window.toonFeedbackLijst = async function() {
+        const lijst = document.getElementById('feedbackLijst');
+        const knop = document.getElementById('feedbackZienKnop');
+        // Toggle: al open? Dan sluiten.
+        if (!lijst.classList.contains('hidden')) {
+            lijst.classList.add('hidden');
+            lijst.classList.remove('flex');
+            knop.innerText = 'Feedback zien';
+            return;
+        }
+        lijst.classList.remove('hidden');
+        lijst.classList.add('flex');
+        knop.innerText = 'Verbergen';
+        lijst.innerHTML = '<p class="text-xs text-gray-400 text-center py-2">Laden...</p>';
+        try {
+            const snap = await db.collection("feedback").orderBy("datum", "desc").limit(50).get();
+            if (snap.empty) {
+                lijst.innerHTML = '<p class="text-xs text-gray-400 text-center py-2">Nog geen berichten.</p>';
+                return;
+            }
+            lijst.innerHTML = '';
+            snap.forEach(doc => {
+                const d = doc.data();
+                const datum = d.datum && d.datum.toDate ? d.datum.toDate() : null;
+                const datumTekst = datum ? datum.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' }) + ' ' + datum.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }) : '';
+                const rij = document.createElement('div');
+                rij.className = 'bg-[#F5F5F7] rounded-xl px-3 py-2 text-left';
+                rij.innerHTML = '<p class="text-[13px] text-gray-700 whitespace-pre-line leading-snug">' + escapeHtml(d.bericht || '') + '</p>' +
+                    (datumTekst ? '<p class="text-[10px] text-gray-400 mt-1">' + datumTekst + '</p>' : '');
+                lijst.appendChild(rij);
+            });
+        } catch (e) {
+            console.error("Feedback ophalen mislukt:", e);
+            lijst.innerHTML = '<p class="text-xs text-[#FF3B30] text-center py-2">Kon berichten niet laden.</p>';
         }
     };
 
