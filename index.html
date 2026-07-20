@@ -654,7 +654,7 @@
         }
     };
 
-    window.toonFeedbackLijst = async function() {
+    window.toonFeedbackLijst = function() {
         const lijst = document.getElementById('feedbackLijst');
         const knop = document.getElementById('feedbackZienKnop');
         // Toggle: al open? Dan sluiten.
@@ -667,22 +667,58 @@
         lijst.classList.remove('hidden');
         lijst.classList.add('flex');
         knop.innerText = 'Verbergen';
+        laadFeedbackRijen();
+    };
+
+    async function laadFeedbackRijen() {
+        const lijst = document.getElementById('feedbackLijst');
         lijst.innerHTML = '<p class="text-xs text-gray-400 text-center py-2">Laden...</p>';
         try {
             const snap = await db.collection("feedback").orderBy("datum", "desc").limit(50).get();
-            if (snap.empty) {
+            const nu = Date.now();
+            const DRIE_DAGEN = 3 * 24 * 60 * 60 * 1000;
+            const zichtbaar = [];
+            snap.forEach(doc => {
+                const d = doc.data();
+                // Afgehandeld en ouder dan 3 dagen? Opruimen en niet meer tonen.
+                if (d.afgehandeld && d.afgehandeldOp && d.afgehandeldOp.toDate) {
+                    if (nu - d.afgehandeldOp.toDate().getTime() > DRIE_DAGEN) {
+                        doc.ref.delete().catch(() => {});
+                        return;
+                    }
+                }
+                zichtbaar.push(doc);
+            });
+            if (zichtbaar.length === 0) {
                 lijst.innerHTML = '<p class="text-xs text-gray-400 text-center py-2">Nog geen berichten.</p>';
                 return;
             }
             lijst.innerHTML = '';
-            snap.forEach(doc => {
+            zichtbaar.forEach(doc => {
                 const d = doc.data();
+                const afgehandeld = !!d.afgehandeld;
                 const datum = d.datum && d.datum.toDate ? d.datum.toDate() : null;
                 const datumTekst = datum ? datum.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' }) + ' ' + datum.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }) : '';
                 const rij = document.createElement('div');
-                rij.className = 'bg-[#F5F5F7] rounded-xl px-3 py-2 text-left';
-                rij.innerHTML = '<p class="text-[13px] text-gray-700 whitespace-pre-line leading-snug">' + escapeHtml(d.bericht || '') + '</p>' +
-                    (datumTekst ? '<p class="text-[10px] text-gray-400 mt-1">' + datumTekst + '</p>' : '');
+                rij.className = 'rounded-xl px-3 py-2 text-left flex items-start gap-2 transition-colors ' + (afgehandeld ? 'bg-green-50' : 'bg-[#F5F5F7]');
+                const vinkKleur = afgehandeld ? 'bg-[#34C759] border-[#34C759] text-white' : 'bg-white border-gray-300 text-transparent';
+                rij.innerHTML =
+                    '<button title="' + (afgehandeld ? 'Markeer als open' : 'Markeer als afgehandeld') + '" class="feedback-vink mt-0.5 w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ' + vinkKleur + '">' +
+                        '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3.5" d="M5 13l4 4L19 7"></path></svg>' +
+                    '</button>' +
+                    '<div class="flex-grow min-w-0">' +
+                        '<p class="text-[13px] whitespace-pre-line leading-snug ' + (afgehandeld ? 'text-gray-400 line-through' : 'text-gray-700') + '">' + escapeHtml(d.bericht || '') + '</p>' +
+                        (datumTekst ? '<p class="text-[10px] text-gray-400 mt-1">' + datumTekst + (afgehandeld ? ' · afgehandeld, verdwijnt na 3 dagen' : '') + '</p>' : '') +
+                    '</div>';
+                rij.querySelector('.feedback-vink').onclick = async () => {
+                    try {
+                        await doc.ref.update({
+                            afgehandeld: !afgehandeld,
+                            afgehandeldOp: !afgehandeld ? firebase.firestore.FieldValue.serverTimestamp() : null
+                        });
+                        laadFeedbackRijen();
+                    } catch (e) { console.error("Afvinken mislukt:", e); }
+                };
                 lijst.appendChild(rij);
             });
         } catch (e) {
