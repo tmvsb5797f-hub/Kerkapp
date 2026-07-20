@@ -382,35 +382,32 @@
                     <input id="bijbelInput" autocomplete="off" class="w-full bg-[#F5F5F7] border border-transparent rounded-xl py-3.5 pl-12 pr-4 text-[14px] md:text-[15px] font-medium placeholder-gray-400 apple-input transition-all" placeholder="Bijv: Genesis 1:1-15" type="text"/>
                 </div>
                 <div id="suggestieBijbel" class="absolute z-50 w-[calc(100%-2rem)] md:w-[calc(100%-3rem)] bg-white/95 backdrop-blur-xl mt-2 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-gray-100 hidden max-h-64 overflow-y-auto"></div>
-<div class="flex gap-2">
-                    <button onclick="openImportModal()" class="flex-1 bg-purple-50 text-purple-600 py-3 rounded-xl text-xs md:text-sm font-semibold flex items-center justify-center gap-2 hover:bg-purple-100 transition-all shadow-sm border border-purple-100">
-                        <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                        Plak Liturgie
-                    </button>
-
-                    <button onclick="document.getElementById('imageFile').click()" class="flex-1 bg-blue-50 text-[#007AFF] py-3 rounded-xl text-xs md:text-sm font-semibold flex items-center justify-center gap-2 hover:bg-blue-100 transition-all">
-                        <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                        Foto Dia
-                    </button>
-                    <input id="imageFile" type="file" class="hidden" accept="image/*" onchange="uploadFoto(event)"/>
-
-                    <button onclick="voegLegeDiaToe()" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl text-xs md:text-sm font-semibold flex items-center justify-center gap-2 hover:bg-gray-200 transition-all">
-                        <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
-                        Lege Dia
-                    </button>
-                </div>
-                <div class="flex gap-2 mt-2">
-                    <button onclick="document.getElementById('tikkieFile').click()" class="flex-1 bg-green-50 text-green-600 py-3 rounded-xl text-xs md:text-sm font-semibold flex items-center justify-center gap-2 hover:bg-green-100 transition-all shadow-sm border border-green-100">
-                        <svg class="w-4 h-4 md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="3" height="3"></rect><line x1="21" y1="14" x2="21" y2="14.01"></line><line x1="21" y1="21" x2="21" y2="21.01"></line><line x1="14" y1="21" x2="14" y2="21.01"></line><line x1="17" y1="17" x2="21" y2="17"></line><line x1="17" y1="21" x2="17" y2="17"></line></svg>
-                        Tikkie QR Dia
-                    </button>
-                    <input id="tikkieFile" type="file" class="hidden" accept="image/*" onchange="uploadTikkieQR(event)"/>
-                </div>
-
-
             </div>
         </section>
     </div>
+
+    <section class="mt-4 mb-2">
+        <div class="flex flex-wrap gap-2">
+            <button onclick="openImportModal()" class="flex-1 min-w-[140px] bg-purple-50 text-purple-600 py-3 rounded-xl text-xs md:text-sm font-semibold flex items-center justify-center gap-2 hover:bg-purple-100 transition-all shadow-sm border border-purple-100">
+                <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                Plak Liturgie
+            </button>
+            <button onclick="document.getElementById('imageFile').click()" class="flex-1 min-w-[120px] bg-blue-50 text-[#007AFF] py-3 rounded-xl text-xs md:text-sm font-semibold flex items-center justify-center gap-2 hover:bg-blue-100 transition-all">
+                <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                Foto Dia
+            </button>
+            <input id="imageFile" type="file" class="hidden" accept="image/*" onchange="uploadFoto(event)"/>
+            <button onclick="voegLegeDiaToe()" class="flex-1 min-w-[110px] bg-gray-100 text-gray-700 py-3 rounded-xl text-xs md:text-sm font-semibold flex items-center justify-center gap-2 hover:bg-gray-200 transition-all">
+                <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
+                Lege Dia
+            </button>
+            <button onclick="document.getElementById('tikkieFile').click()" class="flex-1 min-w-[140px] bg-green-50 text-green-600 py-3 rounded-xl text-xs md:text-sm font-semibold flex items-center justify-center gap-2 hover:bg-green-100 transition-all shadow-sm border border-green-100">
+                <svg class="w-4 h-4 md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="3" height="3"></rect><line x1="21" y1="14" x2="21" y2="14.01"></line><line x1="21" y1="21" x2="21" y2="21.01"></line><line x1="14" y1="21" x2="14" y2="21.01"></line><line x1="17" y1="17" x2="21" y2="17"></line><line x1="17" y1="21" x2="17" y2="17"></line></svg>
+                Tikkie QR
+            </button>
+            <input id="tikkieFile" type="file" class="hidden" accept="image/*" onchange="uploadTikkieQR(event)"/>
+        </div>
+    </section>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-start mt-6 mb-6">
         <section>
