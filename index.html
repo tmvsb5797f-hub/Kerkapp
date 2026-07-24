@@ -1098,9 +1098,8 @@
     const PROXY_URL = "https://gemini-proxy.kerkapp.workers.dev";
     // Liederen + bijbelteksten staan in Cloudflare D1 (via de kerkdata-Worker),
     // niet meer in Firestore — dat scheelt duizenden reads per pagina-lading.
-    // APP_KEY is origin-gelockt en alleen bedoeld voor deze app (semi-openbaar).
+    // De Worker is origin-gelockt; er staat bewust geen schrijf-sleutel in de code.
     const DATA_URL = "https://kerkdata.kerkapp.workers.dev";
-    const APP_KEY = "a475219629f2c2e0438b0f9804f3eb9a";
     let liturgieVolgorde = [];
     let gevondenModel = "";
     
@@ -1597,7 +1596,7 @@ Bijbelliederen`;
         try {
             const res = await fetch(DATA_URL + "/liederen", {
                 method: "POST",
-                headers: { "Content-Type": "application/json", "X-App-Key": APP_KEY },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ id: titel, tekst: tekst })
             });
             if (!res.ok) throw new Error("status " + res.status);
@@ -1612,7 +1611,7 @@ Bijbelliederen`;
         try {
             const res = await fetch(DATA_URL + "/bijbel_hsv", {
                 method: "POST",
-                headers: { "Content-Type": "application/json", "X-App-Key": APP_KEY },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ id: referentie, tekst: tekst })
             });
             if (!res.ok) throw new Error("status " + res.status);

@@ -1,6 +1,6 @@
 // Kerkdata Worker — leest/schrijft de liederen- en bijbel_hsv-cache in D1.
-// Beveiliging: origin-lock (alleen de app-URL's) + geheime sleutels voor schrijven.
-//  - X-App-Key  (APP_SECRET)   : nodig om losse liederen/teksten op te slaan
+// Beveiliging: origin-lock (alleen de app-URL's) op alle verzoeken.
+//  - lezen + losse writes: alleen origin-lock (geen sleutel in de openbare app)
 //  - X-Admin-Key (ADMIN_SECRET): nodig voor de bulk-import (migratie)
 
 const TABELLEN = new Set(["liederen", "bijbel_hsv"]);
@@ -16,7 +16,7 @@ function corsHeaders(origin) {
   return {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, X-App-Key, X-Admin-Key",
+    "Access-Control-Allow-Headers": "Content-Type, X-Admin-Key",
     "Access-Control-Max-Age": "86400",
   };
 }
@@ -50,9 +50,10 @@ export default {
         return json(map, 200, origin);
       }
       if (pad === "/liederen" && request.method === "POST") {
-        if (request.headers.get("X-App-Key") !== env.APP_SECRET) return json({ error: "geen toegang" }, 401, origin);
+        // Alleen origin-gelockt (geen sleutel in de openbare app). Basale groottecheck
+        // om misbruik te beperken.
         const { id, tekst } = await request.json();
-        if (!id || typeof tekst !== "string") return json({ error: "ongeldig" }, 400, origin);
+        if (!id || typeof id !== "string" || id.length > 200 || typeof tekst !== "string" || tekst.length > 20000) return json({ error: "ongeldig" }, 400, origin);
         await env.DB.prepare("INSERT INTO liederen (id, tekst) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET tekst=excluded.tekst").bind(id, tekst).run();
         return json({ ok: true }, 200, origin);
       }
@@ -66,9 +67,8 @@ export default {
         return json({ gevonden: true, tekst: row.tekst }, 200, origin);
       }
       if (pad === "/bijbel_hsv" && request.method === "POST") {
-        if (request.headers.get("X-App-Key") !== env.APP_SECRET) return json({ error: "geen toegang" }, 401, origin);
         const { id, tekst } = await request.json();
-        if (!id || typeof tekst !== "string") return json({ error: "ongeldig" }, 400, origin);
+        if (!id || typeof id !== "string" || id.length > 200 || typeof tekst !== "string" || tekst.length > 20000) return json({ error: "ongeldig" }, 400, origin);
         await env.DB.prepare("INSERT INTO bijbel_hsv (id, tekst) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET tekst=excluded.tekst").bind(id, tekst).run();
         return json({ ok: true }, 200, origin);
       }
