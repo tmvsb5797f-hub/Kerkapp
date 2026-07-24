@@ -2767,8 +2767,138 @@ Bijbelliederen`;
         }
     }
 
+    // --- Scene: Meelees-versie (telefoon + QR) ---
+    function renderMeeleesTour(el) {
+        el.innerHTML = `
+        <div class="w-full flex items-center justify-center gap-5">
+            <div class="flex flex-col items-center gap-2">
+                <div id="ut-ml-toggle" class="uitleg-input bg-white border-2 border-transparent rounded-xl px-3 py-2 text-[11px] font-semibold text-gray-700 flex items-center gap-2 shadow-sm">
+                    Meelees-versie
+                    <span id="ut-ml-dot" class="w-8 h-4 rounded-full bg-gray-300 relative transition-colors"><span id="ut-ml-knob" class="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-all"></span></span>
+                </div>
+                <div id="ut-ml-qr" class="transition-all duration-500 mt-1" style="opacity:0;transform:scale(0.8)">${uitlegFakeQR(66)}</div>
+                <div class="text-[9px] text-gray-400 font-semibold">Scan &amp; lees mee</div>
+            </div>
+            <div id="ut-ml-phone" class="transition-all duration-500" style="opacity:0;transform:translateY(14px);width:118px;border-radius:20px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.18);border:4px solid #1f2937;background:#fff">
+                <div style="background:linear-gradient(180deg,#ffd9a0,#fff3e0)">
+                    ${meeleesSceneSVG()}
+                    <div style="text-align:center;padding:4px 6px 2px"><div style="font-size:7px;font-weight:800;letter-spacing:.1em;color:#c07f33">LITURGIE</div><div style="font-size:9px;font-weight:800;color:#4a3320">Zondag 26 juli</div></div>
+                    <div style="padding:4px 8px 10px">
+                        <div style="background:rgba(255,255,255,0.85);border-radius:8px;padding:4px 6px;margin-bottom:4px"><div style="font-size:6px;font-weight:800;color:#c07f33">♪ ZANG</div><div style="font-size:8px;font-weight:700;color:#4a3320">Psalm 84 : 1</div></div>
+                        <div style="background:rgba(255,255,255,0.85);border-radius:8px;padding:4px 6px"><div style="font-size:6px;font-weight:800;color:#c07f33">📖 LEZING</div><div style="font-size:8px;font-weight:700;color:#4a3320">Mattheüs 11</div></div>
+                    </div>
+                </div>
+            </div>
+            ${uitlegCursorHtml(28, 22)}
+        </div>`;
+    }
+    async function animateMeeleesTour(runId) {
+        while (uitlegGeldig(runId)) {
+            const box = document.getElementById('ut-ml-toggle');
+            const dot = document.getElementById('ut-ml-dot'), knob = document.getElementById('ut-ml-knob');
+            const phone = document.getElementById('ut-ml-phone'), qr = document.getElementById('ut-ml-qr');
+            box.classList.remove('focused'); dot.style.background = '#D1D5DB'; knob.style.left = '2px';
+            phone.style.opacity = '0'; phone.style.transform = 'translateY(14px)';
+            qr.style.opacity = '0'; qr.style.transform = 'scale(0.8)';
+            uitlegMuis(28, 22);
+            uitlegZetTekst("Meelees-versie aanzetten", "Zet deze schakelaar aan bij de i-knop, links onderin.");
+            await uitlegSleep(1600); if (!uitlegGeldig(runId)) return;
+
+            uitlegMuisNaarEl('ut-ml-toggle');
+            await uitlegSleep(800); if (!uitlegGeldig(runId)) return;
+            uitlegKlik(); box.classList.add('focused'); dot.style.background = '#34C759'; knob.style.left = '18px';
+            await uitlegSleep(500); if (!uitlegGeldig(runId)) return;
+            phone.style.opacity = '1'; phone.style.transform = 'translateY(0)';
+            qr.style.opacity = '1'; qr.style.transform = 'scale(1)';
+            uitlegZetTekst("Meelezen op de telefoon", "Bij het exporteren komt er een QR-dia in de PowerPoint. Gemeenteleden scannen en lezen mee op een warme pagina.");
+            await uitlegSleep(3400); if (!uitlegGeldig(runId)) return;
+        }
+    }
+
+    // --- Scene: Archief (opslaan & herladen) ---
+    function renderArchiefTour(el) {
+        el.innerHTML = `
+        <div class="w-full">
+            <div class="flex items-center justify-end gap-3 mb-3">
+                <div id="ut-arch-opslaan" class="uitleg-input text-[11px] font-semibold text-[#007AFF] bg-blue-50 px-3 py-1.5 rounded-lg border-2 border-transparent">Opslaan</div>
+                <div id="ut-arch-open" class="uitleg-input text-[11px] font-semibold text-gray-600 bg-gray-100 px-3 py-1.5 rounded-lg border-2 border-transparent">Archief</div>
+            </div>
+            <div id="ut-arch-panel" class="bg-white rounded-xl border border-gray-100 shadow-sm p-2 transition-all duration-300" style="opacity:0;transform:translateY(-6px)">
+                <div class="bg-[#F5F5F7] rounded-lg px-3 py-2 flex items-center gap-2">
+                    <div class="flex-grow min-w-0"><div class="text-[12px] font-semibold text-[#1D1D1F]">Zondag 19 juli 2026</div><div class="text-[9px] text-gray-400">ds. Robert Smit · 8 items</div></div>
+                    <div class="text-[10px] font-semibold text-white bg-[#007AFF] px-2.5 py-1 rounded-md flex-shrink-0">Laden</div>
+                </div>
+                <div class="bg-[#F5F5F7] rounded-lg px-3 py-2 flex items-center gap-2 mt-2">
+                    <div class="flex-grow min-w-0"><div class="text-[12px] font-semibold text-[#1D1D1F]">Zondag 12 juli 2026</div><div class="text-[9px] text-gray-400">ds. J. de Vries · 10 items</div></div>
+                    <div class="text-[10px] font-semibold text-white bg-[#007AFF] px-2.5 py-1 rounded-md flex-shrink-0">Laden</div>
+                </div>
+            </div>
+            ${uitlegCursorHtml(85, 12)}
+        </div>`;
+    }
+    async function animateArchiefTour(runId) {
+        while (uitlegGeldig(runId)) {
+            const opsl = document.getElementById('ut-arch-opslaan');
+            const open = document.getElementById('ut-arch-open');
+            const panel = document.getElementById('ut-arch-panel');
+            opsl.classList.remove('focused'); open.classList.remove('focused');
+            panel.style.opacity = '0'; panel.style.transform = 'translateY(-6px)';
+            uitlegMuis(85, 12);
+            uitlegZetTekst("Bewaar je liturgie", "Klik op 'Opslaan' om de hele liturgie in het archief te zetten.");
+            await uitlegSleep(1500); if (!uitlegGeldig(runId)) return;
+
+            uitlegMuisNaarEl('ut-arch-opslaan');
+            await uitlegSleep(850); if (!uitlegGeldig(runId)) return;
+            uitlegKlik(); opsl.classList.add('focused');
+            await uitlegSleep(750); if (!uitlegGeldig(runId)) return;
+            opsl.classList.remove('focused');
+
+            uitlegZetTekst("Later terugzetten", "Open 'Archief' om een eerdere dienst te herladen - handig om een vorige zondag te hergebruiken.");
+            uitlegMuisNaarEl('ut-arch-open');
+            await uitlegSleep(900); if (!uitlegGeldig(runId)) return;
+            uitlegKlik(); open.classList.add('focused');
+            panel.style.opacity = '1'; panel.style.transform = 'translateY(0)';
+            await uitlegSleep(3000); if (!uitlegGeldig(runId)) return;
+        }
+    }
+
+    // --- Scene: Zet op je beginscherm (PWA) ---
+    function renderInstall(el) {
+        el.innerHTML = `
+        <div class="w-full h-full flex items-center justify-center gap-6 py-4">
+            <div id="ut-appicon" class="transition-all duration-500" style="opacity:0;transform:scale(0.6)">
+                <div style="width:76px;height:76px;border-radius:18px;background:linear-gradient(135deg,#0A84FF,#0060DF);box-shadow:0 10px 22px rgba(0,96,223,0.35);display:flex;align-items:center;justify-content:center">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="#fff"><rect x="10.4" y="4" width="3.2" height="16" rx="1.2"/><rect x="6.5" y="8.4" width="11" height="3.2" rx="1.2"/></svg>
+                </div>
+                <div class="text-[10px] text-gray-500 font-medium text-center mt-1.5">Liturgie</div>
+            </div>
+            <div class="max-w-[180px]">
+                <div class="flex items-center gap-2 text-[12px] font-semibold text-gray-600 mb-2">
+                    <svg class="w-4 h-4 text-[#007AFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v12m0-12l-4 4m4-4l4 4M5 14v4a2 2 0 002 2h10a2 2 0 002-2v-4"></path></svg>
+                    Deelknop in de browser
+                </div>
+                <div class="text-[11px] text-gray-400 leading-relaxed">Kies "Zet op beginscherm" en de app opent als een echte app - hij werkt dan ook zonder internet.</div>
+            </div>
+            ${uitlegCursorHtml(50, 90)}
+        </div>`;
+    }
+    async function animateInstall(runId) {
+        while (uitlegGeldig(runId)) {
+            const icoon = document.getElementById('ut-appicon');
+            icoon.style.opacity = '0'; icoon.style.transform = 'scale(0.6)';
+            uitlegMuis(50, 90);
+            uitlegZetTekst("Zet 'm op je beginscherm", "Via de deelknop van je browser kun je de app installeren als een echte app.");
+            await uitlegSleep(1600); if (!uitlegGeldig(runId)) return;
+            uitlegMuisNaarEl('ut-appicon');
+            await uitlegSleep(700); if (!uitlegGeldig(runId)) return;
+            icoon.style.opacity = '1'; icoon.style.transform = 'scale(1)';
+            uitlegZetTekst("Altijd bij de hand", "Zo open je 'm met één tik en werkt hij ook op wankele kerk-wifi.");
+            await uitlegSleep(3000); if (!uitlegGeldig(runId)) return;
+        }
+    }
+
     const uitlegScenes = [
-        { titel: "Welkom!", tekst: "Deze rondleiding laat in een paar minuten zien hoe je een complete liturgie en PowerPoint maakt - inclusief slimme extra's zoals de Tikkie QR en de instellingen. Klik op 'Volgende' om te beginnen.", render: render0, animate: animate0 },
+        { titel: "Welkom!", tekst: "Deze rondleiding laat in een paar minuten zien hoe je een complete liturgie en PowerPoint maakt - inclusief slimme extra's zoals de meelees-versie, het archief en de Tikkie QR. Klik op 'Volgende' om te beginnen.", render: render0, animate: animate0 },
         { titel: "0. Dienst Gegevens", tekst: "Vul de datum en de voorganger in - deze komen op de allereerste welkomstdia te staan.", render: render1, animate: animate1 },
         { titel: "1. Liederen Zoeken", tekst: "Typ een liednaam of afkorting zoals 'wk 14' - de AI snapt direct wat je bedoelt.", render: render2, animate: animate2 },
         { titel: "2. Bijbel & Media", tekst: "Typ de Bijbeltekst en druk op Enter. Zo voeg je ook foto's of lege dia's toe.", render: render3, animate: animate3 },
@@ -2776,8 +2906,11 @@ Bijbelliederen`;
         { titel: "Instellingen & Livestream", tekst: "Stel het lettertype en de grootte in, en kies of de dia's voor de beamer of de livestream zijn.", render: renderInstellingen, animate: animateInstellingen },
         { titel: "Live Voorbeeld & Positie", tekst: "Bekijk elke dia live en zet de tekst met dubbelklik precies op de goede plek.", render: renderPreview, animate: animatePreview },
         { titel: "Tikkie QR voor de Collecte", tekst: "Voeg met één klik een nette QR-dia toe voor de digitale collecte.", render: renderQR, animate: animateQR },
+        { titel: "Meelees-versie voor de Gemeente", tekst: "Laat gemeenteleden op hun telefoon meelezen via een QR-code op de beamer.", render: renderMeeleesTour, animate: animateMeeleesTour },
         { titel: "3. Jouw Liturgie", tekst: "Hier verschijnt alles wat je toevoegt. Sleep items om de volgorde aan te passen.", render: render5, animate: animate5 },
+        { titel: "Archief: Opslaan & Herladen", tekst: "Bewaar liturgieën en zet een eerdere dienst met één klik terug.", render: renderArchiefTour, animate: animateArchiefTour },
         { titel: "Hulp Altijd Bij De Hand", tekst: "De hulp-assistent en de info-knop staan altijd voor je klaar.", render: renderHulp, animate: animateHulp },
+        { titel: "Zet op je Beginscherm", tekst: "Installeer de app als een echte app - werkt ook zonder internet.", render: renderInstall, animate: animateInstall },
         { titel: "Klaar? Exporteer!", tekst: "Klik op deze knop en de app bouwt automatisch een kant-en-klare PowerPoint voor de beamer.", render: render6, animate: animate6 }
     ];
 
