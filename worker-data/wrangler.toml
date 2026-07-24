@@ -1,0 +1,8 @@
+name = "kerkdata"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "kerkapp-data"
+database_id = "7d4914d6-d3fe-470f-b68d-cab870d5e500"

@@ -1096,6 +1096,11 @@
 
     // --- 2. START VARIABELEN ---
     const PROXY_URL = "https://gemini-proxy.kerkapp.workers.dev";
+    // Liederen + bijbelteksten staan in Cloudflare D1 (via de kerkdata-Worker),
+    // niet meer in Firestore — dat scheelt duizenden reads per pagina-lading.
+    // APP_KEY is origin-gelockt en alleen bedoeld voor deze app (semi-openbaar).
+    const DATA_URL = "https://kerkdata.kerkapp.workers.dev";
+    const APP_KEY = "a475219629f2c2e0438b0f9804f3eb9a";
     let liturgieVolgorde = [];
     let gevondenModel = "";
     
@@ -1180,21 +1185,37 @@
     }
 
     async function laadCloudDatabase() {
-        const ingelogd = await authKlaar; // login afwachten voor een eerlijke statusmelding
+        // 1. Verse lokale cache (max 12u oud)? Gebruik die en spaar een D1-lees uit.
         try {
-            const snapshotLiederen = await db.collection("liederen").get();
-            snapshotLiederen.forEach((doc) => {
-                window.liederenDatabase[doc.id] = doc.data().tekst;
-            });
-            // Lezen lukt (mogelijk publiek), maar zonder login kan er niets worden
-            // opgeslagen. Dat maken we in de badge zichtbaar.
-            if (ingelogd) {
+            const tijd = parseInt(localStorage.getItem('liederenCacheTijd') || '0', 10);
+            const cache = localStorage.getItem('liederenCache');
+            if (cache && (Date.now() - tijd) < 12 * 3600 * 1000) {
+                window.liederenDatabase = JSON.parse(cache);
                 setCloudStatus('ok', 'Cloud Actief');
-            } else {
-                setCloudStatus('err', 'Alleen lezen (login uit)');
+                return;
             }
-        } catch(error) {
-            setCloudStatus('err', 'Cloud Fout');
+        } catch (e) { /* cache stuk of vol: gewoon vers ophalen */ }
+
+        // 2. Vers ophalen uit D1 (via de Worker).
+        try {
+            const res = await fetch(DATA_URL + "/liederen");
+            if (!res.ok) throw new Error("status " + res.status);
+            const map = await res.json();
+            window.liederenDatabase = map;
+            try {
+                localStorage.setItem('liederenCache', JSON.stringify(map));
+                localStorage.setItem('liederenCacheTijd', String(Date.now()));
+            } catch (e) { /* opslag vol: niet erg */ }
+            setCloudStatus('ok', 'Cloud Actief');
+        } catch (error) {
+            // Netwerk weg? Val terug op een (verouderde) cache als die er is.
+            const cache = localStorage.getItem('liederenCache');
+            if (cache) {
+                window.liederenDatabase = JSON.parse(cache);
+                setCloudStatus('ok', 'Cloud (offline)');
+            } else {
+                setCloudStatus('err', 'Cloud Fout');
+            }
         }
     }
 
@@ -1571,24 +1592,34 @@ Bijbelliederen`;
 
   async function slaLiedOpInCloud(titel, tekst) {
         window.liederenDatabase[titel] = tekst;
+        // Lokale cache meteen bijwerken zodat het nieuwe lied direct beschikbaar is.
+        try { localStorage.setItem('liederenCache', JSON.stringify(window.liederenDatabase)); } catch (e) {}
         try {
-            await authKlaar; // wacht tot de anonieme login rond is (nodig voor schrijven)
-            await db.collection("liederen").doc(titel).set({ tekst: tekst }, { merge: true });
-            window.toonToast(`'${titel}' succesvol opgeslagen in de database!`, "success"); 
+            const res = await fetch(DATA_URL + "/liederen", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "X-App-Key": APP_KEY },
+                body: JSON.stringify({ id: titel, tekst: tekst })
+            });
+            if (!res.ok) throw new Error("status " + res.status);
+            window.toonToast(`'${titel}' succesvol opgeslagen in de database!`, "success");
         } catch(error) {
             console.error("Fout bij opslaan Lied:", error);
-            window.toonToast("Fout: Geen toegang tot Firebase (Check je Regels!)", "error");
+            window.toonToast("Fout bij opslaan in de database.", "error");
         }
     }
 
     async function slaBijbelOpInCloud(referentie, tekst) {
         try {
-            await authKlaar; // wacht tot de anonieme login rond is (nodig voor schrijven)
-            await db.collection("bijbel_hsv").doc(referentie).set({ tekst: tekst }, { merge: true });
-            window.toonToast(`'${referentie}' succesvol opgeslagen in de database!`, "success"); 
+            const res = await fetch(DATA_URL + "/bijbel_hsv", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "X-App-Key": APP_KEY },
+                body: JSON.stringify({ id: referentie, tekst: tekst })
+            });
+            if (!res.ok) throw new Error("status " + res.status);
+            window.toonToast(`'${referentie}' succesvol opgeslagen in de database!`, "success");
         } catch(error) {
             console.error("Fout bij opslaan Bijbeltekst:", error);
-            window.toonToast("Fout: Geen toegang tot Firebase (Check je Regels!)", "error");
+            window.toonToast("Fout bij opslaan in de database.", "error");
         }
     }
 
@@ -2095,10 +2126,11 @@ Bijbelliederen`;
                 e.target.value = "";
 
                 try {
-                    const doc = await db.collection("bijbel_hsv").doc(invoer).get();
+                    const r = await fetch(DATA_URL + "/bijbel_hsv?id=" + encodeURIComponent(invoer));
+                    const data = r.ok ? await r.json() : { gevonden: false };
 
-                    if (doc.exists && doc.data().tekst) {
-                        window.toonControleModal(invoer + " (HSV)", doc.data().tekst, "Schriftlezing");
+                    if (data.gevonden && data.tekst) {
+                        window.toonControleModal(invoer + " (HSV)", data.tekst, "Schriftlezing");
                     } else {
                         await haalBijbelViaAI(invoer);
                     }
@@ -3074,9 +3106,10 @@ ${tekst}
                 } else {
                     let zoekTitel = titel.replace(" (HSV)", "").trim();
                     try {
-                        const doc = await db.collection("bijbel_hsv").doc(zoekTitel).get();
-                        if (doc.exists && doc.data().tekst) {
-                            definitieveTekst = doc.data().tekst;
+                        const r = await fetch(DATA_URL + "/bijbel_hsv?id=" + encodeURIComponent(zoekTitel));
+                        const data = r.ok ? await r.json() : { gevonden: false };
+                        if (data.gevonden && data.tekst) {
+                            definitieveTekst = data.tekst;
                             inCloud = true;
                         }
                     } catch(e) {}
