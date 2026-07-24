@@ -3505,30 +3505,49 @@ Geen markdown, geen codeblokken, alleen de JSON.`;
     let sleepActief = false;
     let sleepOffsetX = 0, sleepOffsetY = 0;
 
-    function pptMaxTekensPerRegel(fontSize) {
-        return Math.max(8, Math.floor((TEKST_DEF_W * 72 - 14) / (fontSize * 0.52)));
-    }
-    function pptWoordWrap(regelsArr, maxTekens) {
-        let res = [];
-        regelsArr.forEach(r => {
-            if (r.length <= maxTekens) { res.push(r); return; }
-            let woorden = r.split(' '), huidig = '';
-            woorden.forEach(w => {
-                let k = huidig ? huidig + ' ' + w : w;
-                if (k.length > maxTekens && huidig) { res.push(huidig); huidig = w; }
-                else huidig = k;
-            });
-            if (huidig) res.push(huidig);
-        });
-        return res;
-    }
-    function pptBerekenFontSize(regelsArr, gewenst) {
-        const vakHoogtePt = TEKST_DEF_H * 72 * 0.92;
-        for (let fs = gewenst; fs >= PREVIEW_MIN_FONT; fs--) {
-            const eff = pptWoordWrap(regelsArr, pptMaxTekensPerRegel(fs)).length;
-            if (eff * fs * 1.2 <= vakHoogtePt) return fs;
+    // Meet de werkelijke hoogte van de tekst in een verborgen vak met exact dezelfde
+    // breedte, lettertype en regelhoogte als het tekstvak op de dia. Zo weten we
+    // zeker of iets past (i.p.v. het aantal regels te schatten).
+    let _pptMeetVak = null;
+    function pptMeetHoogte(regelsArr, fontSizePt, font) {
+        if (!_pptMeetVak) {
+            _pptMeetVak = document.createElement('div');
+            _pptMeetVak.style.cssText = 'position:absolute;left:-99999px;top:0;visibility:hidden;white-space:pre-wrap;overflow-wrap:break-word;padding:0;margin:0;border:0;box-sizing:border-box;';
+            document.body.appendChild(_pptMeetVak);
         }
-        return PREVIEW_MIN_FONT;
+        const PPI = 96; // pixels per inch
+        _pptMeetVak.style.width = (TEKST_DEF_W * PPI) + 'px';
+        _pptMeetVak.style.fontFamily = font || 'Arial';
+        _pptMeetVak.style.fontSize = (fontSizePt * 4 / 3) + 'px'; // pt → px
+        _pptMeetVak.style.lineHeight = '1.2';                     // = lineSpacing fontSize*1.2
+        _pptMeetVak.textContent = regelsArr.join('\n');
+        return _pptMeetVak.scrollHeight;
+    }
+    function pptPastInVak(regelsArr, fontSizePt, font) {
+        const vakHoogtePx = TEKST_DEF_H * 96 * 0.92; // kleine veiligheidsmarge
+        return pptMeetHoogte(regelsArr, fontSizePt, font) <= vakHoogtePx;
+    }
+    // Geeft één of meer sub-dia's terug die gegarandeerd passen: eerst zo groot
+    // mogelijk lettertype (tot PREVIEW_MIN_FONT); past het dan nog niet, dan splitsen.
+    function pptFitBlok(regelsArr, gewenstFS, font) {
+        for (let fs = gewenstFS; fs >= PREVIEW_MIN_FONT; fs--) {
+            if (pptPastInVak(regelsArr, fs, font)) return [{ regels: regelsArr, fontSize: fs }];
+        }
+        // Past niet bij het minimum → opsplitsen over meerdere dia's.
+        if (regelsArr.length >= 2) {
+            const mid = Math.ceil(regelsArr.length / 2);
+            return pptFitBlok(regelsArr.slice(0, mid), gewenstFS, font)
+                .concat(pptFitBlok(regelsArr.slice(mid), gewenstFS, font));
+        }
+        // Eén te lange regel/alinea: hak 'm in twee helften op woordgrens.
+        const woorden = (regelsArr[0] || '').split(' ');
+        if (woorden.length >= 2) {
+            const mid = Math.ceil(woorden.length / 2);
+            return pptFitBlok([woorden.slice(0, mid).join(' ')], gewenstFS, font)
+                .concat(pptFitBlok([woorden.slice(mid).join(' ')], gewenstFS, font));
+        }
+        // Onsplitsbaar (één enorm woord): forceer het minimum.
+        return [{ regels: regelsArr, fontSize: PREVIEW_MIN_FONT }];
     }
 
     function berekenSubSlidesVoorItem(item) {
@@ -3577,25 +3596,12 @@ Geen markdown, geen codeblokken, alleen de JSON.`;
             }
         }
 
+        const font = getFont();
         let result = [];
         blokken.forEach(regelsArr => {
             regelsArr = regelsArr.filter(r => !/^\d+\s*:\s*\d+\.?$/.test(r.trim()));
             if (!regelsArr.length) return;
-            const fs = pptBerekenFontSize(regelsArr, fSize);
-            if (fs < PREVIEW_MIN_FONT) {
-                const vakHoogtePt = TEKST_DEF_H * 72 * 0.92;
-                const maxTM = pptMaxTekensPerRegel(PREVIEW_MIN_FONT);
-                const maxEff = Math.max(1, Math.floor(vakHoogtePt / (PREVIEW_MIN_FONT * 1.2)));
-                let deel = [], ec = 0;
-                const gewrapteRegels = pptWoordWrap(regelsArr, maxTM);
-                gewrapteRegels.forEach(r => {
-                    if (deel.length > 0 && ec + 1 > maxEff) { result.push({ regels: deel, fontSize: pptBerekenFontSize(deel, fSize) }); deel = []; ec = 0; }
-                    deel.push(r); ec += 1;
-                });
-                if (deel.length) result.push({ regels: deel, fontSize: pptBerekenFontSize(deel, fSize) });
-            } else {
-                result.push({ regels: regelsArr, fontSize: fs });
-            }
+            result = result.concat(pptFitBlok(regelsArr, fSize, font));
         });
         return result.length ? result : [{ regels: [], fontSize: fSize }];
     }
@@ -4030,9 +4036,9 @@ window.maakPowerPoint = async function() {
             const qrData = maakQRDataURL(meeleesUrl, 8, 2);
             let qrSlide = pres.addSlide();
             qrSlide.background = pptBg;
-            qrSlide.addText("Lees mee op je telefoon", { x: 0.5, y: 0.6, w: 9, h: 0.8, color: "FFFFFF", fontSize: 34, bold: true, fontFace: pptFont, align: "center" });
+            qrSlide.addText("Leest u mee op uw telefoon", { x: 0.5, y: 0.6, w: 9, h: 0.8, color: "FFFFFF", fontSize: 34, bold: true, fontFace: pptFont, align: "center" });
             qrSlide.addImage({ data: qrData, x: 3.65, y: 1.6, w: 2.7, h: 2.7, rounding: false });
-            qrSlide.addText("Scan de QR-code met je telefooncamera", { x: 0.5, y: 4.6, w: 9, h: 0.6, color: "CCCCCC", fontSize: 18, fontFace: pptFont, align: "center" });
+            qrSlide.addText("Scant u de QR-code met uw telefooncamera", { x: 0.5, y: 4.6, w: 9, h: 0.6, color: "CCCCCC", fontSize: 18, fontFace: pptFont, align: "center" });
             toonDeelModal(meeleesUrl);
         } catch (e) {
             console.error("Meelees-QR maken mislukt:", e);
