@@ -435,7 +435,17 @@
         <section>
             <div class="flex items-center justify-between mb-2 md:mb-3 ml-2 pr-1">
                 <h2 class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider">3. Volgorde</h2>
-                <button onclick="wisLiturgie()" class="text-[11px] font-semibold text-gray-400 hover:text-[#FF3B30] transition-colors">Leegmaken</button>
+                <div class="flex items-center gap-3">
+                    <button onclick="slaLiturgieOp()" class="text-[11px] font-semibold text-[#007AFF] hover:text-blue-700 transition-colors flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                        Opslaan
+                    </button>
+                    <button onclick="openArchief()" class="text-[11px] font-semibold text-gray-500 hover:text-[#007AFF] transition-colors flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
+                        Archief
+                    </button>
+                    <button onclick="wisLiturgie()" class="text-[11px] font-semibold text-gray-400 hover:text-[#FF3B30] transition-colors">Leegmaken</button>
+                </div>
             </div>
             <div id="volgordeLijst" class="space-y-3">
                 <div class="bg-transparent border-2 border-dashed border-gray-200 rounded-[16px] md:rounded-[20px] p-6 md:p-8 text-center text-gray-400 font-medium text-[12px] md:text-[13px]">Nog geen items toegevoegd</div>
@@ -449,6 +459,21 @@
     <button onclick="document.getElementById('infoModal').classList.remove('hidden')" aria-label="Over deze app" title="Over deze app" class="w-8 h-8 rounded-full bg-white/80 backdrop-blur border border-gray-200 flex items-center justify-center hover:scale-110 transition-transform shadow-sm">
         <svg class="w-4 h-4 text-[#86868B]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
     </button>
+</div>
+
+<div id="archiefModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
+    <div class="bg-white rounded-[24px] shadow-2xl w-11/12 max-w-md overflow-hidden flex flex-col transform transition-all max-h-[85vh]">
+        <div class="p-5 border-b border-gray-100 flex justify-between items-center flex-shrink-0">
+            <h3 class="text-lg font-bold text-[#1D1D1F]">Archief</h3>
+            <button onclick="document.getElementById('archiefModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 p-1">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div class="p-5 overflow-y-auto">
+            <p class="text-xs text-gray-400 mb-3">Opgeslagen liturgieën. Klik op 'Laden' om er één terug te zetten. Foto's en QR-codes worden niet meegearchiveerd.</p>
+            <div id="archiefLijst" class="flex flex-col gap-2"></div>
+        </div>
+    </div>
 </div>
 
 <div id="infoModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
@@ -808,6 +833,90 @@
         window.tekenVolgorde();
         window.toonToast("Liturgie leeggemaakt.", "success");
     };
+
+    // --- ARCHIEF (opslaan/laden in Firestore) ---
+    // Foto's en QR-codes bevatten grote base64-afbeeldingen; die strippen we zodat
+    // een opgeslagen liturgie ruim binnen de Firestore-limiet blijft.
+    function liturgieVoorOpslag() {
+        const licht = liturgieVolgorde.map(it => {
+            if (it.type === 'Foto' || it.type === 'QR') return { type: it.type, titel: it.titel, tekst: '' };
+            return it;
+        });
+        return JSON.parse(JSON.stringify(licht));
+    }
+
+    window.slaLiturgieOp = async function() {
+        if (liturgieVolgorde.length === 0) { window.toonToast("Nog niets om op te slaan.", "error"); return; }
+        const datum = document.getElementById('datumInput').value || 'Zonder datum';
+        const voorganger = document.getElementById('voorgangerInput').value || '';
+        try {
+            await db.collection("liturgieen").add({
+                datum: datum,
+                voorganger: voorganger,
+                items: liturgieVoorOpslag(),
+                opgeslagenOp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            window.toonToast("Liturgie opgeslagen in archief!", "success");
+        } catch (e) {
+            console.error("Opslaan mislukt:", e);
+            window.toonToast("Opslaan mislukt (mogelijk te groot).", "error");
+        }
+    };
+
+    window.openArchief = function() {
+        document.getElementById('archiefModal').classList.remove('hidden');
+        laadArchiefLijst();
+    };
+
+    async function laadArchiefLijst() {
+        const lijst = document.getElementById('archiefLijst');
+        lijst.innerHTML = '<p class="text-xs text-gray-400 text-center py-3">Laden...</p>';
+        try {
+            const snap = await db.collection("liturgieen").orderBy("opgeslagenOp", "desc").limit(50).get();
+            if (snap.empty) {
+                lijst.innerHTML = '<p class="text-xs text-gray-400 text-center py-3">Nog geen opgeslagen liturgieën.</p>';
+                return;
+            }
+            lijst.innerHTML = '';
+            snap.forEach(doc => {
+                const d = doc.data();
+                const aantal = (d.items || []).length;
+                const op = d.opgeslagenOp && d.opgeslagenOp.toDate ? d.opgeslagenOp.toDate() : null;
+                const wanneer = op ? op.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' }) + ' ' + op.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }) : '';
+                const rij = document.createElement('div');
+                rij.className = 'bg-[#F5F5F7] rounded-xl px-3 py-2.5 flex items-center gap-3';
+                rij.innerHTML =
+                    '<div class="flex-grow min-w-0">' +
+                        '<p class="text-[13px] font-semibold text-[#1D1D1F] truncate">' + escapeHtml(d.datum || 'Zonder datum') + '</p>' +
+                        '<p class="text-[10px] text-gray-400 truncate">' + escapeHtml(d.voorganger || '') + (d.voorganger ? ' · ' : '') + aantal + ' items' + (wanneer ? ' · ' + wanneer : '') + '</p>' +
+                    '</div>' +
+                    '<button class="arch-laad text-[11px] font-semibold text-white bg-[#007AFF] hover:bg-blue-600 px-3 py-1.5 rounded-lg flex-shrink-0">Laden</button>' +
+                    '<button class="arch-del text-gray-300 hover:text-[#FF3B30] p-1 flex-shrink-0" title="Verwijder"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>';
+                rij.querySelector('.arch-laad').onclick = () => laadArchiefLiturgie(d);
+                rij.querySelector('.arch-del').onclick = async () => {
+                    if (!confirm('Deze opgeslagen liturgie verwijderen?')) return;
+                    await doc.ref.delete().catch(() => {});
+                    laadArchiefLijst();
+                };
+                lijst.appendChild(rij);
+            });
+        } catch (e) {
+            console.error("Archief laden mislukt:", e);
+            lijst.innerHTML = '<p class="text-xs text-[#FF3B30] text-center py-3">Kon archief niet laden.</p>';
+        }
+    }
+
+    function laadArchiefLiturgie(data) {
+        // Foto/QR zonder afbeelding overslaan (die zijn niet meegearchiveerd).
+        const items = (data.items || []).filter(it => !((it.type === 'Foto' || it.type === 'QR') && !it.tekst));
+        liturgieVolgorde = items;
+        document.getElementById('datumInput').value = (data.datum && data.datum !== 'Zonder datum') ? data.datum : '';
+        document.getElementById('voorgangerInput').value = data.voorganger || '';
+        bewaarLiturgie();
+        window.tekenVolgorde();
+        document.getElementById('archiefModal').classList.add('hidden');
+        window.toonToast("Liturgie geladen uit archief.", "success");
+    }
 
     // --- 2. START VARIABELEN ---
     const PROXY_URL = "https://gemini-proxy.kerkapp.workers.dev";
