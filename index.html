@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/libs/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
@@ -476,6 +477,27 @@
     </div>
 </div>
 
+<div id="meeleesOverlay" class="hidden fixed inset-0 z-[300] overflow-y-auto"></div>
+
+<div id="deelModal" class="fixed inset-0 z-[110] hidden flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
+    <div class="bg-white rounded-[24px] shadow-2xl w-11/12 max-w-sm overflow-hidden flex flex-col transform transition-all">
+        <div class="p-5 border-b border-gray-100 flex justify-between items-center">
+            <h3 class="text-lg font-bold text-[#1D1D1F]">Meelees-versie delen</h3>
+            <button onclick="document.getElementById('deelModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 p-1">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div class="p-5 flex flex-col items-center gap-4">
+            <p class="text-xs text-gray-400 text-center">Gemeenteleden scannen deze QR of openen de link om op hun telefoon mee te lezen. De QR staat ook op een dia in de PowerPoint.</p>
+            <div id="deelQR" class="w-44 h-44 flex items-center justify-center"></div>
+            <div class="w-full flex items-center gap-2 bg-[#F5F5F7] rounded-xl px-3 py-2">
+                <input id="deelLink" type="text" readonly class="flex-grow bg-transparent text-[12px] text-gray-600 outline-none"/>
+                <button onclick="kopieerDeelLink()" class="text-[11px] font-semibold text-white bg-[#007AFF] hover:bg-blue-600 px-3 py-1.5 rounded-lg flex-shrink-0">Kopieer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div id="infoModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
     <div class="bg-white dark:bg-gray-900 rounded-[24px] shadow-2xl w-11/12 max-w-sm overflow-hidden flex flex-col transform transition-all max-h-[90vh]">
         <div class="p-5 border-b border-gray-100 flex justify-between items-center flex-shrink-0">
@@ -493,6 +515,19 @@
                 <label class="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode()" class="sr-only peer">
                     <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#007AFF]"></div>
+                </label>
+            </div>
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2 pr-2">
+                    <svg class="w-5 h-5 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+                    <div>
+                        <span class="text-sm font-medium text-[#1D1D1F] block">Meelees-versie</span>
+                        <span class="text-[10px] text-gray-400 leading-tight block">QR-dia zodat de gemeente meeleest op de telefoon</span>
+                    </div>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                    <input type="checkbox" id="meeleesToggle" onchange="toggleMeelees()" class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#34C759]"></div>
                 </label>
             </div>
             <div class="bg-gray-50 rounded-2xl p-4 flex flex-col gap-2">
@@ -800,6 +835,134 @@
             if (cb) cb.checked = true;
         }
     })();
+
+    // --- MEELEES-VERSIE (verticale telefoonpagina + QR) ---
+    function meeleesAan() { const t = document.getElementById('meeleesToggle'); return t && t.checked; }
+    function toggleMeelees() {
+        localStorage.setItem('meeleesAan', meeleesAan() ? '1' : '0');
+    }
+    (function() {
+        if (localStorage.getItem('meeleesAan') === '1') {
+            const cb = document.getElementById('meeleesToggle');
+            if (cb) cb.checked = true;
+        }
+    })();
+
+    function maakQRDataURL(tekst, cellSize, margin) {
+        const qr = qrcode(0, 'M');
+        qr.addData(tekst);
+        qr.make();
+        return qr.createDataURL(cellSize || 6, margin || 4);
+    }
+
+    // Slaat een lichte (tekst-only) versie op en geeft de deelbare meelees-URL terug.
+    async function maakMeeleesLink() {
+        const datum = document.getElementById('datumInput').value || '';
+        const voorganger = document.getElementById('voorgangerInput').value || '';
+        const items = liturgieVolgorde
+            .filter(it => it.type !== 'Foto' && it.type !== 'QR')
+            .map(it => ({ type: it.type, titel: it.titel || '', tekst: it.type === 'Leeg' ? '' : (it.tekst || '') }));
+        const ref = await db.collection("meelees").add({
+            datum: datum, voorganger: voorganger, items: items,
+            gemaaktOp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        return location.origin + location.pathname + '?meelees=' + ref.id;
+    }
+
+    window.kopieerDeelLink = function() {
+        const inp = document.getElementById('deelLink');
+        inp.select();
+        try { navigator.clipboard.writeText(inp.value); } catch (e) { document.execCommand('copy'); }
+        window.toonToast("Link gekopieerd!", "success");
+    };
+
+    function toonDeelModal(url) {
+        document.getElementById('deelLink').value = url;
+        const qrVak = document.getElementById('deelQR');
+        qrVak.innerHTML = '<img src="' + maakQRDataURL(url, 6, 4) + '" class="w-full h-full object-contain" alt="QR"/>';
+        document.getElementById('deelModal').classList.remove('hidden');
+    }
+
+    // Warme, kerkelijke SVG-scene (heuvel met kruis, bloemen, bijen, zon).
+    function meeleesSceneSVG() {
+        return `<svg viewBox="0 0 400 170" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
+            <defs>
+                <linearGradient id="lucht" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#ffe9c7"/><stop offset="55%" stop-color="#ffd9a0"/><stop offset="100%" stop-color="#f9c98b"/>
+                </linearGradient>
+                <linearGradient id="heuvel" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#a7d17f"/><stop offset="100%" stop-color="#7bb85e"/>
+                </linearGradient>
+            </defs>
+            <rect width="400" height="170" fill="url(#lucht)"/>
+            <circle cx="320" cy="46" r="30" fill="#fff3d6"/>
+            <circle cx="320" cy="46" r="20" fill="#fff7e0"/>
+            <path d="M0 120 Q120 80 220 118 T400 108 V170 H0 Z" fill="#bcdd97"/>
+            <path d="M0 138 Q140 108 260 140 T400 132 V170 H0 Z" fill="url(#heuvel)"/>
+            <g transform="translate(196,70)">
+                <rect x="-5" y="0" width="10" height="70" rx="2" fill="#8a5a34"/>
+                <rect x="-26" y="20" width="52" height="10" rx="2" fill="#8a5a34"/>
+            </g>
+            <g stroke="#e8a13a" stroke-width="2" fill="none" opacity="0.9">
+                <path d="M60 150 q6 -14 0 -26"/><path d="M96 154 q-5 -12 0 -22"/><path d="M330 150 q6 -12 0 -22"/>
+            </g>
+            <g>
+                <g transform="translate(60,120)"><circle r="6" fill="#f4772e"/><circle cx="0" cy="-9" r="4" fill="#ffd23f"/><circle cx="8" cy="-4" r="4" fill="#ffd23f"/><circle cx="8" cy="5" r="4" fill="#ffd23f"/><circle cx="0" cy="9" r="4" fill="#ffd23f"/><circle cx="-8" cy="5" r="4" fill="#ffd23f"/><circle cx="-8" cy="-4" r="4" fill="#ffd23f"/><circle r="3.5" fill="#fff4c2"/></g>
+                <g transform="translate(96,128) scale(0.85)"><circle r="6" fill="#e5568f"/><circle cx="0" cy="-9" r="4" fill="#ffd23f"/><circle cx="8" cy="-4" r="4" fill="#ffd23f"/><circle cx="8" cy="5" r="4" fill="#ffd23f"/><circle cx="0" cy="9" r="4" fill="#ffd23f"/><circle cx="-8" cy="5" r="4" fill="#ffd23f"/><circle cx="-8" cy="-4" r="4" fill="#ffd23f"/><circle r="3.5" fill="#fff4c2"/></g>
+                <g transform="translate(330,124) scale(0.9)"><circle r="6" fill="#f4772e"/><circle cx="0" cy="-9" r="4" fill="#fff"/><circle cx="8" cy="-4" r="4" fill="#fff"/><circle cx="8" cy="5" r="4" fill="#fff"/><circle cx="0" cy="9" r="4" fill="#fff"/><circle cx="-8" cy="5" r="4" fill="#fff"/><circle cx="-8" cy="-4" r="4" fill="#fff"/><circle r="3.5" fill="#ffd23f"/></g>
+            </g>
+            <g>
+                <g transform="translate(150,54)"><ellipse rx="6" ry="4" fill="#f2b134"/><rect x="-6" y="-4" width="3" height="8" fill="#3a2a1a"/><rect x="0" y="-4" width="3" height="8" fill="#3a2a1a"/><ellipse cx="-2" cy="-6" rx="5" ry="3" fill="#fff" opacity="0.8"/><ellipse cx="2" cy="-6" rx="5" ry="3" fill="#fff" opacity="0.8"/></g>
+                <g transform="translate(250,40)"><ellipse rx="5" ry="3.5" fill="#f2b134"/><rect x="-5" y="-3.5" width="2.5" height="7" fill="#3a2a1a"/><rect x="0" y="-3.5" width="2.5" height="7" fill="#3a2a1a"/><ellipse cx="-2" cy="-5" rx="4" ry="2.5" fill="#fff" opacity="0.8"/><ellipse cx="2" cy="-5" rx="4" ry="2.5" fill="#fff" opacity="0.8"/></g>
+            </g>
+        </svg>`;
+    }
+
+    async function toonMeeleesPagina(id) {
+        const overlay = document.getElementById('meeleesOverlay');
+        overlay.classList.remove('hidden');
+        overlay.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f6b56b;color:#6b3f18;font-weight:600;font-family:Inter,sans-serif">Liturgie laden…</div>';
+        try {
+            await authKlaar;
+            const doc = await db.collection("meelees").doc(id).get();
+            if (!doc.exists) {
+                overlay.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f6b56b;color:#6b3f18;font-weight:600;text-align:center;padding:24px;font-family:Inter,sans-serif">Deze liturgie is niet (meer) beschikbaar.</div>';
+                return;
+            }
+            renderMeelees(doc.data(), overlay);
+        } catch (e) {
+            console.error("Meelees laden mislukt:", e);
+            overlay.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f6b56b;color:#6b3f18;font-weight:600;text-align:center;padding:24px;font-family:Inter,sans-serif">Kon de liturgie niet laden. Controleer je internetverbinding.</div>';
+        }
+    }
+
+    function renderMeelees(data, overlay) {
+        const typeLabel = { 'Zang': '♪ Zang', 'Schriftlezing': '📖 Schriftlezing', 'Leeg': '' };
+        let kaarten = '';
+        (data.items || []).forEach(it => {
+            if (it.type === 'Leeg') { kaarten += '<div style="height:1px;background:rgba(139,90,52,0.18);margin:6px 40px"></div>'; return; }
+            const label = typeLabel[it.type] || it.type || '';
+            const tekst = (it.tekst || '').trim();
+            kaarten += '<div style="background:rgba(255,255,255,0.82);border-radius:20px;padding:16px 18px;margin:10px 0;box-shadow:0 4px 16px rgba(139,90,52,0.10)">' +
+                (label ? '<div style="font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#c07f33;margin-bottom:3px">' + escapeHtml(label) + '</div>' : '') +
+                '<div style="font-size:16px;font-weight:700;color:#4a3320">' + escapeHtml(it.titel || '') + '</div>' +
+                (tekst ? '<div style="font-size:14px;line-height:1.5;color:#5c4630;white-space:pre-line;margin-top:6px">' + escapeHtml(tekst) + '</div>' : '') +
+                '</div>';
+        });
+        overlay.innerHTML =
+            '<div style="min-height:100vh;background:linear-gradient(180deg,#ffd9a0 0%,#ffe4b8 22%,#fff3e0 100%);font-family:Inter,-apple-system,sans-serif">' +
+                '<div style="max-width:460px;margin:0 auto">' +
+                    '<div style="border-radius:0 0 26px 26px;overflow:hidden;box-shadow:0 6px 20px rgba(139,90,52,0.15)">' + meeleesSceneSVG() + '</div>' +
+                    '<div style="text-align:center;padding:16px 20px 4px">' +
+                        '<div style="font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#c07f33">Liturgie</div>' +
+                        (data.datum ? '<div style="font-size:20px;font-weight:800;color:#4a3320;margin-top:2px">' + escapeHtml(data.datum) + '</div>' : '') +
+                        (data.voorganger ? '<div style="font-size:13px;color:#8a6a45;margin-top:2px">' + escapeHtml(data.voorganger) + '</div>' : '') +
+                    '</div>' +
+                    '<div style="padding:8px 16px 40px">' + kaarten + '</div>' +
+                    '<div style="text-align:center;padding:0 20px 30px;font-size:11px;color:#b08a5e">Meelezen via Liturgie Assistent</div>' +
+                '</div>' +
+            '</div>';
+    }
 
     function bewaarLiturgie() {
         try {
@@ -1876,6 +2039,11 @@ Bijbelliederen`;
 
     // --- BIJBEL & INTRO JS ONLOAD ---
     window.onload = async function() {
+        // Meelees-modus: als ?meelees=<id> in de URL staat, tonen we alleen de
+        // verticale meeleespagina voor gemeenteleden (niet de editor).
+        const meeleesId = new URLSearchParams(location.search).get('meelees');
+        if (meeleesId) { toonMeeleesPagina(meeleesId); return; }
+
         herstelLiturgie();
         checkBijbelAPI();
         ontdekAI().then(() => { console.log("AI Modellen geladen."); });
@@ -3626,7 +3794,7 @@ Geen markdown, geen codeblokken, alleen de JSON.`;
         touchDragIdx = null;
         window.tekenVolgorde();
     };
-window.maakPowerPoint = function() {
+window.maakPowerPoint = async function() {
     if (liturgieVolgorde.length === 0) { window.toonToast("Voeg eerst een item toe aan de volgorde.", "error"); return; }
     
     // --- 1. ICONEN DEFINIËREN (Hersteld) ---
@@ -3674,6 +3842,23 @@ window.maakPowerPoint = function() {
     if (bijbelLijst.length > 0) {
         welcomeSlide.addImage({ data: "data:image/svg+xml;base64," + base64Boek, x: 0.5, y: 4.7, w: 0.4, h: 0.4 });
         welcomeSlide.addText(bijbelLijst.join(' & '), { x: 1.1, y: 4.6, w: 8.5, h: 0.6, color: "FFFFFF", fontSize: 20, fontFace: pptFont, bold: true, align: "left" });
+    }
+
+    // --- 3b. MEELEES-QR DIA (optioneel) ---
+    if (meeleesAan()) {
+        try {
+            const meeleesUrl = await maakMeeleesLink();
+            const qrData = maakQRDataURL(meeleesUrl, 8, 2);
+            let qrSlide = pres.addSlide();
+            qrSlide.background = pptBg;
+            qrSlide.addText("Lees mee op je telefoon", { x: 0.5, y: 0.6, w: 9, h: 0.8, color: "FFFFFF", fontSize: 34, bold: true, fontFace: pptFont, align: "center" });
+            qrSlide.addImage({ data: qrData, x: 3.65, y: 1.6, w: 2.7, h: 2.7, rounding: false });
+            qrSlide.addText("Scan de QR-code met je telefooncamera", { x: 0.5, y: 4.6, w: 9, h: 0.6, color: "CCCCCC", fontSize: 18, fontFace: pptFont, align: "center" });
+            toonDeelModal(meeleesUrl);
+        } catch (e) {
+            console.error("Meelees-QR maken mislukt:", e);
+            window.toonToast("Meelees-QR maken mislukt.", "error");
+        }
     }
 
     // --- 4. LITURGIE DIA'S LUS ---
