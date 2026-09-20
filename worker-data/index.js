@@ -2,8 +2,38 @@
 // Beveiliging: origin-lock (alleen de app-URL's) op alle verzoeken.
 //  - lezen + losse writes: alleen origin-lock (geen sleutel in de openbare app)
 //  - X-Admin-Key (ADMIN_SECRET): nodig voor de bulk-import (migratie)
+//  - Rate limit: max 60 POST-writes per IP per minuut
 
 const TABELLEN = new Set(["liederen", "bijbel_hsv"]);
+const RATE_LIMIT = 60;          // max writes per window
+const RATE_WINDOW_MS = 60_000;  // 1 minuut
+
+// Eenvoudige in-memory rate limiter (per Worker-isolate).
+// Bij hoge load draait Cloudflare meerdere isolates; dit is bewust
+// "good enough" — het voorkomt casual misbruik zonder externe opslag.
+const rateCounts = new Map();
+
+function rateLimitCheck(ip) {
+  const nu = Date.now();
+  const entry = rateCounts.get(ip);
+  if (!entry || nu - entry.start > RATE_WINDOW_MS) {
+    rateCounts.set(ip, { start: nu, count: 1 });
+    return true; // toegestaan
+  }
+  entry.count++;
+  if (entry.count > RATE_LIMIT) return false; // geblokkeerd
+  return true;
+}
+
+// Opruimen van verlopen entries (elke 100e aanroep)
+let opruimTeller = 0;
+function opruimRateMap() {
+  if (++opruimTeller % 100 !== 0) return;
+  const nu = Date.now();
+  for (const [ip, entry] of rateCounts) {
+    if (nu - entry.start > RATE_WINDOW_MS) rateCounts.delete(ip);
+  }
+}
 
 function originToegestaan(origin) {
   if (!origin) return false;
@@ -39,6 +69,15 @@ export default {
     }
     if (!originToegestaan(origin)) {
       return new Response("Niet toegestaan", { status: 403 });
+    }
+
+    // Rate limit: alleen voor schrijf-operaties (POST)
+    if (request.method === "POST") {
+      opruimRateMap();
+      const ip = request.headers.get("CF-Connecting-IP") || "onbekend";
+      if (!rateLimitCheck(ip)) {
+        return json({ error: "te veel verzoeken – probeer het over een minuut opnieuw" }, 429, origin);
+      }
     }
 
     try {

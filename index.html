@@ -22,6 +22,7 @@
 <script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/libs/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
 
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
@@ -490,7 +491,7 @@
     </div>
 </div>
 
-<div id="meeleesOverlay" class="hidden fixed inset-0 z-[300] overflow-y-auto"></div>
+<div id="meeleesOverlay" class="hidden fixed inset-0 z-[300] overflow-y-auto" style="background:#fff3e0"></div>
 
 <div id="deelModal" class="fixed inset-0 z-[110] hidden flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
     <div class="bg-white rounded-[24px] shadow-2xl w-11/12 max-w-sm overflow-hidden flex flex-col transform transition-all">
@@ -628,7 +629,11 @@
     </div>
 </div>
 
-<div class="fixed bottom-6 right-6 z-50">
+<div class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 items-end">
+    <button onclick="exporteerLiturgiePDF()" class="bg-white text-[#007AFF] px-6 py-3 rounded-full shadow-xl flex items-center gap-2 hover:scale-105 transition-transform duration-300 border-2 border-[#007AFF]">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-6 4h4"></path></svg>
+        <span class="font-bold text-[13px] tracking-wide">Liturgie PDF</span>
+    </button>
     <button onclick="maakPowerPoint()" class="bg-[#007AFF] text-white px-8 py-4 rounded-full shadow-2xl flex items-center gap-3 hover:scale-105 transition-transform duration-300 border border-blue-400">
         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
         <span class="font-bold text-[15px] tracking-wide">Exporteer PowerPoint</span>
@@ -934,6 +939,14 @@
     async function toonMeeleesPagina(id) {
         const overlay = document.getElementById('meeleesOverlay');
         overlay.classList.remove('hidden');
+        // Blokkeer scrollen op body zodat de editor er niet onderdoor kan piepen
+        document.body.style.overflow = 'hidden';
+        document.documentElement.style.overflow = 'hidden';
+        // Verberg alle andere body-kinderen zodat er niets doorheen lekt
+        Array.from(document.body.children).forEach(function(el) {
+            if (el.id !== 'meeleesOverlay') el.style.display = 'none';
+        });
+        overlay.style.display = 'block';
         overlay.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f6b56b;color:#6b3f18;font-weight:600;font-family:Inter,sans-serif">Liturgie laden…</div>';
         try {
             await authKlaar;
@@ -3978,6 +3991,154 @@ Geen markdown, geen codeblokken, alleen de JSON.`;
         touchDragIdx = null;
         window.tekenVolgorde();
     };
+
+// --- PDF LITURGIE-OVERZICHT ---
+window.exporteerLiturgiePDF = function() {
+    if (liturgieVolgorde.length === 0) {
+        window.toonToast("Voeg eerst een item toe aan de volgorde.", "error");
+        return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: "mm", format: "a4" });
+    const paginaBreedte = doc.internal.pageSize.getWidth();
+    const marge = 20;
+    const bruikbareBreedte = paginaBreedte - marge * 2;
+    let y = 20;
+
+    // --- Kleuren ---
+    const BLAUW = [0, 122, 255];
+    const DONKER = [29, 29, 31];
+    const GRIJS = [120, 120, 128];
+    const LICHTGRIJS = [200, 200, 200];
+
+    // --- Helper: nieuwe pagina als nodig ---
+    function checkPagina(benodigdeHoogte) {
+        if (y + benodigdeHoogte > 275) {
+            doc.addPage();
+            y = 20;
+            return true;
+        }
+        return false;
+    }
+
+    // --- HEADER ---
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(22);
+    doc.setTextColor(...DONKER);
+    doc.text("Liturgie", marge, y);
+    y += 8;
+
+    // Datum
+    const datum = document.getElementById('datumInput').value || "";
+    if (datum) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(12);
+        doc.setTextColor(...GRIJS);
+        doc.text(datum, marge, y);
+        y += 5;
+    }
+
+    // Voorganger
+    const voorganger = document.getElementById('voorgangerInput').value || "";
+    if (voorganger) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(11);
+        doc.setTextColor(...GRIJS);
+        doc.text("Voorganger: " + voorganger, marge, y);
+        y += 5;
+    }
+
+    // Scheidingslijn
+    y += 3;
+    doc.setDrawColor(...BLAUW);
+    doc.setLineWidth(0.8);
+    doc.line(marge, y, paginaBreedte - marge, y);
+    y += 10;
+
+    // --- LITURGIE ITEMS ---
+    liturgieVolgorde.forEach(function(item, i) {
+        // Sla foto-, QR- en lege dia's over in de PDF
+        if (item.type === "Foto" || item.type === "QR" || item.type === "Leeg") {
+            return;
+        }
+
+        // Bepaal hoe veel ruimte dit item nodig heeft
+        var regelsTekst = [];
+        if (item.tekst && item.tekst.trim()) {
+            doc.setFontSize(9);
+            regelsTekst = doc.splitTextToSize(item.tekst.trim(), bruikbareBreedte - 10);
+            // Beperk tot max 30 regels per item om een gigantische PDF te voorkomen
+            if (regelsTekst.length > 30) {
+                regelsTekst = regelsTekst.slice(0, 30);
+                regelsTekst.push("…");
+            }
+        }
+
+        var benodigdeHoogte = 8 + (regelsTekst.length * 3.5) + 6;
+        checkPagina(benodigdeHoogte);
+
+        // Nummer + Type
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.setTextColor(...BLAUW);
+        doc.text((i + 1) + ".", marge, y);
+
+        // Type-label
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(...GRIJS);
+        var typeLabel = item.type || "";
+        doc.text(typeLabel.toUpperCase(), marge + 8, y - 0.5);
+
+        // Titel
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.setTextColor(...DONKER);
+        var titelTekst = item.titel || "(zonder titel)";
+        doc.text(titelTekst, marge + 8 + doc.getTextWidth(typeLabel.toUpperCase()) + 3, y);
+        y += 5;
+
+        // Tekst-inhoud
+        if (regelsTekst.length > 0) {
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(9);
+            doc.setTextColor(80, 80, 80);
+
+            regelsTekst.forEach(function(regel) {
+                checkPagina(5);
+                doc.text(regel, marge + 8, y);
+                y += 3.5;
+            });
+        }
+
+        // Subtiele scheidingslijn
+        y += 2;
+        doc.setDrawColor(...LICHTGRIJS);
+        doc.setLineWidth(0.2);
+        doc.line(marge + 8, y, paginaBreedte - marge, y);
+        y += 5;
+    });
+
+    // --- FOOTER ---
+    var aantalPaginas = doc.internal.getNumberOfPages();
+    for (var p = 1; p <= aantalPaginas; p++) {
+        doc.setPage(p);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(...LICHTGRIJS);
+        doc.text("Liturgie Assistent Pro", marge, 290);
+        doc.text("Pagina " + p + " van " + aantalPaginas, paginaBreedte - marge - 25, 290);
+    }
+
+    // --- OPSLAAN ---
+    var bestandsnaam = "Liturgie";
+    if (datum) bestandsnaam += "_" + datum.replace(/[^a-zA-Z0-9]/g, "-");
+    bestandsnaam += ".pdf";
+    doc.save(bestandsnaam);
+    window.toonToast("PDF liturgie-overzicht gedownload!", "success");
+};
+
 window.maakPowerPoint = async function() {
     if (liturgieVolgorde.length === 0) { window.toonToast("Voeg eerst een item toe aan de volgorde.", "error"); return; }
     
