@@ -1682,7 +1682,7 @@ Bijbelliederen`;
         return uniek;
     }
 
-   function setupAutocomplete(inputId, suggestieId, dataLijst, onSelect) {
+   function setupAutocomplete(inputId, suggestieId, dataLijstOfFunctie, onSelect) {
         const input = document.getElementById(inputId);
         const container = document.getElementById(suggestieId);
 
@@ -1698,6 +1698,9 @@ Bijbelliederen`;
             container.innerHTML = '';
             if (!term) { container.classList.add('hidden'); return; }
             
+            // Haal de meest actuele lijst op als het een functie is
+            const dataLijst = typeof dataLijstOfFunctie === 'function' ? dataLijstOfFunctie() : dataLijstOfFunctie;
+
             // --- SLIMME ZOEK ALIASSEN (Afkortingen) ---
             term = term.replace(/\both\b/g, "op toonhoogte");
             term = term.replace(/\bwk\b/g, "weerklank");
@@ -2297,8 +2300,8 @@ Bijbelliederen`;
         } catch(e) {}
                 
         laadCloudDatabase().then(() => {
-            const completeLijst = bouwZoekLijst();
-            setupAutocomplete('liedInput', 'suggestieLied', completeLijst, window.handleLiedSelectie);
+            // Geef de referentie naar bouwZoekLijst mee, zodat de zoeklijst altijd up-to-date is
+            setupAutocomplete('liedInput', 'suggestieLied', bouwZoekLijst, window.handleLiedSelectie);
         });
 
         // Bijbel Autocomplete
