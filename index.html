@@ -1383,7 +1383,7 @@
 
         // 2. Vers ophalen uit D1 (via de Worker).
         try {
-            const res = await fetch(DATA_URL + "/liederen");
+            const res = await fetch(DATA_URL + "/liederen", { cache: 'no-store' });
             if (!res.ok) throw new Error("status " + res.status);
             const map = await res.json();
             window.liederenDatabase = map;
