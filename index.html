@@ -167,6 +167,15 @@
 </head>
 <body class="text-[#1D1D1F] min-h-screen flex flex-col relative pb-32">
 
+<!-- ONDERHOUD SCHERM -->
+<div id="onderhoudScherm" class="fixed inset-0 z-[9999] hidden flex-col items-center justify-center bg-white/95 backdrop-blur-md">
+    <div class="text-center p-8 bg-white rounded-3xl shadow-2xl max-w-md w-11/12">
+        <svg class="w-20 h-20 text-[#007AFF] mx-auto mb-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+        <h2 onclick="checkOnderhoudCode()" class="text-3xl font-bold text-gray-900 mb-3 cursor-default select-none">Onderhoud</h2>
+        <p class="text-gray-500 text-[15px] max-w-sm mx-auto leading-relaxed">De Liturgie Assistent wordt momenteel bijgewerkt met nieuwe functies. Probeer het over een paar minuutjes nog eens!</p>
+    </div>
+</div>
+
 <div id="controleModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
     <div class="bg-white rounded-[24px] shadow-2xl w-11/12 max-w-lg overflow-hidden flex flex-col transform transition-all">
         <div class="p-4 md:p-6 border-b border-gray-100 flex justify-between items-center">
@@ -278,7 +287,7 @@
 
 <header class="mb-8 md:mb-14 pt-8 px-4 md:px-12 max-w-[1400px] mx-auto w-full flex flex-col md:flex-row md:justify-between md:items-end gap-5">
     <div>
-        <h1 class="text-2xl md:text-3xl font-bold tracking-tight mb-1">Liturgie Assistent <span class="text-[#007AFF]">Pro</span></h1>
+        <h1 onclick="checkOnderhoudCode()" class="text-2xl md:text-3xl font-bold tracking-tight mb-1 cursor-default select-none">Liturgie Assistent <span class="text-[#007AFF]">Pro</span></h1>
         
         <div class="flex items-center gap-3 mt-3 flex-wrap">
             <div class="flex items-center gap-1.5 text-[#86868B] text-sm font-medium">
@@ -673,6 +682,44 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const auth = firebase.auth();
+
+    // --- ONDERHOUDSMODUS ---
+    db.collection("stats").doc("onderhoud").onSnapshot((doc) => {
+        const scherm = document.getElementById("onderhoudScherm");
+        if (doc.exists && doc.data().actief === true) {
+            scherm.classList.remove("hidden");
+            scherm.classList.add("flex");
+        } else {
+            scherm.classList.add("hidden");
+            scherm.classList.remove("flex");
+        }
+    });
+
+    let onderhoudKliks = 0;
+    let onderhoudTimeout;
+    window.checkOnderhoudCode = function() {
+        onderhoudKliks++;
+        clearTimeout(onderhoudTimeout);
+        onderhoudTimeout = setTimeout(() => { onderhoudKliks = 0; }, 1500);
+        
+        if (onderhoudKliks >= 5) {
+            onderhoudKliks = 0;
+            const code = prompt("Beheerderscode voor onderhoudsmodus:");
+            if (code === "Kerkapp26") {
+                db.collection("stats").doc("onderhoud").get().then((doc) => {
+                    const isActief = doc.exists && doc.data().actief;
+                    const nieuw = !isActief;
+                    db.collection("stats").doc("onderhoud").set({ actief: nieuw }, { merge: true })
+                        .then(() => {
+                            if (window.toonToast) window.toonToast(`Onderhoudsmodus is nu ${nieuw ? 'AAN' : 'UIT'}.`, "success");
+                        })
+                        .catch((e) => alert("Kan niet opslaan (misschien Firebase rechten?): " + e.message));
+                });
+            } else if (code) {
+                alert("Foutieve code.");
+            }
+        }
+    };
 
     // --- ANONIEME AUTHENTICATIE ---
     // We loggen anoniem in zodat de Firestore-regels schrijven kunnen beperken tot
