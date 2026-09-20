@@ -4478,6 +4478,18 @@ window.verstuurExportFeedback = async function() {
             datum: new Date().toISOString(),
             tijdstempel: firebase.firestore.FieldValue.serverTimestamp()
         });
+        // E-mailmelding naar Sem
+        const sterrenTekst = '★'.repeat(geselecteerdeSterren) + '☆'.repeat(5 - geselecteerdeSterren);
+        fetch("https://api.web3forms.com/submit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify({
+                access_key: "da56e2ee-c688-47b5-81fd-dbdb65d92201",
+                subject: "Export beoordeling - Liturgie Assistent (" + geselecteerdeSterren + "/5 ⭐)",
+                from_name: "Liturgie Assistent",
+                message: "Beoordeling: " + sterrenTekst + " (" + geselecteerdeSterren + "/5)\n\n" + (tekst || "(geen opmerking)") + "\n\n---\nApparaat: " + navigator.userAgent
+            })
+        }).catch(err => console.warn("E-mailmelding mislukt:", err));
         window.toonToast("Bedankt voor je feedback! ⭐", "success");
         sluitExportFeedback();
     } catch (e) {
