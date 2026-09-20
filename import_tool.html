@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="utf-8">
+    <title>Bulk Importer - Liturgie Assistent</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8 font-sans text-gray-800">
+    <div class="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-200">
+        <div class="flex items-center gap-3 mb-2">
+            <svg class="w-8 h-8 text-[#007AFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+            <h1 class="text-3xl font-bold">Liederen Bulk Importer</h1>
+        </div>
+        <p class="mb-6 text-gray-600">Kopieer de tekst direct vanuit liedbundelsonline.nl in het tekstvak hieronder. Het script herkent automatisch de opmaak (bijv. <code>260:1</code>) en voegt de coupletten per lied netjes samen voordat het ze naar Cloudflare D1 stuurt.</p>
+
+        <div class="mb-4">
+            <label class="block font-bold mb-1.5 text-gray-700">Om welke bundel gaat het?</label>
+            <select id="bundelPrefix" class="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-[#007AFF] outline-none transition-all">
+                <option value="Weerklank Lied ">Weerklank Lied</option>
+                <option value="Weerklank Psalm ">Weerklank Psalm</option>
+                <option value="Op Toonhoogte ">Op Toonhoogte</option>
+                <option value="DNP Psalm ">De Nieuwe Psalmberijming (DNP)</option>
+                <option value="Psalm ">Traditionele Psalm (Berijming 1773)</option>
+                <option value="Opwekking ">Opwekking</option>
+            </select>
+        </div>
+
+        <div class="mb-4">
+            <label class="block font-bold mb-1.5 text-gray-700">Plak de tekst hier:</label>
+            <textarea id="inputText" rows="12" class="w-full p-4 border border-gray-300 rounded-lg bg-gray-50 font-mono text-sm focus:ring-2 focus:ring-[#007AFF] outline-none transition-all resize-y shadow-inner" placeholder="Voorbeeld:&#10;&#10;260:1&#10;&#10;God maakt ons dienstbaar aan zijn werk,&#10;roept ons tot taken in zijn kerk.&#10;&#10;260:2&#10;&#10;Hij die het van de Heer verwacht..."></textarea>
+        </div>
+
+        <button onclick="verwerkEnUpload()" id="uploadBtn" class="bg-[#007AFF] text-white px-6 py-4 rounded-xl font-bold hover:bg-blue-600 w-full transition-colors flex items-center justify-center gap-2 shadow-md">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+            Start Bulk Upload naar Cloudflare D1
+        </button>
+
+        <div class="mt-8">
+            <div class="flex justify-between items-end mb-2">
+                <label class="block font-bold text-gray-700">Upload Logboek</label>
+                <span id="progressIndicator" class="text-xs font-bold text-gray-400 uppercase tracking-wider hidden">Bezig...</span>
+            </div>
+            <div id="log" class="bg-[#1D1D1F] text-[#34C759] p-4 rounded-xl h-64 overflow-y-auto font-mono text-[13px] whitespace-pre-wrap shadow-inner leading-relaxed">Wacht op invoer...</div>
+        </div>
+    </div>
+
+    <script>
+        function log(msg, colorClass = '') {
+            const l = document.getElementById('log');
+            if (l.textContent === 'Wacht op invoer...') l.textContent = '';
+            
+            const span = document.createElement('span');
+            span.textContent = msg + '\n';
+            if (colorClass) span.className = colorClass;
+            
+            l.appendChild(span);
+            l.scrollTop = l.scrollHeight;
+        }
+
+        async function verwerkEnUpload() {
+            const text = document.getElementById('inputText').value.trim();
+            if (!text) { alert("Plak eerst wat tekst!"); return; }
+            
+            const prefix = document.getElementById('bundelPrefix').value;
+            const btn = document.getElementById('uploadBtn');
+            const indicator = document.getElementById('progressIndicator');
+            
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            indicator.classList.remove('hidden');
+            
+            document.getElementById('log').innerHTML = '';
+            log(`▶ Starten met verwerken van tekst...`, 'text-white font-bold');
+
+            const lines = text.split('\n');
+            const songs = {};
+            let currentSong = null;
+            let currentVerse = null;
+            let currentText = [];
+
+            function saveCurrent() {
+                if (currentSong && currentVerse && currentText.length > 0) {
+                    if (!songs[currentSong]) songs[currentSong] = [];
+                    const joinedText = currentText.join('\n').trim();
+                    if (joinedText) {
+                        songs[currentSong].push(currentVerse + '.\n' + joinedText);
+                    }
+                }
+            }
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                // We zoeken naar bijv. '260:1' of '12a:3'
+                const match = line.match(/^([A-Za-z0-9]+):(\d+)$/);
+                if (match) {
+                    saveCurrent();
+                    currentSong = match[1];
+                    currentVerse = match[2];
+                    currentText = [];
+                } else if (line === '') {
+                    // Alleen lege regels toevoegen als we al ín een couplet zitten
+                    if (currentText.length > 0 && currentText[currentText.length-1] !== '') {
+                        currentText.push(line);
+                    }
+                } else {
+                    if (currentSong) currentText.push(line);
+                }
+            }
+            saveCurrent();
+
+            const songKeys = Object.keys(songs);
+            log(`▶ Verwerking klaar. Gevonden liederen: ${songKeys.length}\n`, 'text-white font-bold');
+
+            for (const songNum of songKeys) {
+                const titel = prefix + songNum;
+                // Coupletten scheiden door een dubbele enter (\n\n) zodat de Kerkapp ze goed inlaadt
+                const tekst = songs[songNum].join('\n\n');
+
+                try {
+                    const res = await fetch("https://kerkdata.kerkapp.workers.dev/liederen", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            id: titel, // MOET 'id' ZIJN VOOR DE WORKER!
+                            tekst: tekst
+                        })
+                    });
+
+                    if (res.ok) {
+                        log(`[ OK ] ${titel} geüpload! (${songs[songNum].length} coupletten)`);
+                    } else {
+                        log(`[FAIL] Fout bij ${titel}: Server status ${res.status}`, 'text-[#FF3B30]');
+                    }
+                } catch (err) {
+                    log(`[FAIL] Fout bij ${titel}: ${err.message}`, 'text-[#FF3B30]');
+                }
+
+                // Wacht een kwart seconde om de Cloudflare Worker niet te overbelasten (Rate Limiting)
+                await new Promise(r => setTimeout(r, 250));
+            }
+
+            log(`\n▶ ALLES KLAAR! Je kunt dit tabblad sluiten.`, 'text-blue-400 font-bold');
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            indicator.classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
