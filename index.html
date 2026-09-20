@@ -198,8 +198,8 @@
     </div>
 </div>
 
-<div id="controleModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
-    <div class="bg-white rounded-[24px] shadow-2xl w-11/12 max-w-lg overflow-hidden flex flex-col transform transition-all modal-animate">
+<div id="controleModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/20 backdrop-blur-xl transition-opacity">
+    <div class="bg-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] w-11/12 max-w-lg overflow-hidden flex flex-col transform transition-all modal-animate">
         <div class="p-4 md:p-6 border-b border-gray-100 flex justify-between items-center">
             <h3 id="modalTitel" class="text-lg font-bold text-[#1D1D1F]">Controleer Tekst</h3>
             <button onclick="sluitModal()" class="text-gray-400 hover:text-gray-600 p-1">
@@ -232,8 +232,8 @@
     </div>
 </div>
 
-<div id="versModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
-    <div class="bg-white rounded-[24px] shadow-2xl w-11/12 max-w-lg overflow-hidden flex flex-col transform transition-all modal-animate">
+<div id="versModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/20 backdrop-blur-xl transition-opacity">
+    <div class="bg-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] w-11/12 max-w-lg overflow-hidden flex flex-col transform transition-all modal-animate">
         <div class="p-4 md:p-6 border-b border-gray-100 flex justify-between items-center">
             <h3 id="versModalTitel" class="text-lg font-bold text-[#1D1D1F]">Kies de verzen</h3>
             <button onclick="sluitVersModal()" class="text-gray-400 hover:text-gray-600 p-1">
@@ -247,8 +247,8 @@
         </div>
     </div>
 </div>
-<div id="importModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
-    <div class="bg-white rounded-[24px] shadow-2xl w-11/12 max-w-lg overflow-hidden flex flex-col transform transition-all modal-animate">
+<div id="importModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/20 backdrop-blur-xl transition-opacity">
+    <div class="bg-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] w-11/12 max-w-lg overflow-hidden flex flex-col transform transition-all modal-animate">
         <div class="p-4 md:p-6 border-b border-gray-100 flex justify-between items-center">
             <h3 class="text-lg font-bold text-[#1D1D1F]">Slim Importeren</h3>
             <button onclick="sluitImportModal()" class="text-gray-400 hover:text-gray-600 p-1">
@@ -258,7 +258,7 @@
         
         <div id="importStap1" class="p-4 md:p-6 flex flex-col gap-3">
             <p class="text-[13px] text-gray-500 font-medium">Plak hier de complete liturgie (bijv. vanuit Word of WhatsApp). Ik zoek automatisch de Bijbelteksten en Liederen eruit.</p>
-            <textarea id="importTekst" rows="8" class="w-full bg-[#F5F5F7] border border-transparent rounded-xl p-4 text-[13px] apple-input transition-all resize-none" placeholder="Plak je tekst hier..."></textarea>
+            <textarea id="importTekst" rows="8" class="w-full bg-[#F5F5F7] border border-transparent rounded-xl p-4 text-[13px] focus:bg-white focus:border-[#007AFF] focus:ring-4 focus:ring-[#007AFF]/15 focus:outline-none transition-all duration-200 ease-out resize-none" placeholder="Plak je tekst hier..."></textarea>
             <button onclick="analyseerImport()" class="w-full py-3 mt-2 rounded-xl text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 transition-colors shadow-md">Analyseer Tekst</button>
         </div>
         
@@ -271,8 +271,8 @@
     </div>
 </div>
 
-<div id="uitlegModal" class="fixed inset-0 z-[200] hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4" onclick="if(event.target === this) sluitUitleg()">
-    <div class="bg-white rounded-[24px] shadow-2xl w-full max-w-xl overflow-hidden flex flex-col transform transition-all modal-animate max-h-[92vh]">
+<div id="uitlegModal" class="fixed inset-0 z-[200] hidden items-center justify-center bg-black/20 backdrop-blur-xl p-4" onclick="if(event.target === this) sluitUitleg()">
+    <div class="bg-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] w-full max-w-xl overflow-hidden flex flex-col transform transition-all modal-animate max-h-[92vh]">
         <div class="p-4 md:p-5 border-b border-gray-100 flex justify-between items-center flex-shrink-0">
             <div class="flex items-center gap-2">
                 <span class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider">Hoe werkt de app?</span>
@@ -382,7 +382,7 @@
 
 <main class="flex-grow px-4 md:px-12 max-w-[1400px] mx-auto w-full">
 <section class="mb-6">
-        <h2 class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider mb-2 ml-2">0. Dienst Gegevens (Voor Welkomst Dia)</h2>
+        <h2 class="text-[12px] font-semibold text-[#86868B] uppercase tracking-[0.04em] mb-2.5 ml-1">0. Dienst Gegevens (Voor Welkomst Dia)</h2>
         <div class="bg-white p-4 rounded-[20px] shadow-[0_4px_24px_rgba(0,0,0,0.04)] flex flex-col md:flex-row gap-4">
             <div class="flex-1 relative">
                 <input id="datumInput" type="text" readonly class="w-full bg-[#F5F5F7] border border-transparent rounded-xl py-2.5 px-4 pr-10 text-sm font-medium placeholder-gray-400 apple-input transition-all cursor-pointer" placeholder="Klik om datum te kiezen"/>
@@ -507,12 +507,12 @@
     </button>
 </div>
 
-<div id="archiefModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
-    <div class="bg-white rounded-[24px] shadow-2xl w-11/12 max-w-md overflow-hidden flex flex-col transform transition-all modal-animate max-h-[85vh]">
+<div id="archiefModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/20 backdrop-blur-xl transition-opacity">
+    <div class="bg-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] w-11/12 max-w-md overflow-hidden flex flex-col transform transition-all modal-animate max-h-[85vh]">
         <div class="p-5 border-b border-gray-100 flex justify-between items-center flex-shrink-0">
             <h3 class="text-lg font-bold text-[#1D1D1F]">Archief</h3>
             <button onclick="document.getElementById('archiefModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 p-1">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
         <div class="p-5 overflow-y-auto">
@@ -524,8 +524,8 @@
 
 <div id="meeleesOverlay" class="hidden fixed inset-0 z-[300] overflow-y-auto" style="background:#fff3e0"></div>
 
-<div id="deelModal" class="fixed inset-0 z-[110] hidden flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
-    <div class="bg-white rounded-[24px] shadow-2xl w-11/12 max-w-sm overflow-hidden flex flex-col transform transition-all modal-animate">
+<div id="deelModal" class="fixed inset-0 z-[110] hidden flex items-center justify-center bg-black/20 backdrop-blur-xl transition-opacity">
+    <div class="bg-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] w-11/12 max-w-sm overflow-hidden flex flex-col transform transition-all modal-animate">
         <div class="p-5 border-b border-gray-100 flex justify-between items-center">
             <h3 class="text-lg font-bold text-[#1D1D1F]">Meelees-versie delen</h3>
             <button onclick="document.getElementById('deelModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 p-1">
@@ -543,8 +543,8 @@
     </div>
 </div>
 
-<div id="infoModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
-    <div class="bg-white dark:bg-gray-900 rounded-[24px] shadow-2xl w-11/12 max-w-sm overflow-hidden flex flex-col transform transition-all modal-animate max-h-[90vh]">
+<div id="infoModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/20 backdrop-blur-xl transition-opacity">
+    <div class="bg-white dark:bg-gray-900 rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] w-11/12 max-w-sm overflow-hidden flex flex-col transform transition-all modal-animate max-h-[90vh]">
         <div class="p-5 border-b border-gray-100 flex justify-between items-center flex-shrink-0">
             <h3 class="text-lg font-bold text-[#1D1D1F]">Over deze app</h3>
             <button onclick="document.getElementById('infoModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 p-1">
@@ -696,9 +696,9 @@
 </div>
 
 <div class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 items-end">
-    <button onclick="maakPowerPoint()" class="bg-[#007AFF] text-white px-8 py-4 rounded-full shadow-2xl flex items-center gap-3 hover:scale-105 transition-transform duration-300 border border-blue-400">
+    <button onclick="maakPowerPoint()" class="bg-[#007AFF] text-white px-7 py-3.5 rounded-full shadow-[0_8px_24px_rgba(0,122,255,0.32)] hover:shadow-[0_12px_28px_rgba(0,122,255,0.42)] active:scale-[0.98] transition-all duration-200 flex items-center gap-2.5 border border-white/20">
         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-        <span class="font-bold text-[15px] tracking-wide">Exporteer PowerPoint</span>
+        <span class="font-semibold text-[15px] tracking-[-0.01em]">Exporteer PowerPoint</span>
     </button>
 </div>
 
@@ -4175,7 +4175,7 @@ Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
             const isActive = index === previewItemIdx;
 
             lijst.innerHTML += `
-            <div draggable="true" data-index="${index}" onclick="renderSlidePreview(${index})" class="volgorde-item bg-white flex items-center gap-3 p-4 rounded-[18px] shadow-[0_2px_12px_rgba(0,0,0,0.03)] border-2 ${isActive ? 'border-[#007AFF]' : 'border-gray-100'} group transition-all hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] cursor-pointer">
+            <div draggable="true" data-index="${index}" onclick="renderSlidePreview(${index})" class="volgorde-item bg-white flex items-center gap-3 p-4 rounded-[18px] shadow-[0_2px_12px_rgba(0,0,0,0.03)] border ${isActive ? 'ring-2 ring-[#007AFF] border-transparent' : 'border-black/[0.04]'} group transition-all duration-150 ease-out select-none active:scale-[0.98] active:bg-[#F5F5F7]/80 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] cursor-pointer">
                 <div class="drag-handle text-gray-300 group-hover:text-gray-400 transition-colors p-1"
                      ontouchstart="touchDragStart(event, ${index})" ontouchmove="touchDragMove(event)" ontouchend="touchDragEnd(event)">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
@@ -4626,8 +4626,8 @@ window.verstuurExportFeedback = async function() {
 };
 </script>
 
-<div id="exportFeedbackModal" class="fixed inset-0 z-[120] hidden flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
-    <div class="bg-white rounded-[24px] shadow-2xl w-11/12 max-w-sm overflow-hidden flex flex-col transform transition-all modal-animate">
+<div id="exportFeedbackModal" class="fixed inset-0 z-[120] hidden flex items-center justify-center bg-black/20 backdrop-blur-xl transition-opacity">
+    <div class="bg-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] w-11/12 max-w-sm overflow-hidden flex flex-col transform transition-all modal-animate">
         <div class="p-5 border-b border-gray-100 flex justify-between items-center">
             <h3 class="text-lg font-bold text-[#1D1D1F]">Hoe ging het? 🎉</h3>
             <button onclick="sluitExportFeedback()" class="text-gray-400 hover:text-gray-600 p-1">
