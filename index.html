@@ -705,7 +705,7 @@
         if (onderhoudKliks >= 5) {
             onderhoudKliks = 0;
             const code = prompt("Beheerderscode voor onderhoudsmodus:");
-            if (code === "Kerkapp26") {
+            if (code === "14825") {
                 db.collection("stats").doc("onderhoud").get().then((doc) => {
                     const isActief = doc.exists && doc.data().actief;
                     const nieuw = !isActief;
