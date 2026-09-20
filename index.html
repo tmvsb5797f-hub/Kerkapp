@@ -557,6 +557,18 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                     <span id="bezoekTeller"><strong class="text-gray-700">laden...</strong></span>
                 </div>
+                <button id="grafiekKnop" onclick="toggleBezoekGrafiek()" class="w-full mt-1 py-2 rounded-xl text-[11px] font-semibold text-[#007AFF] bg-blue-50 hover:bg-blue-100 transition-colors flex items-center justify-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    Bekijk bezoekersstatistieken
+                </button>
+                <div id="grafiekContainer" class="hidden mt-1 bg-white rounded-xl border border-gray-100 p-3 shadow-sm">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Bezoekers (laatste 14 dagen)</span>
+                        <span id="grafiekTotaal" class="text-[10px] font-semibold text-[#007AFF]"></span>
+                    </div>
+                    <canvas id="bezoekCanvas" width="320" height="140" style="width:100%;height:auto;display:block"></canvas>
+                    <p id="grafiekLeeg" class="hidden text-center text-[11px] text-gray-400 py-4">Nog geen data beschikbaar. Kom morgen terug!</p>
+                </div>
             </div>
             <div class="text-center">
                 <p class="text-sm font-semibold text-[#1D1D1F]">Gemaakt door Sem</p>
@@ -673,10 +685,14 @@
     async function registreerBezoek() {
         try {
             const ref = db.collection("stats").doc("bezoeken");
+            const vandaag = new Date().toISOString().slice(0, 10); // "2026-09-20"
             await db.runTransaction(async (tx) => {
                 const doc = await tx.get(ref);
-                const huidig = doc.exists ? (doc.data().totaal || 0) : 0;
-                tx.set(ref, { totaal: huidig + 1 }, { merge: true });
+                const data = doc.exists ? doc.data() : {};
+                const huidig = data.totaal || 0;
+                const dagen = data.dagen || {};
+                dagen[vandaag] = (dagen[vandaag] || 0) + 1;
+                tx.set(ref, { totaal: huidig + 1, dagen: dagen }, { merge: true });
                 toonBezoekTeller(huidig + 1);
             });
         } catch (e) {
@@ -693,6 +709,139 @@
         } else {
             el.innerHTML = '<strong class="text-gray-700">' + aantal.toLocaleString('nl-NL') + ' keer geopend</strong>';
         }
+    }
+
+    // --- BEZOEKERSSTATISTIEKEN GRAFIEK ---
+    let grafiekGeladen = false;
+    window.toggleBezoekGrafiek = function() {
+        const container = document.getElementById('grafiekContainer');
+        const isHidden = container.classList.contains('hidden');
+        container.classList.toggle('hidden');
+        if (isHidden && !grafiekGeladen) {
+            grafiekGeladen = true;
+            laadBezoekGrafiek();
+        }
+    };
+
+    async function laadBezoekGrafiek() {
+        try {
+            const doc = await db.collection("stats").doc("bezoeken").get();
+            const dagen = doc.exists ? (doc.data().dagen || {}) : {};
+            tekenBezoekGrafiek(dagen);
+        } catch (e) {
+            console.warn("Grafiek laden mislukt:", e);
+            document.getElementById('grafiekLeeg').classList.remove('hidden');
+            document.getElementById('bezoekCanvas').classList.add('hidden');
+        }
+    }
+
+    function tekenBezoekGrafiek(dagen) {
+        // Bouw een array van de laatste 14 dagen
+        const DAGEN_TERUG = 14;
+        const dataPunten = [];
+        const nu = new Date();
+        for (let i = DAGEN_TERUG - 1; i >= 0; i--) {
+            const d = new Date(nu);
+            d.setDate(d.getDate() - i);
+            const sleutel = d.toISOString().slice(0, 10);
+            const dagNamen = ['zo','ma','di','wo','do','vr','za'];
+            const label = d.getDate() + '/' + (d.getMonth() + 1);
+            const dagNaam = dagNamen[d.getDay()];
+            dataPunten.push({ datum: sleutel, label: label, dagNaam: dagNaam, aantal: dagen[sleutel] || 0 });
+        }
+
+        const totaalPeriode = dataPunten.reduce((s, p) => s + p.aantal, 0);
+        document.getElementById('grafiekTotaal').textContent = totaalPeriode + ' totaal';
+
+        if (totaalPeriode === 0) {
+            document.getElementById('grafiekLeeg').classList.remove('hidden');
+            document.getElementById('bezoekCanvas').classList.add('hidden');
+            return;
+        }
+
+        const canvas = document.getElementById('bezoekCanvas');
+        const dpr = window.devicePixelRatio || 1;
+        const cssW = 320, cssH = 140;
+        canvas.width = cssW * dpr;
+        canvas.height = cssH * dpr;
+        const ctx = canvas.getContext('2d');
+        ctx.scale(dpr, dpr);
+
+        const padL = 28, padR = 8, padT = 10, padB = 28;
+        const chartW = cssW - padL - padR;
+        const chartH = cssH - padT - padB;
+        const maxVal = Math.max(...dataPunten.map(p => p.aantal), 1);
+        const barW = chartW / DAGEN_TERUG;
+        const barPad = Math.max(2, barW * 0.2);
+
+        // Achtergrond hulplijnen
+        ctx.strokeStyle = '#F0F0F0';
+        ctx.lineWidth = 0.5;
+        for (let i = 0; i <= 4; i++) {
+            const y = padT + (chartH / 4) * i;
+            ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(cssW - padR, y); ctx.stroke();
+        }
+
+        // Y-as labels
+        ctx.fillStyle = '#AEAEB2';
+        ctx.font = '8px Inter, sans-serif';
+        ctx.textAlign = 'right';
+        for (let i = 0; i <= 4; i++) {
+            const val = Math.round(maxVal * (4 - i) / 4);
+            const y = padT + (chartH / 4) * i;
+            ctx.fillText(val, padL - 4, y + 3);
+        }
+
+        // Bars
+        dataPunten.forEach((punt, i) => {
+            const x = padL + i * barW + barPad;
+            const w = barW - barPad * 2;
+            const h = (punt.aantal / maxVal) * chartH;
+            const y = padT + chartH - h;
+
+            // Gradient balk
+            const isVandaag = punt.datum === new Date().toISOString().slice(0, 10);
+            const grad = ctx.createLinearGradient(0, y, 0, padT + chartH);
+            if (isVandaag) {
+                grad.addColorStop(0, '#34C759');
+                grad.addColorStop(1, '#30B350');
+            } else {
+                grad.addColorStop(0, '#007AFF');
+                grad.addColorStop(1, '#005EC4');
+            }
+            ctx.fillStyle = grad;
+
+            // Afgeronde bovenkant
+            const r = Math.min(3, w / 2);
+            if (h > r) {
+                ctx.beginPath();
+                ctx.moveTo(x, padT + chartH);
+                ctx.lineTo(x, y + r);
+                ctx.quadraticCurveTo(x, y, x + r, y);
+                ctx.lineTo(x + w - r, y);
+                ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+                ctx.lineTo(x + w, padT + chartH);
+                ctx.closePath();
+                ctx.fill();
+            } else if (h > 0) {
+                ctx.fillRect(x, y, w, h);
+            }
+
+            // Waarde boven de balk als > 0
+            if (punt.aantal > 0) {
+                ctx.fillStyle = '#1D1D1F';
+                ctx.font = 'bold 7px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(punt.aantal, x + w / 2, y - 3);
+            }
+
+            // X-as label
+            ctx.fillStyle = isVandaag ? '#34C759' : '#AEAEB2';
+            ctx.font = (isVandaag ? 'bold ' : '') + '7px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(punt.label, x + w / 2, cssH - padB + 10);
+            ctx.fillText(punt.dagNaam, x + w / 2, cssH - padB + 19);
+        });
     }
 
     window.verstuurFeedback = async function() {
@@ -4260,9 +4409,92 @@ window.maakPowerPoint = async function() {
 
     // --- 5. EXPORT ---
     pres.writeFile("Liturgie_Presentatie.pptx")
-        .then(fileName => { window.toonToast("PowerPoint gereed!", "success"); })
+        .then(fileName => {
+            window.toonToast("PowerPoint gereed!", "success");
+            // Toon feedback-popup na succesvolle export (max 1x per sessie)
+            setTimeout(() => { toonExportFeedback(); }, 1200);
+        })
         .catch(err => { window.toonToast("Export fout: " + err, "error"); });
 };
+
+// --- FEEDBACK POPUP NA EXPORT ---
+let exportFeedbackGetoond = false;
+let geselecteerdeSterren = 0;
+
+function toonExportFeedback() {
+    if (exportFeedbackGetoond) return;
+    exportFeedbackGetoond = true;
+    document.getElementById('exportFeedbackModal').classList.remove('hidden');
+    geselecteerdeSterren = 0;
+    updateSterren(0);
+    const ta = document.getElementById('exportFeedbackTekst');
+    if (ta) ta.value = '';
+}
+
+window.sluitExportFeedback = function() {
+    document.getElementById('exportFeedbackModal').classList.add('hidden');
+};
+
+window.kiesExportSter = function(n) {
+    geselecteerdeSterren = n;
+    updateSterren(n);
+};
+
+function updateSterren(n) {
+    for (let i = 1; i <= 5; i++) {
+        const el = document.getElementById('ster' + i);
+        if (!el) continue;
+        el.style.color = i <= n ? '#FFB800' : '#D1D1D6';
+        el.style.transform = i <= n ? 'scale(1.15)' : 'scale(1)';
+    }
+}
+
+window.verstuurExportFeedback = async function() {
+    if (geselecteerdeSterren === 0) { window.toonToast("Geef eerst een beoordeling.", "error"); return; }
+    const tekst = (document.getElementById('exportFeedbackTekst').value || '').trim();
+    try {
+        await authKlaar;
+        await db.collection("feedback").add({
+            type: 'export-beoordeling',
+            sterren: geselecteerdeSterren,
+            bericht: tekst,
+            datum: new Date().toISOString(),
+            tijdstempel: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        window.toonToast("Bedankt voor je feedback! ⭐", "success");
+        sluitExportFeedback();
+    } catch (e) {
+        console.error("Export feedback opslaan mislukt:", e);
+        window.toonToast("Versturen mislukt, probeer later opnieuw.", "error");
+    }
+};
 </script>
+
+<div id="exportFeedbackModal" class="fixed inset-0 z-[120] hidden flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
+    <div class="bg-white rounded-[24px] shadow-2xl w-11/12 max-w-sm overflow-hidden flex flex-col transform transition-all">
+        <div class="p-5 border-b border-gray-100 flex justify-between items-center">
+            <h3 class="text-lg font-bold text-[#1D1D1F]">Hoe ging het? 🎉</h3>
+            <button onclick="sluitExportFeedback()" class="text-gray-400 hover:text-gray-600 p-1">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div class="p-5 flex flex-col items-center gap-4">
+            <p class="text-sm text-gray-500 text-center">Je PowerPoint is klaar! Hoe tevreden ben je met het resultaat?</p>
+            <div class="flex gap-2">
+                <button id="ster1" onclick="kiesExportSter(1)" class="text-3xl transition-all duration-200 hover:scale-125 cursor-pointer" style="color:#D1D1D6" title="Slecht">★</button>
+                <button id="ster2" onclick="kiesExportSter(2)" class="text-3xl transition-all duration-200 hover:scale-125 cursor-pointer" style="color:#D1D1D6" title="Matig">★</button>
+                <button id="ster3" onclick="kiesExportSter(3)" class="text-3xl transition-all duration-200 hover:scale-125 cursor-pointer" style="color:#D1D1D6" title="Okee">★</button>
+                <button id="ster4" onclick="kiesExportSter(4)" class="text-3xl transition-all duration-200 hover:scale-125 cursor-pointer" style="color:#D1D1D6" title="Goed">★</button>
+                <button id="ster5" onclick="kiesExportSter(5)" class="text-3xl transition-all duration-200 hover:scale-125 cursor-pointer" style="color:#D1D1D6" title="Uitstekend">★</button>
+            </div>
+            <textarea id="exportFeedbackTekst" rows="3" placeholder="Optioneel: tips, ideeën of opmerkingen..." class="w-full bg-[#F5F5F7] border border-transparent rounded-xl py-2.5 px-3 text-sm placeholder-gray-400 apple-input transition-all resize-none"></textarea>
+            <div class="flex gap-2 w-full">
+                <button onclick="sluitExportFeedback()" class="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors">Overslaan</button>
+                <button onclick="verstuurExportFeedback()" class="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#007AFF] hover:bg-blue-600 transition-colors shadow-sm">Versturen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>
