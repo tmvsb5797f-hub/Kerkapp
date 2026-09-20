@@ -924,8 +924,25 @@
             zichtbaar.forEach(doc => {
                 const d = doc.data();
                 const afgehandeld = !!d.afgehandeld;
-                const datum = d.datum && d.datum.toDate ? d.datum.toDate() : null;
+                const isExport = d.type === 'export-beoordeling';
+                // Datum: export-beoordelingen slaan datum op als ISO-string, gewone feedback als Firestore timestamp
+                let datum = null;
+                if (d.datum && d.datum.toDate) { datum = d.datum.toDate(); }
+                else if (d.tijdstempel && d.tijdstempel.toDate) { datum = d.tijdstempel.toDate(); }
+                else if (typeof d.datum === 'string') { datum = new Date(d.datum); }
                 const datumTekst = datum ? datum.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' }) + ' ' + datum.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }) : '';
+
+                // Sterren weergave voor export-beoordelingen
+                let sterrenHtml = '';
+                if (isExport && d.sterren) {
+                    sterrenHtml = '<span class="text-[11px]" title="' + d.sterren + '/5 sterren">';
+                    for (let s = 1; s <= 5; s++) { sterrenHtml += '<span style="color:' + (s <= d.sterren ? '#FFB800' : '#D1D1D6') + '">★</span>'; }
+                    sterrenHtml += '</span> ';
+                }
+                const typeBadge = isExport ? '<span class="text-[9px] font-bold uppercase tracking-wider text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded-full">Export</span> ' : '';
+
+                const berichtTekst = d.bericht || (isExport ? '' : '(geen tekst)');
+
                 const rij = document.createElement('div');
                 rij.className = 'rounded-xl px-3 py-2 text-left flex items-start gap-2 transition-colors ' + (afgehandeld ? 'bg-green-50' : 'bg-[#F5F5F7]');
                 const vinkKleur = afgehandeld ? 'bg-[#34C759] border-[#34C759] text-white' : 'bg-white border-gray-300 text-transparent';
@@ -934,7 +951,7 @@
                         '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3.5" d="M5 13l4 4L19 7"></path></svg>' +
                     '</button>' +
                     '<div class="flex-grow min-w-0">' +
-                        '<p class="text-[13px] whitespace-pre-line leading-snug ' + (afgehandeld ? 'text-gray-400 line-through' : 'text-gray-700') + '">' + escapeHtml(d.bericht || '') + '</p>' +
+                        '<p class="text-[13px] whitespace-pre-line leading-snug ' + (afgehandeld ? 'text-gray-400 line-through' : 'text-gray-700') + '">' + typeBadge + sterrenHtml + escapeHtml(berichtTekst) + '</p>' +
                         (datumTekst ? '<p class="text-[10px] text-gray-400 mt-1">' + datumTekst + (afgehandeld ? ' · afgehandeld, verdwijnt na 3 dagen' : '') + '</p>' : '') +
                     '</div>';
                 rij.querySelector('.feedback-vink').onclick = async () => {
