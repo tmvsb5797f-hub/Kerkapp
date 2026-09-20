@@ -163,6 +163,28 @@
         0%, 100% { outline-color: #007AFF; box-shadow: 0 0 0 0 rgba(0,122,255,0.4); }
         50% { outline-color: #5AC8FA; box-shadow: 0 0 20px 4px rgba(0,122,255,0.2); }
     }
+    /* --- Modal Animatie (Vloeiend infaden en opschalen) --- */
+    @keyframes modalFadeIn {
+        from {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    .modal-animate {
+        animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+        will-change: transform, opacity;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .modal-animate {
+            animation: none !important;
+        }
+    }
 </style>
 </head>
 <body class="text-[#1D1D1F] min-h-screen flex flex-col relative pb-32">
@@ -177,7 +199,7 @@
 </div>
 
 <div id="controleModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
-    <div class="bg-white rounded-[24px] shadow-2xl w-11/12 max-w-lg overflow-hidden flex flex-col transform transition-all">
+    <div class="bg-white rounded-[24px] shadow-2xl w-11/12 max-w-lg overflow-hidden flex flex-col transform transition-all modal-animate">
         <div class="p-4 md:p-6 border-b border-gray-100 flex justify-between items-center">
             <h3 id="modalTitel" class="text-lg font-bold text-[#1D1D1F]">Controleer Tekst</h3>
             <button onclick="sluitModal()" class="text-gray-400 hover:text-gray-600 p-1">
@@ -211,7 +233,7 @@
 </div>
 
 <div id="versModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
-    <div class="bg-white rounded-[24px] shadow-2xl w-11/12 max-w-lg overflow-hidden flex flex-col transform transition-all">
+    <div class="bg-white rounded-[24px] shadow-2xl w-11/12 max-w-lg overflow-hidden flex flex-col transform transition-all modal-animate">
         <div class="p-4 md:p-6 border-b border-gray-100 flex justify-between items-center">
             <h3 id="versModalTitel" class="text-lg font-bold text-[#1D1D1F]">Kies de verzen</h3>
             <button onclick="sluitVersModal()" class="text-gray-400 hover:text-gray-600 p-1">
@@ -226,7 +248,7 @@
     </div>
 </div>
 <div id="importModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
-    <div class="bg-white rounded-[24px] shadow-2xl w-11/12 max-w-lg overflow-hidden flex flex-col transform transition-all">
+    <div class="bg-white rounded-[24px] shadow-2xl w-11/12 max-w-lg overflow-hidden flex flex-col transform transition-all modal-animate">
         <div class="p-4 md:p-6 border-b border-gray-100 flex justify-between items-center">
             <h3 class="text-lg font-bold text-[#1D1D1F]">Slim Importeren</h3>
             <button onclick="sluitImportModal()" class="text-gray-400 hover:text-gray-600 p-1">
@@ -250,7 +272,7 @@
 </div>
 
 <div id="uitlegModal" class="fixed inset-0 z-[200] hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4" onclick="if(event.target === this) sluitUitleg()">
-    <div class="bg-white rounded-[24px] shadow-2xl w-full max-w-xl overflow-hidden flex flex-col transform transition-all max-h-[92vh]">
+    <div class="bg-white rounded-[24px] shadow-2xl w-full max-w-xl overflow-hidden flex flex-col transform transition-all modal-animate max-h-[92vh]">
         <div class="p-4 md:p-5 border-b border-gray-100 flex justify-between items-center flex-shrink-0">
             <div class="flex items-center gap-2">
                 <span class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider">Hoe werkt de app?</span>
@@ -486,7 +508,7 @@
 </div>
 
 <div id="archiefModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
-    <div class="bg-white rounded-[24px] shadow-2xl w-11/12 max-w-md overflow-hidden flex flex-col transform transition-all max-h-[85vh]">
+    <div class="bg-white rounded-[24px] shadow-2xl w-11/12 max-w-md overflow-hidden flex flex-col transform transition-all modal-animate max-h-[85vh]">
         <div class="p-5 border-b border-gray-100 flex justify-between items-center flex-shrink-0">
             <h3 class="text-lg font-bold text-[#1D1D1F]">Archief</h3>
             <button onclick="document.getElementById('archiefModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 p-1">
@@ -503,7 +525,7 @@
 <div id="meeleesOverlay" class="hidden fixed inset-0 z-[300] overflow-y-auto" style="background:#fff3e0"></div>
 
 <div id="deelModal" class="fixed inset-0 z-[110] hidden flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
-    <div class="bg-white rounded-[24px] shadow-2xl w-11/12 max-w-sm overflow-hidden flex flex-col transform transition-all">
+    <div class="bg-white rounded-[24px] shadow-2xl w-11/12 max-w-sm overflow-hidden flex flex-col transform transition-all modal-animate">
         <div class="p-5 border-b border-gray-100 flex justify-between items-center">
             <h3 class="text-lg font-bold text-[#1D1D1F]">Meelees-versie delen</h3>
             <button onclick="document.getElementById('deelModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 p-1">
@@ -522,7 +544,7 @@
 </div>
 
 <div id="infoModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
-    <div class="bg-white dark:bg-gray-900 rounded-[24px] shadow-2xl w-11/12 max-w-sm overflow-hidden flex flex-col transform transition-all max-h-[90vh]">
+    <div class="bg-white dark:bg-gray-900 rounded-[24px] shadow-2xl w-11/12 max-w-sm overflow-hidden flex flex-col transform transition-all modal-animate max-h-[90vh]">
         <div class="p-5 border-b border-gray-100 flex justify-between items-center flex-shrink-0">
             <h3 class="text-lg font-bold text-[#1D1D1F]">Over deze app</h3>
             <button onclick="document.getElementById('infoModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 p-1">
@@ -594,6 +616,19 @@
                 <p class="text-sm font-semibold text-[#1D1D1F]">Gemaakt door Sem</p>
                 <p class="text-xs text-gray-400 mt-0.5">met hulp van AI</p>
             </div>
+            
+            <div class="bg-amber-50 border border-amber-100 rounded-2xl p-4">
+                <h4 class="text-[11px] font-bold text-amber-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> 
+                    Binnenkort verwacht
+                </h4>
+                <ul class="text-[12px] text-amber-800 space-y-1.5 font-medium ml-1">
+                    <li class="flex items-start gap-2"><span class="text-amber-400">•</span> Sjablonen opslaan voor standaard diensten</li>
+                    <li class="flex items-start gap-2"><span class="text-amber-400">•</span> Recente liederen sneller terugvinden</li>
+                    <li class="flex items-start gap-2"><span class="text-amber-400">•</span> Verbeterde AI thema-suggesties</li>
+                </ul>
+            </div>
+
             <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-4 text-center">
                 <p class="text-sm text-[#007AFF] font-medium italic">"Techniek in dienst van de eredienst"</p>
             </div>
@@ -3531,30 +3566,52 @@ ${tekst}
             const onderdelenTekst = APP_ONDERDELEN.map(o => `- "${o.naam}" (id: ${o.id}, sectie: ${o.sectie}): ${o.beschrijving}`).join('\n');
             const actiesTekst = CHAT_ACTIES.map(a => `- ${a.actie} (id: ${a.id || 'geen'}): ${a.beschrijving}`).join('\n');
 
-            systeemPrompt = `Je bent de vriendelijke hulp-assistent van de app "Liturgie Assistent Pro". Deze app helpt kerkmensen om een PowerPoint-presentatie te maken voor de kerkdienst (liederen, bijbelteksten, afbeeldingen).
+            systeemPrompt = `Je bent de vriendelijke, behulpzame digitale assistent van de app "Liturgie Assistent Pro" (ontwikkeld door Sem). Deze app helpt kerkmensen, beamisten en voorgangers om snel een professionele PowerPoint-presentatie voor de kerkdienst samen te stellen.
 
-Je taak:
-- Beantwoord vragen over hoe de app werkt in korte, duidelijke zinnen (max 3-4 zinnen).
-- Verwijs naar specifieke onderdelen van de app.
-- Geef ALTIJD een "highlight" veld terug met het element-id dat je wilt aanwijzen (of null als er niets past).
+JOUW ROL & TOON:
+- Spreek de gebruiker vriendelijk, bemoedigend en helder aan in het Nederlands.
+- Geef praktische en beknopte antwoorden (maximaal 3 tot 5 zinnen of korte bullet points).
+- Gebruik **vetgedrukte tekst** voor knoppen, veldnamen of secties zodat de gebruiker direct ziet waar hij moet klikken.
+- Wijs waar van toepassing altijd het bijbehorende element aan via het "highlight" veld.
 
-De app heeft deze onderdelen:
+APP ONDERDELEN:
 ${onderdelenTekst}
 
-Extra acties:
+EXTRA ACTIES:
 ${actiesTekst}
 
-Workflow:
-1. Vul datum en voorganger in (welkomstdia)
-2. Zoek liederen via de zoekbalk (sectie 1)
-3. Zoek bijbelteksten via het invoerveld + Enter (sectie 2)
-4. Bekijk en herschik de volgorde (sectie 3)
-5. Klik "Exporteer PowerPoint" om het bestand te downloaden
+BELANGRIJKSTE UITLEG OVER DE APP:
+1. **Liederen zoeken** (highlight: "liedInput"):
+   - Typ in de zoekbalk op titel, liednummer of afkorting (bijv. "Liedboek 434", "Psalm 23", "opw 717", "wk 15" voor Weerklank, "oth 314" voor Op Toonhoogte, of "Hemelhoog").
+   - Klik op het lied en vink de gewenste verzen/strofen aan om ze toe te voegen.
+   - Ontbreekt een lied? Voeg het toe via een Vrije tekst dia of stuur Sem een berichtje.
+2. **Bijbelteksten ophalen** (highlight: "bijbelInput"):
+   - Typ een Bijbelverwijzing (bijv. "Johannes 3:16-18", "Psalm 121" of "Genesis 1:1-5") en druk op **Enter**.
+   - De HSV-tekst wordt via AI automatisch opgehaald en netjes over dia's verdeeld.
+3. **Liturgie Importeren / Plakken** (highlight: "importModal"):
+   - Klik op de knop **Plak Liturgie** om een complete liturgie (gekopieerd uit bijv. Word of e-mail) te plakken; liederen en lezingen worden automatisch herkend.
+4. **Volgorde & Dia's bewerken** (highlight: "volgordeLijst"):
+   - Volgorde aanpassen: sleep items met de muis omhoog of omlaag.
+   - Tekst bewerken: klik op het **blauwe potlood-icoon**.
+   - Verwijderen: klik op het **rode prullenbak-icoon**.
+   - Klik op **Opslaan** om de liturgie te bewaren in het Archief.
+5. **Extra Dia's**:
+   - **Foto Dia** (highlight: "imageFile"): upload een afbeelding.
+   - **Tikkie QR**: upload een screenshot van een collecte QR-code.
+   - **Lege Dia**: voeg een zwarte pauzedia toe voor de preek of overdenking.
+6. **Instellingen**:
+   - **Regels per dia** (highlight: "linesSelect"): kies bijv. "Per Vers" om automatisch op witregels te splitsen.
+   - **Lettergrootte** (highlight: "fontSizeSelect"): standaard 40pt.
+   - **Preview** (highlight: "previewVak"): toont direct hoe de actieve dia er op de beamer uitziet.
+   - **Meelees-versie**: aan te zetten via het info-icoontje linksonder ("Over deze app").
+7. **Exporteren**:
+   - Klik op de grote blauwe knop **Exporteer PowerPoint** rechtsonder voor een kant-en-klaar breedbeeld .pptx bestand.
+8. **Rondleiding** (highlight: "rondleidingKnop"):
+   - Klik op het vraagteken-icoon rechtsonder voor een interactieve tour.
 
-Antwoord UITSLUITEND in geldig JSON met deze structuur:
-{"antwoord": "je antwoord hier", "highlight": "element-id of null"}
-
-Geen markdown, geen codeblokken, alleen de JSON.`;
+UITVOERFORMAAT:
+Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
+{"antwoord": "je uitleg hier (gebruik gerust **vet** voor knopnamen)", "highlight": "element-id of null"}`;
         }
 
         const userMessage = chatHistory.length === 0
@@ -3612,6 +3669,12 @@ Geen markdown, geen codeblokken, alleen de JSON.`;
                         ${displayText}
                         ${highlightKnop}
                     </div>`;
+
+                chatMessages.innerHTML += `
+                    <button onclick="document.getElementById('infoModal').classList.remove('hidden'); document.getElementById('infoModal').classList.add('flex'); setTimeout(() => { const fb = document.getElementById('feedbackInput'); if (fb) { fb.focus(); fb.scrollIntoView({ behavior: 'smooth', block: 'center' }); } }, 100);" class="self-start -mt-1 mb-2 text-[11px] text-gray-500 hover:text-[#007AFF] bg-white hover:bg-blue-50 px-2.5 py-1.5 rounded-lg border border-gray-200 transition-all flex items-center gap-1.5 shadow-sm cursor-pointer">
+                        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                        Kom je er niet uit? Stuur Sem een berichtje
+                    </button>`;
             }
         } catch (err) {
             document.getElementById(laadId).remove();
@@ -4565,7 +4628,7 @@ window.verstuurExportFeedback = async function() {
 </script>
 
 <div id="exportFeedbackModal" class="fixed inset-0 z-[120] hidden flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
-    <div class="bg-white rounded-[24px] shadow-2xl w-11/12 max-w-sm overflow-hidden flex flex-col transform transition-all">
+    <div class="bg-white rounded-[24px] shadow-2xl w-11/12 max-w-sm overflow-hidden flex flex-col transform transition-all modal-animate">
         <div class="p-5 border-b border-gray-100 flex justify-between items-center">
             <h3 class="text-lg font-bold text-[#1D1D1F]">Hoe ging het? 🎉</h3>
             <button onclick="sluitExportFeedback()" class="text-gray-400 hover:text-gray-600 p-1">
