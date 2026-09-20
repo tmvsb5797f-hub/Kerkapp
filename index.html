@@ -1369,7 +1369,7 @@
         }
     }
 
-    async function laadLiederenDatabase() {
+    async function laadCloudDatabase() {
         // 1. Verse lokale cache (max 12u oud)? Gebruik die en spaar een D1-lees uit.
         try {
             const tijd = parseInt(localStorage.getItem('liederenCacheTijd') || '0', 10);
@@ -1408,7 +1408,7 @@
         setCloudStatus('ok', 'Vernieuwen...');
         localStorage.removeItem('liederenCache');
         localStorage.removeItem('liederenCacheTijd');
-        await laadLiederenDatabase();
+        await laadCloudDatabase();
         if (window.toonToast) window.toonToast("Liederen database vernieuwd!", "success");
     };
 
