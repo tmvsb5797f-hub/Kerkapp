@@ -140,7 +140,13 @@
         white-space: nowrap;
     }
     .uitleg-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-    #uitlegDots span { transition: all 0.3s; }
+    #uitlegDots {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    #uitlegDots::-webkit-scrollbar {
+        display: none;
+    }
 
     /* --- Drag-and-Drop Volgorde --- */
     .volgorde-item { transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; }
@@ -276,7 +282,7 @@
         <div class="p-4 md:p-5 border-b border-gray-100 flex justify-between items-center flex-shrink-0">
             <div class="flex items-center gap-2">
                 <span class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider">Hoe werkt de app?</span>
-                <span id="uitlegStapTeller" class="text-[10px] font-bold text-[#007AFF] bg-blue-50 px-2 py-0.5 rounded-full tabular-nums">1 / 7</span>
+                <span id="uitlegStapTeller" class="text-[10px] font-bold text-[#007AFF] bg-blue-50 px-2 py-0.5 rounded-full tabular-nums">1 / 15</span>
             </div>
             <div class="flex items-center gap-1">
                 <button onclick="sluitUitleg()" class="text-[12px] font-semibold text-gray-400 hover:text-gray-700 px-3 py-1 rounded-full hover:bg-gray-100 transition-colors">Sla over</button>
@@ -298,8 +304,8 @@
         </div>
 
         <div class="p-4 md:p-6 border-t border-gray-100 flex items-center justify-between gap-3 bg-white flex-shrink-0">
-            <div id="uitlegDots" class="flex gap-1.5"></div>
-            <div class="flex gap-2">
+            <div id="uitlegDots" class="flex gap-1.5 min-w-0 overflow-x-auto py-1"></div>
+            <div class="flex gap-2 flex-shrink-0">
                 <button id="uitlegVorigeKnop" onclick="uitlegVorige()" class="px-4 py-2.5 rounded-full text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">Vorige</button>
                 <button id="uitlegVolgendeKnop" onclick="uitlegVolgende()" class="px-5 py-2.5 rounded-full text-sm font-semibold text-white bg-[#007AFF] hover:bg-blue-600 transition-colors shadow-md">Volgende</button>
             </div>
@@ -2424,6 +2430,7 @@ Bijbelliederen`;
     // =====================================================================
     let uitlegRunId = 0;
     let uitlegHuidigeStap = 0;
+    let uitlegTekstTimer = null;
 
     function uitlegSleep(ms) { return new Promise(r => setTimeout(r, ms)); }
     function uitlegGeldig(runId) { return runId === uitlegRunId; }
@@ -2432,13 +2439,17 @@ Bijbelliederen`;
         const t = document.getElementById('uitlegSceneTitel');
         const d = document.getElementById('uitlegSceneTekst');
         if (!t || !d) return;
+        if (uitlegTekstTimer) { clearTimeout(uitlegTekstTimer); uitlegTekstTimer = null; }
+        const currentRun = uitlegRunId;
         t.style.opacity = 0;
         d.style.opacity = 0;
-        setTimeout(() => {
+        uitlegTekstTimer = setTimeout(() => {
+            if (uitlegRunId !== currentRun) return;
             t.innerText = titel;
             d.innerText = tekst;
             t.style.opacity = 1;
             d.style.opacity = 1;
+            uitlegTekstTimer = null;
         }, 250);
     }
 
@@ -2463,10 +2474,29 @@ Bijbelliederen`;
         if (!c || !t || !wrap) return;
         const tr = t.getBoundingClientRect();
         const wr = wrap.getBoundingClientRect();
-        if (!tr.width || !wr.width) return;
+        if (!tr.width || !tr.height || !wr.width || !wr.height) return;
         const x = ((tr.left + tr.width / 2) - wr.left) / wr.width * 100;
         const y = ((tr.top + tr.height / 2) - wr.top) / wr.height * 100;
         c.style.left = x + '%'; c.style.top = y + '%';
+    }
+    function uitlegMuisNaarSlideHandle(slideId, handleXPercent, handleYPercent) {
+        const slide = document.getElementById(slideId);
+        const wrap = document.getElementById('uitlegDemoInner');
+        const c = document.getElementById('uitlegCursor');
+        if (!slide || !wrap || !c) return;
+        const sr = slide.getBoundingClientRect();
+        const wr = wrap.getBoundingClientRect();
+        if (!sr.width || !sr.height || !wr.width || !wr.height) {
+            c.style.left = handleXPercent + '%';
+            c.style.top = handleYPercent + '%';
+            return;
+        }
+        const pxX = sr.left + (handleXPercent / 100) * sr.width;
+        const pxY = sr.top + (handleYPercent / 100) * sr.height;
+        const x = ((pxX - wr.left) / wr.width) * 100;
+        const y = ((pxY - wr.top) / wr.height) * 100;
+        c.style.left = x + '%';
+        c.style.top = y + '%';
     }
     function uitlegKlik() {
         const c = document.getElementById('uitlegCursor');
@@ -2986,6 +3016,80 @@ Bijbelliederen`;
         }
     }
 
+    // --- Scene: Tekstvak Formaat Aanpassen (Resize) ---
+    function renderResize(el) {
+        el.innerHTML = `
+        <div class="w-full">
+            <div id="ut-resizeslide" class="relative aspect-video bg-black rounded-xl overflow-hidden shadow-inner">
+                <div class="absolute top-2 left-3 text-white/70 text-[9px] font-bold">Psalm 84 : 1</div>
+                <div id="ut-resizetext" class="absolute text-white flex items-center justify-center text-center text-[12px] sm:text-[13px] font-semibold leading-snug px-2 select-none"
+                     style="left:20%;top:28%;width:60%;height:44%;border:1px dashed #007AFF;border-radius:4px;box-shadow:0 0 0 1px rgba(0,122,255,0.4);transition:left 0.8s cubic-bezier(0.25, 1, 0.5, 1),top 0.8s cubic-bezier(0.25, 1, 0.5, 1),width 0.8s cubic-bezier(0.25, 1, 0.5, 1),height 0.8s cubic-bezier(0.25, 1, 0.5, 1)">
+                    <div class="whitespace-pre-line w-full px-1">Hoe lieflijk is uw huis,<br>o HEER der legerscharen</div>
+                    <div id="ut-handle-tl" style="position:absolute;top:-5px;left:-5px;width:10px;height:10px;background:#ffffff;border:2px solid #007AFF;border-radius:2px;box-shadow:0 1px 3px rgba(0,0,0,0.3);box-sizing:border-box;cursor:nwse-resize;z-index:20;transition:transform .2s,background-color .2s"></div>
+                    <div id="ut-handle-tr" style="position:absolute;top:-5px;right:-5px;width:10px;height:10px;background:#ffffff;border:2px solid #007AFF;border-radius:2px;box-shadow:0 1px 3px rgba(0,0,0,0.3);box-sizing:border-box;cursor:nesw-resize;z-index:20;transition:transform .2s,background-color .2s"></div>
+                    <div id="ut-handle-bl" style="position:absolute;bottom:-5px;left:-5px;width:10px;height:10px;background:#ffffff;border:2px solid #007AFF;border-radius:2px;box-shadow:0 1px 3px rgba(0,0,0,0.3);box-sizing:border-box;cursor:nesw-resize;z-index:20;transition:transform .2s,background-color .2s"></div>
+                    <div id="ut-handle-br" style="position:absolute;bottom:-5px;right:-5px;width:10px;height:10px;background:#ffffff;border:2px solid #007AFF;border-radius:2px;box-shadow:0 1px 3px rgba(0,0,0,0.3);box-sizing:border-box;cursor:nwse-resize;z-index:20;transition:transform .2s,background-color .2s"></div>
+                </div>
+                <div id="ut-resize-badge" class="absolute top-2 right-3 z-20 text-[9px] font-bold px-2 py-0.5 rounded-full bg-green-500/80 text-white pointer-events-none transition-all duration-300">Past</div>
+            </div>
+            <p class="text-center text-[10px] text-gray-400 mt-2 italic">Sleep een van de 4 hoekpunten om het tekstvak te vergroten of verkleinen</p>
+            ${uitlegCursorHtml(50, 48)}
+        </div>`;
+    }
+    async function animateResize(runId) {
+        let isFirstRun = true;
+        while (uitlegGeldig(runId)) {
+            const box = document.getElementById('ut-resizetext');
+            const hBr = document.getElementById('ut-handle-br');
+            if (!box) return;
+
+            // Beginstand: gecentreerd tekstvak met 4 hoekpunten
+            box.style.left = '20%';
+            box.style.top = '28%';
+            box.style.width = '60%';
+            box.style.height = '44%';
+            if (hBr) { hBr.style.transform = 'scale(1)'; hBr.style.backgroundColor = '#ffffff'; }
+
+            uitlegMuis(50, 48);
+            if (!isFirstRun) {
+                uitlegZetTekst("Tekstvak Formaat Aanpassen", "Pak een van de 4 hoekpunten vast om het tekstvak naar wens te vergroten of verkleinen. De aangepaste afmetingen worden automatisch bewaard in de PowerPoint-export.");
+            }
+            isFirstRun = false;
+            await uitlegSleep(2200); if (!uitlegGeldig(runId)) return;
+
+            // Beweeg cursor naar het hoekpunt rechtsonder
+            uitlegMuisNaarEl('ut-handle-br');
+            await uitlegSleep(900); if (!uitlegGeldig(runId)) return;
+
+            // Pak het hoekpunt vast (klik & oplichten)
+            uitlegKlik();
+            if (hBr) { hBr.style.transform = 'scale(1.4)'; hBr.style.backgroundColor = '#007AFF'; }
+            uitlegZetTekst("Sleep om te vergroten", "Pak een van de 4 hoekpunten vast en sleep om het tekstvak groter of kleiner te maken.");
+            await uitlegSleep(500); if (!uitlegGeldig(runId)) return;
+
+            // Sleep het hoekpunt naar buiten (tekstvak groeit naar rechtsonder; linksboven blijft vast)
+            box.style.left = '20%';
+            box.style.top = '28%';
+            box.style.width = '74%';
+            box.style.height = '58%';
+            uitlegMuisNaarSlideHandle('ut-resizeslide', 20 + 74, 28 + 58);
+            await uitlegSleep(1000); if (!uitlegGeldig(runId)) return;
+
+            // Laat hoekpunt los
+            if (hBr) { hBr.style.transform = 'scale(1)'; hBr.style.backgroundColor = '#ffffff'; }
+            uitlegZetTekst("Bewaard in PowerPoint", "De aangepaste afmetingen worden automatisch exact zo bewaard in de PowerPoint-export.");
+            await uitlegSleep(2600); if (!uitlegGeldig(runId)) return;
+
+            // Rustige overgang terug naar beginstand
+            box.style.left = '20%';
+            box.style.top = '28%';
+            box.style.width = '60%';
+            box.style.height = '44%';
+            uitlegMuis(50, 48);
+            await uitlegSleep(1400); if (!uitlegGeldig(runId)) return;
+        }
+    }
+
     // --- Scene: Tikkie QR voor de collecte ---
     function renderQR(el) {
         el.innerHTML = `
@@ -3214,6 +3318,7 @@ Bijbelliederen`;
         { titel: "Snelkoppeling: Slim Importeren", tekst: "Plak de hele liturgie in één keer - de AI herkent zelf liederen en Schriftlezingen.", render: render4, animate: animate4 },
         { titel: "Instellingen & Livestream", tekst: "Stel het lettertype en de grootte in, en kies of de dia's voor de beamer of de livestream zijn.", render: renderInstellingen, animate: animateInstellingen },
         { titel: "Live Voorbeeld & Positie", tekst: "Bekijk elke dia live en zet de tekst met dubbelklik precies op de goede plek.", render: renderPreview, animate: animatePreview },
+        { titel: "Tekstvak Formaat Aanpassen", tekst: "Pak een van de 4 hoekpunten vast om het tekstvak naar wens te vergroten of verkleinen. De aangepaste afmetingen worden automatisch bewaard in de PowerPoint-export.", render: renderResize, animate: animateResize },
         { titel: "Tikkie QR voor de Collecte", tekst: "Voeg met één klik een nette QR-dia toe voor de digitale collecte.", render: renderQR, animate: animateQR },
         { titel: "Meelees-versie voor de Gemeente", tekst: "Laat gemeenteleden op hun telefoon meelezen via een QR-code op de beamer.", render: renderMeeleesTour, animate: animateMeeleesTour },
         { titel: "3. Jouw Liturgie", tekst: "Hier verschijnt alles wat je toevoegt. Sleep items om de volgorde aan te passen.", render: render5, animate: animate5 },
@@ -3225,18 +3330,31 @@ Bijbelliederen`;
 
     function uitlegBouwDots() {
         const dots = document.getElementById('uitlegDots');
-        dots.innerHTML = '';
-        uitlegScenes.forEach((s, i) => {
-            const d = document.createElement('button');
-            d.title = 'Stap ' + (i + 1);
-            d.className = 'h-2 rounded-full transition-all ' + (i === uitlegHuidigeStap ? 'bg-[#007AFF] w-5' : 'bg-gray-200 w-2 hover:bg-gray-300');
-            d.onclick = () => uitlegGaNaarStap(i);
-            dots.appendChild(d);
-        });
+        if (!dots) return;
+        if (dots.children.length !== uitlegScenes.length) {
+            dots.innerHTML = '';
+            uitlegScenes.forEach((s, i) => {
+                const d = document.createElement('button');
+                d.title = 'Stap ' + (i + 1);
+                d.className = 'h-2 rounded-full transition-all flex-shrink-0 ' + (i === uitlegHuidigeStap ? 'bg-[#007AFF] w-5' : 'bg-gray-200 w-2 hover:bg-gray-300');
+                d.onclick = () => uitlegGaNaarStap(i);
+                dots.appendChild(d);
+            });
+        } else {
+            Array.from(dots.children).forEach((d, i) => {
+                d.className = 'h-2 rounded-full transition-all flex-shrink-0 ' + (i === uitlegHuidigeStap ? 'bg-[#007AFF] w-5' : 'bg-gray-200 w-2 hover:bg-gray-300');
+            });
+        }
+        const activeDot = dots.children[uitlegHuidigeStap];
+        if (activeDot && typeof activeDot.scrollIntoView === 'function') {
+            try { activeDot.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); } catch(e) {}
+        }
     }
 
     function uitlegGaNaarStap(index) {
+        if (typeof index !== 'number' || !Number.isInteger(index) || index < 0 || index >= uitlegScenes.length) return;
         uitlegRunId++; // stopt de lopende animatie-loop van de vorige stap
+        if (uitlegTekstTimer) { clearTimeout(uitlegTekstTimer); uitlegTekstTimer = null; }
         const myRunId = uitlegRunId;
         uitlegHuidigeStap = index;
         const scene = uitlegScenes[index];
@@ -3270,6 +3388,11 @@ Bijbelliederen`;
     };
     window.sluitUitleg = function() {
         uitlegRunId++; // stopt elke lopende animatie
+        if (uitlegTekstTimer) { clearTimeout(uitlegTekstTimer); uitlegTekstTimer = null; }
+        const t = document.getElementById('uitlegSceneTitel');
+        const d = document.getElementById('uitlegSceneTekst');
+        if (t) t.style.opacity = 1;
+        if (d) d.style.opacity = 1;
         document.getElementById('uitlegModal').classList.add('hidden');
         document.getElementById('uitlegModal').classList.remove('flex');
     };
