@@ -570,10 +570,16 @@
                     <p id="grafiekLeeg" class="hidden text-center text-[11px] text-gray-400 py-4">Nog geen data beschikbaar. Kom morgen terug!</p>
                 </div>
                 
-                <a href="import_tool.html" target="_blank" class="w-full py-2 mt-1 rounded-xl text-[11px] font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 transition-colors flex items-center justify-center gap-1.5">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                    Bulk Importer openen
-                </a>
+                <div class="flex gap-2 w-full mt-1">
+                    <button onclick="window.forceerCloudRefresh()" class="flex-1 py-2 rounded-xl text-[11px] font-semibold text-[#007AFF] bg-blue-50 hover:bg-blue-100 transition-colors flex items-center justify-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        Liederen vernieuwen
+                    </button>
+                    <a href="import_tool.html" target="_blank" class="flex-1 py-2 rounded-xl text-[11px] font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 transition-colors flex items-center justify-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        Bulk Importer
+                    </a>
+                </div>
             </div>
             <div class="text-center">
                 <p class="text-sm font-semibold text-[#1D1D1F]">Gemaakt door Sem</p>
@@ -1363,7 +1369,7 @@
         }
     }
 
-    async function laadCloudDatabase() {
+    async function laadLiederenDatabase() {
         // 1. Verse lokale cache (max 12u oud)? Gebruik die en spaar een D1-lees uit.
         try {
             const tijd = parseInt(localStorage.getItem('liederenCacheTijd') || '0', 10);
@@ -1397,6 +1403,14 @@
             }
         }
     }
+
+    window.forceerCloudRefresh = async function() {
+        setCloudStatus('ok', 'Vernieuwen...');
+        localStorage.removeItem('liederenCache');
+        localStorage.removeItem('liederenCacheTijd');
+        await laadLiederenDatabase();
+        if (window.toonToast) window.toonToast("Liederen database vernieuwd!", "success");
+    };
 
     function bouwZoekLijst() {
         let alleLiedTitels = Object.keys(window.liederenDatabase);
