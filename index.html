@@ -570,6 +570,19 @@
             </div>
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2 pr-2">
+                    <svg class="w-5 h-5 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    <div>
+                        <span class="text-sm font-medium text-[#1D1D1F] block">Welkomstdia aanpassen</span>
+                        <span class="text-[10px] text-gray-400 leading-tight block">Bewerk titel en liednummers vóór PowerPoint-export</span>
+                    </div>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                    <input type="checkbox" id="welkomstdiaToggle" onchange="toggleWelkomstdiaAanpassen()" class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#007AFF]"></div>
+                </label>
+            </div>
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2 pr-2">
                     <svg class="w-5 h-5 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
                     <div>
                         <span class="text-sm font-medium text-[#1D1D1F] block">Meelees-versie</span>
@@ -1125,6 +1138,27 @@
             if (cb) cb.checked = true;
         }
     })();
+
+    // --- WELKOMSTDIA AANPASSEN (instelling in Info-paneel) ---
+    function welkomstdiaAanpassenAan() {
+        const t = document.getElementById('welkomstdiaToggle');
+        if (t) return t.checked;
+        const opgeslagen = localStorage.getItem('welkomstdiaAanpassen');
+        return opgeslagen === null || opgeslagen !== '0';
+    }
+    function toggleWelkomstdiaAanpassen() {
+        const t = document.getElementById('welkomstdiaToggle');
+        const isAan = t ? t.checked : true;
+        localStorage.setItem('welkomstdiaAanpassen', isAan ? '1' : '0');
+    }
+    (function() {
+        const opgeslagen = localStorage.getItem('welkomstdiaAanpassen');
+        const isAan = (opgeslagen === null || opgeslagen !== '0');
+        const cb = document.getElementById('welkomstdiaToggle');
+        if (cb) cb.checked = isAan;
+    })();
+    window.welkomstdiaAanpassenAan = welkomstdiaAanpassenAan;
+    window.toggleWelkomstdiaAanpassen = toggleWelkomstdiaAanpassen;
 
     function maakQRDataURL(tekst, cellSize, margin) {
         const qr = qrcode(0, 'M');
@@ -4047,6 +4081,19 @@ Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
         window._slideBoxWasActive = false;
         previewSubSlides = (idx >= 0 && idx < liturgieVolgorde.length) ? berekenSubSlidesVoorItem(liturgieVolgorde[idx]) : [];
         tekenSlidePreview();
+
+        const items = document.querySelectorAll('#volgordeLijst .volgorde-item');
+        items.forEach((el, index) => {
+            const itemIdx = parseInt(el.dataset.index, 10);
+            const isActive = (itemIdx === idx) || (index === idx);
+            if (isActive) {
+                el.classList.add('ring-2', 'ring-[#007AFF]', 'border-transparent');
+                el.classList.remove('border-black/[0.04]');
+            } else {
+                el.classList.remove('ring-2', 'ring-[#007AFF]', 'border-transparent');
+                el.classList.add('border-black/[0.04]');
+            }
+        });
     }
 
     window.navigeerSlide = function(dir) {
@@ -4433,9 +4480,14 @@ Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
         bewaarLiturgie();
         const lijst = document.getElementById('volgordeLijst');
         if (liturgieVolgorde.length === 0) {
+            previewItemIdx = -1;
             lijst.innerHTML = '<div class="bg-transparent border-2 border-dashed border-gray-200 rounded-[16px] md:rounded-[20px] p-6 md:p-8 text-center text-gray-400 font-medium text-[12px] md:text-[13px]">Nog geen items toegevoegd</div>';
             renderSlidePreview(-1);
             return;
+        }
+
+        if (previewItemIdx < 0 || previewItemIdx >= liturgieVolgorde.length) {
+            previewItemIdx = liturgieVolgorde.length - 1;
         }
 
         lijst.innerHTML = "";
@@ -4468,14 +4520,20 @@ Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
             </div>`;
         });
 
-        if (previewItemIdx < 0 || previewItemIdx >= liturgieVolgorde.length) {
-            renderSlidePreview(liturgieVolgorde.length - 1);
-        } else {
-            renderSlidePreview(previewItemIdx);
-        }
+        renderSlidePreview(previewItemIdx);
     }
 
-    window.verwijder = function(i) { liturgieVolgorde.splice(i, 1); window.tekenVolgorde(); };
+    window.verwijder = function(i) {
+        liturgieVolgorde.splice(i, 1);
+        if (previewItemIdx === i) {
+            if (previewItemIdx >= liturgieVolgorde.length) {
+                previewItemIdx = liturgieVolgorde.length - 1;
+            }
+        } else if (i < previewItemIdx) {
+            previewItemIdx--;
+        }
+        window.tekenVolgorde();
+    };
 
     // --- DRAG AND DROP (Desktop) ---
     let dragSrcIndex = null;
@@ -4508,6 +4566,13 @@ Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
             if (dropIndex === dragSrcIndex) return;
             const [moved] = liturgieVolgorde.splice(dragSrcIndex, 1);
             liturgieVolgorde.splice(dropIndex, 0, moved);
+            if (previewItemIdx === dragSrcIndex) {
+                previewItemIdx = dropIndex;
+            } else if (dragSrcIndex < previewItemIdx && dropIndex >= previewItemIdx) {
+                previewItemIdx--;
+            } else if (dragSrcIndex > previewItemIdx && dropIndex <= previewItemIdx) {
+                previewItemIdx++;
+            }
             window.tekenVolgorde();
         });
         lijst.addEventListener('dragend', () => {
@@ -4551,6 +4616,13 @@ Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
         if (dropIdx !== touchDragIdx) {
             const [moved] = liturgieVolgorde.splice(touchDragIdx, 1);
             liturgieVolgorde.splice(dropIdx, 0, moved);
+            if (previewItemIdx === touchDragIdx) {
+                previewItemIdx = dropIdx;
+            } else if (touchDragIdx < previewItemIdx && dropIdx >= previewItemIdx) {
+                previewItemIdx--;
+            } else if (touchDragIdx > previewItemIdx && dropIdx <= previewItemIdx) {
+                previewItemIdx++;
+            }
         }
         if (touchGhost) { touchGhost.remove(); touchGhost = null; }
         document.querySelectorAll('.volgorde-item').forEach(el => el.classList.remove('dragging', 'drag-over'));
@@ -4705,13 +4777,225 @@ window.exporteerLiturgiePDF = function() {
     window.toonToast("PDF liturgie-overzicht gedownload!", "success");
 };
 
-window.maakPowerPoint = async function() {
+const PPT_BASE64_VOORGANGER = "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iOTYiIGhlaWdodD0iOTYiIHhtbDpzcGFjZT0icHJlc2VydmUiIG92ZXJmbG93PSJoaWRkZW4iPgogIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKC00NTYgLTk2KSI+CiAgICA8Zz4KICAgICAgPHBhdGggZD0iTTUwMC45NDYgMTU2IDUwNy4wNjYgMTU2IDUwOS4wMDYgMTUwIDQ5OS4wMDYgMTUwIDUwMC45NDYgMTU2WiIgZmlsbD0iI0ZGRkZGRiIgZmlsbC1ydWxlPSJub256ZXJvIiBmaWxsLW9wYWNpdHk9IjEiPjwvcGF0aD4KICAgICAgPHBhdGggZD0iTTUwMS4wOTYgMTU4IDQ5OS43MzYgMTc3LjczIDUwNC4wMDYgMTgyIDUwOC4yNzYgMTc3LjczIDUwNi45MTYgMTU4IDUwMS4wOTYgMTU4WiIgZmlsbD0iI0ZGRkZGRiIgZmlsbC1ydWxlPSJub256ZXJvIiBmaWxsLW9wYWNpdHk9IjEiPjwvcGF0aD4KICAgICAgPHBhdGggZD0iTTUzNiAxNjAuOTZDNTM1Ljk0NCAxNTguMDI2IDUzNC41NzMgMTU1LjI3MyA1MzIuMjY2IDE1My40NiA1MjguNTMgMTUwLjQwMiA1MjQuMTM5IDE0OC41MTQgNTE5LjUzIDE0Ni44NjZMNTE0LjYyNSAxNDQuODUzQzUxNC4yNSAxNDQuNjk5IDUxNC4wMDUgMTQ0LjMzMyA1MTQuMDA1IDE0My45MjhMNTE0LjAwNSAxNDEuNDc0QzUxNy43MDggMTM4LjUxIDUxOS45MDIgMTM0LjA1MyA1MTkuOTkxIDEyOS4zMTFMNTIyLjUzOSAxMjQuOTRDNTIyLjkyMSAxMjQuMDM5IDUyMy4wNzQgMTIzLjA1OCA1MjIuOTg1IDEyMi4wODMgNTIyLjQwNSAxMTUuNTI5IDUxMS40MzEgMTA5Ljc2IDUxMi41MTQgMTA2Ljg4MyA1MTIuMDM3IDEwNi42NTkgNTExLjQ3NyAxMDYuNzA5IDUxMS4wNDggMTA3LjAxNEw1MTAuMDM4IDEwNy43MTQgNTA4LjkyMSAxMDYuMTg3QzUwOC41NzcgMTA1LjcwNSA1MDguMDYgMTA1LjM3NiA1MDcuNDc4IDEwNS4yNjggNTA2LjQzOCAxMDUuMDg4IDUwNS4zODQgMTA0Ljk5OSA1MDQuMzI4IDEwNSA0OTUuMzIxIDEwNS4wMDEgNDg3LjU5IDExMS40MSA0ODUuOTE4IDEyMC4yNkw0ODUuODc4IDEyMC40NzhDNDg1LjM5MiAxMjMuMDc1IDQ4NC4zODcgMTI1LjU0NyA0ODIuOTIyIDEyNy43NDVMNDg4LjAxIDEyNy43NDVMNDg4LjAxIDEyOUM0ODguMDEgMTMzLjg1IDQ5MC4yMTQgMTM4LjQzNiA0OTQgMTQxLjQ2N0w0OTQgMTQzLjkyM0M0OTQgMTQ0LjMyOCA0OTMuNzU1IDE0NC42OTQgNDkzLjM4IDE0NC44NDhMNDg4LjQ4IDE0Ni44NTdDNDgzLjg2OCAxNDguNTA2IDQ3OS40OCAxNTAuMzkxIDQ3NS43NjYgMTUzLjQyOCA0NzMuNDMzIDE1NS4yNTQgNDcyLjA1MSAxNTguMDM4IDQ3Mi4wMDYgMTYxTDQ3Mi4wMDYgMTc4LjUgNDcyLjgwNiAxNzkuMUM0NzcuMTkxIDE4Mi4zODkgNDg4Ljc4OCAxODMuNDQ5IDQ5NS4zMDYgMTgzLjc4OEw0OTcuNjU5IDE4My45MSA0OTMuNzY3IDE0OS4wMSA0OTQuODk4IDE0OC41NDZDNDk2Ljc3NyAxNDcuNzggNDk4LjAwNCAxNDUuOTUyIDQ5OCAxNDMuOTIzTDQ5OCAxNDMuODIzQzUwMS44NDggMTQ1LjM5NCA1MDYuMTU4IDE0NS4zOTQgNTEwLjAwNiAxNDMuODIzTDUxMC4wMDYgMTQzLjkyM0M1MTAuMDAxIDE0NS45NTIgNTExLjIyNyAxNDcuNzgxIDUxMy4xMDYgMTQ4LjU0OEw1MTQuMjM3IDE0OS4wMTIgNTEwLjM0NCAxODMuOTEyIDUxMi42OTYgMTgzLjc5QzUxOS4yMTkgMTgzLjQ1MSA1MzAuODE2IDE4Mi4zOSA1MzUuMjAyIDE3OS4xMDJMNTM2LjAwMiAxNzguNTAyWk00OTIuMDEgMTI5IDQ5Mi4wMSAxMjcuNzQ1IDQ5OC45NzkgMTI3Ljc0NUM1MDkuMjU5IDEyNy43NDUgNTA3Ljg2MSAxMTkuNTUyIDUxMi4zNTkgMTE4LjM3OSA1MTMuNTk1IDExOC4xNDkgNTE0Ljg3MiAxMTguMzEzIDUxNi4wMSAxMTguODQ5TDUxNi4wMSAxMjlDNTE2LjAxIDEzNS42MjcgNTEwLjYzNyAxNDEgNTA0LjAxIDE0MSA0OTcuMzgzIDE0MSA0OTIuMDEgMTM1LjYyNyA0OTIuMDEgMTI5Wk01MjguMDA1IDE2NiA1MTkuMDA1IDE2NiA1MTkuMDA1IDE2NCA1MjguMDA1IDE2NFoiIGZpbGw9IiNGRkZGRkYiIGZpbGwtcnVsZT0ibm9uemVybyIgZmlsbC1vcGFjaXR5PSIxIj48L3BhdGg+CiAgICA8L2c+CiAgPC9nPgo8L3N2Zz4K";
+const PPT_BASE64_MUZIEK = "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iOTYiIGhlaWdodD0iOTciIHhtbDpzcGFjZT0icHJlc2VydmUiIG92ZXJmbG93PSJoaWRkZW4iPgogIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKC00MzIgLTIyMSkiPgogICAgPGc+CiAgICAgIDxnPgogICAgICAgIDxnPgogICAgICAgICAgPGc+CiAgICAgICAgICAgIDxwYXRoIGQ9Ik00ODguNDcgMjQwLjkzQzQ4Ni41NjIgMjM5LjY5MSA0ODUuMDQ5IDIzNy45MzIgNDg0LjExIDIzNS44Nkw0ODQuMTEgMjMzLjk0QzQ4NC4xMSAyMzIuMDA3IDQ4Mi41NDMgMjMwLjQ0IDQ4MC42MSAyMzAuNDQgNDc3LjY3NyAyMzAuNDQgNDc3LjExIDIzMi4wMDcgNDc3LjExIDIzMy45NEw0NzcuMTEgMjg3LjE2QzQ3My43MDggMjg2LjU4IDQ3MC4yMTMgMjg2LjkyNiA0NjYuOTkgMjg4LjE2IDQ1OS4zNSAyOTAuOTMgNDU0LjY2IDI5Ny4zMSA0NTYuNSAzMDIuNCA0NTguMzQgMzA3LjQ5IDQ2Ni4wNCAzMDkuNCA0NzMuNjggMzA2LjYxIDQ3OSAzMDQuNjQgNDgyLjg3IDMwMSA0ODQuMTEgMjk3LjE4TDQ4NC4xMSAyNTkuM0M0ODQuNzYxIDI1OS44NTQgNDg1LjQ1NyAyNjAuMzUyIDQ4Ni4xOSAyNjAuNzkgNDk3LjkzIDI2Ny43MyA0OTEuNDQgMjc5IDQ5Ny4yIDI3OSA1MDQuNDUgMjc5LjA2IDUwNC43NSAyNTEuNzggNDg4LjQ3IDI0MC45M1oiIGZpbGw9IiNGRkZGRkYiIGZpbGwtcnVsZT0ibm9uemVybyIgZmlsbC1vcGFjaXR5PSIxIj48L3BhdGg+CiAgICAgICAgICA8L2c+CiAgICAgICAgPC9nPgogICAgICA8L2c+CiAgICA8L2c+CiAgPC9nPgo8L3N2Zz4K";
+const PPT_BASE64_BOEK = "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iOTYiIGhlaWdodD0iOTciIHhtbDpzcGFjZT0icHJlc2VydmUiIG92ZXJmbG93PSJoaWRkZW4iPgogIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKC03MiAtMzU2KSI+CiAgICA8Zz4KICAgICAgPGc+CiAgICAgICAgPGc+CiAgICAgICAgICA8Zz4KICAgICAgICAgICAgPHBhdGggZD0iTTEyOCAzODkgMTQzIDM4OSAxNDMgMzkxIDEyOCAzOTFaIiBmaWxsPSIjRkZGRkZGIiBmaWxsLXJ1bGU9Im5vbnplcm8iIGZpbGwtb3BhY2l0eT0iMSI+PC9wYXRoPgogICAgICAgICAgICA8cGF0aCBkPSJNMTI4IDM5NSAxNDMgMzk1IDE0MyAzOTcgMTI4IDM5N1oiIGZpbGw9IiNGRkZGRkYiIGZpbGwtcnVsZT0ibm9uemVybyIgZmlsbC1vcGFjaXR5PSIxIj48L3BhdGg+CiAgICAgICAgICAgIDxwYXRoIGQ9Ik0xMjggNDAxIDEzOCA0MDEgMTM4IDQwMyAxMjggNDAzWiIgZmlsbD0iI0ZGRkZGRiIgZmlsbC1ydWxlPSJub256ZXJvIiBmaWxsLW9wYWNpdHk9IjEiPjwvcGF0aD4KICAgICAgICAgICAgPHBhdGggZD0iTTE1OSAzODEgMTUzIDM4MSAxNTMgMzc2LjZDMTUzIDM3Ni4xNzMgMTUyLjcyOSAzNzUuNzkzIDE1Mi4zMjUgMzc1LjY1NCAxNDEuODQgMzcyLjE1NCAxMzAuNTA4IDM3Mi4xMTUgMTIwIDM3NS41NDQgMTA5LjQ5MiAzNzIuMTE1IDk4LjE1OTkgMzcyLjE1MyA4Ny42NzUgMzc1LjY1MyA4Ny4yNzA3IDM3NS43OTIgODYuOTk5NCAzNzYuMTcyIDg3IDM3Ni42TDg3IDM4MSA4MSAzODFDODAuNDQ3NyAzODEgODAgMzgxLjQ0OCA4MCAzODJMODAgNDMwQzgwIDQzMC41NTIgODAuNDQ3NyA0MzEgODEgNDMxTDExMy4xIDQzMUMxMTMuNTIgNDMyLjc1OSAxMTUuMDkyIDQzNCAxMTYuOSA0MzRMMTIzLjEgNDM0QzEyNC45MDggNDM0IDEyNi40IDQzMi43NTkgMTI2LjkgNDMxTDE1OSA0MzFDMTU5LjU1MiA0MzEgMTYwIDQzMC41NTIgMTYwIDQzMEwxNjAgMzgyQzE2MCAzODEuNDQ4IDE1OS41NTIgMzgxIDE1OSAzODFaTTE1MSAzNzcuMzIgMTUxIDQyMy4yMkMxNDEuMjIgNDIwLjI1NiAxMzAuNzggNDIwLjI1NiAxMjEgNDIzLjIyTDEyMSAzNzcuMzJDMTMwLjc2MSAzNzQuMjI3IDE0MS4yMzkgMzc0LjIyNyAxNTEgMzc3LjMyWk04OSAzNzcuMzJDOTguNzYwOCAzNzQuMjI3IDEwOS4yMzkgMzc0LjIyNyAxMTkgMzc3LjMyTDExOSA0MjMuMjJDMTA5LjIyIDQyMC4yNTYgOTguNzgwNCA0MjAuMjU2IDg5IDQyMy4yMlpNMTU4IDQyOSAxMjYgNDI5QzEyNS40NDggNDI5IDEyNSA0MjkuNDQ4IDEyNSA0MzBMMTI1IDQzMC4xQzEyNSA0MzEuMTQ5IDEyNC4xNDkgNDMyIDEyMy4xIDQzMkwxMTYuOSA0MzJDMTE1Ljg1MSA0MzIgMTE1IDQzMS4xNDkgMTE1IDQzMC4xTDExNSA0MzBDMTE1IDQyOS40NDggMTE0LjU1MiA0MjkgMTE0IDQyOUw4MiA0MjkgODIgMzgzIDg3IDM4MyA4NyA0MjQuNls4Ni45OTk4IDQyNS4xNTIgODcuNDQ3NCA0MjUuNiA4Ny45OTk3IDQyNS42IDg4LjExMDQgNDI1LjYgODguMjIwMyA0MjUuNTgyIDg4LjMyNSA0MjUuNTQ2IDk4LjQ5OTUgNDIyLjE1MyAxMDkuNTAxIDQyMi4xNTMgMTE5LjY3NSA0MjUuNTQ2IDExOS42OTEgNDI1LjU1IDExOS43MDggNDI1LjU1MiAxMTkuNzI1IDQyNS41NTQgMTE5LjY3OSA0MjUuNTc2IDExOS44NzUgNDI1LjU4OSAxMTkuOTUyIDQyNS41OTIgMTE5Ljk2OCA0MjUuNTkyIDExOS45ODQgNDI1LjYgMTIwIDQyNS42IDEyMC4wMTYgNDI1LjYgMTIwLjAyNSA0MjUuNTk1IDEyMC4wMzcgNDI1LjU5NCAxMjAuMTEzIDQyNS41OTIgMTIwLjE4OSA0MjUuNTggMTIwLjI2MiA0MjUuNTYgMTIwLjI3OCA0MjUuNTYgMTIwLjI5NSA0MjUuNTU0IDEyMC4zMTIgNDI1LjU0OUwxMjAuMzI1IDQyNS41NDlDMTMwLjQ5OSA0MjIuMTU2IDE0MS41MDEgNDIyLjE1NiAxNTEuNjc1IDQyNS41NDkgMTUxLjc4IDQyNS41ODQgMTUxLjg5IDQyNS42MDEgMTUyIDQyNS42IDE1Mi41NTIgNDI1LjYgMTUzIDQyNS4xNTIgMTUzIDQyNC42TDE1MyAzODMgMTU4IDM4M1oiIGZpbGw9IiNGRkZGRkYiIGZpbGwtcnVsZT0ibm9uemVybyIgZmlsbC1vcGFjaXR5PSIxIj48L3BhdGg+CiAgICAgICAgICA8L2c+CiAgICAgICAgPC9nPgogICAgICA8L2c+CiAgICA8L2c+CiAgPC9nPgo8L3N2Zz4K";
+
+// --- WELKOMSTDIA CUSTOMIZER LOGICA ---
+function genereerStandaardZangLijst(formaat = 'afkorting') {
+    return liturgieVolgorde.filter(item => item.type === "Zang").map(item => {
+        let t = (item.titel || '').split(' - ')[0].trim();
+        if (formaat === 'nummers') {
+            const m = t.match(/\d+.*$/);
+            return m ? m[0].trim() : t;
+        } else if (formaat === 'volledig') {
+            return t;
+        } else {
+            return t.replace("Weerklank Lied", "Lw")
+                    .replace("Weerklank Psalm", "Ps")
+                    .replace("Op Toonhoogte", "OTH")
+                    .replace("DNP Psalm", "Ps DNP")
+                    .replace("Psalm", "Ps").trim();
+        }
+    });
+}
+
+function stelLiedPresetIn(formaat) {
+    const lijst = genereerStandaardZangLijst(formaat);
+    const ta = document.getElementById('welkomLiederenInput');
+    if (ta) ta.value = lijst.join('\n');
+    const toggle = document.getElementById('welkomToonLiederenToggle');
+    if (toggle) toggle.checked = true;
+    ['afkorting', 'nummers', 'volledig'].forEach(p => {
+        const btn = document.getElementById('preset-' + p);
+        if (!btn) return;
+        if (p === formaat) {
+            btn.classList.add('bg-blue-50', 'text-[#007AFF]', 'border-[#007AFF]/30');
+            btn.classList.remove('bg-white', 'text-gray-700', 'border-gray-200');
+        } else {
+            btn.classList.remove('bg-blue-50', 'text-[#007AFF]', 'border-[#007AFF]/30');
+            btn.classList.add('bg-white', 'text-gray-700', 'border-gray-200');
+        }
+    });
+    updateWelkomstdiaPreview();
+}
+
+function wisPresetHighlight() {
+    ['afkorting', 'nummers', 'volledig'].forEach(p => {
+        const btn = document.getElementById('preset-' + p);
+        if (btn) {
+            btn.classList.remove('bg-blue-50', 'text-[#007AFF]', 'border-[#007AFF]/30');
+            btn.classList.add('bg-white', 'text-gray-700', 'border-gray-200');
+        }
+    });
+}
+
+function openWelkomstdiaModal() {
+    const modal = document.getElementById('welkomstdiaModal');
+    if (!modal) return;
+
+    const titelInput = document.getElementById('welkomTitelInput');
+    if (titelInput) titelInput.value = "Welkom";
+
+    const toonToggle = document.getElementById('welkomToonLiederenToggle');
+    if (toonToggle) toonToggle.checked = true;
+
+    stelLiedPresetIn('afkorting');
+
+    const badge = document.getElementById('welkomModusBadge');
+    if (badge) {
+        badge.textContent = isLivestream() ? "Livestream Achtergrond" : "Beamer (16:9)";
+    }
+
+    modal.classList.remove('hidden');
+    updateWelkomstdiaPreview();
+    setTimeout(() => updateWelkomstdiaPreview(), 40);
+}
+
+function sluitWelkomstdiaModal() {
+    const modal = document.getElementById('welkomstdiaModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function updateWelkomstdiaPreview() {
+    const previewContainer = document.getElementById('welkomPreviewContainer');
+    const content = document.getElementById('welkomPreviewContent');
+    if (!previewContainer || !content) return;
+
+    if (isLivestream()) {
+        previewContainer.style.backgroundImage = `url('${LIVESTREAM_BG}')`;
+        previewContainer.style.backgroundSize = 'cover';
+        previewContainer.style.backgroundPosition = 'center';
+        previewContainer.style.backgroundColor = 'transparent';
+    } else {
+        previewContainer.style.backgroundImage = 'none';
+        previewContainer.style.backgroundColor = '#000000';
+    }
+
+    const containerW = previewContainer.clientWidth || 480;
+    const scale = containerW / 720;
+    const font = typeof getFont === 'function' ? getFont() : 'Segoe UI, Arial, sans-serif';
+
+    const titelTekst = document.getElementById('welkomTitelInput') ? document.getElementById('welkomTitelInput').value.trim() : "";
+    const toonLiederen = document.getElementById('welkomToonLiederenToggle') ? document.getElementById('welkomToonLiederenToggle').checked : true;
+    const rawLiederen = document.getElementById('welkomLiederenInput') ? document.getElementById('welkomLiederenInput').value : "";
+    const liederenRegels = toonLiederen ? rawLiederen.split('\n').map(s => s.trim()).filter(Boolean) : [];
+
+    const datum = document.getElementById('datumInput') ? document.getElementById('datumInput').value.trim() : "";
+    const voorganger = document.getElementById('voorgangerInput') ? document.getElementById('voorgangerInput').value.trim() : "";
+    const bijbelLijst = liturgieVolgorde.filter(item => item.type === "Schriftlezing").map(item => item.titel.replace(" (HSV)", ""));
+
+    let html = '';
+
+    // 1. Titel ("Welkom" of aangepast)
+    if (titelTekst) {
+        const titleFS = Math.max(12, Math.round(54 * scale));
+        html += `<div class="absolute text-white font-bold leading-tight select-none" style="left:5%;top:14.2%;max-width:48%;font-size:${titleFS}px;font-family:${font};">${escapeHtml(titelTekst)}</div>`;
+    }
+
+    // 2. Datum
+    if (datum) {
+        const datumFS = Math.max(8, Math.round(20 * scale));
+        html += `<div class="absolute text-[#CCCCCC] font-normal select-none" style="left:5%;top:32.0%;max-width:48%;font-size:${datumFS}px;font-family:${font};">${escapeHtml(datum)}</div>`;
+    }
+
+    // 3. Voorganger
+    if (voorganger) {
+        const voorgangerFS = Math.max(8, Math.round(22 * scale));
+        const iconSize = Math.max(10, Math.round(28.8 * scale));
+        html += `
+        <div class="absolute flex items-center gap-1.5 select-none" style="left:54%;top:21.3%;width:42%;">
+            <img src="data:image/svg+xml;base64,${PPT_BASE64_VOORGANGER}" style="width:${iconSize}px;height:${iconSize}px;flex-shrink:0;" alt="" />
+            <span class="text-white truncate" style="font-size:${voorgangerFS}px;font-family:${font};">${escapeHtml(voorganger)}</span>
+        </div>`;
+    }
+
+    // 4. Liederen
+    if (toonLiederen && liederenRegels.length > 0) {
+        const liedFS = Math.max(7, Math.round(18 * scale));
+        const iconSize = Math.max(10, Math.round(28.8 * scale));
+        html += `
+        <div class="absolute flex items-start gap-1.5 select-none" style="left:54%;top:37.3%;width:42%;max-height:42%;overflow:hidden;">
+            <img src="data:image/svg+xml;base64,${PPT_BASE64_MUZIEK}" style="width:${iconSize}px;height:${iconSize}px;flex-shrink:0;margin-top:2px;" alt="" />
+            <div class="text-white whitespace-pre-line" style="font-size:${liedFS}px;font-family:${font};line-height:1.55;">${escapeHtml(liederenRegels.join('\n'))}</div>
+        </div>`;
+    }
+
+    // 5. Schriftlezing
+    if (bijbelLijst.length > 0) {
+        const bijbelFS = Math.max(8, Math.round(20 * scale));
+        const iconSize = Math.max(10, Math.round(28.8 * scale));
+        html += `
+        <div class="absolute flex items-center gap-1.5 select-none" style="left:5%;top:81.7%;width:88%;">
+            <img src="data:image/svg+xml;base64,${PPT_BASE64_BOEK}" style="width:${iconSize}px;height:${iconSize}px;flex-shrink:0;" alt="" />
+            <span class="text-white font-bold truncate" style="font-size:${bijbelFS}px;font-family:${font};">${escapeHtml(bijbelLijst.join(' & '))}</span>
+        </div>`;
+    }
+
+    content.innerHTML = html;
+}
+
+function exporteerMetStandaardWelkomstdia() {
+    sluitWelkomstdiaModal();
+    window.maakPowerPoint({ gebruikStandaard: true });
+}
+
+function exporteerMetAangepasteWelkomstdia() {
+    const titel = document.getElementById('welkomTitelInput') ? document.getElementById('welkomTitelInput').value.trim() : "";
+    const toonLiederen = document.getElementById('welkomToonLiederenToggle') ? document.getElementById('welkomToonLiederenToggle').checked : true;
+    const rawLiederen = document.getElementById('welkomLiederenInput') ? document.getElementById('welkomLiederenInput').value : "";
+    const zangLijst = toonLiederen ? rawLiederen.split('\n').map(s => s.trim()).filter(Boolean) : [];
+
+    sluitWelkomstdiaModal();
+    window.maakPowerPoint({
+        titel: titel,
+        toonLiederen: toonLiederen,
+        zangLijst: zangLijst
+    });
+}
+
+// Window bindings
+window.openWelkomstdiaModal = openWelkomstdiaModal;
+window.sluitWelkomstdiaModal = sluitWelkomstdiaModal;
+window.updateWelkomstdiaPreview = updateWelkomstdiaPreview;
+window.stelLiedPresetIn = stelLiedPresetIn;
+window.wisPresetHighlight = wisPresetHighlight;
+window.genereerStandaardZangLijst = genereerStandaardZangLijst;
+window.exporteerMetStandaardWelkomstdia = exporteerMetStandaardWelkomstdia;
+window.exporteerMetAangepasteWelkomstdia = exporteerMetAangepasteWelkomstdia;
+window.PPT_BASE64_VOORGANGER = PPT_BASE64_VOORGANGER;
+window.PPT_BASE64_MUZIEK = PPT_BASE64_MUZIEK;
+window.PPT_BASE64_BOEK = PPT_BASE64_BOEK;
+
+window.addEventListener('resize', () => {
+    const modal = document.getElementById('welkomstdiaModal');
+    if (modal && !modal.classList.contains('hidden')) {
+        updateWelkomstdiaPreview();
+    }
+});
+
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('welkomstdiaModal');
+        if (modal && !modal.classList.contains('hidden')) {
+            sluitWelkomstdiaModal();
+        }
+    }
+});
+
+window.maakPowerPoint = async function(customOpties = null) {
     if (liturgieVolgorde.length === 0) { window.toonToast("Voeg eerst een item toe aan de volgorde.", "error"); return; }
     
-    // --- 1. ICONEN DEFINIËREN (Hersteld) ---
-    const base64Voorganger = "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iOTYiIGhlaWdodD0iOTYiIHhtbDpzcGFjZT0icHJlc2VydmUiIG92ZXJmbG93PSJoaWRkZW4iPgogIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKC00NTYgLTk2KSI+CiAgICA8Zz4KICAgICAgPHBhdGggZD0iTTUwMC45NDYgMTU2IDUwNy4wNjYgMTU2IDUwOS4wMDYgMTUwIDQ5OS4wMDYgMTUwIDUwMC45NDYgMTU2WiIgZmlsbD0iI0ZGRkZGRiIgZmlsbC1ydWxlPSJub256ZXJvIiBmaWxsLW9wYWNpdHk9IjEiPjwvcGF0aD4KICAgICAgPHBhdGggZD0iTTUwMS4wOTYgMTU4IDQ5OS43MzYgMTc3LjczIDUwNC4wMDYgMTgyIDUwOC4yNzYgMTc3LjczIDUwNi45MTYgMTU4IDUwMS4wOTYgMTU4WiIgZmlsbD0iI0ZGRkZGRiIgZmlsbC1ydWxlPSJub256ZXJvIiBmaWxsLW9wYWNpdHk9IjEiPjwvcGF0aD4KICAgICAgPHBhdGggZD0iTTUzNiAxNjAuOTZDNTM1Ljk0NCAxNTguMDI2IDUzNC41NzMgMTU1LjI3MyA1MzIuMjY2IDE1My40NiA1MjguNTMgMTUwLjQwMiA1MjQuMTM5IDE0OC41MTQgNTE5LjUzIDE0Ni44NjZMNTE0LjYyNSAxNDQuODUzQzUxNC4yNSAxNDQuNjk5IDUxNC4wMDUgMTQ0LjMzMyA1MTQuMDA1IDE0My45MjhMNTE0LjAwNSAxNDEuNDc0QzUxNy43MDggMTM4LjUxIDUxOS45MDIgMTM0LjA1MyA1MTkuOTkxIDEyOS4zMTFMNTIyLjUzOSAxMjQuOTRDNTIyLjkyMSAxMjQuMDM5IDUyMy4wNzQgMTIzLjA1OCA1MjIuOTg1IDEyMi4wODMgNTIyLjQwNSAxMTUuNTI5IDUxMS40MzEgMTA5Ljc2IDUxMi41MTQgMTA2Ljg4MyA1MTIuMDM3IDEwNi42NTkgNTExLjQ3NyAxMDYuNzA5IDUxMS4wNDggMTA3LjAxNEw1MTAuMDM4IDEwNy43MTQgNTA4LjkyMSAxMDYuMTg3QzUwOC41NzcgMTA1LjcwNSA1MDguMDYgMTA1LjM3NiA1MDcuNDc4IDEwNS4yNjggNTA2LjQzOCAxMDUuMDg4IDUwNS4zODQgMTA0Ljk5OSA1MDQuMzI4IDEwNSA0OTUuMzIxIDEwNS4wMDEgNDg3LjU5IDExMS40MSA0ODUuOTE4IDEyMC4yNkw0ODUuODc4IDEyMC40NzhDNDg1LjM5MiAxMjMuMDc1IDQ4NC4zODcgMTI1LjU0NyA0ODIuOTIyIDEyNy43NDVMNDg4LjAxIDEyNy43NDVMNDg4LjAxIDEyOUM0ODguMDEgMTMzLjg1IDQ5MC4yMTQgMTM4LjQzNiA0OTQgMTQxLjQ2N0w0OTQgMTQzLjkyM0M0OTQgMTQ0LjMyOCA0OTMuNzU1IDE0NC42OTQgNDkzLjM4IDE0NC44NDhMNDg4LjQ4IDE0Ni44NTdDNDgzLjg2OCAxNDguNTA2IDQ3OS40OCAxNTAuMzkxIDQ3NS43NjYgMTUzLjQyOCA0NzMuNDMzIDE1NS4yNTQgNDcyLjA1MSAxNTguMDM4IDQ3Mi4wMDYgMTYxTDQ3Mi4wMDYgMTc4LjUgNDcyLjgwNiAxNzkuMUM0NzcuMTkxIDE4Mi4zODkgNDg4Ljc4OCAxODMuNDQ5IDQ5NS4zMDYgMTgzLjc4OEw0OTcuNjU5IDE4My45MSA0OTMuNzY3IDE0OS4wMSA0OTQuODk4IDE0OC41NDZDNDk2Ljc3NyAxNDcuNzggNDk4LjAwNCAxNDUuOTUyIDQ5OCAxNDMuOTIzTDQ5OCAxNDMuODIzQzUwMS44NDggMTQ1LjM5NCA1MDYuMTU4IDE0NS4zOTQgNTEwLjAwNiAxNDMuODIzTDUxMC4wMDYgMTQzLjkyM0M1MTAuMDAxIDE0NS45NTIgNTExLjIyNyAxNDcuNzgxIDUxMy4xMDYgMTQ4LjU0OEw1MTQuMjM3IDE0OS4wMTIgNTEwLjM0NCAxODMuOTEyIDUxMi42OTYgMTgzLjc5QzUxOS4yMTkgMTgzLjQ1MSA1MzAuODE2IDE4Mi4zOSA1MzUuMjAyIDE3OS4xMDJMNTM2LjAwMiAxNzguNTAyWk00OTIuMDEgMTI5IDQ5Mi4wMSAxMjcuNzQ1IDQ5OC45NzkgMTI3Ljc0NUM1MDkuMjU5IDEyNy43NDUgNTA3Ljg2MSAxMTkuNTUyIDUxMi4zNTkgMTE4LjM3OSA1MTMuNTk1IDExOC4xNDkgNTE0Ljg3MiAxMTguMzEzIDUxNi4wMSAxMTguODQ5TDUxNi4wMSAxMjlDNTE2LjAxIDEzNS42MjcgNTEwLjYzNyAxNDEgNTA0LjAxIDE0MSA0OTcuMzgzIDE0MSA0OTIuMDEgMTM1LjYyNyA0OTIuMDEgMTI5Wk01MjguMDA1IDE2NiA1MTkuMDA1IDE2NiA1MTkuMDA1IDE2NCA1MjguMDA1IDE2NFoiIGZpbGw9IiNGRkZGRkYiIGZpbGwtcnVsZT0ibm9uemVybyIgZmlsbC1vcGFjaXR5PSIxIj48L3BhdGg+CiAgICA8L2c+CiAgPC9nPgo8L3N2Zz4K";
-    const base64Muziek = "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iOTYiIGhlaWdodD0iOTciIHhtbDpzcGFjZT0icHJlc2VydmUiIG92ZXJmbG93PSJoaWRkZW4iPgogIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKC00MzIgLTIyMSkiPgogICAgPGc+CiAgICAgIDxnPgogICAgICAgIDxnPgogICAgICAgICAgPGc+CiAgICAgICAgICAgIDxwYXRoIGQ9Ik00ODguNDcgMjQwLjkzQzQ4Ni41NjIgMjM5LjY5MSA0ODUuMDQ5IDIzNy45MzIgNDg0LjExIDIzNS44Nkw0ODQuMTEgMjMzLjk0QzQ4NC4xMSAyMzIuMDA3IDQ4Mi41NDMgMjMwLjQ0IDQ4MC42MSAyMzAuNDQgNDc3LjY3NyAyMzAuNDQgNDc3LjExIDIzMi4wMDcgNDc3LjExIDIzMy45NEw0NzcuMTEgMjg3LjE2QzQ3My43MDggMjg2LjU4IDQ3MC4yMTMgMjg2LjkyNiA0NjYuOTkgMjg4LjE2IDQ1OS4zNSAyOTAuOTMgNDU0LjY2IDI5Ny4zMSA0NTYuNSAzMDIuNCA0NTguMzQgMzA3LjQ5IDQ2Ni4wNCAzMDkuNCA0NzMuNjggMzA2LjYxIDQ3OSAzMDQuNjQgNDgyLjg3IDMwMSA0ODQuMTEgMjk3LjE4TDQ4NC4xMSAyNTkuM0M0ODQuNzYxIDI1OS44NTQgNDg1LjQ1NyAyNjAuMzUyIDQ4Ni4xOSAyNjAuNzkgNDk3LjkzIDI2Ny43MyA0OTEuNDQgMjc5IDQ5Ny4yIDI3OSA1MDQuNDUgMjc5LjA2IDUwNC43NSAyNTEuNzggNDg4LjQ3IDI0MC45M1oiIGZpbGw9IiNGRkZGRkYiIGZpbGwtcnVsZT0ibm9uemVybyIgZmlsbC1vcGFjaXR5PSIxIj48L3BhdGg+CiAgICAgICAgICA8L2c+CiAgICAgICAgPC9nPgogICAgICA8L2c+CiAgICA8L2c+CiAgPC9nPgo8L3N2Zz4K";
-    const base64Boek = "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iOTYiIGhlaWdodD0iOTciIHhtbDpzcGFjZT0icHJlc2VydmUiIG92ZXJmbG93PSJoaWRkZW4iPgogIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKC03MiAtMzU2KSI+CiAgICA8Zz4KICAgICAgPGc+CiAgICAgICAgPGc+CiAgICAgICAgICA8Zz4KICAgICAgICAgICAgPHBhdGggZD0iTTEyOCAzODkgMTQzIDM4OSAxNDMgMzkxIDEyOCAzOTFaIiBmaWxsPSIjRkZGRkZGIiBmaWxsLXJ1bGU9Im5vbnplcm8iIGZpbGwtb3BhY2l0eT0iMSI+PC9wYXRoPgogICAgICAgICAgICA8cGF0aCBkPSJNMTI4IDM5NSAxNDMgMzk1IDE0MyAzOTcgMTI4IDM5N1oiIGZpbGw9IiNGRkZGRkYiIGZpbGwtcnVsZT0ibm9uemVybyIgZmlsbC1vcGFjaXR5PSIxIj48L3BhdGg+CiAgICAgICAgICAgIDxwYXRoIGQ9Ik0xMjggNDAxIDEzOCA0MDEgMTM4IDQwMyAxMjggNDAzWiIgZmlsbD0iI0ZGRkZGRiIgZmlsbC1ydWxlPSJub256ZXJvIiBmaWxsLW9wYWNpdHk9IjEiPjwvcGF0aD4KICAgICAgICAgICAgPHBhdGggZD0iTTE1OSAzODEgMTUzIDM4MSAxNTMgMzc2LjZDMTUzIDM3Ni4xNzMgMTUyLjcyOSAzNzUuNzkzIDE1Mi4zMjUgMzc1LjY1NCAxNDEuODQgMzcyLjE1NCAxMzAuNTA4IDM3Mi4xMTUgMTIwIDM3NS41NDQgMTA5LjQ5MiAzNzIuMTE1IDk4LjE1OTkgMzcyLjE1MyA4Ny42NzUgMzc1LjY1MyA4Ny4yNzA3IDM3NS43OTIgODYuOTk5NCAzNzYuMTcyIDg3IDM3Ni42TDg3IDM4MSA4MSAzODFDODAuNDQ3NyAzODEgODAgMzgxLjQ0OCA4MCAzODJMODAgNDMwQzgwIDQzMC41NTIgODAuNDQ3NyA0MzEgODEgNDMxTDExMy4xIDQzMUMxMTMuNTIgNDMyLjc1OSAxMTUuMDkyIDQzNCAxMTYuOSA0MzRMMTIzLjEgNDM0QzEyNC45MDggNDM0IDEyNi40IDQzMi43NTkgMTI2LjkgNDMxTDE1OSA0MzFDMTU5LjU1MiA0MzEgMTYwIDQzMC41NTIgMTYwIDQzMEwxNjAgMzgyQzE2MCAzODEuNDQ4IDE1OS41NTIgMzgxIDE1OSAzODFaTTE1MSAzNzcuMzIgMTUxIDQyMy4yMkMxNDEuMjIgNDIwLjI1NiAxMzAuNzggNDIwLjI1NiAxMjEgNDIzLjIyTDEyMSAzNzcuMzJDMTMwLjc2MSAzNzQuMjI3IDE0MS4yMzkgMzc0LjIyNyAxNTEgMzc3LjMyWk04OSAzNzcuMzJDOTguNzYwOCAzNzQuMjI3IDEwOS4yMzkgMzc0LjIyNyAxMTkgMzc3LjMyTDExOSA0MjMuMjJDMTA5LjIyIDQyMC4yNTYgOTguNzgwNCA0MjAuMjU2IDg5IDQyMy4yMlpNMTU4IDQyOSAxMjYgNDI5QzEyNS40NDggNDI5IDEyNSA0MjkuNDQ4IDEyNSA0MzBMMTI1IDQzMC4xQzEyNSA0MzEuMTQ5IDEyNC4xNDkgNDMyIDEyMy4xIDQzMkwxMTYuOSA0MzJDMTE1Ljg1MSA0MzIgMTE1IDQzMS4xNDkgMTE1IDQzMC4xTDExNSA0MzBDMTE1IDQyOS40NDggMTE0LjU1MiA0MjkgMTE0IDQyOUw4MiA0MjkgODIgMzgzIDg3IDM4MyA4NyA0MjQuNls4Ni45OTk4IDQyNS4xNTIgODcuNDQ3NCA0MjUuNiA4Ny45OTk3IDQyNS42IDg4LjExMDQgNDI1LjYgODguMjIwMyA0MjUuNTgyIDg4LjMyNSA0MjUuNTQ2IDk4LjQ5OTUgNDIyLjE1MyAxMDkuNTAxIDQyMi4xNTMgMTE5LjY3NSA0MjUuNTQ2IDExOS42OTEgNDI1LjU1IDExOS43MDggNDI1LjU1MiAxMTkuNzI1IDQyNS41NTQgMTE5LjY3OSA0MjUuNTc2IDExOS44NzUgNDI1LjU4OSAxMTkuOTUyIDQyNS41OTIgMTE5Ljk2OCA0MjUuNTkyIDExOS45ODQgNDI1LjYgMTIwIDQyNS42IDEyMC4wMTYgNDI1LjYgMTIwLjAyNSA0MjUuNTk1IDEyMC4wMzcgNDI1LjU5NCAxMjAuMTEzIDQyNS41OTIgMTIwLjE4OSA0MjUuNTggMTIwLjI2MiA0MjUuNTYgMTIwLjI3OCA0MjUuNTYgMTIwLjI5NSA0MjUuNTU0IDEyMC4zMTIgNDI1LjU0OUwxMjAuMzI1IDQyNS41NDlDMTMwLjQ5OSA0MjIuMTU2IDE0MS41MDEgNDIyLjE1NiAxNTEuNjc1IDQyNS41NDkgMTUxLjc4IDQyNS41ODQgMTUxLjg5IDQyNS42MDEgMTUyIDQyNS42IDE1Mi41NTIgNDI1LjYgMTUzIDQyNS4xNTIgMTUzIDQyNC42TDE1MyAzODMgMTU4IDM4M1oiIGZpbGw9IiNGRkZGRkYiIGZpbGwtcnVsZT0ibm9uemVybyIgZmlsbC1vcGFjaXR5PSIxIj48L3BhdGg+CiAgICAgICAgICA8L2c+CiAgICAgICAgPC9nPgogICAgICA8L2c+CiAgICA8L2c+CiAgPC9nPgo8L3N2Zz4K";
+    // Interceptie: als er geen customOpties zijn meegegeven én customizer ingeschakeld is, toon modal
+    if (!customOpties && welkomstdiaAanpassenAan()) {
+        openWelkomstdiaModal();
+        return;
+    }
+
+    // --- 1. ICONEN DEFINIËREN ---
+    const base64Voorganger = PPT_BASE64_VOORGANGER;
+    const base64Muziek = PPT_BASE64_MUZIEK;
+    const base64Boek = PPT_BASE64_BOEK;
 
     // --- 2. PRESENTATIE INITIALISEREN ---
     let pres = new PptxGenJS();
@@ -4729,7 +5013,11 @@ window.maakPowerPoint = async function() {
     const datum = document.getElementById('datumInput').value || "";
     const voorganger = document.getElementById('voorgangerInput').value || "";
 
-    welcomeSlide.addText("Welkom", { x: 0.5, y: 0.8, w: 5, h: 1, color: "FFFFFF", fontSize: 54, fontFace: pptFont, bold: true, align: "left" });
+    const isCustom = customOpties && !customOpties.gebruikStandaard;
+    const titelTekst = isCustom ? (customOpties.titel || "") : "Welkom";
+    if (titelTekst) {
+        welcomeSlide.addText(titelTekst, { x: 0.5, y: 0.8, w: 5, h: 1, color: "FFFFFF", fontSize: 54, fontFace: pptFont, bold: true, align: "left" });
+    }
     if (datum) {
         welcomeSlide.addText(datum, { x: 0.5, y: 1.8, w: 5, h: 0.5, color: "CCCCCC", fontSize: 20, fontFace: pptFont, align: "left" });
     }
@@ -4739,11 +5027,18 @@ window.maakPowerPoint = async function() {
         welcomeSlide.addText(voorganger, { x: 6.0, y: 1.2, w: 3.5, h: 0.6, color: "FFFFFF", fontSize: 22, fontFace: pptFont, align: "left" });
     }
 
-    const zangLijst = liturgieVolgorde.filter(item => item.type === "Zang").map(item => {
-        let t = item.titel.split(' - ')[0];
-        return t.replace("Weerklank Lied", "Lw").replace("Weerklank Psalm", "Ps").replace("Op Toonhoogte", "OTH").replace("DNP Psalm", "Ps DNP").replace("Psalm", "Ps").trim();
-    });
-    
+    let zangLijst = [];
+    if (isCustom) {
+        if (customOpties.toonLiederen && Array.isArray(customOpties.zangLijst) && customOpties.zangLijst.length > 0) {
+            zangLijst = customOpties.zangLijst;
+        }
+    } else {
+        zangLijst = liturgieVolgorde.filter(item => item.type === "Zang").map(item => {
+            let t = item.titel.split(' - ')[0];
+            return t.replace("Weerklank Lied", "Lw").replace("Weerklank Psalm", "Ps").replace("Op Toonhoogte", "OTH").replace("DNP Psalm", "Ps DNP").replace("Psalm", "Ps").trim();
+        });
+    }
+
     if (zangLijst.length > 0) {
         welcomeSlide.addImage({ data: "data:image/svg+xml;base64," + base64Muziek, x: 5.4, y: 2.15, w: 0.4, h: 0.4 });
         welcomeSlide.addText(zangLijst.join('\n'), { x: 6.0, y: 2.1, w: 3.5, h: 2.5, color: "FFFFFF", fontSize: 18, fontFace: pptFont, align: "left", valign: "top", lineSpacing: 28 });
@@ -4900,6 +5195,85 @@ window.verstuurExportFeedback = async function() {
     }
 };
 </script>
+
+<!-- WELKOMSTDIA CUSTOMIZER MODAL -->
+<div id="welkomstdiaModal" class="fixed inset-0 z-[115] hidden flex items-center justify-center bg-black/20 backdrop-blur-xl transition-opacity p-3 md:p-6" onclick="if(event.target === this) sluitWelkomstdiaModal()">
+    <div class="bg-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] w-full max-w-4xl overflow-hidden flex flex-col transform transition-all modal-animate max-h-[92vh]">
+        <!-- Header -->
+        <div class="p-4 md:p-5 border-b border-gray-100 flex justify-between items-center flex-shrink-0">
+            <div class="flex items-center gap-2">
+                <span class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider">PowerPoint Export</span>
+                <span class="text-[10px] font-bold text-[#007AFF] bg-blue-50 px-2 py-0.5 rounded-full">Welkomstdia</span>
+            </div>
+            <button type="button" onclick="sluitWelkomstdiaModal()" class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors" title="Sluiten" aria-label="Sluiten">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+
+        <!-- Body: 2 columns on desktop, stacked on mobile -->
+        <div class="p-4 md:p-6 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <!-- Left Column: Live Preview (lg:col-span-7) -->
+            <div class="lg:col-span-7 flex flex-col gap-2">
+                <div class="flex items-center justify-between px-1">
+                    <span class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider">Live Preview</span>
+                    <span id="welkomModusBadge" class="text-[10px] font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">Beamer (16:9)</span>
+                </div>
+                <div id="welkomPreviewContainer" class="aspect-video bg-black rounded-2xl relative overflow-hidden shadow-inner border border-gray-800 select-none">
+                    <div id="welkomPreviewContent" class="w-full h-full relative"></div>
+                </div>
+                <p class="text-[11px] text-gray-400 italic px-1">Titel en liednummers passen direct live aan in de preview hierboven.</p>
+            </div>
+
+            <!-- Right Column: Controls (lg:col-span-5) -->
+            <div class="lg:col-span-5 flex flex-col gap-4">
+                <!-- Title Control -->
+                <div class="bg-[#F5F5F7]/70 rounded-2xl p-4 flex flex-col gap-2 border border-black/[0.03]">
+                    <div class="flex items-center justify-between">
+                        <label for="welkomTitelInput" class="text-xs font-bold text-[#1D1D1F]">Titel van Welkomstdia</label>
+                        <button type="button" onclick="document.getElementById('welkomTitelInput').value=''; updateWelkomstdiaPreview();" class="text-[11px] font-medium text-gray-400 hover:text-red-500 transition-colors">Wissen</button>
+                    </div>
+                    <input id="welkomTitelInput" type="text" value="Welkom" placeholder="Laat leeg voor geen titel..." oninput="updateWelkomstdiaPreview()" class="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2 text-sm focus:border-[#007AFF] focus:ring-2 focus:ring-[#007AFF]/20 outline-none transition-all">
+                </div>
+
+                <!-- Songs Formatting Control -->
+                <div class="bg-[#F5F5F7]/70 rounded-2xl p-4 flex flex-col gap-3 border border-black/[0.03]">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-bold text-[#1D1D1F]">Weergave Liednummers</label>
+                        <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                            <input type="checkbox" id="welkomToonLiederenToggle" checked onchange="updateWelkomstdiaPreview()" class="rounded border-gray-300 text-[#007AFF] focus:ring-0">
+                            <span class="text-[11px] text-gray-500 font-medium">Tonen</span>
+                        </label>
+                    </div>
+
+                    <!-- Presets Selector -->
+                    <div class="grid grid-cols-3 gap-1.5">
+                        <button type="button" id="preset-afkorting" onclick="stelLiedPresetIn('afkorting')" class="py-1.5 px-1.5 text-[11px] font-semibold rounded-lg bg-white hover:bg-gray-100 text-gray-700 border border-gray-200 transition-all text-center">Standaard (Lw/Ps)</button>
+                        <button type="button" id="preset-nummers" onclick="stelLiedPresetIn('nummers')" class="py-1.5 px-1.5 text-[11px] font-semibold rounded-lg bg-white hover:bg-gray-100 text-gray-700 border border-gray-200 transition-all text-center">Alleen Cijfers</button>
+                        <button type="button" id="preset-volledig" onclick="stelLiedPresetIn('volledig')" class="py-1.5 px-1.5 text-[11px] font-semibold rounded-lg bg-white hover:bg-gray-100 text-gray-700 border border-gray-200 transition-all text-center">Volledige Naam</button>
+                    </div>
+
+                    <!-- Editable Songs Textarea -->
+                    <div class="flex flex-col gap-1">
+                        <span class="text-[10px] text-gray-400 uppercase font-bold">Tekst op dia (één regel per lied):</span>
+                        <textarea id="welkomLiederenInput" rows="5" oninput="updateWelkomstdiaPreview(); wisPresetHighlight();" class="w-full bg-white border border-gray-200 rounded-xl p-3 text-xs leading-relaxed focus:border-[#007AFF] focus:ring-2 focus:ring-[#007AFF]/20 outline-none transition-all resize-none font-mono"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Buttons -->
+        <div class="p-4 md:p-5 flex flex-col-reverse sm:flex-row justify-between items-center gap-3 bg-white border-t border-gray-100 flex-shrink-0">
+            <button type="button" onclick="sluitWelkomstdiaModal()" class="w-full sm:w-auto px-4 py-2.5 rounded-full text-sm font-semibold text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors">Annuleren</button>
+            <div class="flex gap-2.5 w-full sm:w-auto justify-end">
+                <button type="button" onclick="exporteerMetStandaardWelkomstdia()" class="flex-1 sm:flex-none px-5 py-2.5 rounded-full text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors">Gebruik standaard</button>
+                <button type="button" onclick="exporteerMetAangepasteWelkomstdia()" class="flex-1 sm:flex-none px-6 py-2.5 rounded-full text-sm font-semibold text-white bg-[#007AFF] hover:bg-blue-600 transition-colors shadow-md flex items-center justify-center gap-2">
+                    <span>Ga door met export</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div id="exportFeedbackModal" class="fixed inset-0 z-[120] hidden flex items-center justify-center bg-black/20 backdrop-blur-xl transition-opacity">
     <div class="bg-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] w-11/12 max-w-sm overflow-hidden flex flex-col transform transition-all modal-animate">

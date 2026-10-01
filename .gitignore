@@ -2,3 +2,5 @@
 migratie.html
 .wrangler/
 **/.wrangler/
+.agents/
+ORIGINAL_REQUEST.md

@@ -24,11 +24,11 @@ export function decodeHtml(str) {
 export function parseDnpHtml(html, nr) {
   // Isoleer de hoofdinhoud om site-footer/sidebar contaminatie te voorkomen
   // Slice veilig vanaf entry-content/article/main tot footer/site-info om niet af te breken op geneste divs
-  const startIndex = html.search(/<article|<main|<div[^>]*class="[^"]*entry-content[^"]*"/i);
+  const startIndex = html.search(/<article|<main|<div[^>]*class="[^"]*(entry-content|psalmcontent)[^"]*"/i);
   let contentHtml = startIndex !== -1 ? html.slice(startIndex) : html;
-  const endIndex = contentHtml.search(/<footer|<div[^>]*class="[^"]*(?:entry-meta|site-info|comments|site-footer)|<nav/i);
-  if (endIndex !== -1) {
-    contentHtml = contentHtml.slice(0, endIndex);
+  const endIndex = html.search(/<div id="cursief"/i) !== -1 ? html.search(/<div id="cursief"/i) : html.search(/<footer|<div[^>]*class="[^"]*(?:entry-meta|site-info|comments|site-footer)|<nav/i);
+  if (endIndex !== -1 && endIndex > startIndex) {
+    contentHtml = html.slice(startIndex !== -1 ? startIndex : 0, endIndex);
   }
 
   const coupletten = [];
@@ -48,7 +48,7 @@ export function parseDnpHtml(html, nr) {
       .join('\n');
 
     if (ruweTekst.length > 10 && !ruweTekst.includes('Beamsheet') && !ruweTekst.includes('Melodie')) {
-      coupletten.push(`${versNr}.\n${ruweTekst}`);
+      coupletten.push(`${versNr}. ${ruweTekst}`);
     }
   }
 
@@ -57,9 +57,10 @@ export function parseDnpHtml(html, nr) {
     const pMatches = [...contentHtml.matchAll(/<p>([\s\S]*?)<\/p>/gi)];
     let vNr = 1;
     for (const p of pMatches) {
-      const txt = decodeHtml(p[1].replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '')).trim();
+      let txt = decodeHtml(p[1].replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '')).trim();
+      txt = txt.replace(/^\d+\.\s*/, ''); // Haal de "1. " of "2. " weg
       if (txt.length > 25 && !txt.includes('Beamsheet') && !txt.includes('Copyright') && !txt.includes('Melodie')) {
-        coupletten.push(`${vNr}.\n${txt}`);
+        coupletten.push(`${vNr}. ${txt}`);
         vNr++;
       }
     }
@@ -79,7 +80,7 @@ async function scrapeDnp() {
   for (let nr = 1; nr <= 150; nr++) {
     process.stdout.write(`Ophalen DNP Psalm ${nr}/150...\r`);
     try {
-      const res = await fetch(`https://denieuwepsalmberijming.nl/de-psalmen/psalm-${nr}`);
+      const res = await fetch(`https://www.denieuwepsalmberijming.nl/berijmingen/psalm-${nr}`);
       if (!res.ok) continue;
       const html = await res.text();
       const song = parseDnpHtml(html, nr);
