@@ -1534,7 +1534,19 @@
     };
 
     function bouwZoekLijst() {
-        let alleLiedTitels = Object.keys(window.liederenDatabase);
+        // Haal alle database-keys op, maar groepeer losse vers-entries (bijv. "Psalm 116 vers 1", 
+        // "Psalm 116 vers 2") tot één basisnaam, zodat de zoekbalk netjes één "Psalm 116" toont.
+        const alleKeys = Object.keys(window.liederenDatabase);
+        const basisNamen = new Set();
+        alleKeys.forEach(key => {
+            const basisMatch = key.match(/^(.+?)\s+vers\s+\d+$/i);
+            if (basisMatch) {
+                basisNamen.add(basisMatch[1].trim());
+            } else {
+                basisNamen.add(key);
+            }
+        });
+        let alleLiedTitels = Array.from(basisNamen);
         const weerklankTekst = `
 1 Gelukkig wie niet deelneemt aan 't beraad
 2 Wat drijft de volken, wat bezielt ze toch?
@@ -2189,6 +2201,24 @@ Bijbelliederen`;
                 tekst = lines.filter(l => l.trim() !== '').join('\n');
             }
             window.toonVersSelectie(titel, tekst);
+            return;
+        }
+
+        // Controleer of er losse vers-entries zijn in de DB voor deze basisnaam
+        // (bijv. "Psalm 116 vers 1", "Psalm 116 vers 2", ...)
+        const alleKeys = Object.keys(window.liederenDatabase);
+        const versEntries = alleKeys
+            .filter(k => k.match(new RegExp('^' + titel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s+vers\\s+\\d+$', 'i')))
+            .sort((a, b) => {
+                const nA = parseInt(a.match(/\d+$/)?.[0] || 0);
+                const nB = parseInt(b.match(/\d+$/)?.[0] || 0);
+                return nA - nB;
+            });
+
+        if (versEntries.length > 0) {
+            // Bouw één gecombineerde tekst: elk vers-entry wordt een apart blok
+            const gecombineerdeTekst = versEntries.map(k => window.liederenDatabase[k]).join('\n\n');
+            window.toonVersSelectie(titel, gecombineerdeTekst);
             return;
         }
 
