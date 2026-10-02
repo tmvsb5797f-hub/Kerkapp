@@ -2124,7 +2124,7 @@ Bijbelliederen`;
         setTimeout(() => verwerkVolgendeImportItem(), 300);
     }
 
-    window.toonVersSelectie = function(titel, tekst) {
+    window.toonVersSelectie = function(titel, tekst, versNummers = null) {
         tijdelijkeTitel = titel; // Bewaar titel voor opslaan
         document.getElementById('versModalTitel').innerText = "Kies verzen voor: " + titel;
         const versLijst = document.getElementById('versLijst');
@@ -2142,6 +2142,8 @@ Bijbelliederen`;
         `;
 
         tijdelijkeLiedVerzen.forEach((vers, index) => {
+            // Gebruik echte versnummer uit DB als beschikbaar, anders index+1
+            const versNr = (versNummers && versNummers[index] != null) ? versNummers[index] : (index + 1);
             // Laat alleen de eerste zin zien als preview
             let previewText = vers.split('\n')[0]; 
             if(previewText.length > 50) previewText = previewText.substring(0, 50) + "...";
@@ -2150,7 +2152,7 @@ Bijbelliederen`;
                 <label class="flex items-start gap-3 p-3 bg-white border border-gray-200 rounded-xl cursor-pointer hover:bg-blue-50 transition-colors">
                     <input type="checkbox" id="versCheck_${index}" value="${index}" checked class="mt-1 w-5 h-5 text-[#007AFF] rounded border-gray-300 focus:ring-[#007AFF]">
                     <div class="flex flex-col">
-                        <span class="text-sm font-bold text-gray-800">Vers ${index + 1}</span>
+                        <span class="text-sm font-bold text-gray-800">Vers ${versNr}</span>
                         <span class="text-xs text-gray-500 italic">${escapeHtml(previewText)}</span>
                     </div>
                 </label>
@@ -2232,11 +2234,21 @@ Bijbelliederen`;
             });
 
         if (versEntries.length > 0) {
-            // Bouw één gecombineerde tekst: elk vers-entry wordt een apart blok
-            const gecombineerdeTekst = versEntries.map(k => window.liederenDatabase[k]).join('\n\n');
-            window.toonVersSelectie(titel, gecombineerdeTekst);
+            // Normaliseer interne dubbele newlines (+ tabs) naar enkele newline,
+            // zodat de verzen niet intern worden opgesplitst door toonVersSelectie.
+            const genormaliseerd = versEntries.map(k => 
+                window.liederenDatabase[k]
+                    .replace(/\n[ \t]*\n[ \t]*/g, '\n')  // dubbele newlines → enkele
+                    .trim()
+            );
+            // Voeg samen gescheiden door DUBBELE newline → toonVersSelectie splitst hier op
+            const gecombineerdeTekst = genormaliseerd.join('\n\n');
+            // Geef ook de echte versnummers mee (uit de key-namen)
+            const versNummers = versEntries.map(k => parseInt(k.match(/\d+$/)?.[0] || 0));
+            window.toonVersSelectie(titel, gecombineerdeTekst, versNummers);
             return;
         }
+
 
         // Auteursrechtelijk beschermde bundels: nooit AI laten gokken.
         // Direct naar het plakscherm, zodat de tekst uit de eigen licentie
