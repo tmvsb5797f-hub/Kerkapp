@@ -2133,6 +2133,14 @@ Bijbelliederen`;
         // Splits de tekst op in verzen (gebaseerd op dubbele witregels)
         tijdelijkeLiedVerzen = tekst.split(/\n[ \t]*\n/).filter(v => v.trim() !== '');
 
+        // --- Selecteer alles / Deselecteer alles knop ---
+        versLijst.innerHTML = `
+            <div class="flex items-center justify-between px-1 pb-2 mb-1 border-b border-gray-100">
+                <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">${tijdelijkeLiedVerzen.length} verzen</span>
+                <button onclick="toggleAlleVerzen()" id="selectAllesKnop" class="text-xs font-semibold text-[#007AFF] bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors">Deselecteer alles</button>
+            </div>
+        `;
+
         tijdelijkeLiedVerzen.forEach((vers, index) => {
             // Laat alleen de eerste zin zien als preview
             let previewText = vers.split('\n')[0]; 
@@ -2150,6 +2158,14 @@ Bijbelliederen`;
         });
 
         document.getElementById('versModal').classList.remove('hidden');
+    }
+
+    window.toggleAlleVerzen = function() {
+        const checkboxes = tijdelijkeLiedVerzen.map((_, i) => document.getElementById(`versCheck_${i}`));
+        const alleAangevinkt = checkboxes.every(cb => cb && cb.checked);
+        checkboxes.forEach(cb => { if (cb) cb.checked = !alleAangevinkt; });
+        const knop = document.getElementById('selectAllesKnop');
+        if (knop) knop.textContent = alleAangevinkt ? 'Selecteer alles' : 'Deselecteer alles';
     }
 
     window.voegGeselecteerdeVerzenToe = function() {
