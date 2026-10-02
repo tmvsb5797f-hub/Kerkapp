@@ -2142,18 +2142,27 @@ Bijbelliederen`;
 
     window.voegGeselecteerdeVerzenToe = function() {
         let geselecteerdeTekst = [];
+        let geselecteerdeNummers = [];
         tijdelijkeLiedVerzen.forEach((vers, index) => {
             let checkbox = document.getElementById(`versCheck_${index}`);
             if (checkbox && checkbox.checked) {
                 geselecteerdeTekst.push(vers);
+                geselecteerdeNummers.push(index + 1);
             }
         });
 
         if (geselecteerdeTekst.length > 0) {
+            // Bouw een mooie titel met versnummers: "Weerklank Lied 446 - vers 1, 3, 5"
+            const alleVerzen = geselecteerdeNummers.length === tijdelijkeLiedVerzen.length;
+            const titelMetVers = alleVerzen
+                ? tijdelijkeTitel
+                : tijdelijkeTitel + ' - vers ' + geselecteerdeNummers.join(', ');
             liturgieVolgorde.push({ 
                 type: "Zang", 
-                titel: tijdelijkeTitel,
-                tekst: geselecteerdeTekst.join('\n\n') 
+                titel: titelMetVers,
+                tekst: geselecteerdeTekst.join('\n\n'),
+                basisTitel: tijdelijkeTitel,
+                geselecteerdeVerzen: geselecteerdeNummers
             });
             window.tekenVolgorde();
         }
@@ -4783,20 +4792,47 @@ const PPT_BASE64_BOEK = "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN
 
 // --- WELKOMSTDIA CUSTOMIZER LOGICA ---
 function genereerStandaardZangLijst(formaat = 'afkorting') {
-    return liturgieVolgorde.filter(item => item.type === "Zang").map(item => {
-        let t = (item.titel || '').split(' - ')[0].trim();
+    // Groepeer liederen op basisnaam en samenvoeg versnummers
+    const gegroepeerd = [];
+    const gezieneBasisTitels = new Map();
+
+    liturgieVolgorde.filter(item => item.type === "Zang").forEach(item => {
+        const basisNaam = item.basisTitel || item.titel.replace(/\s*-\s*vers\s*[\d,\s]+$/i, '').trim();
+        const versMatch = item.titel.match(/vers\s*([\d,\s]+)$/i);
+        const versNummers = versMatch ? versMatch[1].split(/[,\s]+/).map(n => n.trim()).filter(Boolean) : null;
+
+        if (gezieneBasisTitels.has(basisNaam)) {
+            const bestaand = gegroepeerd[gezieneBasisTitels.get(basisNaam)];
+            if (versNummers && bestaand.versNummers) {
+                bestaand.versNummers = bestaand.versNummers.concat(versNummers);
+            } else {
+                bestaand.versNummers = null;
+            }
+        } else {
+            gezieneBasisTitels.set(basisNaam, gegroepeerd.length);
+            gegroepeerd.push({ basisNaam, versNummers: versNummers ? [...versNummers] : null });
+        }
+    });
+
+    return gegroepeerd.map(g => {
+        let t = g.basisNaam.split(' - ')[0].trim();
+        let label;
         if (formaat === 'nummers') {
             const m = t.match(/\d+.*$/);
-            return m ? m[0].trim() : t;
+            label = m ? m[0].trim() : t;
         } else if (formaat === 'volledig') {
-            return t;
+            label = t;
         } else {
-            return t.replace("Weerklank Lied", "Lw")
-                    .replace("Weerklank Psalm", "Ps")
-                    .replace("Op Toonhoogte", "OTH")
-                    .replace("DNP Psalm", "Ps DNP")
-                    .replace("Psalm", "Ps").trim();
+            label = t.replace("Weerklank Lied", "Lw")
+                     .replace("Weerklank Psalm", "Ps")
+                     .replace("Op Toonhoogte", "OTH")
+                     .replace("DNP Psalm", "Ps DNP")
+                     .replace("Psalm", "Ps").trim();
         }
+        if (g.versNummers && g.versNummers.length > 0) {
+            return label + ' v.' + g.versNummers.join(', ');
+        }
+        return label;
     });
 }
 
@@ -5033,9 +5069,45 @@ window.maakPowerPoint = async function(customOpties = null) {
             zangLijst = customOpties.zangLijst;
         }
     } else {
-        zangLijst = liturgieVolgorde.filter(item => item.type === "Zang").map(item => {
-            let t = item.titel.split(' - ')[0];
-            return t.replace("Weerklank Lied", "Lw").replace("Weerklank Psalm", "Ps").replace("Op Toonhoogte", "OTH").replace("DNP Psalm", "Ps DNP").replace("Psalm", "Ps").trim();
+        // Groepeer liederen: als hetzelfde lied meerdere keren voorkomt (bijv. aparte items
+        // per vers OF via de vers-kiezer met basisTitel), samenvoegen tot één regel met versnummers.
+        const gegroepeerd = [];
+        const gezieneBasisTitels = new Map(); // basisTitel -> index in gegroepeerd
+
+        liturgieVolgorde.filter(item => item.type === "Zang").forEach(item => {
+            // Bepaal de basisnaam (zonder " - vers X, Y" suffix)
+            const basisNaam = item.basisTitel || item.titel.replace(/\s*-\s*vers\s*[\d,\s]+$/i, '').trim();
+            
+            // Extraheer versnummers uit de titel als ze er in staan
+            const versMatch = item.titel.match(/vers\s*([\d,\s]+)$/i);
+            const versNummers = versMatch ? versMatch[1].split(/[,\s]+/).map(n => n.trim()).filter(Boolean) : null;
+
+            if (gezieneBasisTitels.has(basisNaam)) {
+                // Voeg versnummers samen met het bestaande item
+                const bestaand = gegroepeerd[gezieneBasisTitels.get(basisNaam)];
+                if (versNummers && bestaand.versNummers) {
+                    bestaand.versNummers = bestaand.versNummers.concat(versNummers);
+                } else {
+                    // Één van beiden heeft geen versnummers → laat beide tonen
+                    bestaand.versNummers = null;
+                }
+            } else {
+                gezieneBasisTitels.set(basisNaam, gegroepeerd.length);
+                gegroepeerd.push({ basisNaam, versNummers: versNummers ? [...versNummers] : null });
+            }
+        });
+
+        zangLijst = gegroepeerd.map(g => {
+            let t = g.basisNaam.split(' - ')[0].trim();
+            const afk = t.replace("Weerklank Lied", "Lw")
+                         .replace("Weerklank Psalm", "Ps")
+                         .replace("Op Toonhoogte", "OTH")
+                         .replace("DNP Psalm", "Ps DNP")
+                         .replace("Psalm", "Ps").trim();
+            if (g.versNummers && g.versNummers.length > 0) {
+                return afk + ' v.' + g.versNummers.join(', ');
+            }
+            return afk;
         });
     }
 
