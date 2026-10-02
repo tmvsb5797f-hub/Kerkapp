@@ -2156,7 +2156,7 @@ Bijbelliederen`;
             const alleVerzen = geselecteerdeNummers.length === tijdelijkeLiedVerzen.length;
             const titelMetVers = alleVerzen
                 ? tijdelijkeTitel
-                : tijdelijkeTitel + ' - vers ' + geselecteerdeNummers.join(', ');
+                : tijdelijkeTitel + ' vers ' + geselecteerdeNummers.join(', ');
             liturgieVolgorde.push({ 
                 type: "Zang", 
                 titel: titelMetVers,
@@ -4797,7 +4797,7 @@ function genereerStandaardZangLijst(formaat = 'afkorting') {
     const gezieneBasisTitels = new Map();
 
     liturgieVolgorde.filter(item => item.type === "Zang").forEach(item => {
-        const basisNaam = item.basisTitel || item.titel.replace(/\s*-\s*vers\s*[\d,\s]+$/i, '').trim();
+        const basisNaam = item.basisTitel || item.titel.replace(/\s+vers\s*[\d,\s]+$/i, '').trim();
         const versMatch = item.titel.match(/vers\s*([\d,\s]+)$/i);
         const versNummers = versMatch ? versMatch[1].split(/[,\s]+/).map(n => n.trim()).filter(Boolean) : null;
 
@@ -4830,7 +4830,7 @@ function genereerStandaardZangLijst(formaat = 'afkorting') {
                      .replace("Psalm", "Ps").trim();
         }
         if (g.versNummers && g.versNummers.length > 0) {
-            return label + ' v.' + g.versNummers.join(', ');
+            return label + ' vers ' + g.versNummers.join(', ');
         }
         return label;
     });
@@ -5076,7 +5076,7 @@ window.maakPowerPoint = async function(customOpties = null) {
 
         liturgieVolgorde.filter(item => item.type === "Zang").forEach(item => {
             // Bepaal de basisnaam (zonder " - vers X, Y" suffix)
-            const basisNaam = item.basisTitel || item.titel.replace(/\s*-\s*vers\s*[\d,\s]+$/i, '').trim();
+            const basisNaam = item.basisTitel || item.titel.replace(/\s+vers\s*[\d,\s]+$/i, '').trim();
             
             // Extraheer versnummers uit de titel als ze er in staan
             const versMatch = item.titel.match(/vers\s*([\d,\s]+)$/i);
@@ -5105,7 +5105,7 @@ window.maakPowerPoint = async function(customOpties = null) {
                          .replace("DNP Psalm", "Ps DNP")
                          .replace("Psalm", "Ps").trim();
             if (g.versNummers && g.versNummers.length > 0) {
-                return afk + ' v.' + g.versNummers.join(', ');
+                return afk + ' vers ' + g.versNummers.join(', ');
             }
             return afk;
         });
