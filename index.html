@@ -4881,11 +4881,12 @@ function genereerStandaardZangLijst(formaat = 'afkorting') {
         } else if (formaat === 'volledig') {
             label = t;
         } else {
-            label = t.replace("Weerklank Lied", "Lw")
-                     .replace("Weerklank Psalm", "Ps")
-                     .replace("Op Toonhoogte", "OTH")
-                     .replace("DNP Psalm", "Ps DNP")
-                     .replace("Psalm", "Ps").trim();
+            label = t.replace(/Weerklank Lied/i, "Lw")
+                     .replace(/Weerklank Psalm/i, "Pw")
+                     .replace(/Op Toonhoogte/i, "OTH")
+                     .replace(/DNP Psalm/i, "Ps DNP")
+                     .replace(/Psalm/i, "Ps")
+                     .replace(/Opwekking/i, "Opw").trim();
         }
         if (g.versNummers && g.versNummers.length > 0) {
             return label + ' vers ' + g.versNummers.join(', ');
@@ -5157,11 +5158,12 @@ window.maakPowerPoint = async function(customOpties = null) {
 
         zangLijst = gegroepeerd.map(g => {
             let t = g.basisNaam.split(' - ')[0].trim();
-            const afk = t.replace("Weerklank Lied", "Lw")
-                         .replace("Weerklank Psalm", "Ps")
-                         .replace("Op Toonhoogte", "OTH")
-                         .replace("DNP Psalm", "Ps DNP")
-                         .replace("Psalm", "Ps").trim();
+            const afk = t.replace(/Weerklank Lied/i, "Lw")
+                         .replace(/Weerklank Psalm/i, "Pw")
+                         .replace(/Op Toonhoogte/i, "OTH")
+                         .replace(/DNP Psalm/i, "Ps DNP")
+                         .replace(/Psalm/i, "Ps")
+                         .replace(/Opwekking/i, "Opw").trim();
             if (g.versNummers && g.versNummers.length > 0) {
                 return afk + ' vers ' + g.versNummers.join(', ');
             }
@@ -5171,7 +5173,7 @@ window.maakPowerPoint = async function(customOpties = null) {
 
     if (zangLijst.length > 0) {
         welcomeSlide.addImage({ data: "data:image/svg+xml;base64," + base64Muziek, x: 5.4, y: 2.15, w: 0.4, h: 0.4 });
-        welcomeSlide.addText(zangLijst.join('\n'), { x: 6.0, y: 2.1, w: 3.5, h: 2.5, color: "FFFFFF", fontSize: 18, fontFace: pptFont, align: "left", valign: "top", lineSpacing: 28 });
+        welcomeSlide.addText(zangLijst.join('\n'), { x: 6.0, y: 2.1, w: 3.5, h: 2.5, color: "FFFFFF", fontSize: 18, fontFace: pptFont, align: "left", valign: "top", lineSpacing: 23 });
     }
 
     const bijbelLijst = liturgieVolgorde.filter(item => item.type === "Schriftlezing").map(item => item.titel.replace(" (HSV)", ""));
