@@ -543,7 +543,8 @@
             <div class="flex items-center justify-between mb-2 md:mb-3 ml-2 pr-1">
                 <h2 class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider">3. Volgorde</h2>
                 <div class="flex items-center gap-3">
-                    <button onclick="slaLiturgieOp()" class="text-[11px] font-semibold text-[#007AFF] hover:text-blue-700 transition-colors flex items-center gap-1">
+                    <span id="autoArchiefIndicator" class="text-[10px] text-gray-400 font-medium hidden sm:inline"></span>
+                    <button onclick="slaLiturgieOp()" class="text-[11px] font-semibold text-[#007AFF] hover:text-blue-700 transition-colors flex items-center gap-1" title="Liturgie direct handmatig opslaan in archief">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
                         Opslaan
                     </button>
@@ -671,7 +672,7 @@
                 </div>
                 <div class="flex items-center gap-2 text-xs text-gray-500">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
-                    <span>Versie <strong class="text-gray-700">3.0</strong> · 20 sept 2026</span>
+                    <span>Versie <strong class="text-gray-700">3.1</strong> · 11 okt 2026</span>
                 </div>
                 <div class="flex items-center gap-2 text-xs text-gray-500">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
@@ -1370,6 +1371,7 @@
             // alleen automatisch herstel na een refresh is dan niet gegarandeerd.
             console.warn("Kon liturgie niet lokaal opslaan:", e);
         }
+        if (typeof planAutoArchief === 'function') planAutoArchief();
     }
 
     function herstelLiturgie() {
@@ -1390,7 +1392,12 @@
         if (liturgieVolgorde.length === 0) return;
         if (!confirm("Weet je zeker dat je de hele liturgielijst wilt leegmaken?")) return;
         liturgieVolgorde = [];
+        actiefArchiefDocId = null;
+        try { localStorage.removeItem('actiefArchiefDocId'); } catch (e) {}
         try { localStorage.removeItem(LITURGIE_OPSLAG_SLEUTEL); } catch (e) {}
+        if (typeof autoArchiefTimer !== 'undefined' && autoArchiefTimer) clearTimeout(autoArchiefTimer);
+        const el = document.getElementById('autoArchiefIndicator');
+        if (el) el.innerHTML = '';
         window.tekenVolgorde();
         window.toonToast("Liturgie leeggemaakt.", "success");
     };
@@ -1574,23 +1581,62 @@
         }
     }
 
-    window.slaLiturgieOp = async function() {
-        if (liturgieVolgorde.length === 0) { window.toonToast("Nog niets om op te slaan.", "error"); return; }
-        const datum = document.getElementById('datumInput').value || 'Zonder datum';
-        const voorganger = document.getElementById('voorgangerInput').value || '';
-        const huidigeGem = window.getActieveGemeente();
+    let actiefArchiefDocId = null;
+    try { actiefArchiefDocId = localStorage.getItem('actiefArchiefDocId') || null; } catch (e) {}
+    let autoArchiefTimer = null;
+
+    function updateAutoArchiefStatus(status) {
+        const el = document.getElementById('autoArchiefIndicator');
+        if (!el) return;
+        if (status === "Gearchiveerd") {
+            const tijd = new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+            el.innerHTML = `<span class="text-emerald-600 font-medium">✓ Auto-archief (${tijd})</span>`;
+        } else if (status === "Bezig") {
+            el.innerHTML = `<span class="text-gray-400 font-medium">Archiveren...</span>`;
+        }
+    }
+
+    function planAutoArchief() {
+        if (!liturgieVolgorde || liturgieVolgorde.length === 0) return;
+        updateAutoArchiefStatus("Bezig");
+        clearTimeout(autoArchiefTimer);
+        autoArchiefTimer = setTimeout(() => {
+            window.slaLiturgieOp(true);
+        }, 3500);
+    }
+
+    window.slaLiturgieOp = async function(stil = false) {
+        if (!liturgieVolgorde || liturgieVolgorde.length === 0) {
+            if (!stil) window.toonToast("Nog niets om op te slaan.", "error");
+            return;
+        }
+        const datum = (document.getElementById('datumInput') && document.getElementById('datumInput').value) || 'Zonder datum';
+        const voorganger = (document.getElementById('voorgangerInput') && document.getElementById('voorgangerInput').value) || '';
+        const huidigeGem = window.getActieveGemeente ? window.getActieveGemeente() : STANDAARD_GEMEENTE;
+        const payload = {
+            gemeente: huidigeGem,
+            datum: datum,
+            voorganger: voorganger,
+            items: liturgieVoorOpslag(),
+            opgeslagenOp: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
         try {
-            await db.collection("liturgieen").add({
-                gemeente: huidigeGem,
-                datum: datum,
-                voorganger: voorganger,
-                items: liturgieVoorOpslag(),
-                opgeslagenOp: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            window.toonToast(`Liturgie opgeslagen in archief van ${huidigeGem}!`, "success");
+            await authKlaar;
+            if (actiefArchiefDocId) {
+                await db.collection("liturgieen").doc(actiefArchiefDocId).set(payload, { merge: true });
+            } else {
+                const docRef = await db.collection("liturgieen").add(payload);
+                actiefArchiefDocId = docRef.id;
+                try { localStorage.setItem('actiefArchiefDocId', docRef.id); } catch (e) {}
+            }
+            updateAutoArchiefStatus("Gearchiveerd");
+            if (!stil) {
+                window.toonToast(`Liturgie opgeslagen in archief van ${huidigeGem}!`, "success");
+            }
         } catch (e) {
-            console.error("Opslaan mislukt:", e);
-            window.toonToast("Opslaan mislukt (mogelijk te groot).", "error");
+            console.error("Opslaan in archief mislukt:", e);
+            if (!stil) window.toonToast("Opslaan mislukt (mogelijk te groot).", "error");
         }
     };
 
@@ -1601,7 +1647,7 @@
 
     async function laadArchiefLijst() {
         const lijst = document.getElementById('archiefLijst');
-        const huidigeGem = window.getActieveGemeente();
+        const huidigeGem = window.getActieveGemeente ? window.getActieveGemeente() : STANDAARD_GEMEENTE;
         const archiefLabel = document.getElementById('archiefGemeenteNaam');
         if (archiefLabel) archiefLabel.textContent = huidigeGem;
         
@@ -1636,9 +1682,13 @@
                     '</div>' +
                     '<button class="arch-laad text-[11px] font-semibold text-white bg-[#007AFF] hover:bg-blue-600 px-3 py-1.5 rounded-lg flex-shrink-0">Laden</button>' +
                     '<button class="arch-del text-gray-300 hover:text-[#FF3B30] p-1 flex-shrink-0" title="Verwijder"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>';
-                rij.querySelector('.arch-laad').onclick = () => laadArchiefLiturgie(d);
+                rij.querySelector('.arch-laad').onclick = () => laadArchiefLiturgie(d, doc.id);
                 rij.querySelector('.arch-del').onclick = async () => {
                     if (!confirm(`Deze opgeslagen liturgie van ${huidigeGem} verwijderen?`)) return;
+                    if (actiefArchiefDocId === doc.id) {
+                        actiefArchiefDocId = null;
+                        try { localStorage.removeItem('actiefArchiefDocId'); } catch (e) {}
+                    }
                     await doc.ref.delete().catch(() => {});
                     laadArchiefLijst();
                 };
@@ -1650,17 +1700,31 @@
         }
     }
 
-    function laadArchiefLiturgie(data) {
+    function laadArchiefLiturgie(data, docId = null) {
         // Foto/QR zonder afbeelding overslaan (die zijn niet meegearchiveerd).
         const items = (data.items || []).filter(it => !((it.type === 'Foto' || it.type === 'QR') && !it.tekst));
         liturgieVolgorde = items;
+        actiefArchiefDocId = docId || null;
+        try {
+            if (docId) localStorage.setItem('actiefArchiefDocId', docId);
+            else localStorage.removeItem('actiefArchiefDocId');
+        } catch (e) {}
         document.getElementById('datumInput').value = (data.datum && data.datum !== 'Zonder datum') ? data.datum : '';
         document.getElementById('voorgangerInput').value = data.voorganger || '';
         bewaarLiturgie();
         window.tekenVolgorde();
+        updateAutoArchiefStatus("Gearchiveerd");
         document.getElementById('archiefModal').classList.add('hidden');
         window.toonToast("Liturgie geladen uit archief.", "success");
     }
+
+    // Auto-archief trigger bij wijzigen van datum of voorganger
+    setTimeout(() => {
+        const dIn = document.getElementById('datumInput');
+        const vIn = document.getElementById('voorgangerInput');
+        if (dIn) { dIn.addEventListener('input', planAutoArchief); dIn.addEventListener('change', planAutoArchief); }
+        if (vIn) { vIn.addEventListener('input', planAutoArchief); vIn.addEventListener('change', planAutoArchief); }
+    }, 500);
 
     // --- 2. START VARIABELEN ---
     const PROXY_URL = "https://gemini-proxy.kerkapp.workers.dev";
@@ -5514,7 +5578,7 @@ function updateWelkomstdiaPreview() {
     if (gemeenteTekst) {
         const gemFS = Math.max(9, Math.round(20 * scale));
         const gemTop = titelTekst ? '28.0%' : '14.0%';
-        html += `<div class="absolute text-white font-semibold select-none flex items-center gap-1.5" style="left:5%;top:${gemTop};max-width:48%;font-size:${gemFS}px;font-family:${font};"><span class="opacity-80">⛪</span> <span class="truncate">${escapeHtml(gemeenteTekst)}</span></div>`;
+        html += `<div class="absolute text-white font-semibold select-none flex items-center gap-1.5" style="left:5%;top:${gemTop};max-width:48%;font-size:${gemFS}px;font-family:${font};"><span class="truncate">${escapeHtml(gemeenteTekst)}</span></div>`;
     }
 
     // 2. Datum
@@ -5865,7 +5929,10 @@ window.maakPowerPoint = async function(customOpties = null) {
     // --- 5. EXPORT ---
     pres.writeFile("Liturgie_Presentatie.pptx")
         .then(fileName => {
-            window.toonToast("PowerPoint gereed!", "success");
+            window.toonToast("PowerPoint gereed & gearchiveerd!", "success");
+            if (typeof window.slaLiturgieOp === 'function') {
+                window.slaLiturgieOp(true);
+            }
             // Toon feedback-popup na succesvolle export (max 1x per sessie)
             setTimeout(() => { toonExportFeedback(); }, 1200);
         })
