@@ -231,8 +231,28 @@
             <a id="dnpKnop" href="#" onclick="openDNPOnline(); return false;" class="hidden w-full py-2.5 rounded-xl text-sm font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 transition-colors text-center items-center justify-center gap-2">
                 🔗 Open De Nieuwe Psalmberijming
             </a>
-            <p class="text-[10px] text-gray-400 uppercase font-bold mb-1">Tip: Gebruik een lege regel (enter) tussen verzen voor aparte dia's</p>
+            <div class="flex items-center justify-between mb-1.5 flex-wrap gap-2">
+                <div class="flex items-center gap-1.5">
+                    <button type="button" onclick="maakSelectieVetInModal()" class="px-2.5 py-1 bg-[#F5F5F7] hover:bg-gray-200 border border-black/[0.06] text-[#1D1D1F] text-xs font-bold rounded-lg shadow-sm flex items-center gap-1.5 active:scale-95 transition-all" title="Geselecteerd woord vetgedrukt maken (**woord** of Ctrl+B)">
+                        <span class="font-black text-sm text-[#007AFF]">B</span>
+                        <span>Vet woord</span>
+                    </button>
+                    <span class="text-[10px] text-gray-400 hidden sm:inline">(selecteer woord of druk Ctrl+B)</span>
+                </div>
+                <div class="flex items-center gap-1 bg-[#F5F5F7] p-0.5 rounded-lg border border-black/[0.04]">
+                    <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-1">Uitlijning:</span>
+                    <button type="button" id="modalAlignLeftBtn" onclick="kiesModalUitlijning('left')" class="px-2 py-0.5 rounded-md text-[11px] font-semibold text-gray-600 transition-all flex items-center gap-1" title="Links uitlijnen">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h10M4 18h14"></path></svg>
+                        <span>Links</span>
+                    </button>
+                    <button type="button" id="modalAlignCenterBtn" onclick="kiesModalUitlijning('center')" class="px-2 py-0.5 rounded-md text-[11px] font-semibold text-gray-600 transition-all flex items-center gap-1" title="Centreren">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M7 12h10M5 18h14"></path></svg>
+                        <span>Centreren</span>
+                    </button>
+                </div>
+            </div>
             <textarea id="handmatigeTekst" rows="6" class="w-full bg-[#F5F5F7] border border-transparent rounded-xl py-3 px-4 text-[14px] apple-input transition-all resize-none"></textarea>
+            <p class="text-[10px] text-gray-400 uppercase font-bold mt-1">Tip: Gebruik een lege regel (enter) tussen verzen voor aparte dia's</p>
             <button id="opslaanKnop" onclick="slaHandmatigOp()" class="w-full py-3 mt-2 rounded-xl text-sm font-semibold text-white bg-[#34C759] hover:bg-green-600 transition-colors shadow-md">Opslaan in Cloud & Toevoegen</button>
         </div>
     </div>
@@ -481,7 +501,20 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-start mt-6 mb-6">
         <section>
-            <h2 class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider mb-2 md:mb-3 ml-2">Slide Preview</h2>
+            <div class="flex items-center justify-between mb-2 md:mb-3 ml-2 pr-1">
+                <h2 class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider">Slide Preview</h2>
+                <div id="slideAlignGroup" class="flex items-center gap-1 bg-[#F5F5F7] p-0.5 rounded-lg border border-black/[0.04]">
+                    <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-1 hidden sm:inline">Dia:</span>
+                    <button type="button" id="slideAlignLeftBtn" onclick="zetHuidigeDiaUitlijning('left')" class="px-2 py-1 rounded-md text-[11px] font-semibold text-gray-600 hover:text-gray-900 transition-all flex items-center gap-1 active:scale-95" title="Deze dia links uitlijnen">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h10M4 18h14"></path></svg>
+                        <span>Links</span>
+                    </button>
+                    <button type="button" id="slideAlignCenterBtn" onclick="zetHuidigeDiaUitlijning('center')" class="px-2 py-1 rounded-md text-[11px] font-semibold text-gray-600 hover:text-gray-900 transition-all flex items-center gap-1 active:scale-95" title="Deze dia centreren">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M7 12h10M5 18h14"></path></svg>
+                        <span>Centreren</span>
+                    </button>
+                </div>
+            </div>
             <div class="relative">
                 <div id="slideCanvas" class="aspect-video bg-black rounded-xl relative overflow-hidden shadow-inner border border-gray-800">
                     <div class="absolute top-2 left-3 text-[8px] text-gray-500 uppercase tracking-widest font-bold z-20 pointer-events-none">Slide Preview</div>
@@ -1133,6 +1166,14 @@
             .replace(/'/g, "&#39;");
     }
 
+    function formatteerMarkdownVoorHtml(tekst) {
+        if (!tekst) return '';
+        let safe = escapeHtml(tekst);
+        safe = safe.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        safe = safe.replace(/&lt;b&gt;(.*?)&lt;\/b&gt;/gi, '<strong>$1</strong>');
+        return safe;
+    }
+
     // Haalt API-sleutels en Firebase-config uit een stuk tekst, zodat geheimen
     // nooit meegestuurd worden naar de AI-chat.
     function redactGeheimen(tekst) {
@@ -1296,7 +1337,7 @@
             kaarten += '<div style="background:rgba(255,255,255,0.82);border-radius:20px;padding:16px 18px;margin:10px 0;box-shadow:0 4px 16px rgba(139,90,52,0.10)">' +
                 (label ? '<div style="font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#c07f33;margin-bottom:3px">' + escapeHtml(label) + '</div>' : '') +
                 '<div style="font-size:16px;font-weight:700;color:#4a3320">' + escapeHtml(it.titel || '') + '</div>' +
-                (tekst ? '<div style="font-size:14px;line-height:1.5;color:#5c4630;white-space:pre-line;margin-top:6px">' + escapeHtml(tekst) + '</div>' : '') +
+                (tekst ? '<div style="font-size:14px;line-height:1.5;color:#5c4630;white-space:pre-line;margin-top:6px;text-align:' + (it.align || 'left') + '">' + formatteerMarkdownVoorHtml(tekst) + '</div>' : '') +
                 '</div>';
         });
         overlay.innerHTML =
@@ -2235,12 +2276,66 @@ Bijbelliederen`;
         dnpKnop.classList.toggle('flex', isDNP);
     }
 
+    let modalGekozenAlign = null;
+
+    window.kiesModalUitlijning = function(align) {
+        modalGekozenAlign = align;
+        updateModalAlignUI(align);
+    };
+
+    function updateModalAlignUI(align) {
+        const actieveAlign = align || (window.getAlign ? window.getAlign() : 'center');
+        const leftBtn = document.getElementById('modalAlignLeftBtn');
+        const centerBtn = document.getElementById('modalAlignCenterBtn');
+        if (!leftBtn || !centerBtn) return;
+        if (actieveAlign === 'left') {
+            leftBtn.className = 'px-2 py-0.5 rounded-md text-[11px] font-bold bg-white text-[#007AFF] shadow-sm transition-all flex items-center gap-1';
+            centerBtn.className = 'px-2 py-0.5 rounded-md text-[11px] font-semibold text-gray-600 hover:text-gray-900 transition-all flex items-center gap-1';
+        } else {
+            centerBtn.className = 'px-2 py-0.5 rounded-md text-[11px] font-bold bg-white text-[#007AFF] shadow-sm transition-all flex items-center gap-1';
+            leftBtn.className = 'px-2 py-0.5 rounded-md text-[11px] font-semibold text-gray-600 hover:text-gray-900 transition-all flex items-center gap-1';
+        }
+    }
+
+    window.maakSelectieVetInModal = function() {
+        const ta = document.getElementById('handmatigeTekst');
+        if (!ta) return;
+        const start = ta.selectionStart;
+        const end = ta.selectionEnd;
+        const val = ta.value;
+
+        if (start === end) {
+            const voor = val.substring(0, start);
+            const na = val.substring(end);
+            ta.value = voor + "**woord**" + na;
+            ta.focus();
+            ta.setSelectionRange(start + 2, start + 7);
+        } else {
+            const selectie = val.substring(start, end);
+            const voor = val.substring(0, start);
+            const na = val.substring(end);
+
+            if (selectie.startsWith('**') && selectie.endsWith('**') && selectie.length >= 4) {
+                const ontvet = selectie.substring(2, selectie.length - 2);
+                ta.value = voor + ontvet + na;
+                ta.focus();
+                ta.setSelectionRange(start, start + ontvet.length);
+            } else {
+                ta.value = voor + `**${selectie}**` + na;
+                ta.focus();
+                ta.setSelectionRange(start, end + 4);
+            }
+        }
+    };
+
     window.openBewerkScherm = function(index) {
         isAanHetBewerken = true;
         huidigeBewerkIndex = index;
         tijdelijkeTitel = liturgieVolgorde[index].titel;
         tijdelijkeTekst = liturgieVolgorde[index].tekst;
         tijdelijkeType = liturgieVolgorde[index].type;
+        modalGekozenAlign = liturgieVolgorde[index].align || (window.getAlign ? window.getAlign() : 'center');
+        updateModalAlignUI(modalGekozenAlign);
         
         document.getElementById('modalTitel').innerText = "Bewerk: " + tijdelijkeTitel;
         document.getElementById('handmatigeTekst').value = tijdelijkeTekst;
@@ -2304,6 +2399,8 @@ Bijbelliederen`;
         document.getElementById('modalKnoppen3').classList.remove('hidden');
         document.getElementById('modalKnoppen3').classList.add('flex');
         updateLiedbundelKnop(tijdelijkeTitel, tijdelijkeType);
+        modalGekozenAlign = window.getAlign ? window.getAlign() : 'center';
+        updateModalAlignUI(modalGekozenAlign);
         
         document.getElementById('handmatigeTekst').value = tijdelijkeTekst;
         document.getElementById('handmatigeTekst').placeholder = "Plak hier de Bijbeltekst of eigen tekst...";
@@ -2324,6 +2421,9 @@ Bijbelliederen`;
                 }
             }
             liturgieVolgorde[huidigeBewerkIndex].tekst = nieuweTekst;
+            if (modalGekozenAlign) {
+                liturgieVolgorde[huidigeBewerkIndex].align = modalGekozenAlign;
+            }
         } else {
             if (tijdelijkeType === "Zang") {
                 if (!isStandaardLied) {
@@ -2332,7 +2432,9 @@ Bijbelliederen`;
             } else if (tijdelijkeType === "Schriftlezing") {
                 slaBijbelOpInCloud(tijdelijkeTitel.replace(" (HSV)", ""), nieuweTekst);
             }
-            liturgieVolgorde.push({ type: tijdelijkeType, titel: tijdelijkeTitel, tekst: nieuweTekst });
+            const nieuwItem = { type: tijdelijkeType, titel: tijdelijkeTitel, tekst: nieuweTekst };
+            if (modalGekozenAlign) nieuwItem.align = modalGekozenAlign;
+            liturgieVolgorde.push(nieuwItem);
         }
         
         window.tekenVolgorde();
@@ -2747,6 +2849,16 @@ Bijbelliederen`;
                 }
             }
         });
+
+        const handmatigeTekstEl = document.getElementById('handmatigeTekst');
+        if (handmatigeTekstEl) {
+            handmatigeTekstEl.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
+                    e.preventDefault();
+                    window.maakSelectieVetInModal();
+                }
+            });
+        }
     };
 
     // =====================================================================
@@ -4290,15 +4402,61 @@ Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
         const sel = document.getElementById('alignSelect');
         if (!sel) return;
         localStorage.setItem('tekstAlign', sel.value);
+        updateSlideAlignKnoppenUI();
         if (typeof tekenSlidePreview === 'function') tekenSlidePreview();
-        if (window.toonToast) window.toonToast(`Uitlijning: ${sel.value === 'left' ? 'Links uitgelijnd' : 'Gecentreerd'}`, "info");
+        if (window.toonToast) window.toonToast(`Standaard uitlijning: ${sel.value === 'left' ? 'Links uitgelijnd' : 'Gecentreerd'}`, "info");
     };
+
+    window.getDiaAlign = function(item, subSlideIndex = 0) {
+        if (!item) return window.getAlign ? window.getAlign() : 'center';
+        if (item.subSlideAlign && item.subSlideAlign[subSlideIndex]) {
+            return item.subSlideAlign[subSlideIndex];
+        }
+        if (item.align) return item.align;
+        return window.getAlign ? window.getAlign() : 'center';
+    };
+
+    window.zetHuidigeDiaUitlijning = function(align) {
+        if (previewItemIdx < 0 || previewItemIdx >= liturgieVolgorde.length) {
+            window.toonToast("Selecteer eerst een item in de volgordelijst.", "info");
+            return;
+        }
+        const item = liturgieVolgorde[previewItemIdx];
+        if (!item.subSlideAlign) item.subSlideAlign = {};
+        item.subSlideAlign[previewSubSlide] = align;
+        item.align = align;
+        bewaarLiturgie();
+        updateSlideAlignKnoppenUI();
+        tekenSlidePreview();
+        window.toonToast(`Dia uitlijning: ${align === 'left' ? 'Links uitgelijnd' : 'Gecentreerd'}`, "info");
+    };
+
+    function updateSlideAlignKnoppenUI() {
+        const leftBtn = document.getElementById('slideAlignLeftBtn');
+        const centerBtn = document.getElementById('slideAlignCenterBtn');
+        if (!leftBtn || !centerBtn) return;
+        if (previewItemIdx < 0 || previewItemIdx >= liturgieVolgorde.length) {
+            leftBtn.className = 'px-2 py-1 rounded-md text-[11px] font-semibold text-gray-400 transition-all flex items-center gap-1 cursor-not-allowed opacity-50';
+            centerBtn.className = 'px-2 py-1 rounded-md text-[11px] font-semibold text-gray-400 transition-all flex items-center gap-1 cursor-not-allowed opacity-50';
+            return;
+        }
+        const item = liturgieVolgorde[previewItemIdx];
+        const actieveAlign = window.getDiaAlign(item, previewSubSlide);
+        if (actieveAlign === 'left') {
+            leftBtn.className = 'px-2 py-1 rounded-md text-[11px] font-bold bg-white text-[#007AFF] shadow-sm transition-all flex items-center gap-1';
+            centerBtn.className = 'px-2 py-1 rounded-md text-[11px] font-semibold text-gray-600 hover:text-gray-900 transition-all flex items-center gap-1';
+        } else {
+            centerBtn.className = 'px-2 py-1 rounded-md text-[11px] font-bold bg-white text-[#007AFF] shadow-sm transition-all flex items-center gap-1';
+            leftBtn.className = 'px-2 py-1 rounded-md text-[11px] font-semibold text-gray-600 hover:text-gray-900 transition-all flex items-center gap-1';
+        }
+    }
 
     function initTypografieInstellingen() {
         updateBoldKnopUI();
         const opgeslagenAlign = localStorage.getItem('tekstAlign') || 'center';
         const alignSel = document.getElementById('alignSelect');
         if (alignSel) alignSel.value = opgeslagenAlign;
+        updateSlideAlignKnoppenUI();
     }
 
     let previewItemIdx = -1;
@@ -4324,7 +4482,7 @@ Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
         _pptMeetVak.style.fontSize = (fontSizePt * 4 / 3) + 'px'; // pt → px
         _pptMeetVak.style.fontWeight = (window.isBold && window.isBold()) ? 'bold' : 'normal';
         _pptMeetVak.style.lineHeight = '1.2';                     // = lineSpacing fontSize*1.2
-        _pptMeetVak.textContent = regelsArr.join('\n');
+        _pptMeetVak.innerHTML = formatteerMarkdownVoorHtml(regelsArr.join('\n'));
         return _pptMeetVak.scrollHeight;
     }
     function pptPastInVak(regelsArr, fontSizePt, font, boxW, boxH) {
@@ -4451,6 +4609,7 @@ Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
             fitInd.classList.add('hidden');
             nav.classList.add('hidden');
             hint.classList.add('hidden');
+            updateSlideAlignKnoppenUI();
             return;
         }
 
@@ -4586,7 +4745,8 @@ Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
         }
 
         const isTekstBold = (item.bold !== undefined) ? item.bold : (window.isBold ? window.isBold() : false);
-        const tekstAlign = item.align || (window.getAlign ? window.getAlign() : 'center');
+        const tekstAlign = window.getDiaAlign(item, previewSubSlide);
+        updateSlideAlignKnoppenUI();
 
         preview.innerHTML = `
             <div id="slideTitleText" class="absolute text-white font-bold truncate pointer-events-none" style="left:${titleLeftPct}%;top:${titleTopPct}%;width:${tWidthPct}%;font-size:${titleFS}px;font-family:${font};opacity:0.7">
@@ -4594,7 +4754,7 @@ Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
             </div>
             <div id="slideTextBox" class="absolute text-white flex items-center ${tekstAlign === 'left' ? 'justify-start' : 'justify-center'} transition-shadow select-none"
                  style="left:${tLeftPct}%;top:${tTopPct}%;width:${tWidthPct}%;height:${tHeightPct}%;font-size:${previewFS}px;font-family:${font};font-weight:${isTekstBold ? 'bold' : 'normal'};line-height:${previewFS * 1.2}px;text-align:${tekstAlign};cursor:default;border:1px dashed transparent;border-radius:4px">
-                <div class="whitespace-pre-line w-full px-1" style="text-align:${tekstAlign}">${escapeHtml(tekst)}</div>
+                <div class="whitespace-pre-line w-full px-1" style="text-align:${tekstAlign}">${formatteerMarkdownVoorHtml(tekst)}</div>
                 <div class="resize-handle" data-handle="tl" style="position:absolute;top:-5px;left:-5px;width:10px;height:10px;background:#ffffff;border:2px solid #007AFF;border-radius:2px;cursor:nwse-resize;display:none;z-index:20;box-shadow:0 1px 3px rgba(0,0,0,0.3);box-sizing:border-box;"></div>
                 <div class="resize-handle" data-handle="tr" style="position:absolute;top:-5px;right:-5px;width:10px;height:10px;background:#ffffff;border:2px solid #007AFF;border-radius:2px;cursor:nesw-resize;display:none;z-index:20;box-shadow:0 1px 3px rgba(0,0,0,0.3);box-sizing:border-box;"></div>
                 <div class="resize-handle" data-handle="bl" style="position:absolute;bottom:-5px;left:-5px;width:10px;height:10px;background:#ffffff;border:2px solid #007AFF;border-radius:2px;cursor:nesw-resize;display:none;z-index:20;box-shadow:0 1px 3px rgba(0,0,0,0.3);box-sizing:border-box;"></div>
@@ -5379,6 +5539,47 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
+function bouwPptxTextRuns(regelsArr, fontSize, fontFace, basisBold) {
+    const runs = [];
+    regelsArr.forEach((regel, rIdx) => {
+        const isLaatsteRegel = (rIdx === regelsArr.length - 1);
+        const tokens = regel.split(/(\*\*.*?\*\*|<b>.*?<\/b>)/gi).filter(t => t.length > 0);
+        if (tokens.length === 0) {
+            runs.push({
+                text: " ",
+                options: { fontSize, fontFace, bold: basisBold, color: "FFFFFF", breakLine: !isLaatsteRegel }
+            });
+            return;
+        }
+
+        tokens.forEach((tok, tokIdx) => {
+            const isLaatsteToken = (tokIdx === tokens.length - 1);
+            let tekst = tok;
+            let isVet = basisBold;
+
+            if (/^\*\*(.*?)\*\*$/.test(tok)) {
+                tekst = tok.replace(/^\*\*([\s\S]*)\*\*$/, "$1");
+                isVet = true;
+            } else if (/^<b>(.*?)<\/b>$/i.test(tok)) {
+                tekst = tok.replace(/^<b>([\s\S]*)<\/b>$/i, "$1");
+                isVet = true;
+            }
+
+            runs.push({
+                text: tekst,
+                options: {
+                    fontSize,
+                    fontFace,
+                    bold: isVet,
+                    color: "FFFFFF",
+                    breakLine: isLaatsteToken && !isLaatsteRegel
+                }
+            });
+        });
+    });
+    return runs;
+}
+
 window.maakPowerPoint = async function(customOpties = null) {
     if (liturgieVolgorde.length === 0) { window.toonToast("Voeg eerst een item toe aan de volgorde.", "error"); return; }
     
@@ -5553,21 +5754,33 @@ window.maakPowerPoint = async function(customOpties = null) {
         const subSlides = berekenSubSlidesVoorItem(item);
 
         const isTekstBold = (item.bold !== undefined) ? item.bold : (window.isBold ? window.isBold() : false);
-        const tekstAlign = item.align || (window.getAlign ? window.getAlign() : 'center');
 
-        subSlides.forEach((sub) => {
+        subSlides.forEach((sub, subIdx) => {
             if (!sub.regels.length) return;
+            const tekstAlign = window.getDiaAlign(item, subIdx);
             let slide = pres.addSlide();
             slide.background = pptBg;
             slide.addText(item.titel, { x: tx, y: TITEL_Y, w: tw, h: 0.4, color: "FFFFFF", fontSize: 18, bold: true, fontFace: pptFont, align: "left", valign: "top" });
-            slide.addText(sub.regels.join('\n'), {
-                x: tx, y: ty, w: tw, h: th,
-                color: "FFFFFF", fontSize: sub.fontSize,
-                bold: isTekstBold,
-                align: tekstAlign,
-                valign: "middle",
-                fontFace: pptFont, lineSpacing: sub.fontSize * 1.2
-            });
+
+            const heeftVetOpmaak = sub.regels.some(r => /\*\*.*?\*\*|<b>.*?<\/b>/i.test(r));
+            if (heeftVetOpmaak) {
+                const runs = bouwPptxTextRuns(sub.regels, sub.fontSize, pptFont, isTekstBold);
+                slide.addText(runs, {
+                    x: tx, y: ty, w: tw, h: th,
+                    align: tekstAlign,
+                    valign: "middle",
+                    fontFace: pptFont, lineSpacing: sub.fontSize * 1.2
+                });
+            } else {
+                slide.addText(sub.regels.join('\n'), {
+                    x: tx, y: ty, w: tw, h: th,
+                    color: "FFFFFF", fontSize: sub.fontSize,
+                    bold: isTekstBold,
+                    align: tekstAlign,
+                    valign: "middle",
+                    fontFace: pptFont, lineSpacing: sub.fontSize * 1.2
+                });
+            }
         });
     });
 
