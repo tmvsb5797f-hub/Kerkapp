@@ -5146,6 +5146,12 @@ function openWelkomstdiaModal() {
     const titelInput = document.getElementById('welkomTitelInput');
     if (titelInput) titelInput.value = "Welkom";
 
+    const gemInput = document.getElementById('welkomGemeenteInput');
+    if (gemInput) gemInput.value = window.getActieveGemeente ? window.getActieveGemeente() : "Bethelkerk Maassluis";
+
+    const gemToggle = document.getElementById('welkomToonGemeenteToggle');
+    if (gemToggle) gemToggle.checked = true;
+
     const toonToggle = document.getElementById('welkomToonLiederenToggle');
     if (toonToggle) toonToggle.checked = true;
 
@@ -5186,6 +5192,10 @@ function updateWelkomstdiaPreview() {
     const font = typeof getFont === 'function' ? getFont() : 'Segoe UI, Arial, sans-serif';
 
     const titelTekst = document.getElementById('welkomTitelInput') ? document.getElementById('welkomTitelInput').value.trim() : "";
+    const toonGemeente = document.getElementById('welkomToonGemeenteToggle') ? document.getElementById('welkomToonGemeenteToggle').checked : true;
+    const rawGemeente = document.getElementById('welkomGemeenteInput') ? document.getElementById('welkomGemeenteInput').value.trim() : "";
+    const gemeenteTekst = toonGemeente ? (rawGemeente || (window.getActieveGemeente ? window.getActieveGemeente() : "")) : "";
+
     const toonLiederen = document.getElementById('welkomToonLiederenToggle') ? document.getElementById('welkomToonLiederenToggle').checked : true;
     const rawLiederen = document.getElementById('welkomLiederenInput') ? document.getElementById('welkomLiederenInput').value : "";
     const liederenRegels = toonLiederen ? rawLiederen.split('\n').map(s => s.trim()).filter(Boolean) : [];
@@ -5198,14 +5208,22 @@ function updateWelkomstdiaPreview() {
 
     // 1. Titel ("Welkom" of aangepast)
     if (titelTekst) {
-        const titleFS = Math.max(12, Math.round(54 * scale));
-        html += `<div class="absolute text-white font-bold leading-tight select-none" style="left:5%;top:14.2%;max-width:48%;font-size:${titleFS}px;font-family:${font};">${escapeHtml(titelTekst)}</div>`;
+        const titleFS = Math.max(12, Math.round(50 * scale));
+        html += `<div class="absolute text-white font-bold leading-tight select-none" style="left:5%;top:12.0%;max-width:48%;font-size:${titleFS}px;font-family:${font};">${escapeHtml(titelTekst)}</div>`;
+    }
+
+    // 1b. Gemeente (op de welkomstdia)
+    if (gemeenteTekst) {
+        const gemFS = Math.max(9, Math.round(20 * scale));
+        const gemTop = titelTekst ? '28.0%' : '14.0%';
+        html += `<div class="absolute text-white font-semibold select-none flex items-center gap-1.5" style="left:5%;top:${gemTop};max-width:48%;font-size:${gemFS}px;font-family:${font};"><span class="opacity-80">⛪</span> <span class="truncate">${escapeHtml(gemeenteTekst)}</span></div>`;
     }
 
     // 2. Datum
     if (datum) {
-        const datumFS = Math.max(8, Math.round(20 * scale));
-        html += `<div class="absolute text-[#CCCCCC] font-normal select-none" style="left:5%;top:32.0%;max-width:48%;font-size:${datumFS}px;font-family:${font};">${escapeHtml(datum)}</div>`;
+        const datumFS = Math.max(8, Math.round(18 * scale));
+        const datumTop = (titelTekst && gemeenteTekst) ? '37.5%' : ((titelTekst || gemeenteTekst) ? '28.5%' : '14.0%');
+        html += `<div class="absolute text-[#CCCCCC] font-normal select-none" style="left:5%;top:${datumTop};max-width:48%;font-size:${datumFS}px;font-family:${font};">${escapeHtml(datum)}</div>`;
     }
 
     // 3. Voorganger
@@ -5246,11 +5264,18 @@ function updateWelkomstdiaPreview() {
 
 function exporteerMetStandaardWelkomstdia() {
     sluitWelkomstdiaModal();
-    window.maakPowerPoint({ gebruikStandaard: true });
+    window.maakPowerPoint({ 
+        gebruikStandaard: true,
+        toonGemeente: true,
+        gemeente: window.getActieveGemeente ? window.getActieveGemeente() : "Bethelkerk Maassluis"
+    });
 }
 
 function exporteerMetAangepasteWelkomstdia() {
     const titel = document.getElementById('welkomTitelInput') ? document.getElementById('welkomTitelInput').value.trim() : "";
+    const toonGemeente = document.getElementById('welkomToonGemeenteToggle') ? document.getElementById('welkomToonGemeenteToggle').checked : true;
+    const rawGemeente = document.getElementById('welkomGemeenteInput') ? document.getElementById('welkomGemeenteInput').value.trim() : "";
+    const gemeente = toonGemeente ? (rawGemeente || (window.getActieveGemeente ? window.getActieveGemeente() : "")) : "";
     const toonLiederen = document.getElementById('welkomToonLiederenToggle') ? document.getElementById('welkomToonLiederenToggle').checked : true;
     const rawLiederen = document.getElementById('welkomLiederenInput') ? document.getElementById('welkomLiederenInput').value : "";
     const zangLijst = toonLiederen ? rawLiederen.split('\n').map(s => s.trim()).filter(Boolean) : [];
@@ -5258,6 +5283,8 @@ function exporteerMetAangepasteWelkomstdia() {
     sluitWelkomstdiaModal();
     window.maakPowerPoint({
         titel: titel,
+        toonGemeente: toonGemeente,
+        gemeente: gemeente,
         toonLiederen: toonLiederen,
         zangLijst: zangLijst
     });
@@ -5324,11 +5351,23 @@ window.maakPowerPoint = async function(customOpties = null) {
 
     const isCustom = customOpties && !customOpties.gebruikStandaard;
     const titelTekst = isCustom ? (customOpties.titel || "") : "Welkom";
+    const toonGemeente = isCustom ? (customOpties.toonGemeente !== false) : true;
+    const gemeenteTekst = toonGemeente 
+        ? ((isCustom && typeof customOpties.gemeente === 'string') 
+            ? customOpties.gemeente 
+            : (window.getActieveGemeente ? window.getActieveGemeente() : "Bethelkerk Maassluis")) 
+        : "";
+
     if (titelTekst) {
-        welcomeSlide.addText(titelTekst, { x: 0.5, y: 0.8, w: 5, h: 1, color: "FFFFFF", fontSize: 54, fontFace: pptFont, bold: true, align: "left" });
+        welcomeSlide.addText(titelTekst, { x: 0.5, y: 0.7, w: 5, h: 0.85, color: "FFFFFF", fontSize: 50, fontFace: pptFont, bold: true, align: "left" });
+    }
+    if (gemeenteTekst) {
+        const gemY = titelTekst ? 1.55 : 0.8;
+        welcomeSlide.addText(gemeenteTekst, { x: 0.5, y: gemY, w: 5, h: 0.45, color: "FFFFFF", fontSize: 20, fontFace: pptFont, bold: true, align: "left" });
     }
     if (datum) {
-        welcomeSlide.addText(datum, { x: 0.5, y: 1.8, w: 5, h: 0.5, color: "CCCCCC", fontSize: 20, fontFace: pptFont, align: "left" });
+        const datumY = (titelTekst && gemeenteTekst) ? 2.05 : ((titelTekst || gemeenteTekst) ? 1.6 : 0.8);
+        welcomeSlide.addText(datum, { x: 0.5, y: datumY, w: 5, h: 0.4, color: "CCCCCC", fontSize: 18, fontFace: pptFont, align: "left" });
     }
 
     if (voorganger) {
@@ -5579,6 +5618,18 @@ window.verstuurExportFeedback = async function() {
                         <button type="button" onclick="document.getElementById('welkomTitelInput').value=''; updateWelkomstdiaPreview();" class="text-[11px] font-medium text-gray-400 hover:text-red-500 transition-colors">Wissen</button>
                     </div>
                     <input id="welkomTitelInput" type="text" value="Welkom" placeholder="Laat leeg voor geen titel..." oninput="updateWelkomstdiaPreview()" class="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2 text-sm focus:border-[#007AFF] focus:ring-2 focus:ring-[#007AFF]/20 outline-none transition-all">
+                </div>
+
+                <!-- Church Name Control -->
+                <div class="bg-[#F5F5F7]/70 rounded-2xl p-4 flex flex-col gap-2 border border-black/[0.03]">
+                    <div class="flex items-center justify-between">
+                        <label for="welkomGemeenteInput" class="text-xs font-bold text-[#1D1D1F]">Kerknaam op Welkomstdia</label>
+                        <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                            <input type="checkbox" id="welkomToonGemeenteToggle" checked onchange="updateWelkomstdiaPreview()" class="rounded border-gray-300 text-[#007AFF] focus:ring-0">
+                            <span class="text-[11px] text-gray-500 font-medium">Tonen</span>
+                        </label>
+                    </div>
+                    <input id="welkomGemeenteInput" type="text" value="Bethelkerk Maassluis" placeholder="Laat leeg voor geen kerknaam..." oninput="updateWelkomstdiaPreview()" class="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2 text-sm focus:border-[#007AFF] focus:ring-2 focus:ring-[#007AFF]/20 outline-none transition-all">
                 </div>
 
                 <!-- Songs Formatting Control -->
