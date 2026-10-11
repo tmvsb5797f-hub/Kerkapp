@@ -231,6 +231,13 @@
             <a id="dnpKnop" href="#" onclick="openDNPOnline(); return false;" class="hidden w-full py-2.5 rounded-xl text-sm font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 transition-colors text-center items-center justify-center gap-2">
                 🔗 Open De Nieuwe Psalmberijming
             </a>
+            <div id="bijbelFoutBanner" class="hidden p-3.5 rounded-2xl bg-amber-50/90 border border-amber-200/80 text-amber-900 text-xs font-medium flex items-start gap-3">
+                <div class="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 text-amber-600 font-bold text-xs">⚠️</div>
+                <div class="flex-grow">
+                    <p class="font-bold text-[13px] text-amber-950">Bijbel API error!</p>
+                    <p class="text-amber-800 text-[12px] mt-0.5 leading-relaxed">Kon de verzen niet automatisch ophalen via de Bijbel API. Vul of plak de tekst hieronder zelf in:</p>
+                </div>
+            </div>
             <div class="flex items-center justify-between mb-1.5 flex-wrap gap-2">
                 <div class="flex items-center gap-1.5">
                     <button type="button" onclick="maakSelectieVetInModal()" class="px-2.5 py-1 bg-[#F5F5F7] hover:bg-gray-200 border border-black/[0.06] text-[#1D1D1F] text-xs font-bold rounded-lg shadow-sm flex items-center gap-1.5 active:scale-95 transition-all" title="Geselecteerd woord vetgedrukt maken (**woord** of Ctrl+B)">
@@ -2264,6 +2271,8 @@ Bijbelliederen`;
         }
 
         document.getElementById('modalTekst').innerText = tekst;
+        const foutBanner = document.getElementById('bijbelFoutBanner');
+        if (foutBanner) foutBanner.classList.add('hidden');
         document.getElementById('modalTekstContainer').classList.remove('hidden');
         document.getElementById('modalKnoppen1').classList.remove('hidden');
         document.getElementById('modalKnoppen1').classList.add('flex');
@@ -2348,6 +2357,40 @@ Bijbelliederen`;
         }
     };
 
+    window.toonBijbelFoutInvoer = function(referentie) {
+        tijdelijkeTitel = referentie.includes("(HSV)") ? referentie : (referentie + " (HSV)");
+        tijdelijkeTekst = "";
+        tijdelijkeType = "Schriftlezing";
+        isAanHetBewerken = false;
+
+        document.getElementById('modalTitel').innerText = "Bijbel API error! Vul zelf de teksten in";
+        document.getElementById('modalTekstContainer').classList.add('hidden');
+        document.getElementById('modalKnoppen1').classList.add('hidden');
+        document.getElementById('modalKnoppen1').classList.remove('flex', 'md:flex');
+        document.getElementById('modalKnoppen2').classList.add('hidden');
+        document.getElementById('modalKnoppen2').classList.remove('flex');
+
+        const foutBanner = document.getElementById('bijbelFoutBanner');
+        if (foutBanner) foutBanner.classList.remove('hidden');
+
+        document.getElementById('modalKnoppen3').classList.remove('hidden');
+        document.getElementById('modalKnoppen3').classList.add('flex');
+        updateLiedbundelKnop(tijdelijkeTitel, tijdelijkeType);
+
+        modalGekozenAlign = window.getAlign ? window.getAlign() : 'center';
+        updateModalAlignUI(modalGekozenAlign);
+
+        const ta = document.getElementById('handmatigeTekst');
+        ta.value = "";
+        ta.placeholder = `Plak of typ hier de Bijbeltekst voor ${tijdelijkeTitel}...`;
+        
+        document.getElementById('opslaanKnop').innerText = "Schriftlezing Toevoegen aan Liturgie";
+        document.getElementById('controleModal').classList.remove('hidden');
+        setTimeout(() => ta.focus(), 150);
+
+        if (window.toonToast) window.toonToast("Bijbel API error: vul de tekst zelf in.", "warning");
+    };
+
     window.openBewerkScherm = function(index) {
         isAanHetBewerken = true;
         huidigeBewerkIndex = index;
@@ -2356,6 +2399,9 @@ Bijbelliederen`;
         tijdelijkeType = liturgieVolgorde[index].type;
         modalGekozenAlign = liturgieVolgorde[index].align || (window.getAlign ? window.getAlign() : 'center');
         updateModalAlignUI(modalGekozenAlign);
+
+        const foutBanner = document.getElementById('bijbelFoutBanner');
+        if (foutBanner) foutBanner.classList.add('hidden');
         
         document.getElementById('modalTitel').innerText = "Bewerk: " + tijdelijkeTitel;
         document.getElementById('handmatigeTekst').value = tijdelijkeTekst;
@@ -2377,6 +2423,8 @@ Bijbelliederen`;
 
     window.sluitModal = function() {
         document.getElementById('controleModal').classList.add('hidden');
+        const foutBanner = document.getElementById('bijbelFoutBanner');
+        if (foutBanner) foutBanner.classList.add('hidden');
         isAanHetBewerken = false;
         setTimeout(() => verwerkVolgendeImportItem(), 300);
     }
@@ -2415,6 +2463,9 @@ Bijbelliederen`;
         document.getElementById('modalKnoppen2').classList.add('hidden');
         document.getElementById('modalKnoppen2').classList.remove('flex');
         
+        const foutBanner = document.getElementById('bijbelFoutBanner');
+        if (foutBanner) foutBanner.classList.add('hidden');
+
         // Toon alleen het onderste grijze invulvak en de opslaan knop
         document.getElementById('modalKnoppen3').classList.remove('hidden');
         document.getElementById('modalKnoppen3').classList.add('flex');
@@ -2755,37 +2806,10 @@ Bijbelliederen`;
             }
         } catch(e) { console.warn("Bijbel API niet bereikbaar:", e); }
 
-        // 2. Als de API offline of overbelast is: haal betrouwbaar op via Gemini AI
-        if (gevondenModel) {
-            try {
-                preview.innerHTML = `
-                    <div class="flex flex-col items-center justify-center gap-2">
-                        <span class="text-purple-600 font-medium animate-pulse text-[12px]">AI Backup ophalen: <b>${escapeHtml(referentie)}</b>...</span>
-                    </div>`;
-                const aiPrompt = `Geef de letterlijke tekst van de Herziene Statenvertaling (HSV) voor: "${referentie}". Formaat: elk vers op een nieuwe regel beginnend met het versnummer (bijv. "1 In het begin schiep God de hemel en de aarde."). Geef uitsluitend de Bijbeltekst, geen toelichting of extra commentaar.`;
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000);
-                const response = await fetch(`${PROXY_URL}/v1beta/${gevondenModel}:generateContent`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: aiPrompt }] }] }),
-                    signal: controller.signal
-                });
-                clearTimeout(timeoutId);
-                const data = await response.json();
-                const aiTekst = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-                if (aiTekst && aiTekst.length > 10) {
-                    preview.innerHTML = `<div class="text-white text-[11px] text-center px-4 italic opacity-80 whitespace-pre-line">${escapeHtml(aiTekst.split('\n').slice(0, 4).join('\n'))}...</div>`;
-                    window.toonControleModal(referentie + " (HSV)", aiTekst, "Schriftlezing");
-                    return;
-                }
-            } catch(aiErr) { console.warn("AI backup ophalen mislukt:", aiErr); }
-        }
-
-        // 3. Fallback als beide niet bereikbaar zijn
-        preview.innerHTML = `<div class="flex flex-col items-center justify-center gap-2"><span class="text-[#FF3B30] font-medium text-[12px]">Tekst niet gevonden — typ of plak de tekst handmatig.</span></div>`;
-        window.toonControleModal(referentie + " (HSV)", "", "Schriftlezing");
-        window.kiesHandmatig();
+        // 2. GEEN Gemini AI bijbelteksten (volgens gebruikersinstructie):
+        // Toon direct de pop-up "Bijbel API error! Vul zelf de teksten in" met een invoer wolk!
+        preview.innerHTML = `<div class="flex flex-col items-center justify-center gap-2"><span class="text-[#FF3B30] font-medium text-[12px]">Bijbel API error — vul zelf de tekst in via de pop-up.</span></div>`;
+        window.toonBijbelFoutInvoer(referentie);
     }
 
     // --- DATUMKIEZER ---
