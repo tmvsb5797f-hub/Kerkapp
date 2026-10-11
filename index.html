@@ -351,6 +351,14 @@
                 <option value="6">6 Regels per dia</option>
                 <option value="8">8 Regels per dia</option>
             </select>
+            <button type="button" id="boldToggleBtn" onclick="toggleBold()" class="bg-white border border-gray-200 text-gray-700 text-sm rounded-lg px-3 py-1.5 focus:ring-[#007AFF] focus:border-[#007AFF] outline-none shadow-sm cursor-pointer transition-all flex items-center justify-center gap-1.5 hover:bg-gray-50 active:scale-95" title="Tekst dikgedrukt maken (vet)">
+                <span class="font-black text-[15px] leading-none">B</span>
+                <span class="text-xs font-semibold hidden sm:inline">Vet</span>
+            </button>
+            <select id="alignSelect" onchange="wijzigUitlijning()" class="bg-white border border-gray-200 text-gray-700 text-sm rounded-lg pl-3 pr-8 py-1.5 focus:ring-[#007AFF] focus:border-[#007AFF] outline-none shadow-sm cursor-pointer apple-select" title="Tekst uitlijning op de dia">
+                <option value="center" selected>Uitlijning: Centreren</option>
+                <option value="left">Uitlijning: Links</option>
+            </select>
             <div class="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-1.5 shadow-sm">
                 <span class="text-sm text-gray-500 font-medium whitespace-nowrap" id="modusLabel">Beamer</span>
                 <label class="relative inline-block w-10 h-5 cursor-pointer flex-shrink-0">
@@ -2686,6 +2694,7 @@ Bijbelliederen`;
         if (meeleesId) { toonMeeleesPagina(meeleesId); return; }
 
         initGemeente();
+        initTypografieInstellingen();
         herstelLiturgie();
         checkBijbelAPI();
         ontdekAI().then(() => { console.log("AI Modellen geladen."); });
@@ -4245,6 +4254,53 @@ Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
     document.getElementById('fontSizeSelect')?.addEventListener('change', () => { if (previewItemIdx >= 0) renderSlidePreview(previewItemIdx); });
     document.getElementById('linesSelect')?.addEventListener('change', () => { if (previewItemIdx >= 0) renderSlidePreview(previewItemIdx); });
 
+    // --- TYPOGRAFIE INSTELLINGEN (Vet & Uitlijning) ---
+    window.isBold = function() {
+        return localStorage.getItem('tekstBold') === '1';
+    };
+
+    window.toggleBold = function() {
+        const nieuw = !window.isBold();
+        localStorage.setItem('tekstBold', nieuw ? '1' : '0');
+        updateBoldKnopUI();
+        if (typeof tekenSlidePreview === 'function') tekenSlidePreview();
+        if (window.toonToast) window.toonToast(`Tekststijl: ${nieuw ? 'Dikgedrukt (vet)' : 'Normaal'}`, "info");
+    };
+
+    function updateBoldKnopUI() {
+        const btn = document.getElementById('boldToggleBtn');
+        if (!btn) return;
+        const actief = window.isBold();
+        if (actief) {
+            btn.classList.remove('bg-white', 'text-gray-700', 'border-gray-200', 'hover:bg-gray-50');
+            btn.classList.add('bg-[#007AFF]', 'text-white', 'border-[#007AFF]', 'shadow-md');
+        } else {
+            btn.classList.remove('bg-[#007AFF]', 'text-white', 'border-[#007AFF]', 'shadow-md');
+            btn.classList.add('bg-white', 'text-gray-700', 'border-gray-200', 'hover:bg-gray-50');
+        }
+    }
+
+    window.getAlign = function() {
+        const sel = document.getElementById('alignSelect');
+        if (sel && sel.value) return sel.value;
+        return localStorage.getItem('tekstAlign') || 'center';
+    };
+
+    window.wijzigUitlijning = function() {
+        const sel = document.getElementById('alignSelect');
+        if (!sel) return;
+        localStorage.setItem('tekstAlign', sel.value);
+        if (typeof tekenSlidePreview === 'function') tekenSlidePreview();
+        if (window.toonToast) window.toonToast(`Uitlijning: ${sel.value === 'left' ? 'Links uitgelijnd' : 'Gecentreerd'}`, "info");
+    };
+
+    function initTypografieInstellingen() {
+        updateBoldKnopUI();
+        const opgeslagenAlign = localStorage.getItem('tekstAlign') || 'center';
+        const alignSel = document.getElementById('alignSelect');
+        if (alignSel) alignSel.value = opgeslagenAlign;
+    }
+
     let previewItemIdx = -1;
     let previewSubSlide = 0;
     let previewSubSlides = [];
@@ -4266,6 +4322,7 @@ Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
         _pptMeetVak.style.width = (w * PPI) + 'px';
         _pptMeetVak.style.fontFamily = font || 'Arial';
         _pptMeetVak.style.fontSize = (fontSizePt * 4 / 3) + 'px'; // pt → px
+        _pptMeetVak.style.fontWeight = (window.isBold && window.isBold()) ? 'bold' : 'normal';
         _pptMeetVak.style.lineHeight = '1.2';                     // = lineSpacing fontSize*1.2
         _pptMeetVak.textContent = regelsArr.join('\n');
         return _pptMeetVak.scrollHeight;
@@ -4528,13 +4585,16 @@ Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
             canvas2.style.backgroundColor = 'black';
         }
 
+        const isTekstBold = (item.bold !== undefined) ? item.bold : (window.isBold ? window.isBold() : false);
+        const tekstAlign = item.align || (window.getAlign ? window.getAlign() : 'center');
+
         preview.innerHTML = `
             <div id="slideTitleText" class="absolute text-white font-bold truncate pointer-events-none" style="left:${titleLeftPct}%;top:${titleTopPct}%;width:${tWidthPct}%;font-size:${titleFS}px;font-family:${font};opacity:0.7">
                 ${escapeHtml(item.titel)}
             </div>
-            <div id="slideTextBox" class="absolute text-white flex items-center justify-center transition-shadow select-none"
-                 style="left:${tLeftPct}%;top:${tTopPct}%;width:${tWidthPct}%;height:${tHeightPct}%;font-size:${previewFS}px;font-family:${font};line-height:${previewFS * 1.2}px;text-align:center;cursor:default;border:1px dashed transparent;border-radius:4px">
-                <div class="whitespace-pre-line w-full px-1">${escapeHtml(tekst)}</div>
+            <div id="slideTextBox" class="absolute text-white flex items-center ${tekstAlign === 'left' ? 'justify-start' : 'justify-center'} transition-shadow select-none"
+                 style="left:${tLeftPct}%;top:${tTopPct}%;width:${tWidthPct}%;height:${tHeightPct}%;font-size:${previewFS}px;font-family:${font};font-weight:${isTekstBold ? 'bold' : 'normal'};line-height:${previewFS * 1.2}px;text-align:${tekstAlign};cursor:default;border:1px dashed transparent;border-radius:4px">
+                <div class="whitespace-pre-line w-full px-1" style="text-align:${tekstAlign}">${escapeHtml(tekst)}</div>
                 <div class="resize-handle" data-handle="tl" style="position:absolute;top:-5px;left:-5px;width:10px;height:10px;background:#ffffff;border:2px solid #007AFF;border-radius:2px;cursor:nwse-resize;display:none;z-index:20;box-shadow:0 1px 3px rgba(0,0,0,0.3);box-sizing:border-box;"></div>
                 <div class="resize-handle" data-handle="tr" style="position:absolute;top:-5px;right:-5px;width:10px;height:10px;background:#ffffff;border:2px solid #007AFF;border-radius:2px;cursor:nesw-resize;display:none;z-index:20;box-shadow:0 1px 3px rgba(0,0,0,0.3);box-sizing:border-box;"></div>
                 <div class="resize-handle" data-handle="bl" style="position:absolute;bottom:-5px;left:-5px;width:10px;height:10px;background:#ffffff;border:2px solid #007AFF;border-radius:2px;cursor:nesw-resize;display:none;z-index:20;box-shadow:0 1px 3px rgba(0,0,0,0.3);box-sizing:border-box;"></div>
@@ -5492,6 +5552,9 @@ window.maakPowerPoint = async function(customOpties = null) {
         const th = item.tekstH ?? TEKST_DEF_H;
         const subSlides = berekenSubSlidesVoorItem(item);
 
+        const isTekstBold = (item.bold !== undefined) ? item.bold : (window.isBold ? window.isBold() : false);
+        const tekstAlign = item.align || (window.getAlign ? window.getAlign() : 'center');
+
         subSlides.forEach((sub) => {
             if (!sub.regels.length) return;
             let slide = pres.addSlide();
@@ -5500,7 +5563,9 @@ window.maakPowerPoint = async function(customOpties = null) {
             slide.addText(sub.regels.join('\n'), {
                 x: tx, y: ty, w: tw, h: th,
                 color: "FFFFFF", fontSize: sub.fontSize,
-                align: "center", valign: "middle",
+                bold: isTekstBold,
+                align: tekstAlign,
+                valign: "middle",
                 fontFace: pptFont, lineSpacing: sub.fontSize * 1.2
             });
         });
