@@ -2201,7 +2201,9 @@ Bijbelliederen`;
     }
 
   async function slaLiedOpInCloud(titel, tekst) {
-        window.liederenDatabase[titel] = tekst;
+        // Zorg dat opmaaktekens (** of <b>) nooit in de database terechtkomen; database blijft schone platte tekst
+        const schoneTekst = (tekst || "").replace(/\*\*/g, '').replace(/<\/?b>/gi, '').trim();
+        window.liederenDatabase[titel] = schoneTekst;
         // Lokale cache meteen bijwerken zodat het nieuwe lied direct beschikbaar is.
         try { localStorage.setItem('liederenCache', JSON.stringify(window.liederenDatabase)); } catch (e) {}
         try {
@@ -2209,7 +2211,7 @@ Bijbelliederen`;
             const res = await fetch(DATA_URL + "/liederen", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id: titel, tekst: tekst, toegevoegd_door: huidigeGem })
+                body: JSON.stringify({ id: titel, tekst: schoneTekst, toegevoegd_door: huidigeGem })
             });
             if (!res.ok) throw new Error("status " + res.status);
             window.toonToast(`'${titel}' succesvol opgeslagen in de database!`, "success");
@@ -2220,11 +2222,13 @@ Bijbelliederen`;
     }
 
     async function slaBijbelOpInCloud(referentie, tekst) {
+        // Zorg dat opmaaktekens (** of <b>) nooit in de database terechtkomen; database blijft schone platte tekst
+        const schoneTekst = (tekst || "").replace(/\*\*/g, '').replace(/<\/?b>/gi, '').trim();
         try {
             const res = await fetch(DATA_URL + "/bijbel_hsv", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id: referentie, tekst: tekst })
+                body: JSON.stringify({ id: referentie, tekst: schoneTekst })
             });
             if (!res.ok) throw new Error("status " + res.status);
             window.toonToast(`'${referentie}' succesvol opgeslagen in de database!`, "success");
@@ -2417,7 +2421,7 @@ Bijbelliederen`;
         document.getElementById('modalKnoppen3').classList.add('flex');
         updateLiedbundelKnop(tijdelijkeTitel, tijdelijkeType);
         
-        document.getElementById('opslaanKnop').innerText = (tijdelijkeType === "Zang") ? "Wijziging Opslaan in Cloud" : "Wijziging Opslaan";
+        document.getElementById('opslaanKnop').innerText = "Wijziging Opslaan voor deze Dia";
         document.getElementById('controleModal').classList.remove('hidden');
     }
 
@@ -2482,19 +2486,12 @@ Bijbelliederen`;
         const isStandaardLied = /^(weerklank|dnp psalm|psalm \d+)/i.test(tijdelijkeTitel);
         
         if (isAanHetBewerken) {
-            if (isStandaardLied && liturgieVolgorde[huidigeBewerkIndex].type === "Zang") {
-                window.toonToast("Aangepast voor deze liturgie (standaardlied in database blijft beschermd).", "info");
-            } else {
-                if (liturgieVolgorde[huidigeBewerkIndex].type === "Zang") {
-                    slaLiedOpInCloud(tijdelijkeTitel, nieuweTekst);
-                } else if (liturgieVolgorde[huidigeBewerkIndex].type === "Schriftlezing") {
-                    slaBijbelOpInCloud(tijdelijkeTitel.replace(" (HSV)", ""), nieuweTekst);
-                }
-            }
+            // Wijzigingen aan een dia (inclusief vette tekst en uitlijning) zijn specifiek voor deze dia en worden NIET in de cloud opgeslagen
             liturgieVolgorde[huidigeBewerkIndex].tekst = nieuweTekst;
             if (modalGekozenAlign) {
                 liturgieVolgorde[huidigeBewerkIndex].align = modalGekozenAlign;
             }
+            window.toonToast("Wijziging opgeslagen voor deze dia.", "success");
         } else {
             if (tijdelijkeType === "Zang") {
                 if (!isStandaardLied) {
