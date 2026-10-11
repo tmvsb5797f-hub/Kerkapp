@@ -315,7 +315,14 @@
 
 <header class="mb-8 md:mb-14 pt-8 px-4 md:px-12 max-w-[1400px] mx-auto w-full flex flex-col md:flex-row md:justify-between md:items-end gap-5">
     <div>
-        <h1 onclick="checkOnderhoudCode()" class="text-2xl md:text-3xl font-bold tracking-tight mb-1 cursor-default select-none">Liturgie Assistent <span class="text-[#007AFF]">Pro</span></h1>
+        <div class="flex items-center gap-3 flex-wrap mb-1">
+            <h1 onclick="checkOnderhoudCode()" class="text-2xl md:text-3xl font-bold tracking-tight cursor-default select-none">Liturgie Assistent <span class="text-[#007AFF]">Pro</span></h1>
+            <button type="button" onclick="openGemeenteModal()" id="gemeenteBadgeBtn" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-[#007AFF] hover:bg-blue-100 transition-colors border border-blue-100 shadow-sm cursor-pointer" title="Klik om van gemeente te wisselen of een nieuwe toe te voegen">
+                <span>⛪</span>
+                <span id="headerGemeenteNaam">Bethelkerk Maassluis</span>
+                <svg class="w-3 h-3 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+        </div>
         
         <div class="flex items-center gap-3 mt-3 flex-wrap">
             <div class="flex items-center gap-1.5 text-[#86868B] text-sm font-medium">
@@ -516,13 +523,16 @@
 <div id="archiefModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/20 backdrop-blur-xl transition-opacity">
     <div class="bg-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] w-11/12 max-w-md overflow-hidden flex flex-col transform transition-all modal-animate max-h-[85vh]">
         <div class="p-5 border-b border-gray-100 flex justify-between items-center flex-shrink-0">
-            <h3 class="text-lg font-bold text-[#1D1D1F]">Archief</h3>
+            <div>
+                <h3 class="text-lg font-bold text-[#1D1D1F]">Archief</h3>
+                <p id="archiefGemeenteLabel" class="text-[11px] text-[#007AFF] font-medium flex items-center gap-1 mt-0.5"><span>⛪</span> <span id="archiefGemeenteNaam">Bethelkerk Maassluis</span></p>
+            </div>
             <button onclick="document.getElementById('archiefModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 p-1">
                 <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
         <div class="p-5 overflow-y-auto">
-            <p class="text-xs text-gray-400 mb-3">Opgeslagen liturgieën. Klik op 'Laden' om er één terug te zetten. Foto's en QR-codes worden niet meegearchiveerd.</p>
+            <p class="text-xs text-gray-400 mb-3">Opgeslagen liturgieën voor deze gemeente. Klik op 'Laden' om er één terug te zetten. Foto's en QR-codes worden niet meegearchiveerd.</p>
             <div id="archiefLijst" class="flex flex-col gap-2"></div>
         </div>
     </div>
@@ -557,7 +567,19 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
-        <div class="p-5 flex flex-col gap-5 overflow-y-auto">
+        <div class="p-5 flex flex-col gap-4 overflow-y-auto">
+            <div class="flex items-center justify-between p-3.5 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
+                <div class="flex items-center gap-2.5 min-w-0 pr-2">
+                    <span class="text-xl flex-shrink-0">⛪</span>
+                    <div class="min-w-0">
+                        <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Mijn Gemeente</span>
+                        <span id="infoGemeenteNaam" class="text-sm font-bold text-[#1D1D1F] dark:text-white truncate block">Bethelkerk Maassluis</span>
+                    </div>
+                </div>
+                <button type="button" onclick="document.getElementById('infoModal').classList.add('hidden'); openGemeenteModal();" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-[#007AFF] bg-white dark:bg-gray-700 hover:bg-blue-50 border border-gray-200 dark:border-gray-600 transition-colors shadow-sm flex-shrink-0">
+                    Wijzigen
+                </button>
+            </div>
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
@@ -1328,18 +1350,188 @@
         return JSON.parse(JSON.stringify(licht));
     }
 
+    // --- GEMEENTE SELECTIE & BEHEER ---
+    const STANDAARD_GEMEENTE = "Bethelkerk Maassluis";
+    let tijdelijkeGeselecteerdeGemeente = STANDAARD_GEMEENTE;
+
+    window.getActieveGemeente = function() {
+        return localStorage.getItem('actieveGemeente') || STANDAARD_GEMEENTE;
+    };
+
+    window.laadBekendeGemeenten = function() {
+        let lijst = [STANDAARD_GEMEENTE];
+        try {
+            const lokaal = JSON.parse(localStorage.getItem('bekendeGemeenten') || "[]");
+            if (Array.isArray(lokaal)) {
+                lokaal.forEach(g => {
+                    const clean = (g || '').trim();
+                    if (clean && !lijst.includes(clean)) lijst.push(clean);
+                });
+            }
+        } catch (e) {}
+        return lijst;
+    };
+
+    window.syncGemeentenUitCloud = async function() {
+        try {
+            await authKlaar;
+            const snap = await db.collection("gemeenten").limit(50).get();
+            let bijgewerkt = false;
+            let huidigeLijst = window.laadBekendeGemeenten();
+            snap.forEach(doc => {
+                const data = doc.data() || {};
+                const naam = (data.naam || doc.id || '').trim();
+                if (naam && !huidigeLijst.some(g => g.toLowerCase() === naam.toLowerCase())) {
+                    huidigeLijst.push(naam);
+                    bijgewerkt = true;
+                }
+            });
+            if (bijgewerkt) {
+                localStorage.setItem('bekendeGemeenten', JSON.stringify(huidigeLijst));
+                renderGemeenteLijst();
+            }
+        } catch (e) {
+            console.warn("Gemeenten sync niet beschikbaar:", e);
+        }
+    };
+
+    window.openGemeenteModal = function(verplicht = false) {
+        const modal = document.getElementById('gemeenteModal');
+        if (!modal) return;
+        const sluitBtn = document.getElementById('sluitGemeenteModalBtn');
+        const huidige = window.getActieveGemeente();
+        tijdelijkeGeselecteerdeGemeente = huidige;
+
+        if (sluitBtn) {
+            sluitBtn.style.display = (verplicht && !localStorage.getItem('actieveGemeente')) ? 'none' : 'block';
+        }
+
+        renderGemeenteLijst();
+        modal.classList.remove('hidden');
+        window.syncGemeentenUitCloud();
+    };
+
+    window.sluitGemeenteModal = function() {
+        const modal = document.getElementById('gemeenteModal');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    function renderGemeenteLijst() {
+        const container = document.getElementById('gemeenteKeuzeLijst');
+        if (!container) return;
+        const lijst = window.laadBekendeGemeenten();
+        const huidige = tijdelijkeGeselecteerdeGemeente || window.getActieveGemeente();
+        
+        container.innerHTML = lijst.map(naam => {
+            const isGekozen = (naam.toLowerCase() === huidige.toLowerCase());
+            const isStandaard = (naam === STANDAARD_GEMEENTE);
+            return `
+                <div onclick="selecteerGemeenteOptie('${escapeHtml(naam)}')" class="p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${isGekozen ? 'border-[#007AFF] bg-blue-50/60 shadow-sm' : 'border-gray-200 bg-white hover:bg-gray-50'}">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0 ${isGekozen ? 'bg-[#007AFF] text-white' : 'bg-gray-100 text-gray-500'}">
+                            ⛪
+                        </div>
+                        <div class="min-w-0">
+                            <span class="text-sm font-bold text-[#1D1D1F] block truncate">${escapeHtml(naam)}</span>
+                            ${isStandaard ? '<span class="text-[10px] font-semibold text-[#007AFF] uppercase tracking-wider block">Standaard kerk</span>' : ''}
+                        </div>
+                    </div>
+                    <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${isGekozen ? 'border-[#007AFF] bg-[#007AFF]' : 'border-gray-300 bg-white'}">
+                        ${isGekozen ? '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>' : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        const btn = document.getElementById('gemeenteBevestigTekst');
+        if (btn) btn.textContent = `Aan de slag met ${huidige}`;
+    }
+
+    window.selecteerGemeenteOptie = function(naam) {
+        tijdelijkeGeselecteerdeGemeente = naam;
+        renderGemeenteLijst();
+    };
+
+    window.toggleNieuweKerkInvoer = function() {
+        const vak = document.getElementById('nieuweKerkVak');
+        if (!vak) return;
+        const isHidden = vak.classList.contains('hidden');
+        vak.classList.toggle('hidden');
+        if (isHidden) {
+            const inp = document.getElementById('nieuweKerkInput');
+            if (inp) { inp.value = ''; inp.focus(); }
+        }
+    };
+
+    window.voegNieuweKerkToe = function() {
+        const inp = document.getElementById('nieuweKerkInput');
+        if (!inp) return;
+        const naam = inp.value.trim();
+        if (!naam) { window.toonToast("Vul eerst een kerknaam in.", "error"); return; }
+        if (naam.length < 3) { window.toonToast("Kerknaam is te kort.", "error"); return; }
+
+        let lijst = window.laadBekendeGemeenten();
+        if (!lijst.some(g => g.toLowerCase() === naam.toLowerCase())) {
+            lijst.push(naam);
+            localStorage.setItem('bekendeGemeenten', JSON.stringify(lijst));
+            try {
+                db.collection("gemeenten").doc(naam).set({
+                    naam: naam,
+                    aangemaaktOp: firebase.firestore.FieldValue.serverTimestamp()
+                }).catch(() => {});
+            } catch(e) {}
+        }
+        
+        tijdelijkeGeselecteerdeGemeente = naam;
+        renderGemeenteLijst();
+        inp.value = '';
+        document.getElementById('nieuweKerkVak').classList.add('hidden');
+        window.toonToast(`'${naam}' toegevoegd!`, "success");
+    };
+
+    window.bevestigGemeenteKeuze = function() {
+        const gekozen = tijdelijkeGeselecteerdeGemeente || STANDAARD_GEMEENTE;
+        localStorage.setItem('actieveGemeente', gekozen);
+        updateGemeenteUI(gekozen);
+        sluitGemeenteModal();
+        window.toonToast(`Actieve gemeente: ${gekozen}`, "success");
+    };
+
+    function updateGemeenteUI(naam) {
+        const headerLabel = document.getElementById('headerGemeenteNaam');
+        if (headerLabel) headerLabel.textContent = naam;
+        const infoLabel = document.getElementById('infoGemeenteNaam');
+        if (infoLabel) infoLabel.textContent = naam;
+        const archiefLabel = document.getElementById('archiefGemeenteNaam');
+        if (archiefLabel) archiefLabel.textContent = naam;
+    }
+
+    function initGemeente() {
+        const opgeslagen = localStorage.getItem('actieveGemeente');
+        if (!opgeslagen) {
+            updateGemeenteUI(STANDAARD_GEMEENTE);
+            setTimeout(() => {
+                window.openGemeenteModal(false);
+            }, 600);
+        } else {
+            updateGemeenteUI(opgeslagen);
+        }
+    }
+
     window.slaLiturgieOp = async function() {
         if (liturgieVolgorde.length === 0) { window.toonToast("Nog niets om op te slaan.", "error"); return; }
         const datum = document.getElementById('datumInput').value || 'Zonder datum';
         const voorganger = document.getElementById('voorgangerInput').value || '';
+        const huidigeGem = window.getActieveGemeente();
         try {
             await db.collection("liturgieen").add({
+                gemeente: huidigeGem,
                 datum: datum,
                 voorganger: voorganger,
                 items: liturgieVoorOpslag(),
                 opgeslagenOp: firebase.firestore.FieldValue.serverTimestamp()
             });
-            window.toonToast("Liturgie opgeslagen in archief!", "success");
+            window.toonToast(`Liturgie opgeslagen in archief van ${huidigeGem}!`, "success");
         } catch (e) {
             console.error("Opslaan mislukt:", e);
             window.toonToast("Opslaan mislukt (mogelijk te groot).", "error");
@@ -1353,16 +1545,29 @@
 
     async function laadArchiefLijst() {
         const lijst = document.getElementById('archiefLijst');
+        const huidigeGem = window.getActieveGemeente();
+        const archiefLabel = document.getElementById('archiefGemeenteNaam');
+        if (archiefLabel) archiefLabel.textContent = huidigeGem;
+        
         lijst.innerHTML = '<p class="text-xs text-gray-400 text-center py-3">Laden...</p>';
         try {
             const snap = await db.collection("liturgieen").orderBy("opgeslagenOp", "desc").limit(50).get();
-            if (snap.empty) {
-                lijst.innerHTML = '<p class="text-xs text-gray-400 text-center py-3">Nog geen opgeslagen liturgieën.</p>';
+            const gefilterd = [];
+            snap.forEach(doc => {
+                const d = doc.data();
+                // Backwards compatibility: documenten zonder 'gemeente' horen bij Bethelkerk Maassluis
+                const docGem = d.gemeente || STANDAARD_GEMEENTE;
+                if (docGem.toLowerCase().trim() === huidigeGem.toLowerCase().trim()) {
+                    gefilterd.push({ doc, d });
+                }
+            });
+
+            if (gefilterd.length === 0) {
+                lijst.innerHTML = `<p class="text-xs text-gray-400 text-center py-4">Nog geen opgeslagen liturgieën voor <strong>${escapeHtml(huidigeGem)}</strong>.</p>`;
                 return;
             }
             lijst.innerHTML = '';
-            snap.forEach(doc => {
-                const d = doc.data();
+            gefilterd.forEach(({ doc, d }) => {
                 const aantal = (d.items || []).length;
                 const op = d.opgeslagenOp && d.opgeslagenOp.toDate ? d.opgeslagenOp.toDate() : null;
                 const wanneer = op ? op.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' }) + ' ' + op.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }) : '';
@@ -1377,7 +1582,7 @@
                     '<button class="arch-del text-gray-300 hover:text-[#FF3B30] p-1 flex-shrink-0" title="Verwijder"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>';
                 rij.querySelector('.arch-laad').onclick = () => laadArchiefLiturgie(d);
                 rij.querySelector('.arch-del').onclick = async () => {
-                    if (!confirm('Deze opgeslagen liturgie verwijderen?')) return;
+                    if (!confirm(`Deze opgeslagen liturgie van ${huidigeGem} verwijderen?`)) return;
                     await doc.ref.delete().catch(() => {});
                     laadArchiefLijst();
                 };
@@ -1924,10 +2129,11 @@ Bijbelliederen`;
         // Lokale cache meteen bijwerken zodat het nieuwe lied direct beschikbaar is.
         try { localStorage.setItem('liederenCache', JSON.stringify(window.liederenDatabase)); } catch (e) {}
         try {
+            const huidigeGem = window.getActieveGemeente ? window.getActieveGemeente() : "Bethelkerk Maassluis";
             const res = await fetch(DATA_URL + "/liederen", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id: titel, tekst: tekst })
+                body: JSON.stringify({ id: titel, tekst: tekst, toegevoegd_door: huidigeGem })
             });
             if (!res.ok) throw new Error("status " + res.status);
             window.toonToast(`'${titel}' succesvol opgeslagen in de database!`, "success");
@@ -2097,17 +2303,24 @@ Bijbelliederen`;
 
     window.slaHandmatigOp = function() {
         const nieuweTekst = document.getElementById('handmatigeTekst').value.trim();
+        const isStandaardLied = /^(weerklank|dnp psalm|psalm \d+)/i.test(tijdelijkeTitel);
         
         if (isAanHetBewerken) {
-            if (liturgieVolgorde[huidigeBewerkIndex].type === "Zang") {
-                slaLiedOpInCloud(tijdelijkeTitel, nieuweTekst);
-            } else if (liturgieVolgorde[huidigeBewerkIndex].type === "Schriftlezing") {
-                slaBijbelOpInCloud(tijdelijkeTitel.replace(" (HSV)", ""), nieuweTekst);
+            if (isStandaardLied && liturgieVolgorde[huidigeBewerkIndex].type === "Zang") {
+                window.toonToast("Aangepast voor deze liturgie (standaardlied in database blijft beschermd).", "info");
+            } else {
+                if (liturgieVolgorde[huidigeBewerkIndex].type === "Zang") {
+                    slaLiedOpInCloud(tijdelijkeTitel, nieuweTekst);
+                } else if (liturgieVolgorde[huidigeBewerkIndex].type === "Schriftlezing") {
+                    slaBijbelOpInCloud(tijdelijkeTitel.replace(" (HSV)", ""), nieuweTekst);
+                }
             }
             liturgieVolgorde[huidigeBewerkIndex].tekst = nieuweTekst;
         } else {
             if (tijdelijkeType === "Zang") {
-                slaLiedOpInCloud(tijdelijkeTitel, nieuweTekst);
+                if (!isStandaardLied) {
+                    slaLiedOpInCloud(tijdelijkeTitel, nieuweTekst);
+                }
             } else if (tijdelijkeType === "Schriftlezing") {
                 slaBijbelOpInCloud(tijdelijkeTitel.replace(" (HSV)", ""), nieuweTekst);
             }
@@ -2472,6 +2685,7 @@ Bijbelliederen`;
         const meeleesId = new URLSearchParams(location.search).get('meelees');
         if (meeleesId) { toonMeeleesPagina(meeleesId); return; }
 
+        initGemeente();
         herstelLiturgie();
         checkBijbelAPI();
         ontdekAI().then(() => { console.log("AI Modellen geladen."); });
@@ -5429,6 +5643,52 @@ window.verstuurExportFeedback = async function() {
                 <button onclick="sluitExportFeedback()" class="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors">Overslaan</button>
                 <button onclick="verstuurExportFeedback()" class="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#007AFF] hover:bg-blue-600 transition-colors shadow-sm">Versturen</button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- GEMEENTE KEUZE MODAL -->
+<div id="gemeenteModal" class="fixed inset-0 z-[130] hidden flex items-center justify-center bg-black/25 backdrop-blur-xl transition-opacity p-4" onclick="if(event.target === this && localStorage.getItem('actieveGemeente')) sluitGemeenteModal()">
+    <div class="bg-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] w-full max-w-md overflow-hidden flex flex-col transform transition-all modal-animate">
+        <div class="p-5 border-b border-gray-100 flex justify-between items-center flex-shrink-0">
+            <div class="flex items-center gap-2.5">
+                <span class="text-2xl">⛪</span>
+                <div>
+                    <h3 class="text-base font-bold text-[#1D1D1F]">Kies je Gemeente</h3>
+                    <p class="text-[11px] text-gray-400">Liturgieën en instellingen veilig per kerk gescheiden</p>
+                </div>
+            </div>
+            <button type="button" id="sluitGemeenteModalBtn" onclick="sluitGemeenteModal()" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div class="p-5 flex flex-col gap-4 overflow-y-auto max-h-[75vh]">
+            <p class="text-xs text-gray-500 leading-relaxed">
+                Kies voor welke kerk je de liturgie en PowerPoint maakt. Zo heeft elke kerk zijn eigen archief en blijven liederen en diensten netjes bewaard.
+            </p>
+            
+            <!-- Dynamische lijst met kerken -->
+            <div id="gemeenteKeuzeLijst" class="flex flex-col gap-2"></div>
+
+            <!-- Nieuwe kerk toevoegen toggle/invoer -->
+            <div class="pt-2 border-t border-gray-100">
+                <button type="button" id="toonNieuweKerkBtn" onclick="toggleNieuweKerkInvoer()" class="text-xs font-semibold text-[#007AFF] hover:underline flex items-center gap-1.5 py-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    <span>Andere kerk toevoegen</span>
+                </button>
+                <div id="nieuweKerkVak" class="hidden mt-2.5 flex flex-col gap-2">
+                    <input type="text" id="nieuweKerkInput" placeholder="Bijv. Kruiskerk Bergschenhoek" class="w-full bg-[#F5F5F7] border border-gray-200 rounded-xl py-2 px-3 text-sm placeholder-gray-400 outline-none focus:border-[#007AFF] transition-all" onkeypress="if(event.key === 'Enter') voegNieuweKerkToe()"/>
+                    <button type="button" onclick="voegNieuweKerkToe()" class="py-2 px-4 rounded-xl text-xs font-semibold text-white bg-[#007AFF] hover:bg-blue-600 transition-colors shadow-sm self-end">
+                        Voeg toe & Selecteer
+                    </button>
+                </div>
+            </div>
+
+            <!-- Opslaan knop -->
+            <button type="button" onclick="bevestigGemeenteKeuze()" class="w-full mt-2 py-3 rounded-xl text-sm font-semibold text-white bg-[#007AFF] hover:bg-blue-600 transition-all shadow-md flex items-center justify-center gap-2">
+                <span id="gemeenteBevestigTekst">Aan de slag met Bethelkerk Maassluis</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </button>
         </div>
     </div>
 </div>
