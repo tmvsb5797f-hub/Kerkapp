@@ -394,7 +394,7 @@
     <div class="flex flex-col items-start md:items-end gap-3 w-full md:w-auto mt-4 md:mt-0">
         
         <div class="flex flex-wrap gap-2 items-center w-full md:w-auto">
-            <div class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-gray-100 transition-all flex-grow md:flex-grow-0 justify-center">
+            <div onclick="checkBijbelAPI(true)" class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-gray-100 transition-all flex-grow md:flex-grow-0 justify-center cursor-pointer hover:bg-gray-50 active:scale-95" title="Klik om de Bijbel API status opnieuw te controleren">
                 <span id="bijbelDot" class="w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse"></span>
                 <span id="bijbelBadge" class="text-[12px] font-semibold text-gray-600 tracking-wide">Bijbel API...</span>
             </div>
@@ -1699,12 +1699,32 @@
         if(status === 'ok') dot.className = "w-2.5 h-2.5 rounded-full bg-[#34C759] shadow-[0_0_8px_rgba(52,199,89,0.6)]";
         if(status === 'err') dot.className = "w-2.5 h-2.5 rounded-full bg-[#FF3B30] shadow-[0_0_8px_rgba(255,59,48,0.6)]";
     }
-    async function checkBijbelAPI() {
+    async function checkBijbelAPI(isHandmatig = false) {
+        if (isHandmatig) {
+            const dot = document.getElementById('bijbelDot');
+            const badge = document.getElementById('bijbelBadge');
+            if (dot) dot.className = "w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse";
+            if (badge) badge.innerText = "Controleren...";
+        }
         try {
-            const res = await fetch('https://bolls.life/get-chapter/HSV17/1/1/');
-            if (res.ok) { setBijbelStatus('ok', 'Bijbel API Actief'); }
-            else { setBijbelStatus('err', 'Bijbel API Fout'); }
-        } catch(e) { setBijbelStatus('err', 'Bijbel API Offline'); }
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 6000);
+            const res = await fetch('https://bolls.life/get-books/HSV17/', { 
+                signal: controller.signal,
+                headers: { 'Accept': 'application/json' }
+            });
+            clearTimeout(timeoutId);
+            if (res.ok) { 
+                setBijbelStatus('ok', 'Bijbel API Actief'); 
+                if (isHandmatig && window.toonToast) window.toonToast("Bijbel API is actief!", "success");
+            } else { 
+                setBijbelStatus('err', 'Bijbel API Fout'); 
+                if (isHandmatig && window.toonToast) window.toonToast("Bijbel API antwoordt niet goed. AI backup is gereed.", "warning");
+            }
+        } catch(e) { 
+            setBijbelStatus('err', 'Bijbel API Offline'); 
+            if (isHandmatig && window.toonToast) window.toonToast("Bijbel API offline. AI backup is gereed.", "warning");
+        }
     }
 
     const bijbelBoeken = ["Genesis", "Exodus", "Leviticus", "Numeri", "Deuteronomium", "Jozua", "Richteren", "Ruth", "1 Samuël", "2 Samuël", "1 Koningen", "2 Koningen", "1 Kronieken", "2 Kronieken", "Ezra", "Nehemia", "Esther", "Job", "Psalmen", "Spreuken", "Prediker", "Hooglied", "Jesaja", "Jeremia", "Klaagliederen", "Ezechiël", "Daniël", "Hosea", "Joël", "Amos", "Obadja", "Jona", "Micha", "Nahum", "Habakuk", "Zefanja", "Haggai", "Zacharia", "Maleachi", "Mattheüs", "Markus", "Lukas", "Johannes", "Handelingen", "Romeinen", "1 Korinthe", "2 Korinthe", "Galaten", "Efeze", "Filippenzen", "Kolossensen", "1 Thessalonicensen", "2 Thessalonicensen", "1 Timotheüs", "2 Timotheüs", "Titus", "Filemon", "Hebreeën", "Jakobus", "1 Petrus", "2 Petrus", "1 Johannes", "2 Johannes", "3 Johannes", "Judas", "Openbaring"];
@@ -2686,28 +2706,36 @@ Bijbelliederen`;
         const boekNr = boekNaarNummer(parsed.boek);
         if (!boekNr) return null;
 
-        const res = await fetch(`https://bolls.life/get-chapter/HSV17/${boekNr}/${parsed.hoofdstuk}/`);
-        if (!res.ok) return null;
-        const verzen = await res.json();
-        if (!Array.isArray(verzen) || verzen.length === 0) return null;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 7000);
+        try {
+            const res = await fetch(`https://bolls.life/get-chapter/HSV17/${boekNr}/${parsed.hoofdstuk}/`, { signal: controller.signal });
+            clearTimeout(timeoutId);
+            if (!res.ok) return null;
+            const verzen = await res.json();
+            if (!Array.isArray(verzen) || verzen.length === 0) return null;
 
-        // Geen versaanduiding? Dan het hele hoofdstuk. Anders alleen de gekozen verzen
-        // (ondersteunt losse verzen én komma-lijsten, bijv. "1, 4").
-        const gefilterd = parsed.verzenSet
-            ? verzen.filter(v => parsed.verzenSet.has(v.verse))
-            : verzen;
-        if (gefilterd.length === 0) return null;
-        return gefilterd.map(v => {
-            let t = v.text
-                .replace(/<[^>]*>/g, '')
-                .replace(/[Ⓐ-ⓩ①-⑳⓪-⓿]/g, '')
-                .replace(/[¹²³⁰-₟]/g, '')
-                .replace(/[†‡§¶※⸮⁂⁋⁓]/g, '')
-                .replace(/\[\d+\]/g, '')
-                .replace(/\s{2,}/g, ' ')
-                .trim();
-            return v.verse + ' ' + t;
-        }).join('\n');
+            // Geen versaanduiding? Dan het hele hoofdstuk. Anders alleen de gekozen verzen
+            // (ondersteunt losse verzen én komma-lijsten, bijv. "1, 4").
+            const gefilterd = parsed.verzenSet
+                ? verzen.filter(v => parsed.verzenSet.has(v.verse))
+                : verzen;
+            if (gefilterd.length === 0) return null;
+            return gefilterd.map(v => {
+                let t = v.text
+                    .replace(/<[^>]*>/g, '')
+                    .replace(/[Ⓐ-ⓩ①-⑳⓪-⓿]/g, '')
+                    .replace(/[¹²³⁰-₟]/g, '')
+                    .replace(/[†‡§¶※⸮⁂⁋⁓]/g, '')
+                    .replace(/\[\d+\]/g, '')
+                    .replace(/\s{2,}/g, ' ')
+                    .trim();
+                return v.verse + ' ' + t;
+            }).join('\n');
+        } catch(e) {
+            clearTimeout(timeoutId);
+            return null;
+        }
     }
 
     async function haalBijbelViaAI(referentie) {
@@ -2717,6 +2745,7 @@ Bijbelliederen`;
                 <span class="text-[#007AFF] font-medium animate-pulse text-[12px]">HSV ophalen: <b>${escapeHtml(referentie)}</b>...</span>
             </div>`;
 
+        // 1. Eerst proberen via snelle bolls.life API
         try {
             const apiTekst = await haalBijbelViaAPI(referentie);
             if (apiTekst && apiTekst.length > 10) {
@@ -2726,6 +2755,34 @@ Bijbelliederen`;
             }
         } catch(e) { console.warn("Bijbel API niet bereikbaar:", e); }
 
+        // 2. Als de API offline of overbelast is: haal betrouwbaar op via Gemini AI
+        if (gevondenModel) {
+            try {
+                preview.innerHTML = `
+                    <div class="flex flex-col items-center justify-center gap-2">
+                        <span class="text-purple-600 font-medium animate-pulse text-[12px]">AI Backup ophalen: <b>${escapeHtml(referentie)}</b>...</span>
+                    </div>`;
+                const aiPrompt = `Geef de letterlijke tekst van de Herziene Statenvertaling (HSV) voor: "${referentie}". Formaat: elk vers op een nieuwe regel beginnend met het versnummer (bijv. "1 In het begin schiep God de hemel en de aarde."). Geef uitsluitend de Bijbeltekst, geen toelichting of extra commentaar.`;
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
+                const response = await fetch(`${PROXY_URL}/v1beta/${gevondenModel}:generateContent`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: aiPrompt }] }] }),
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                const data = await response.json();
+                const aiTekst = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+                if (aiTekst && aiTekst.length > 10) {
+                    preview.innerHTML = `<div class="text-white text-[11px] text-center px-4 italic opacity-80 whitespace-pre-line">${escapeHtml(aiTekst.split('\n').slice(0, 4).join('\n'))}...</div>`;
+                    window.toonControleModal(referentie + " (HSV)", aiTekst, "Schriftlezing");
+                    return;
+                }
+            } catch(aiErr) { console.warn("AI backup ophalen mislukt:", aiErr); }
+        }
+
+        // 3. Fallback als beide niet bereikbaar zijn
         preview.innerHTML = `<div class="flex flex-col items-center justify-center gap-2"><span class="text-[#FF3B30] font-medium text-[12px]">Tekst niet gevonden — typ of plak de tekst handmatig.</span></div>`;
         window.toonControleModal(referentie + " (HSV)", "", "Schriftlezing");
         window.kiesHandmatig();
