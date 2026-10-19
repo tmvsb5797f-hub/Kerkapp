@@ -696,14 +696,10 @@
                 <!-- AI Aangepaste Banner Maker -->
                 <div class="mt-2 pt-2.5 border-t border-gray-200/80 dark:border-gray-700 flex flex-col gap-1.5">
                     <label for="aiBannerPrompt" class="text-[11px] font-bold text-gray-700 dark:text-gray-200 flex items-center justify-between">
-                        <span class="flex items-center gap-1.5">
-                            <span>✨</span>
-                            <span>Eigen thema ontwerpen (AI)</span>
-                        </span>
-                        <span class="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">Behoudt altijd het kruis ✝️</span>
+                        <span>Eigen thema ontwerpen</span>
                     </label>
                     <div class="flex gap-1.5">
-                        <input id="aiBannerPrompt" type="text" placeholder="Bijv: Biddag, Dankdag, Doopdienst..." class="flex-grow bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 text-xs text-[#1D1D1F] dark:text-white placeholder-gray-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-[#007AFF]/20 transition-all" onkeypress="if(event.key === 'Enter') genereerAiBanner()">
+                        <input id="aiBannerPrompt" type="text" placeholder="Bijv: Biddag, Belijdenis, Doopdienst..." class="flex-grow bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 text-xs text-[#1D1D1F] dark:text-white placeholder-gray-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-[#007AFF]/20 transition-all" onkeypress="if(event.key === 'Enter') genereerAiBanner()">
                         <button id="aiBannerBtn" type="button" onclick="genereerAiBanner()" class="px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-[#007AFF] to-[#5856D6] hover:from-blue-600 hover:to-indigo-600 transition-all shadow-sm flex items-center gap-1.5 active:scale-95 flex-shrink-0" title="Genereer een unieke pastorale vectorbanner">
                             <span id="aiBannerBtnSpinner" class="hidden">⏳</span>
                             <span id="aiBannerBtnText">Genereer</span>
@@ -712,11 +708,12 @@
                     <!-- Snelle suggesties -->
                     <div class="flex items-center gap-1 mt-1 flex-wrap">
                         <span class="text-[9px] text-gray-400 uppercase font-bold mr-0.5">Suggesties:</span>
-                        <button type="button" onclick="gebruikAiBannerSuggestie('Biddag voor gewas en arbeid')" class="text-[10px] px-2 py-0.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] hover:border-[#007AFF] transition-all">🌾 Biddag</button>
-                        <button type="button" onclick="gebruikAiBannerSuggestie('Dankdag voor gewas en arbeid')" class="text-[10px] px-2 py-0.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] hover:border-[#007AFF] transition-all">🍎 Dankdag</button>
-                        <button type="button" onclick="gebruikAiBannerSuggestie('Doopdienst van een kind')" class="text-[10px] px-2 py-0.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] hover:border-[#007AFF] transition-all">💧 Doop</button>
-                        <button type="button" onclick="gebruikAiBannerSuggestie('Viering van het Heilig Avondmaal')" class="text-[10px] px-2 py-0.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] hover:border-[#007AFF] transition-all">🍷 Avondmaal</button>
-                        <button type="button" onclick="gebruikAiBannerSuggestie('Huwelijksdienst en inzegening')" class="text-[10px] px-2 py-0.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] hover:border-[#007AFF] transition-all">💍 Huwelijk</button>
+                        <button type="button" onclick="gebruikAiBannerSuggestie('Biddag')" class="text-[10px] px-2 py-0.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] hover:border-[#007AFF] transition-all">Biddag</button>
+                        <button type="button" onclick="gebruikAiBannerSuggestie('Dankdag')" class="text-[10px] px-2 py-0.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] hover:border-[#007AFF] transition-all">Dankdag</button>
+                        <button type="button" onclick="gebruikAiBannerSuggestie('Belijdenis')" class="text-[10px] px-2 py-0.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] hover:border-[#007AFF] transition-all">Belijdenis</button>
+                        <button type="button" onclick="gebruikAiBannerSuggestie('Doopdienst')" class="text-[10px] px-2 py-0.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] hover:border-[#007AFF] transition-all">Doop</button>
+                        <button type="button" onclick="gebruikAiBannerSuggestie('Avondmaal')" class="text-[10px] px-2 py-0.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] hover:border-[#007AFF] transition-all">Avondmaal</button>
+                        <button type="button" onclick="gebruikAiBannerSuggestie('Huwelijksdienst')" class="text-[10px] px-2 py-0.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] hover:border-[#007AFF] transition-all">Huwelijk</button>
                     </div>
                 </div>
             </div>
@@ -1400,10 +1397,212 @@
         return svgStr;
     }
 
+    // Kwaliteitscontrole: detecteert te simpele, grauwe of grijze SVG-vormen van de AI
+    function isSlechteOfGrijzeSvg(svgStr) {
+        if (!svgStr || typeof svgStr !== 'string') return true;
+        const s = svgStr.toLowerCase();
+        if (!s.includes('<svg') || !s.includes('</svg>')) return true;
+        
+        // Moet ten minste 2 heuvelpaden bevatten voor een echt landschap
+        const pathCount = (s.match(/<path/g) || []).length;
+        if (pathCount < 2) return true;
+
+        // Controleer op lelijke grijze cirkels of dominante grauwe grijstinten
+        const heeftGrijzeCirkel = /<circle[^>]*fill=["'](#ccc|#888|#999|#aaa|#bbb|#ddd|#eee|gray|grey|#777|#666|#555)["']/i.test(s);
+        if (heeftGrijzeCirkel) return true;
+
+        // Moet sfeervolle kleurverlopen (gradients) bevatten
+        if (!s.includes('gradient')) return true;
+
+        return false;
+    }
+
     // Lokale instant fallbacks met hoogwaardige vector graphics inclusief kruis
     function maakLokaleThemaFallback(promptTekst = '') {
-        const p = (promptTekst || '').toLowerCase();
+        const p = (promptTekst || '').toLowerCase().trim();
         
+        // 1. Belijdenis (Openbare geloofsbelijdenis)
+        if (p.includes('belijd') || p.includes('geloof') || p.includes('jawoord') || p.includes('belofte')) {
+            return {
+                naam: 'Belijdenis',
+                icoon: '📖',
+                beschrijving: 'Open Bijbel, lamp van geloof en kruis',
+                bg: 'linear-gradient(180deg,#fef9c3 0%,#fef08a 25%,#fffbeb 100%)',
+                headerKleur: '#ca8a04',
+                titelKleur: '#713f12',
+                subKleur: '#854d0e',
+                kaartBg: 'rgba(255,255,255,0.92)',
+                kaartTitel: '#422006',
+                kaartTekst: '#54300a',
+                divider: 'rgba(202,138,4,0.22)',
+                schaduw: 'rgba(202,138,4,0.12)',
+                voettekst: '#a16207',
+                svg: `<svg viewBox="0 0 400 170" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
+                    <defs>
+                        <linearGradient id="belijdenisLucht" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#fef08a"/>
+                            <stop offset="50%" stop-color="#fde047"/>
+                            <stop offset="100%" stop-color="#fed7aa"/>
+                        </linearGradient>
+                        <linearGradient id="belijdenisHeuvel" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#65a30d"/>
+                            <stop offset="100%" stop-color="#4d7c0f"/>
+                        </linearGradient>
+                        <radialGradient id="belijdenisZon" cx="28%" cy="50%" r="65%">
+                            <stop offset="0%" stop-color="#ffffff"/>
+                            <stop offset="40%" stop-color="#fef08a" stop-opacity="0.75"/>
+                            <stop offset="100%" stop-color="#fed7aa" stop-opacity="0"/>
+                        </radialGradient>
+                    </defs>
+                    <rect width="400" height="170" fill="url(#belijdenisLucht)"/>
+                    <circle cx="110" cy="70" r="110" fill="url(#belijdenisZon)"/>
+                    <circle cx="110" cy="70" r="28" fill="#ffffff"/>
+                    <g stroke="#ffffff" stroke-width="1.5" opacity="0.6" stroke-dasharray="4 3">
+                        <line x1="110" y1="70" x2="30" y2="10"/>
+                        <line x1="110" y1="70" x2="80" y2="5"/>
+                        <line x1="110" y1="70" x2="160" y2="8"/>
+                        <line x1="110" y1="70" x2="220" y2="25"/>
+                    </g>
+                    <path d="M0 122 Q120 88 230 116 T400 106 V170 H0 Z" fill="#84cc16" opacity="0.85"/>
+                    <path d="M0 136 Q140 108 270 136 T400 128 V170 H0 Z" fill="url(#belijdenisHeuvel)"/>
+                    <!-- Open Bijbel & Lamp op de heuvel -->
+                    <g transform="translate(85, 126)">
+                        <g transform="translate(-32, -4)">
+                            <rect x="-3" y="10" width="6" height="18" rx="2" fill="#fffbeb"/>
+                            <path d="M0 10 Q-3 5 0 0 Q3 5 0 10 Z" fill="#f59e0b"/>
+                            <path d="M0 9 Q-1.5 5 0 2 Q1.5 5 0 9 Z" fill="#fef08a"/>
+                            <circle cx="0" cy="5" r="7" fill="#fef08a" opacity="0.3"/>
+                        </g>
+                        <path d="M-22 18 Q0 12 0 14 Q0 12 22 18 L24 22 Q0 16 0 18 Q0 16 -24 22 Z" fill="#451a03"/>
+                        <path d="M-22 18 Q-11 13 0 14 L0 2 Q-11 1 -22 6 Z" fill="#ffffff"/>
+                        <path d="M22 18 Q11 13 0 14 L0 2 Q11 1 22 6 Z" fill="#f8fafc"/>
+                        <g stroke="#cbd5e1" stroke-width="0.8" opacity="0.8">
+                            <line x1="-18" y1="7" x2="-4" y2="5"/>
+                            <line x1="-18" y1="10" x2="-4" y2="8"/>
+                            <line x1="-18" y1="13" x2="-4" y2="11"/>
+                            <line x1="4" y1="5" x2="18" y2="7"/>
+                            <line x1="4" y1="8" x2="18" y2="10"/>
+                            <line x1="4" y1="11" x2="18" y2="13"/>
+                        </g>
+                        <path d="M0 2 Q4 10 2 24 Q6 28 8 26" stroke="#d97706" stroke-width="1.8" fill="none"/>
+                    </g>
+                    <!-- Olijftak -->
+                    <g transform="translate(145, 134) scale(0.9)">
+                        <path d="M0 18 Q10 8 25 4" stroke="#365314" stroke-width="1.6" fill="none"/>
+                        <ellipse cx="8" cy="11" rx="4" ry="2" transform="rotate(-30 8 11)" fill="#4d7c0f"/>
+                        <ellipse cx="16" cy="7" rx="4" ry="2" transform="rotate(20 16 7)" fill="#65a30d"/>
+                        <ellipse cx="24" cy="4" rx="3.5" ry="1.8" transform="rotate(-15 24 4)" fill="#84cc16"/>
+                    </g>
+                    <!-- Houten Kruis op de heuvel -->
+                    <g id="kruis" transform="translate(305, 58)">
+                        <rect x="-4.5" y="0" width="9" height="82" rx="2" fill="#5c381e"/>
+                        <rect x="-24" y="20" width="48" height="9" rx="2" fill="#5c381e"/>
+                    </g>
+                </svg>`
+            };
+        }
+
+        // 2. Pasen
+        if (p.includes('paas') || p.includes('pasen') || p.includes('opstanding') || p.includes('graf')) {
+            return {
+                naam: 'Pasen',
+                icoon: '🌸',
+                beschrijving: 'Zonsopgang, open graf en lelies',
+                bg: 'linear-gradient(180deg,#ffe1c2 0%,#fff2d6 24%,#fbf9f4 100%)',
+                headerKleur: '#d97706',
+                titelKleur: '#451a03',
+                subKleur: '#78350f',
+                kaartBg: 'rgba(255,255,255,0.92)',
+                kaartTitel: '#3a2010',
+                kaartTekst: '#573318',
+                divider: 'rgba(217,119,6,0.22)',
+                schaduw: 'rgba(180,83,9,0.12)',
+                voettekst: '#b45309',
+                svg: meeleesSceneSVG('pasen')
+            };
+        }
+
+        // 3. Kerst / Advent
+        if (p.includes('kerst') || p.includes('advent') || p.includes('stal') || p.includes('bethlehem') || p.includes('kribbe')) {
+            return {
+                naam: 'Kerst',
+                icoon: '⭐',
+                beschrijving: 'Sterrenhemel, ster van Bethlehem en stal',
+                bg: 'linear-gradient(180deg,#0f172a 0%,#1e293b 35%,#0f172a 100%)',
+                headerKleur: '#facc15',
+                titelKleur: '#f8fafc',
+                subKleur: '#cbd5e1',
+                kaartBg: 'rgba(30,41,59,0.85)',
+                kaartTitel: '#ffffff',
+                kaartTekst: '#e2e8f0',
+                divider: 'rgba(250,204,21,0.25)',
+                schaduw: 'rgba(0,0,0,0.35)',
+                voettekst: '#94a3b8',
+                svg: meeleesSceneSVG('kerst')
+            };
+        }
+
+        // 4. Hemelvaart
+        if (p.includes('hemelvaart') || p.includes('opneming')) {
+            return {
+                naam: 'Hemelvaart',
+                icoon: '☁️',
+                beschrijving: 'Hemelsblauwe wolken, stralen en duif',
+                bg: 'linear-gradient(180deg,#bae6fd 0%,#e0f2fe 26%,#f8fafc 100%)',
+                headerKleur: '#0284c7',
+                titelKleur: '#0c4a6e',
+                subKleur: '#0369a1',
+                kaartBg: 'rgba(255,255,255,0.92)',
+                kaartTitel: '#0f172a',
+                kaartTekst: '#334155',
+                divider: 'rgba(2,132,199,0.20)',
+                schaduw: 'rgba(2,132,199,0.10)',
+                voettekst: '#0284c7',
+                svg: meeleesSceneSVG('hemelvaart')
+            };
+        }
+
+        // 5. Pinksteren
+        if (p.includes('pinkster') || p.includes('geest') || p.includes('vlammen')) {
+            return {
+                naam: 'Pinksteren',
+                icoon: '🔥',
+                beschrijving: 'Vlammen van de Geest en duif',
+                bg: 'linear-gradient(180deg,#fed7aa 0%,#ffedd5 24%,#fff7ed 100%)',
+                headerKleur: '#ea580c',
+                titelKleur: '#7c2d12',
+                subKleur: '#9a3412',
+                kaartBg: 'rgba(255,255,255,0.92)',
+                kaartTitel: '#431407',
+                kaartTekst: '#5c1d09',
+                divider: 'rgba(234,88,12,0.22)',
+                schaduw: 'rgba(234,88,12,0.12)',
+                voettekst: '#c2410c',
+                svg: meeleesSceneSVG('pinksteren')
+            };
+        }
+
+        // 6. Lijdenstijd / Goede Vrijdag
+        if (p.includes('lijden') || p.includes('goede vrijdag') || p.includes('golgotha') || p.includes('kruisiging')) {
+            return {
+                naam: 'Lijdenstijd',
+                icoon: '✝️',
+                beschrijving: 'Drie kruisen op Golgotha bij avondgloed',
+                bg: 'linear-gradient(180deg,#e9d5ff 0%,#f5d0fe 24%,#faf5ff 100%)',
+                headerKleur: '#7e22ce',
+                titelKleur: '#3b0764',
+                subKleur: '#581c87',
+                kaartBg: 'rgba(255,255,255,0.92)',
+                kaartTitel: '#3b0764',
+                kaartTekst: '#4a154b',
+                divider: 'rgba(126,34,206,0.20)',
+                schaduw: 'rgba(126,34,206,0.10)',
+                voettekst: '#7e22ce',
+                svg: meeleesSceneSVG('lijdenstijd')
+            };
+        }
+
+        // 7. Biddag
         if (p.includes('bid') || p.includes('oogst') || p.includes('gewas') || p.includes('arbeid') || p.includes('zaai')) {
             return {
                 naam: 'Biddag',
@@ -1422,18 +1621,13 @@
                 svg: `<svg viewBox="0 0 400 170" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
                     <defs>
                         <linearGradient id="biddagLucht" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stop-color="#fef08a"/>
-                            <stop offset="55%" stop-color="#fde047"/>
-                            <stop offset="100%" stop-color="#fed7aa"/>
+                            <stop offset="0%" stop-color="#fef08a"/><stop offset="55%" stop-color="#fde047"/><stop offset="100%" stop-color="#fed7aa"/>
                         </linearGradient>
                         <linearGradient id="graanHeuvel" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stop-color="#eab308"/>
-                            <stop offset="100%" stop-color="#ca8a04"/>
+                            <stop offset="0%" stop-color="#eab308"/><stop offset="100%" stop-color="#ca8a04"/>
                         </linearGradient>
                         <radialGradient id="biddagZon" cx="25%" cy="45%" r="60%">
-                            <stop offset="0%" stop-color="#ffffff"/>
-                            <stop offset="40%" stop-color="#fef08a" stop-opacity="0.7"/>
-                            <stop offset="100%" stop-color="#fde047" stop-opacity="0"/>
+                            <stop offset="0%" stop-color="#ffffff"/><stop offset="40%" stop-color="#fef08a" stop-opacity="0.7"/><stop offset="100%" stop-color="#fde047" stop-opacity="0"/>
                         </radialGradient>
                     </defs>
                     <rect width="400" height="170" fill="url(#biddagLucht)"/>
@@ -1442,20 +1636,14 @@
                     <path d="M0 120 Q110 88 220 114 T400 102 V170 H0 Z" fill="#f59e0b" opacity="0.8"/>
                     <path d="M0 134 Q130 106 260 132 T400 124 V170 H0 Z" fill="url(#graanHeuvel)"/>
                     <g stroke="#78350f" stroke-width="2" fill="none">
-                        <path d="M45 155 Q50 130 60 115"/>
-                        <path d="M75 160 Q72 135 70 120"/>
-                        <path d="M140 155 Q145 132 155 118"/>
-                        <path d="M170 160 Q168 138 165 124"/>
+                        <path d="M45 155 Q50 130 60 115"/><path d="M75 160 Q72 135 70 120"/>
+                        <path d="M140 155 Q145 132 155 118"/><path d="M170 160 Q168 138 165 124"/>
                     </g>
                     <g fill="#ca8a04">
                         <ellipse cx="60" cy="115" rx="3.5" ry="6" transform="rotate(-15 60 115)"/>
                         <ellipse cx="55" cy="122" rx="3" ry="5" transform="rotate(-25 55 122)"/>
                         <ellipse cx="65" cy="123" rx="3" ry="5" transform="rotate(15 65 123)"/>
-                        <ellipse cx="53" cy="130" rx="3" ry="5" transform="rotate(-25 53 130)"/>
-                        <ellipse cx="63" cy="131" rx="3" ry="5" transform="rotate(15 63 131)"/>
                         <ellipse cx="70" cy="120" rx="3.5" ry="6"/>
-                        <ellipse cx="65" cy="127" rx="3" ry="5" transform="rotate(-20 65 127)"/>
-                        <ellipse cx="75" cy="128" rx="3" ry="5" transform="rotate(20 75 128)"/>
                         <ellipse cx="155" cy="118" rx="3.5" ry="6" transform="rotate(15 155 118)"/>
                         <ellipse cx="150" cy="125" rx="3" ry="5" transform="rotate(-15 150 125)"/>
                         <ellipse cx="160" cy="126" rx="3" ry="5" transform="rotate(25 160 126)"/>
@@ -1467,7 +1655,8 @@
                 </svg>`
             };
         }
-        
+
+        // 8. Dankdag
         if (p.includes('dank') || p.includes('vrucht') || p.includes('herfst')) {
             return {
                 naam: 'Dankdag',
@@ -1486,13 +1675,10 @@
                 svg: `<svg viewBox="0 0 400 170" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
                     <defs>
                         <linearGradient id="dankLucht" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stop-color="#fed7aa"/>
-                            <stop offset="50%" stop-color="#fdba74"/>
-                            <stop offset="100%" stop-color="#f97316"/>
+                            <stop offset="0%" stop-color="#fed7aa"/><stop offset="50%" stop-color="#fdba74"/><stop offset="100%" stop-color="#f97316"/>
                         </linearGradient>
                         <linearGradient id="dankHeuvel" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stop-color="#b45309"/>
-                            <stop offset="100%" stop-color="#78350f"/>
+                            <stop offset="0%" stop-color="#b45309"/><stop offset="100%" stop-color="#78350f"/>
                         </linearGradient>
                     </defs>
                     <rect width="400" height="170" fill="url(#dankLucht)"/>
@@ -1507,7 +1693,6 @@
                         <circle cx="12" cy="10" r="9" fill="#eab308"/>
                         <path d="M-12 1 Q-10 -4 -6 -3" stroke="#451a03" stroke-width="2" fill="none"/>
                         <path d="M0 -3 Q2 -8 6 -7" stroke="#451a03" stroke-width="2" fill="none"/>
-                        <path d="M12 1 Q14 -4 18 -3" stroke="#451a03" stroke-width="2" fill="none"/>
                     </g>
                     <g stroke="#fde047" stroke-width="1.8" fill="none" opacity="0.9">
                         <path d="M140 155 Q144 136 150 125"/>
@@ -1521,6 +1706,7 @@
             };
         }
 
+        // 9. Doopdienst
         if (p.includes('doop') || p.includes('water') || p.includes('kind') || p.includes('geboren')) {
             return {
                 naam: 'Doopdienst',
@@ -1539,13 +1725,10 @@
                 svg: `<svg viewBox="0 0 400 170" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
                     <defs>
                         <linearGradient id="doopLucht" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stop-color="#7dd3fc"/>
-                            <stop offset="60%" stop-color="#bae6fd"/>
-                            <stop offset="100%" stop-color="#e0f2fe"/>
+                            <stop offset="0%" stop-color="#7dd3fc"/><stop offset="60%" stop-color="#bae6fd"/><stop offset="100%" stop-color="#e0f2fe"/>
                         </linearGradient>
                         <linearGradient id="doopWater" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stop-color="#38bdf8"/>
-                            <stop offset="100%" stop-color="#0284c7"/>
+                            <stop offset="0%" stop-color="#38bdf8"/><stop offset="100%" stop-color="#0284c7"/>
                         </linearGradient>
                     </defs>
                     <rect width="400" height="170" fill="url(#doopLucht)"/>
@@ -1571,7 +1754,8 @@
             };
         }
 
-        if (p.includes('avondmaal') || p.includes('brood') || p.includes('wijn') || p.includes('beker') || p.includes('dis')) {
+        // 10. Heilig Avondmaal
+        if (p.includes('avondmaal') || p.includes('brood') || p.includes('wijn') || p.includes('beker') || p.includes('dis') || p.includes('kelk')) {
             return {
                 naam: 'Avondmaal',
                 icoon: '🍷',
@@ -1589,9 +1773,7 @@
                 svg: `<svg viewBox="0 0 400 170" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
                     <defs>
                         <linearGradient id="avondmaalLucht" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stop-color="#701a75"/>
-                            <stop offset="50%" stop-color="#9d174d"/>
-                            <stop offset="100%" stop-color="#f43f5e"/>
+                            <stop offset="0%" stop-color="#701a75"/><stop offset="50%" stop-color="#9d174d"/><stop offset="100%" stop-color="#f43f5e"/>
                         </linearGradient>
                     </defs>
                     <rect width="400" height="170" fill="url(#avondmaalLucht)"/>
@@ -1615,7 +1797,8 @@
             };
         }
 
-        if (p.includes('trouw') || p.includes('huwelijk') || p.includes('zegen') || p.includes('liefde') || p.includes('belofte')) {
+        // 11. Huwelijk
+        if (p.includes('trouw') || p.includes('huwelijk') || p.includes('zegen') || p.includes('liefde') || p.includes('echtpaar')) {
             return {
                 naam: 'Huwelijk',
                 icoon: '💍',
@@ -1633,13 +1816,10 @@
                 svg: `<svg viewBox="0 0 400 170" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
                     <defs>
                         <linearGradient id="huwelijkLucht" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stop-color="#fecdd3"/>
-                            <stop offset="55%" stop-color="#ffe4e6"/>
-                            <stop offset="100%" stop-color="#fff1f2"/>
+                            <stop offset="0%" stop-color="#fecdd3"/><stop offset="55%" stop-color="#ffe4e6"/><stop offset="100%" stop-color="#fff1f2"/>
                         </linearGradient>
                         <linearGradient id="huwelijkHeuvel" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stop-color="#fda4af"/>
-                            <stop offset="100%" stop-color="#f43f5e"/>
+                            <stop offset="0%" stop-color="#fda4af"/><stop offset="100%" stop-color="#f43f5e"/>
                         </linearGradient>
                     </defs>
                     <rect width="400" height="170" fill="url(#huwelijkLucht)"/>
@@ -1660,10 +1840,55 @@
             };
         }
 
+        // 12. Jeugddienst / Kinderdienst
+        if (p.includes('jeugd') || p.includes('jong') || p.includes('tiener') || p.includes('kinder')) {
+            return {
+                naam: 'Jeugddienst',
+                icoon: '🌱',
+                beschrijving: 'Frisse groene heuvels, zonnebloem en kruis',
+                bg: 'linear-gradient(180deg,#ecfdf5 0%,#d1fae5 25%,#f0fdf4 100%)',
+                headerKleur: '#059669',
+                titelKleur: '#064e3b',
+                subKleur: '#047857',
+                kaartBg: 'rgba(255,255,255,0.92)',
+                kaartTitel: '#022c22',
+                kaartTekst: '#064e3b',
+                divider: 'rgba(5,150,105,0.20)',
+                schaduw: 'rgba(5,150,105,0.10)',
+                voettekst: '#059669',
+                svg: `<svg viewBox="0 0 400 170" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
+                    <defs>
+                        <linearGradient id="jeugdLucht" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#6ee7b7"/><stop offset="55%" stop-color="#a7f3d0"/><stop offset="100%" stop-color="#ecfdf5"/>
+                        </linearGradient>
+                        <linearGradient id="jeugdHeuvel" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#047857"/>
+                        </linearGradient>
+                    </defs>
+                    <rect width="400" height="170" fill="url(#jeugdLucht)"/>
+                    <circle cx="100" cy="55" r="32" fill="#ffffff" opacity="0.85"/>
+                    <circle cx="100" cy="55" r="20" fill="#fef08a"/>
+                    <path d="M0 120 Q120 88 230 118 T400 108 V170 H0 Z" fill="#34d399" opacity="0.85"/>
+                    <path d="M0 136 Q140 108 270 136 T400 128 V170 H0 Z" fill="url(#jeugdHeuvel)"/>
+                    <g transform="translate(90, 126)">
+                        <circle r="7" fill="#f59e0b"/>
+                        <circle cx="0" cy="-9" r="4" fill="#fbbf24"/><circle cx="8" cy="-4" r="4" fill="#fbbf24"/>
+                        <circle cx="8" cy="5" r="4" fill="#fbbf24"/><circle cx="0" cy="9" r="4" fill="#fbbf24"/>
+                        <circle cx="-8" cy="5" r="4" fill="#fbbf24"/><circle cx="-8" cy="-4" r="4" fill="#fbbf24"/>
+                    </g>
+                    <g id="kruis" transform="translate(305, 58)">
+                        <rect x="-4.5" y="0" width="9" height="82" rx="2" fill="#5c381e"/>
+                        <rect x="-24" y="20" width="48" height="9" rx="2" fill="#5c381e"/>
+                    </g>
+                </svg>`
+            };
+        }
+
+        // 13. Algemeen heuvellandschap (NOOIT een grijze cirkel, altijd een compleet en warm pastorale landschap)
         const schoneNaam = promptTekst ? (promptTekst.charAt(0).toUpperCase() + promptTekst.slice(1, 15)) : 'Eigen Thema';
         return {
             naam: schoneNaam,
-            icoon: '✨',
+            icoon: '✝️',
             beschrijving: 'Warme heuvels in ochtendlicht met kruis',
             bg: 'linear-gradient(180deg,#fef3c7 0%,#fde68a 22%,#fffbeb 100%)',
             headerKleur: '#b45309',
@@ -1733,75 +1958,102 @@
 
         try {
             let themaData = null;
-            const proxy = (typeof PROXY_URL !== 'undefined') ? PROXY_URL : "https://gemini-proxy.kerkapp.workers.dev";
-            const model = (typeof gevondenModel !== 'undefined' && gevondenModel) ? gevondenModel : 'gemini-1.5-flash';
+            const pLower = promptTekst.toLowerCase();
+            
+            // Controleer of de gebruiker een bekende kerkelijke dienst/feestdag intypt
+            const isBekendThema = pLower.includes('belijd') || pLower.includes('paas') || pLower.includes('pasen') ||
+                                  pLower.includes('kerst') || pLower.includes('hemelvaart') || pLower.includes('pinkster') ||
+                                  pLower.includes('bid') || pLower.includes('dank') || pLower.includes('doop') ||
+                                  pLower.includes('avondmaal') || pLower.includes('huwelijk') || pLower.includes('lijden');
 
-            try {
-                const systemInstructie = `Je bent een christelijke grafische ontwerper gespecialiseerd in rustige, minimalistische pastorale vector banners voor kerkdiensten.
-Ontwerp op basis van de vraag van de gebruiker een SVG banner (viewBox="0 0 400 170") en een bijpassend kleurenpalet voor een mobiele meelees-pagina.
+            if (isBekendThema) {
+                // Direct gebruikmaken van de geteste, prachtige vector illustratie
+                themaData = maakLokaleThemaFallback(promptTekst);
+            } else {
+                // Voor unieke/creatieve thema's vragen we Gemini AI met strikte landschapsinstructies
+                const proxy = (typeof PROXY_URL !== 'undefined') ? PROXY_URL : "https://gemini-proxy.kerkapp.workers.dev";
+                const model = (typeof gevondenModel !== 'undefined' && gevondenModel) ? gevondenModel : 'gemini-1.5-flash';
 
-STRIKTE EISEN:
-1. ER MOET ALTIJD EEN DUIDELIJK KRUIS (✝) IN DE BANNER STAAN (bijvoorbeeld vredig op een heuvel of in het landschap). Plaats het kruis ALTIJD in een <g id="kruis"> tag met balken (<rect> of <path>).
-2. De stijl moet exact aansluiten bij de rustige, warme pastorale vector-stijl: glooiende heuvels, zachte luchtgradienten, harmonieuze symbolen (graanaren, duif, water, bloemen, sterren, open bijbel, etc.). GEEN tekst of letters in de SVG zelf.
-3. Retourneer UITSLUITEND een valide JSON object met exact deze velden (geen markdown codeblokken, geen uitleg):
+                try {
+                    const systemInstructie = `Je bent een meesterlijke pastorale vector illustrator voor kerkbijeenkomsten.
+Teken voor de meelees-pagina van een kerkdienst een warme, sfeervolle vector SVG banner (viewBox="0 0 400 170") en een bijpassend kleurenpalet.
+
+STRIKTE ONTWERPSTRUCTUUR:
+De banner stelt ALTIJD een weids, warm en rustgevend heuvellandschap voor in Apple-stijl (GEEN abstracte logo's of saaie iconen!).
+De SVG MOET de volgende gelaagde structuur hebben:
+1. <defs> met ten minste 1 <linearGradient> voor de lucht (bijv. warm geel/oranje, hemelsblauw, ochtendroze, of zacht purper) en <linearGradient> voor de heuvels.
+2. Een lucht-rechthoek: <rect width="400" height="170" fill="url(#...Lucht)"/>
+3. Een warme zon of zachte lichtgloed (<circle> of <radialGradient>).
+4. Achtergrondheuvels via <path d="M0 120 Q120 85 240 120 T400 110 V170 H0 Z" fill="..."/>
+5. Voorgrondheuvel via <path d="M0 136 Q140 108 270 136 T400 128 V170 H0 Z" fill="url(#...Heuvel)"/>
+6. Thematische pastorale illustratie-elementen op de linkerheuvel (bijv. open bijbel, korenaren, water, bloemen, duif, kaarsvlam).
+7. Een duidelijk houten kruis op de rechterheuvel: <g id="kruis" transform="translate(305, 58)"><rect x="-4.5" y="0" width="9" height="82" rx="2" fill="#5c381e"/><rect x="-24" y="20" width="48" height="9" rx="2" fill="#5c381e"/></g>
+
+STRENG VERBODEN:
+- ABSOLUUT GEEN losse grijze cirkels (#ccc, #888, #aaa, gray) of platte grijze vormen!
+- GEEN letters of tekst in de SVG.
+
+Retourneer UITSLUITEND een valide JSON object:
 {
   "naam": "Korte themanaam (max 15 tekens)",
-  "icoon": "Enkel passend emoji icoon",
-  "beschrijving": "Korte beschrijving van de scène (max 60 tekens)",
+  "icoon": "Enkel passend symbool of emoji",
+  "beschrijving": "Korte sfeerbeschrijving (max 60 tekens)",
   "bg": "linear-gradient(180deg, #... 0%, #... 25%, #... 100%)",
-  "headerKleur": "HEX kleurcode voor categoriekopjes",
-  "titelKleur": "HEX kleurcode voor titels",
-  "subKleur": "HEX kleurcode voor subtitels",
+  "headerKleur": "HEX kleur voor categoriekopjes",
+  "titelKleur": "HEX kleur voor titels",
+  "subKleur": "HEX kleur voor subtitels",
   "kaartBg": "rgba(255,255,255,0.92)",
-  "kaartTitel": "HEX kleurcode voor kaarttitels",
-  "kaartTekst": "HEX kleurcode voor liedtekst",
+  "kaartTitel": "HEX kleur voor kaarttitels",
+  "kaartTekst": "HEX kleur voor liedtekst",
   "divider": "rgba(r,g,b,0.20)",
   "schaduw": "rgba(r,g,b,0.12)",
-  "voettekst": "HEX kleurcode voor voettekst",
+  "voettekst": "HEX kleur voor voettekst",
   "svg": "<svg viewBox=\\"0 0 400 170\\" xmlns=\\"http://www.w3.org/2000/svg\\" style=\\"width:100%;height:auto;display:block\\">...</svg>"
 }`;
 
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 12000);
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 12000);
 
-                const res = await fetch(`${proxy}/v1beta/${model}:generateContent`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    signal: controller.signal,
-                    body: JSON.stringify({
-                        contents: [{
-                            role: 'user',
-                            parts: [{ text: `${systemInstructie}\n\nThema van de gebruiker: "${promptTekst}"` }]
-                        }],
-                        generationConfig: {
-                            responseMimeType: "application/json",
-                            temperature: 0.2
+                    const res = await fetch(`${proxy}/v1beta/${model}:generateContent`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        signal: controller.signal,
+                        body: JSON.stringify({
+                            contents: [{
+                                role: 'user',
+                                parts: [{ text: `${systemInstructie}\n\nThema van de gebruiker: "${promptTekst}"` }]
+                            }],
+                            generationConfig: {
+                                responseMimeType: "application/json",
+                                temperature: 0.2
+                            }
+                        })
+                    });
+                    clearTimeout(timeoutId);
+
+                    if (res.ok) {
+                        const resJson = await res.json();
+                        const part = resJson.candidates && resJson.candidates[0] && resJson.candidates[0].content && resJson.candidates[0].content.parts && resJson.candidates[0].content.parts[0];
+                        if (part && part.text) {
+                            let clean = part.text.trim();
+                            if (clean.startsWith('```json')) clean = clean.slice(7);
+                            if (clean.startsWith('```')) clean = clean.slice(3);
+                            if (clean.endsWith('```')) clean = clean.slice(0, -3);
+                            themaData = JSON.parse(clean.trim());
                         }
-                    })
-                });
-                clearTimeout(timeoutId);
-
-                if (res.ok) {
-                    const resJson = await res.json();
-                    const part = resJson.candidates && resJson.candidates[0] && resJson.candidates[0].content && resJson.candidates[0].content.parts && resJson.candidates[0].content.parts[0];
-                    if (part && part.text) {
-                        let clean = part.text.trim();
-                        if (clean.startsWith('```json')) clean = clean.slice(7);
-                        if (clean.startsWith('```')) clean = clean.slice(3);
-                        if (clean.endsWith('```')) clean = clean.slice(0, -3);
-                        themaData = JSON.parse(clean.trim());
                     }
+                } catch (netErr) {
+                    console.warn("AI generation via Gemini niet gelukt, fallback wordt gebruikt:", netErr);
                 }
-            } catch (netErr) {
-                console.warn("AI generation via Gemini niet gelukt, fallback wordt gebruikt:", netErr);
+
+                // Kwaliteitscontrole: Als AI faalde of een grijze/simplistische SVG teruggaf, val terug op onze landschapsgenerator
+                if (!themaData || !themaData.svg || isSlechteOfGrijzeSvg(themaData.svg)) {
+                    themaData = maakLokaleThemaFallback(promptTekst);
+                }
             }
 
-            // Als AI niet beschikbaar was of geen geldige SVG teruggaf: gebruik de lokale fallback
             if (!themaData || !themaData.svg) {
                 themaData = maakLokaleThemaFallback(promptTekst);
-                if (window.toonToast) window.toonToast(`Banner '${themaData.naam}' ontworpen!`, "info");
-            } else {
-                if (window.toonToast) window.toonToast(`AI Banner '${themaData.naam}' succesvol ontworpen!`, "success");
             }
 
             // Garandeer dat er ALTIJD een kruis in zit
@@ -1810,7 +2062,7 @@ STRIKTE EISEN:
             const customThema = {
                 id: 'custom',
                 naam: themaData.naam || 'Eigen Thema',
-                icoon: themaData.icoon || '✨',
+                icoon: themaData.icoon || '✝️',
                 beschrijving: themaData.beschrijving || promptTekst,
                 bg: themaData.bg || 'linear-gradient(180deg,#ffd9a0 0%,#ffe4b8 22%,#fff3e0 100%)',
                 headerKleur: themaData.headerKleur || '#c07f33',
@@ -1833,6 +2085,7 @@ STRIKTE EISEN:
             }
 
             window.setActiefMeeleesThema('custom');
+            if (window.toonToast) window.toonToast(`Banner thema '${customThema.naam}' geactiveerd!`, "success");
         } catch (err) {
             console.error("Fout bij genereren banner:", err);
             if (window.toonToast) window.toonToast("Kon banner niet genereren: " + err.message, "error");
@@ -2057,7 +2310,7 @@ STRIKTE EISEN:
                 <path d="M0 138 Q140 106 270 134 T400 128 V170 H0 Z" fill="url(#pasenHeuvel)"/>
 
                 <!-- Leeg Kruis met witte zege-doek op de rechterheuvel -->
-                <g transform="translate(305, 58)">
+                <g id="kruis" transform="translate(305, 58)">
                     <rect x="-4.5" y="0" width="9" height="82" rx="2" fill="#5c381e"/>
                     <rect x="-24" y="20" width="48" height="9" rx="2" fill="#5c381e"/>
                     <!-- Witte doek over dwarsbalk -->
@@ -2149,6 +2402,11 @@ STRIKTE EISEN:
                     <rect x="-22" y="8" width="4" height="32" fill="#451a03"/>
                     <rect x="18" y="8" width="4" height="32" fill="#451a03"/>
                 </g>
+                <!-- Houten Kruis op de heuvel van Bethlehem -->
+                <g id="kruis" transform="translate(330, 88) scale(0.7)">
+                    <rect x="-4.5" y="0" width="9" height="70" rx="2" fill="#2d1c10"/>
+                    <rect x="-22" y="18" width="44" height="8.5" rx="2" fill="#2d1c10"/>
+                </g>
             </svg>`;
         }
 
@@ -2218,6 +2476,11 @@ STRIKTE EISEN:
                     <circle cx="340" cy="132" r="24"/>
                     <circle cx="375" cy="138" r="18"/>
                 </g>
+                <!-- Kruis op de Olijfberg -->
+                <g id="kruis" transform="translate(320, 84) scale(0.7)">
+                    <rect x="-4.5" y="0" width="9" height="70" rx="2" fill="#4d7c0f"/>
+                    <rect x="-22" y="18" width="44" height="8.5" rx="2" fill="#4d7c0f"/>
+                </g>
             </svg>`;
         }
 
@@ -2274,6 +2537,11 @@ STRIKTE EISEN:
 
                 <path d="M0 138 Q130 118 250 136 T400 130 V170 H0 Z" fill="#c2410c" opacity="0.85"/>
                 <path d="M0 148 Q150 128 280 148 T400 142 V170 H0 Z" fill="#9a3412"/>
+                <!-- Kruis op de heuvel -->
+                <g id="kruis" transform="translate(325, 85) scale(0.7)">
+                    <rect x="-4.5" y="0" width="9" height="70" rx="2" fill="#7c2d12"/>
+                    <rect x="-22" y="18" width="44" height="8.5" rx="2" fill="#7c2d12"/>
+                </g>
             </svg>`;
         }
 
@@ -2295,7 +2563,7 @@ STRIKTE EISEN:
                 <path d="M0 135 Q100 115 200 106 Q300 115 400 135 V170 H0 Z" fill="#1e1b4b"/>
                 <path d="M0 146 Q140 126 270 144 T400 138 V170 H0 Z" fill="#0f0e26"/>
 
-                <g transform="translate(200, 62)">
+                <g id="kruis" transform="translate(200, 62)">
                     <rect x="-4.5" y="0" width="9" height="74" rx="1.5" fill="#050510"/>
                     <rect x="-24" y="18" width="48" height="8.5" rx="1.5" fill="#050510"/>
                 </g>
@@ -2325,7 +2593,7 @@ STRIKTE EISEN:
             <circle cx="320" cy="46" r="20" fill="#fff7e0"/>
             <path d="M0 120 Q120 80 220 118 T400 108 V170 H0 Z" fill="#bcdd97"/>
             <path d="M0 138 Q140 108 260 140 T400 132 V170 H0 Z" fill="url(#heuvel)"/>
-            <g transform="translate(196,70)">
+            <g id="kruis" transform="translate(196,70)">
                 <rect x="-5" y="0" width="10" height="70" rx="2" fill="#8a5a34"/>
                 <rect x="-26" y="20" width="52" height="10" rx="2" fill="#8a5a34"/>
             </g>
