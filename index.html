@@ -838,7 +838,12 @@
     </div>
 </div>
 
-<div class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 items-end">
+<div class="fixed bottom-6 right-6 z-50 flex flex-col gap-2.5 items-end">
+    <!-- Testknop: OBS & Beamer Live Regie -->
+    <button type="button" onclick="openObsTestModal()" class="bg-[#1D1D1F]/90 hover:bg-black text-white px-5 py-2.5 rounded-full shadow-[0_4px_16px_rgba(0,0,0,0.18)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.28)] active:scale-[0.98] transition-all duration-200 flex items-center gap-2 border border-white/15 backdrop-blur-md text-xs font-semibold">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span>🎥 OBS & Beamer Regie (Test)</span>
+    </button>
     <button onclick="maakPowerPoint()" class="bg-[#007AFF] text-white px-7 py-3.5 rounded-full shadow-[0_8px_24px_rgba(0,122,255,0.32)] hover:shadow-[0_12px_28px_rgba(0,122,255,0.42)] active:scale-[0.98] transition-all duration-200 flex items-center gap-2.5 border border-white/20">
         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
         <span class="font-semibold text-[15px] tracking-[-0.01em]">Exporteer PowerPoint</span>
@@ -4505,11 +4510,633 @@ Bijbelliederen`;
         });
     })();
 
+    // ==========================================
+    // --- OBS & BEAMER LIVE REGIE (TESTMODUS) ---
+    // ==========================================
+    const OBS_LIVE_CHANNEL_NAME = 'kerkapp_obs_live_sync_v1';
+    let _obsBroadcastChannel = null;
+    try {
+        if ('BroadcastChannel' in window) {
+            _obsBroadcastChannel = new BroadcastChannel(OBS_LIVE_CHANNEL_NAME);
+        }
+    } catch(e) {}
+
+    // Berekent de geordende dialijst vanuit de liturgie
+    function bouwwVolledigeDiaLijst() {
+        const slides = [];
+        const datum = document.getElementById('datumInput')?.value || '';
+        const voorganger = document.getElementById('voorgangerInput')?.value || '';
+        const gemeente = (window.getActieveGemeente ? window.getActieveGemeente() : "Bethelkerk Maassluis");
+        const actieveItems = (typeof liturgieVolgorde !== 'undefined') ? liturgieVolgorde : [];
+
+        // 1. Welkomstdia
+        const zangLijst = actieveItems.filter(it => it.type === 'Zang').map(it => {
+            return (it.basisTitel || it.titel || '').split(' - ')[0].trim();
+        });
+
+        slides.push({
+            id: 'welkom-0',
+            type: 'Welkom',
+            titel: 'Welkom',
+            gemeente: gemeente,
+            datum: datum,
+            voorganger: voorganger,
+            zangLijst: zangLijst,
+            regels: []
+        });
+
+        // 2. Liturgie items
+        actieveItems.forEach((item, itemIdx) => {
+            if (item.type === 'Zang') {
+                const subSlides = (typeof berekenSubSlidesVoorItem === 'function') 
+                    ? berekenSubSlidesVoorItem(item) 
+                    : [{ regels: (item.tekst || '').split('\n').filter(r => r.trim()), fontSize: 40 }];
+                
+                subSlides.forEach((sub, subIdx) => {
+                    const subtitel = (subSlides.length > 1) 
+                        ? `${item.titel} (${subIdx + 1}/${subSlides.length})` 
+                        : item.titel;
+                    slides.push({
+                        id: `item-${itemIdx}-sub-${subIdx}`,
+                        itemIndex: itemIdx,
+                        type: 'Zang',
+                        titel: item.titel,
+                        subtitel: subtitel,
+                        regels: sub.regels || [],
+                        fontSize: sub.fontSize || 40,
+                        align: (window.getDiaAlign ? window.getDiaAlign(item, subIdx) : (item.align || 'center'))
+                    });
+                });
+            } else if (item.type === 'Schriftlezing') {
+                const subSlides = (typeof berekenSubSlidesVoorItem === 'function') 
+                    ? berekenSubSlidesVoorItem(item) 
+                    : [{ regels: (item.tekst || '').split('\n').filter(r => r.trim()), fontSize: 36 }];
+                
+                subSlides.forEach((sub, subIdx) => {
+                    const subtitel = (subSlides.length > 1) 
+                        ? `${item.titel} (${subIdx + 1}/${subSlides.length})` 
+                        : item.titel;
+                    slides.push({
+                        id: `item-${itemIdx}-sub-${subIdx}`,
+                        itemIndex: itemIdx,
+                        type: 'Schriftlezing',
+                        titel: item.titel,
+                        subtitel: subtitel,
+                        regels: sub.regels || [],
+                        fontSize: sub.fontSize || 36,
+                        align: (window.getDiaAlign ? window.getDiaAlign(item, subIdx) : (item.align || 'left'))
+                    });
+                });
+            } else if (item.type === 'Foto') {
+                slides.push({
+                    id: `item-${itemIdx}-foto`,
+                    itemIndex: itemIdx,
+                    type: 'Foto',
+                    titel: item.titel || 'Afbeelding',
+                    fotoUrl: item.tekst,
+                    regels: []
+                });
+            } else if (item.type === 'QR') {
+                slides.push({
+                    id: `item-${itemIdx}-qr`,
+                    itemIndex: itemIdx,
+                    type: 'QR',
+                    titel: item.titel || 'Collecte',
+                    qrData: item.tekst || 'https://cgkmaassluis.nl/geven',
+                    regels: [
+                        'Collecte Bethelkerk Maassluis',
+                        'IBAN: NL69 ABNA 0501488154',
+                        'Scan met uw camera of bankapp'
+                    ]
+                });
+            } else if (item.type === 'Leeg') {
+                slides.push({
+                    id: `item-${itemIdx}-leeg`,
+                    itemIndex: itemIdx,
+                    type: 'Leeg',
+                    titel: item.titel || 'Pauze / Stilte',
+                    regels: []
+                });
+            }
+        });
+
+        return slides;
+    }
+
+    function getObsLiveState() {
+        try {
+            const raw = localStorage.getItem('kerkapp_obs_live_state');
+            if (raw) return JSON.parse(raw);
+        } catch(e) {}
+        return null;
+    }
+
+    function saveObsLiveState(state) {
+        try {
+            localStorage.setItem('kerkapp_obs_live_state', JSON.stringify(state));
+        } catch(e) {}
+        if (_obsBroadcastChannel) {
+            _obsBroadcastChannel.postMessage({ type: 'UPDATE', state });
+        }
+    }
+
+    window.openObsTestModal = function() {
+        const modal = document.getElementById('obsTestModal');
+        if (!modal) return;
+
+        const slides = bouwwVolledigeDiaLijst();
+        const huidigThema = (window.getActiefMeeleesThema ? window.getActiefMeeleesThema() : 'standaard');
+        const customThema = (typeof MEELEES_THEMAS !== 'undefined' && MEELEES_THEMAS.custom) ? MEELEES_THEMAS.custom : null;
+
+        let state = getObsLiveState();
+        if (!state || !state.slides || state.slides.length !== slides.length) {
+            state = {
+                currentIndex: 0,
+                isBlackout: false,
+                updatedAt: Date.now(),
+                thema: huidigThema,
+                customThema: customThema,
+                slides: slides
+            };
+        } else {
+            state.slides = slides;
+            state.thema = huidigThema;
+            state.customThema = customThema;
+            if (state.currentIndex >= slides.length) state.currentIndex = 0;
+        }
+
+        saveObsLiveState(state);
+        updateObsModalSimulator();
+        modal.classList.remove('hidden');
+    };
+
+    window.sluitObsTestModal = function() {
+        const modal = document.getElementById('obsTestModal');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    window.obsLiveVolgende = function() {
+        const state = getObsLiveState();
+        if (!state || !state.slides || !state.slides.length) return;
+        if (state.currentIndex < state.slides.length - 1) {
+            state.currentIndex++;
+            state.isBlackout = false;
+            saveObsLiveState(state);
+            updateObsModalSimulator();
+        }
+    };
+
+    window.obsLiveVorige = function() {
+        const state = getObsLiveState();
+        if (!state || !state.slides || !state.slides.length) return;
+        if (state.currentIndex > 0) {
+            state.currentIndex--;
+            state.isBlackout = false;
+            saveObsLiveState(state);
+            updateObsModalSimulator();
+        }
+    };
+
+    window.obsLiveToggleBlackout = function() {
+        const state = getObsLiveState();
+        if (!state) return;
+        state.isBlackout = !state.isBlackout;
+        saveObsLiveState(state);
+        updateObsModalSimulator();
+    };
+
+    window.obsOpenVenster = function(mode) {
+        const url = location.origin + location.pathname + '?mode=' + mode;
+        if (mode === 'dock') {
+            window.open(url, 'KerkappDock', 'width=380,height=720,menubar=no,toolbar=no,location=no');
+        } else {
+            window.open(url, '_blank');
+        }
+    };
+
+    window.obsKopieerUrl = function(mode) {
+        const url = location.origin + location.pathname + '?mode=' + mode;
+        navigator.clipboard.writeText(url).then(() => {
+            if (window.toonToast) window.toonToast(`${mode.toUpperCase()} link gekopieerd naar klembord!`, 'info');
+        }).catch(() => {
+            prompt("Kopieer deze URL:", url);
+        });
+    };
+
+    window.kopieerKerkdienstgemistTekst = function() {
+        const datum = document.getElementById('datumInput')?.value || new Date().toLocaleDateString('nl-NL');
+        const voorganger = document.getElementById('voorgangerInput')?.value || 'ds. Mark Bot';
+        const gemeente = (window.getActieveGemeente ? window.getActieveGemeente() : "Bethelkerk Maassluis");
+        const actieveItems = (typeof liturgieVolgorde !== 'undefined') ? liturgieVolgorde : [];
+
+        let zangLijstTekst = '';
+        actieveItems.forEach(it => {
+            if (it.type === 'Zang') zangLijstTekst += `• ${it.titel}\n`;
+            else if (it.type === 'Schriftlezing') zangLijstTekst += `📖 Schriftlezing: ${it.titel}\n`;
+        });
+        if (!zangLijstTekst) zangLijstTekst = '• Zie beamer en liturgieboekje\n';
+
+        const meeleesUrl = location.origin + location.pathname;
+
+        const tekst = `Ochtenddienst ${gemeente} - ${datum}
+Voorganger: ${voorganger}
+
+📱 Meelezen met de liturgie op uw mobiel of tablet:
+${meeleesUrl}
+
+Liturgie van deze dienst:
+${zangLijstTekst}
+Collecte:
+- IBAN: NL69 ABNA 0501488154 ten name van Christelijke Gereformeerde Kerk Maassluis.
+- Of scan de QR-code die tijdens de collecte in beeld komt.
+- Of gebruik de collecte-link bij de uitzending.
+
+Van harte Gods zegen toegewenst!`;
+
+        navigator.clipboard.writeText(tekst).then(() => {
+            if (window.toonToast) window.toonToast("Kerkdienstgemist beschrijving gekopieerd!", "success");
+        }).catch(() => {
+            prompt("Kopieer onderstaande tekst voor Kerkdienstgemist:", tekst);
+        });
+    };
+
+    function updateObsModalSimulator() {
+        const state = getObsLiveState();
+        if (!state || !state.slides || !state.slides.length) return;
+
+        const idx = state.currentIndex;
+        const total = state.slides.length;
+        const curSlide = state.slides[idx] || state.slides[0];
+
+        const lbl = document.getElementById('obsSimIndexLabel');
+        if (lbl) lbl.textContent = `Dia ${idx + 1} van ${total} · ${curSlide.titel || curSlide.type}`;
+
+        const blackBtn = document.getElementById('obsSimBlackoutBtn');
+        if (blackBtn) {
+            if (state.isBlackout) {
+                blackBtn.className = 'px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-xs font-bold text-white transition-all active:scale-95 shadow-sm';
+                blackBtn.textContent = '🔴 Zwart Actief';
+            } else {
+                blackBtn.className = 'px-3 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-300 hover:text-white transition-all active:scale-95';
+                blackBtn.textContent = '⚫ Zwart Scherm (B)';
+            }
+        }
+
+        const beamerEl = document.getElementById('obsSimBeamerScherm');
+        if (beamerEl) {
+            if (state.isBlackout) {
+                beamerEl.innerHTML = '<div class="text-xs text-gray-600 italic">Beamer op zwart (Blackout)</div>';
+            } else {
+                beamerEl.innerHTML = renderBeamerHtmlSlide(curSlide, true);
+            }
+        }
+
+        const streamBg = document.getElementById('obsSimStreamBg');
+        const streamEl = document.getElementById('obsSimStreamScherm');
+        if (streamBg) {
+            const th = state.thema || 'standaard';
+            if (typeof meeleesSceneSVG === 'function') {
+                streamBg.innerHTML = meeleesSceneSVG(th);
+            }
+        }
+        if (streamEl) {
+            if (state.isBlackout) {
+                streamEl.innerHTML = '<div class="text-xs text-white/40 italic">Livestream overlay op zwart</div>';
+            } else {
+                streamEl.innerHTML = renderStreamHtmlSlide(curSlide, true);
+            }
+        }
+    }
+
+    function renderBeamerHtmlSlide(slide, isMini = false) {
+        if (!slide) return '';
+        if (slide.type === 'Welkom') {
+            return `
+                <div class="flex flex-col items-center justify-center text-white h-full select-none" style="padding:10px;">
+                    <div class="${isMini ? 'text-base font-bold' : 'text-5xl font-bold tracking-tight mb-3'}">Welkom</div>
+                    <div class="${isMini ? 'text-[10px] text-gray-300' : 'text-2xl text-gray-300 mb-2'}">${slide.gemeente || 'Bethelkerk Maassluis'}</div>
+                    <div class="${isMini ? 'text-[9px] text-gray-400' : 'text-lg text-gray-400 mb-5'}">${slide.datum || ''}</div>
+                    ${slide.voorganger ? `<div class="${isMini ? 'text-[9px] text-gray-200 mt-1' : 'text-xl text-gray-200 mt-2 font-medium'}">${slide.voorganger}</div>` : ''}
+                </div>
+            `;
+        }
+        if (slide.type === 'Leeg') {
+            return '<div class="w-full h-full bg-black"></div>';
+        }
+        if (slide.type === 'Foto') {
+            return `<img src="${slide.fotoUrl}" class="max-w-full max-h-full object-contain mx-auto" />`;
+        }
+        if (slide.type === 'QR') {
+            const qrImg = (typeof maakQRDataURL === 'function') ? maakQRDataURL(slide.qrData, 5, 2) : '';
+            return `
+                <div class="flex flex-col items-center justify-center h-full text-white text-center p-3">
+                    <div class="${isMini ? 'text-[11px] font-bold mb-1' : 'text-3xl font-bold mb-4'}">${slide.titel}</div>
+                    <div class="bg-white p-2 rounded-2xl inline-block shadow-lg">
+                        <img src="${qrImg}" class="${isMini ? 'w-16 h-16' : 'w-52 h-52'} object-contain" alt="QR" />
+                    </div>
+                    <div class="${isMini ? 'text-[8px] text-gray-300 mt-1' : 'text-lg text-gray-300 mt-3 font-medium'}">Scan om bij te dragen aan de collecte</div>
+                </div>
+            `;
+        }
+        const regelsHtml = (slide.regels || []).map(r => `<div style="margin:2px 0;">${r}</div>`).join('');
+        return `
+            <div class="flex flex-col justify-center h-full text-white ${slide.align === 'left' ? 'text-left items-start px-6' : 'text-center items-center px-4'} select-none">
+                <div class="${isMini ? 'text-[9px] text-gray-400 mb-1' : 'text-lg text-gray-400 uppercase tracking-widest mb-4 font-semibold'}">${slide.subtitel || slide.titel}</div>
+                <div class="${isMini ? 'text-[10px] leading-tight font-medium' : 'text-3xl md:text-4xl font-semibold leading-relaxed tracking-normal'}">
+                    ${regelsHtml}
+                </div>
+            </div>
+        `;
+    }
+
+    function renderStreamHtmlSlide(slide, isMini = false) {
+        if (!slide) return '';
+        if (slide.type === 'Welkom') {
+            return `
+                <div class="flex flex-col items-center justify-center text-white h-full select-none" style="filter:drop-shadow(0 2px 8px rgba(0,0,0,0.92))">
+                    <div class="${isMini ? 'text-base font-bold' : 'text-5xl font-bold tracking-tight mb-3'}">Welkom</div>
+                    <div class="${isMini ? 'text-[10px] text-white/90 font-medium' : 'text-2xl text-white/90 mb-2'}">${slide.gemeente || 'Bethelkerk Maassluis'}</div>
+                    <div class="${isMini ? 'text-[9px] text-white/80' : 'text-lg text-white/80 mb-4'}">${slide.datum || ''}</div>
+                    ${slide.voorganger ? `<div class="${isMini ? 'text-[9px] text-white mt-1 font-semibold' : 'text-xl text-white font-semibold'}">${slide.voorganger}</div>` : ''}
+                </div>
+            `;
+        }
+        if (slide.type === 'Leeg') {
+            return '';
+        }
+        if (slide.type === 'QR') {
+            const qrImg = (typeof maakQRDataURL === 'function') ? maakQRDataURL(slide.qrData, 5, 2) : '';
+            return `
+                <div class="bg-white/95 text-gray-900 rounded-3xl p-4 md:p-6 shadow-2xl border border-white/40 flex flex-col items-center text-center max-w-[85%] mx-auto">
+                    <div class="${isMini ? 'text-[10px] font-bold text-gray-900' : 'text-2xl font-bold text-gray-900 mb-2'}">Collecte Bethelkerk Maassluis</div>
+                    <div class="bg-white p-2 rounded-2xl shadow-sm my-2">
+                        <img src="${qrImg}" class="${isMini ? 'w-16 h-16' : 'w-48 h-48'} object-contain" alt="QR" />
+                    </div>
+                    <div class="${isMini ? 'text-[8px] text-gray-700' : 'text-base text-gray-700 font-bold'}">IBAN: NL69 ABNA 0501488154</div>
+                    <div class="${isMini ? 'text-[7px] text-blue-600 font-semibold mt-0.5' : 'text-sm text-blue-600 font-semibold mt-1'}">Scan met uw camera of bankapp om bij te dragen</div>
+                </div>
+            `;
+        }
+        const regelsHtml = (slide.regels || []).map(r => `<div style="margin:2px 0;">${r}</div>`).join('');
+        return `
+            <div class="flex flex-col justify-center h-full text-white ${slide.align === 'left' ? 'text-left items-start px-8' : 'text-center items-center px-6'} select-none" style="filter:drop-shadow(0 2px 10px rgba(0,0,0,0.95))">
+                <div class="${isMini ? 'text-[9px] text-yellow-300 font-bold mb-1' : 'text-xl text-yellow-300 uppercase tracking-wider mb-3 font-extrabold'}">${slide.subtitel || slide.titel}</div>
+                <div class="${isMini ? 'text-[10px] leading-tight font-bold text-white' : 'text-3xl md:text-4xl font-bold leading-relaxed tracking-normal text-white'}">
+                    ${regelsHtml}
+                </div>
+            </div>
+        `;
+    }
+
+    function startBeamerWeergave() {
+        document.title = "📽️ Beamer Scherm (Kerkzaal) - Kerkapp";
+        document.body.innerHTML = `
+            <div id="beamerContainer" style="position:fixed;inset:0;background:#000000;color:#ffffff;display:flex;align-items:center;justify-content:center;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;user-select:none;">
+                <div id="beamerInhoud" style="width:90%;max-width:1400px;text-align:center;"></div>
+            </div>
+        `;
+
+        function updateBeamer() {
+            const state = getObsLiveState();
+            const container = document.getElementById('beamerInhoud');
+            if (!container) return;
+            if (!state || !state.slides || !state.slides.length) {
+                container.innerHTML = '<div style="color:#666;font-style:italic;font-size:24px;">Wachten op liturgie... Open Kerkapp en klik op "OBS & Beamer Live (Test)"</div>';
+                return;
+            }
+            if (state.isBlackout) {
+                container.innerHTML = '';
+                return;
+            }
+            const curSlide = state.slides[state.currentIndex] || state.slides[0];
+            container.innerHTML = renderBeamerHtmlSlide(curSlide, false);
+        }
+
+        updateBeamer();
+
+        if (_obsBroadcastChannel) {
+            _obsBroadcastChannel.onmessage = (e) => {
+                if (e.data && e.data.type === 'UPDATE') updateBeamer();
+            };
+        }
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'kerkapp_obs_live_state') updateBeamer();
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+                obsLiveVolgende();
+                updateBeamer();
+            } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+                obsLiveVorige();
+                updateBeamer();
+            } else if (e.key.toLowerCase() === 'b' || e.key.toLowerCase() === 'z') {
+                obsLiveToggleBlackout();
+                updateBeamer();
+            } else if (e.key.toLowerCase() === 'f') {
+                if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+                else document.exitFullscreen();
+            }
+        });
+    }
+
+    function startStreamWeergave() {
+        document.title = "📺 OBS Livestream Bron - Kerkapp";
+        const urlParams = new URLSearchParams(location.search);
+        const isTransparent = urlParams.get('bg') === 'transparent';
+
+        document.body.innerHTML = `
+            <div id="streamBgContainer" style="position:fixed;inset:0;pointer-events:none;z-index:1;${isTransparent ? 'background:transparent;' : ''}"></div>
+            <div id="streamContainer" style="position:fixed;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;user-select:none;">
+                <div id="streamInhoud" style="width:90%;max-width:1400px;text-align:center;"></div>
+            </div>
+        `;
+
+        function updateStream() {
+            const state = getObsLiveState();
+            const bgContainer = document.getElementById('streamBgContainer');
+            const inhoud = document.getElementById('streamInhoud');
+            if (!inhoud) return;
+
+            if (!state || !state.slides || !state.slides.length) {
+                inhoud.innerHTML = '';
+                return;
+            }
+
+            if (!isTransparent && bgContainer) {
+                const th = state.thema || 'standaard';
+                bgContainer.innerHTML = (typeof meeleesSceneSVG === 'function') ? meeleesSceneSVG(th) : '';
+            }
+
+            if (state.isBlackout) {
+                inhoud.innerHTML = '';
+                return;
+            }
+
+            const curSlide = state.slides[state.currentIndex] || state.slides[0];
+            inhoud.innerHTML = renderStreamHtmlSlide(curSlide, false);
+        }
+
+        updateStream();
+
+        if (_obsBroadcastChannel) {
+            _obsBroadcastChannel.onmessage = (e) => {
+                if (e.data && e.data.type === 'UPDATE') updateStream();
+            };
+        }
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'kerkapp_obs_live_state') updateStream();
+        });
+    }
+
+    function startDockWeergave() {
+        document.title = "🎛️ OBS Regie Dock - Kerkapp";
+        document.body.innerHTML = `
+            <div style="background:#0f172a;color:#f8fafc;min-height:100vh;display:flex;flex-direction:column;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;user-select:none;padding:12px;box-sizing:border-box;">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:10px;border-bottom:1px solid #1e293b;margin-bottom:12px;">
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        <span style="font-size:16px;">🎥</span>
+                        <strong style="font-size:13px;letter-spacing:-0.01em;">Kerkapp Regie</strong>
+                    </div>
+                    <span id="dockStatusDot" style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:#065f46;color:#6ee7b7;border:1px solid #10b981;margin-left:auto;">LIVE SYNC</span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:8px;margin-bottom:10px;">
+                    <button type="button" onclick="obsLiveVorige()" style="background:#1e293b;color:#f8fafc;border:1px solid #334155;border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;">
+                        ◀ VORIGE
+                    </button>
+                    <button type="button" onclick="obsLiveVolgende()" style="background:#007AFF;color:#ffffff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 14px rgba(0,122,255,0.4);">
+                        VOLGENDE ▶
+                    </button>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;">
+                    <button type="button" id="dockBlackoutBtn" onclick="obsLiveToggleBlackout()" style="background:#1e293b;color:#cbd5e1;border:1px solid #334155;border-radius:10px;padding:9px;font-size:11px;font-weight:600;cursor:pointer;">
+                        ⚫ Zwart Scherm (B)
+                    </button>
+                    <button type="button" onclick="obsOpenVenster('beamer')" style="background:#1e293b;color:#38bdf8;border:1px solid #0284c7;border-radius:10px;padding:9px;font-size:11px;font-weight:600;cursor:pointer;">
+                        📽️ Open Beamer ↗
+                    </button>
+                </div>
+
+                <div id="dockActieveKaart" style="background:#1e293b;border:1px solid #334155;border-radius:14px;padding:12px;margin-bottom:12px;">
+                    <div id="dockSlideNummer" style="font-size:11px;font-weight:700;color:#38bdf8;text-transform:uppercase;margin-bottom:4px;">Dia 1 van ...</div>
+                    <div id="dockSlideTitel" style="font-size:14px;font-weight:700;color:#ffffff;margin-bottom:6px;">Laden...</div>
+                    <div id="dockSlideSnippet" style="font-size:12px;color:#94a3b8;line-height:1.35;max-height:48px;overflow:hidden;"></div>
+                </div>
+
+                <div id="dockVolgendeHint" style="font-size:11px;color:#64748b;margin-bottom:10px;padding:0 4px;">
+                    Volgende: ...
+                </div>
+
+                <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:6px;padding:0 2px;">
+                    Liturgie Volgorde
+                </div>
+                <div id="dockSlideLijst" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:4px;max-height:42vh;border:1px solid #1e293b;border-radius:12px;padding:6px;background:#090d16;"></div>
+            </div>
+        `;
+
+        function updateDockUI() {
+            const state = getObsLiveState();
+            if (!state || !state.slides || !state.slides.length) return;
+
+            const idx = state.currentIndex;
+            const total = state.slides.length;
+            const curSlide = state.slides[idx] || state.slides[0];
+            const nextSlide = state.slides[idx + 1] || null;
+
+            const numEl = document.getElementById('dockSlideNummer');
+            const titEl = document.getElementById('dockSlideTitel');
+            const snipEl = document.getElementById('dockSlideSnippet');
+            const nextEl = document.getElementById('dockVolgendeHint');
+            const blackBtn = document.getElementById('dockBlackoutBtn');
+
+            if (numEl) numEl.textContent = `Dia ${idx + 1} van ${total}`;
+            if (titEl) titEl.textContent = curSlide.subtitel || curSlide.titel || curSlide.type;
+            if (snipEl) {
+                if (curSlide.regels && curSlide.regels.length) {
+                    snipEl.textContent = curSlide.regels.slice(0, 2).join(' / ');
+                } else if (curSlide.type === 'Welkom') {
+                    snipEl.textContent = `${curSlide.gemeente || ''} · ${curSlide.datum || ''}`;
+                } else if (curSlide.type === 'QR') {
+                    snipEl.textContent = 'Collecte QR-code & IBAN';
+                } else {
+                    snipEl.textContent = curSlide.type;
+                }
+            }
+            if (nextEl) {
+                nextEl.textContent = nextSlide ? `Volgende: ${nextSlide.subtitel || nextSlide.titel}` : 'Einde van de liturgie';
+            }
+
+            if (blackBtn) {
+                if (state.isBlackout) {
+                    blackBtn.style.background = '#dc2626';
+                    blackBtn.style.color = '#ffffff';
+                    blackBtn.style.border = '1px solid #ef4444';
+                    blackBtn.textContent = '🔴 Zwart Actief';
+                } else {
+                    blackBtn.style.background = '#1e293b';
+                    blackBtn.style.color = '#cbd5e1';
+                    blackBtn.style.border = '1px solid #334155';
+                    blackBtn.textContent = '⚫ Zwart Scherm (B)';
+                }
+            }
+
+            const lijstEl = document.getElementById('dockSlideLijst');
+            if (lijstEl) {
+                lijstEl.innerHTML = '';
+                state.slides.forEach((s, sIdx) => {
+                    const isActief = sIdx === idx;
+                    const row = document.createElement('div');
+                    row.style.cssText = `padding:8px 10px;border-radius:8px;font-size:11px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:all 0.15s;${isActief ? 'background:#007AFF;color:#ffffff;font-weight:700;' : 'background:#1e293b;color:#cbd5e1;'}`;
+                    row.innerHTML = `<span>${sIdx + 1}. ${s.subtitel || s.titel}</span>${isActief ? '<span>✓</span>' : ''}`;
+                    row.onclick = () => {
+                        state.currentIndex = sIdx;
+                        state.isBlackout = false;
+                        saveObsLiveState(state);
+                        updateDockUI();
+                    };
+                    lijstEl.appendChild(row);
+                });
+            }
+        }
+
+        updateDockUI();
+
+        if (_obsBroadcastChannel) {
+            _obsBroadcastChannel.onmessage = (e) => {
+                if (e.data && e.data.type === 'UPDATE') updateDockUI();
+            };
+        }
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'kerkapp_obs_live_state') updateDockUI();
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+                obsLiveVolgende();
+                updateDockUI();
+            } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+                obsLiveVorige();
+                updateDockUI();
+            } else if (e.key.toLowerCase() === 'b' || e.key.toLowerCase() === 'z') {
+                obsLiveToggleBlackout();
+                updateDockUI();
+            }
+        });
+    }
+
     // --- BIJBEL & INTRO JS ONLOAD ---
     window.onload = async function() {
+        const urlParams = new URLSearchParams(location.search);
+        const liveMode = urlParams.get('mode');
+        if (liveMode === 'beamer') { startBeamerWeergave(); return; }
+        if (liveMode === 'stream') { startStreamWeergave(); return; }
+        if (liveMode === 'dock') { startDockWeergave(); return; }
+
         // Meelees-modus: als ?meelees=<id> in de URL staat, tonen we alleen de
         // verticale meeleespagina voor gemeenteleden (niet de editor).
-        const meeleesId = new URLSearchParams(location.search).get('meelees');
+        const meeleesId = urlParams.get('meelees');
         if (meeleesId) { toonMeeleesPagina(meeleesId); return; }
 
         initGemeente();
@@ -7738,6 +8365,165 @@ window.verstuurExportFeedback = async function() {
                 <span id="gemeenteBevestigTekst">Aan de slag met Bethelkerk Maassluis</span>
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
             </button>
+        </div>
+    </div>
+</div>
+
+<!-- TEST MODAL: OBS & BEAMER LIVE REGIE -->
+<div id="obsTestModal" class="fixed inset-0 z-[120] hidden flex items-center justify-center bg-black/40 backdrop-blur-xl p-4 transition-all" onclick="if(event.target === this) sluitObsTestModal()">
+    <div class="bg-white dark:bg-gray-900 rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.3)] ring-1 ring-black/[0.08] w-full max-w-4xl max-h-[92vh] overflow-y-auto flex flex-col transform transition-all modal-animate border border-gray-100 dark:border-gray-800">
+        <!-- Header -->
+        <div class="p-5 md:p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-start bg-gray-50/70 dark:bg-gray-800/50 flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-blue-500/10 text-blue-600 flex items-center justify-center text-xl flex-shrink-0">
+                    🎥
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h3 class="text-lg font-bold text-[#1D1D1F] dark:text-white">OBS & Beamer Live Regie</h3>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 border border-emerald-300/40">TESTMODUS</span>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        Test de directe aansturing van beamer en livestream vanuit OBS · Gewone PowerPoint-export blijft 100% ongewijzigd
+                    </p>
+                </div>
+            </div>
+            <button type="button" onclick="sluitObsTestModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+
+        <div class="p-5 md:p-6 flex flex-col gap-5">
+            <!-- Interactieve Live Simulator -->
+            <div class="bg-gray-950 rounded-2xl p-4 md:p-5 text-white flex flex-col gap-3.5 shadow-inner">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span class="text-xs font-bold uppercase tracking-wider text-gray-300">Interactieve Simulator</span>
+                        <span id="obsSimIndexLabel" class="text-xs text-blue-400 font-semibold ml-2">Dia 1 van ...</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="obsLiveVorige()" class="px-3.5 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-white transition-all active:scale-95 flex items-center gap-1">
+                            ◀ Vorige
+                        </button>
+                        <button type="button" onclick="obsLiveVolgende()" class="px-4 py-1.5 rounded-xl bg-[#007AFF] hover:bg-blue-600 text-xs font-bold text-white transition-all active:scale-95 shadow-md flex items-center gap-1">
+                            Volgende ▶
+                        </button>
+                        <button type="button" id="obsSimBlackoutBtn" onclick="obsLiveToggleBlackout()" class="px-3 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-300 hover:text-white transition-all active:scale-95">
+                            ⚫ Zwart Scherm (B)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Twee schermen naast elkaar: Beamer vs Livestream -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                    <!-- Scherm 1: Beamer (Zwart / Wit) -->
+                    <div class="flex flex-col gap-1.5">
+                        <div class="flex items-center justify-between text-[11px] font-bold text-gray-400">
+                            <span>📽️ BEAMER (Kerkzaal)</span>
+                            <span class="text-[10px] text-gray-500 font-normal">Puur zwart · Witte tekst</span>
+                        </div>
+                        <div class="aspect-video bg-black rounded-xl border border-gray-800 overflow-hidden relative p-3 flex flex-col items-center justify-center text-center shadow-md">
+                            <div id="obsSimBeamerScherm" class="w-full h-full flex flex-col items-center justify-center">
+                                <!-- Dynamisch gevuld -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Scherm 2: Livestream (Thema Achtergrond) -->
+                    <div class="flex flex-col gap-1.5">
+                        <div class="flex items-center justify-between text-[11px] font-bold text-blue-400">
+                            <span>📺 LIVESTREAM (OBS / Kerkdienstgemist)</span>
+                            <span class="text-[10px] text-gray-400 font-normal">Thema achtergrond + broadcast tekst</span>
+                        </div>
+                        <div class="aspect-video bg-gray-900 rounded-xl border border-blue-900/40 overflow-hidden relative shadow-md">
+                            <div id="obsSimStreamBg" class="absolute inset-0 pointer-events-none"></div>
+                            <div id="obsSimStreamScherm" class="relative z-10 w-full h-full flex flex-col items-center justify-center p-3 text-center">
+                                <!-- Dynamisch gevuld -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Drie Testknoppen & URLs -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <!-- 1. Beamer -->
+                <div class="bg-gray-50 dark:bg-gray-800/60 p-4 rounded-2xl border border-gray-200/60 dark:border-gray-700/60 flex flex-col justify-between gap-3">
+                    <div>
+                        <div class="flex items-center gap-1.5 text-xs font-bold text-[#1D1D1F] dark:text-white mb-1">
+                            <span>📽️ 1. Beamer Scherm</span>
+                        </div>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
+                            Voor op scherm 2 in de kerkzaal. Schermvullend diepzwart met grote witte tekst.
+                        </p>
+                    </div>
+                    <div class="flex flex-col gap-1.5 pt-2">
+                        <button type="button" onclick="obsOpenVenster('beamer')" class="w-full py-2 px-3 rounded-xl bg-gray-900 hover:bg-black text-white text-xs font-semibold transition-all active:scale-95 text-center shadow-sm">
+                            Open Beamer Scherm ↗
+                        </button>
+                        <button type="button" onclick="obsKopieerUrl('beamer')" class="w-full py-1.5 px-3 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-100 text-gray-700 dark:text-gray-200 text-[11px] font-semibold border border-gray-200 dark:border-gray-600 transition-all text-center">
+                            📋 Kopieer Beamer Link
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2. Stream -->
+                <div class="bg-gray-50 dark:bg-gray-800/60 p-4 rounded-2xl border border-gray-200/60 dark:border-gray-700/60 flex flex-col justify-between gap-3">
+                    <div>
+                        <div class="flex items-center gap-1.5 text-xs font-bold text-[#1D1D1F] dark:text-white mb-1">
+                            <span>📺 2. OBS Livestream Bron</span>
+                        </div>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
+                            Voeg toe als Browser Source in OBS. Toont de actieve thema-achtergrond en collecte-QR.
+                        </p>
+                    </div>
+                    <div class="flex flex-col gap-1.5 pt-2">
+                        <button type="button" onclick="obsOpenVenster('stream')" class="w-full py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-all active:scale-95 text-center shadow-sm">
+                            Open Stream Weergave ↗
+                        </button>
+                        <button type="button" onclick="obsKopieerUrl('stream')" class="w-full py-1.5 px-3 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-100 text-gray-700 dark:text-gray-200 text-[11px] font-semibold border border-gray-200 dark:border-gray-600 transition-all text-center">
+                            📋 Kopieer OBS Browser Link
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 3. Dock -->
+                <div class="bg-gray-50 dark:bg-gray-800/60 p-4 rounded-2xl border border-gray-200/60 dark:border-gray-700/60 flex flex-col justify-between gap-3">
+                    <div>
+                        <div class="flex items-center gap-1.5 text-xs font-bold text-[#1D1D1F] dark:text-white mb-1">
+                            <span>🎛️ 3. OBS Regie Dock</span>
+                        </div>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
+                            Plak in OBS via <em>Docks ➔ Custom Browser Docks</em>. Bediening met muis & pijltjestoetsen.
+                        </p>
+                    </div>
+                    <div class="flex flex-col gap-1.5 pt-2">
+                        <button type="button" onclick="obsOpenVenster('dock')" class="w-full py-2 px-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold transition-all active:scale-95 text-center shadow-sm">
+                            Open Dock Paneel ↗
+                        </button>
+                        <button type="button" onclick="obsKopieerUrl('dock')" class="w-full py-1.5 px-3 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-100 text-gray-700 dark:text-gray-200 text-[11px] font-semibold border border-gray-200 dark:border-gray-600 transition-all text-center">
+                            📋 Kopieer Dock URL voor OBS
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Extra tool: Kerkdienstgemist Kopieerder -->
+            <div class="bg-amber-50 dark:bg-amber-950/30 p-4 rounded-2xl border border-amber-200/60 dark:border-amber-800/50 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">📋</span>
+                    <div>
+                        <h4 class="text-xs font-bold text-amber-900 dark:text-amber-200">Kerkdienstgemist Beschrijvingstekst</h4>
+                        <p class="text-[11px] text-amber-700 dark:text-amber-400">
+                            Kopieer de kant-en-klare liturgie, datum, ds. Mark Bot en collecte-IBAN voor Kerkdienstgemist Station 228.
+                        </p>
+                    </div>
+                </div>
+                <button type="button" onclick="kopieerKerkdienstgemistTekst()" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all active:scale-95 shadow-sm whitespace-nowrap">
+                    Kopieer voor Kerkdienstgemist
+                </button>
+            </div>
         </div>
     </div>
 </div>
