@@ -390,19 +390,56 @@
     </div>
 </div>
 
-<header class="mb-8 md:mb-14 pt-8 px-4 md:px-12 max-w-[1400px] mx-auto w-full flex flex-col md:flex-row md:justify-between md:items-end gap-5">
-    <div>
-        <div class="flex items-center gap-3 flex-wrap mb-1">
-            <h1 onclick="checkOnderhoudCode()" class="text-2xl md:text-3xl font-bold tracking-tight cursor-default select-none">Liturgie Assistent <span class="text-[#007AFF]">Pro</span></h1>
-            <button type="button" onclick="openGemeenteModal()" id="gemeenteBadgeBtn" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-[#007AFF] hover:bg-blue-100 transition-colors border border-blue-100 shadow-sm cursor-pointer" title="Klik om van gemeente te wisselen of een nieuwe toe te voegen">
+<header class="mb-6 md:mb-10 pt-6 md:pt-8 px-4 md:px-12 max-w-[1400px] mx-auto w-full flex flex-col gap-3 md:gap-4">
+    <!-- Bovenste rij: Titel + Gemeente links, Status-pill rechts (Strak uitgelijnd op dezelfde bovenste hoogte) -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full">
+        <!-- Links: Titel & Gemeente-knop -->
+        <div class="flex items-center gap-3 flex-wrap">
+            <h1 onclick="checkOnderhoudCode()" class="text-2xl md:text-3xl font-bold tracking-tight cursor-default select-none text-[#1D1D1F] dark:text-white">Liturgie Assistent <span class="text-[#007AFF]">Pro</span></h1>
+            <button type="button" onclick="openGemeenteModal()" id="gemeenteBadgeBtn" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-[#007AFF] hover:bg-blue-100 transition-colors border border-blue-100 shadow-sm cursor-pointer active:scale-95" title="Klik om van gemeente te wisselen of een nieuwe toe te voegen">
                 <span>⛪</span>
                 <span id="headerGemeenteNaam">Bethelkerk Maassluis</span>
                 <svg class="w-3 h-3 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
             </button>
         </div>
-        
+
+        <!-- Rechts: Slanke status-pill (Helemaal bovenaan, op dezelfde hoogte als de titel) -->
+        <div class="flex items-center gap-2 self-start sm:self-auto">
+            <div class="inline-flex items-center gap-2 sm:gap-2.5 px-3 py-1.5 rounded-full bg-white dark:bg-[#2C2C2E] border border-gray-200 dark:border-gray-700 text-xs shadow-xs text-gray-600 dark:text-gray-300">
+                <!-- 1. Bijbel API (Klikbaar) -->
+                <button type="button" onclick="checkBijbelAPI(true)" class="flex items-center gap-1.5 hover:text-[#007AFF] dark:hover:text-[#007AFF] transition-colors cursor-pointer active:scale-95" title="Bijbel API (klik om te testen)">
+                    <span id="bijbelDot" class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse flex-shrink-0"></span>
+                    <span id="bijbelBadge" class="font-medium text-[11px] whitespace-nowrap">Bijbel</span>
+                </button>
+                <span class="text-gray-300 dark:text-gray-600 select-none">·</span>
+                <!-- 2. AI Assistent -->
+                <div class="flex items-center gap-1.5" title="Gemini AI Assistent status">
+                    <span id="statusDot" class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse flex-shrink-0"></span>
+                    <span id="statusBadge" class="font-medium text-[11px] whitespace-nowrap">AI</span>
+                </div>
+                <span class="text-gray-300 dark:text-gray-600 select-none">·</span>
+                <!-- 3. Cloud Firestore Sync -->
+                <div class="flex items-center gap-1.5" title="Cloud synchronisatie status">
+                    <span id="cloudDot" class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse flex-shrink-0"></span>
+                    <span id="cloudBadge" class="font-medium text-[11px] whitespace-nowrap">Cloud</span>
+                </div>
+                <span class="text-gray-300 dark:text-gray-600 select-none">·</span>
+                <!-- 4. AI Capaciteit & Quota mini-meter -->
+                <div class="flex items-center gap-1.5" title="AI Capaciteit (reset per minuut)">
+                    <span class="text-[10px] text-gray-400">⚡</span>
+                    <div class="w-10 bg-gray-100 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
+                        <div id="quotaBar" class="bg-[#34C759] h-full transition-all duration-500 rounded-full" style="width: 100%"></div>
+                    </div>
+                    <span id="quotaPercentage" class="text-[10px] font-mono text-gray-500 dark:text-gray-400 font-bold">100%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Onderste rij: Instellingen Toolbar (Netjes onder de titel en status) -->
+    <div class="w-full">
         <!-- Mobiele toggle voor instellingen balk -->
-        <div class="md:hidden mt-2">
+        <div class="md:hidden">
             <button type="button" onclick="toggleMobileInstellingen()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-white dark:bg-[#2C2C2E] border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 shadow-xs active:scale-95 transition-all">
                 <svg class="w-3.5 h-3.5 text-[#007AFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
                 <span>⚙️ Tekst- &amp; Beamerinstellingen</span>
@@ -410,12 +447,12 @@
             </button>
         </div>
 
-        <div id="instellingenBalk" class="hidden md:flex items-center gap-3 mt-3 flex-wrap">
-            <div class="flex items-center gap-1.5 text-[#86868B] text-sm font-medium">
-                <svg class="w-4 h-4 text-[#007AFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+        <div id="instellingenBalk" class="hidden md:flex items-center gap-2.5 flex-wrap">
+            <div class="flex items-center gap-1.5 text-[#86868B] text-xs font-semibold uppercase tracking-wider mr-0.5">
+                <svg class="w-3.5 h-3.5 text-[#007AFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
                 <span>Instellingen:</span>
             </div>
-            <select id="fontFaceSelect" class="bg-white border border-gray-200 text-gray-700 text-sm rounded-lg pl-3 pr-8 py-1.5 focus:ring-[#007AFF] focus:border-[#007AFF] outline-none shadow-sm cursor-pointer apple-select">
+            <select id="fontFaceSelect" class="bg-white dark:bg-[#2C2C2E] border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 text-xs rounded-lg pl-2.5 pr-7 py-1.5 focus:ring-[#007AFF] focus:border-[#007AFF] outline-none shadow-xs cursor-pointer apple-select">
                 <option value="Arial" selected>Font: Arial</option>
                 <option value="Georgia">Font: Georgia</option>
                 <option value="Verdana">Font: Verdana</option>
@@ -423,67 +460,36 @@
                 <option value="Calibri">Font: Calibri</option>
                 <option value="Times New Roman">Font: Times New Roman</option>
             </select>
-            <select id="fontSizeSelect" class="bg-white border border-gray-200 text-gray-700 text-sm rounded-lg pl-3 pr-8 py-1.5 focus:ring-[#007AFF] focus:border-[#007AFF] outline-none shadow-sm cursor-pointer apple-select">
+            <select id="fontSizeSelect" class="bg-white dark:bg-[#2C2C2E] border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 text-xs rounded-lg pl-2.5 pr-7 py-1.5 focus:ring-[#007AFF] focus:border-[#007AFF] outline-none shadow-xs cursor-pointer apple-select">
                 <option value="32">Grootte: 32 pt</option>
                 <option value="36">Grootte: 36 pt</option>
                 <option value="38">Grootte: 38 pt</option>
                 <option value="40" selected>Grootte: 40 pt</option>
                 <option value="42">Grootte: 42 pt</option>
             </select>
-            <select id="linesSelect" class="bg-white border border-gray-200 text-gray-700 text-sm rounded-lg pl-3 pr-8 py-1.5 focus:ring-[#007AFF] focus:border-[#007AFF] outline-none shadow-sm cursor-pointer apple-select">
+            <select id="linesSelect" class="bg-white dark:bg-[#2C2C2E] border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 text-xs rounded-lg pl-2.5 pr-7 py-1.5 focus:ring-[#007AFF] focus:border-[#007AFF] outline-none shadow-xs cursor-pointer apple-select">
                 <option value="auto" selected>Per Vers (witregel)</option>
                 <option value="4">4 Regels per dia</option>
                 <option value="5">5 Regels per dia</option>
                 <option value="6">6 Regels per dia</option>
                 <option value="8">8 Regels per dia</option>
             </select>
-            <button type="button" id="boldToggleBtn" onclick="toggleBold()" class="bg-white border border-gray-200 text-gray-700 text-sm rounded-lg px-3 py-1.5 focus:ring-[#007AFF] focus:border-[#007AFF] outline-none shadow-sm cursor-pointer transition-all flex items-center justify-center gap-1.5 hover:bg-gray-50 active:scale-95" title="Tekst dikgedrukt maken (vet)">
-                <span class="font-black text-[15px] leading-none">B</span>
-                <span class="text-xs font-semibold hidden sm:inline">Vet</span>
+            <button type="button" id="boldToggleBtn" onclick="toggleBold()" class="bg-white dark:bg-[#2C2C2E] border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 text-xs rounded-lg px-2.5 py-1.5 focus:ring-[#007AFF] focus:border-[#007AFF] outline-none shadow-xs cursor-pointer transition-all flex items-center justify-center gap-1 hover:bg-gray-50 dark:hover:bg-white/5 active:scale-95" title="Tekst dikgedrukt maken (vet)">
+                <span class="font-black text-xs leading-none">B</span>
+                <span class="font-semibold hidden sm:inline text-xs">Vet</span>
             </button>
-            <select id="alignSelect" onchange="wijzigUitlijning()" class="bg-white border border-gray-200 text-gray-700 text-sm rounded-lg pl-3 pr-8 py-1.5 focus:ring-[#007AFF] focus:border-[#007AFF] outline-none shadow-sm cursor-pointer apple-select" title="Tekst uitlijning op de dia">
+            <select id="alignSelect" onchange="wijzigUitlijning()" class="bg-white dark:bg-[#2C2C2E] border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 text-xs rounded-lg pl-2.5 pr-7 py-1.5 focus:ring-[#007AFF] focus:border-[#007AFF] outline-none shadow-xs cursor-pointer apple-select" title="Tekst uitlijning op de dia">
                 <option value="center" selected>Uitlijning: Centreren</option>
                 <option value="left">Uitlijning: Links</option>
             </select>
-            <div class="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-1.5 shadow-sm">
-                <span class="text-sm text-gray-500 font-medium whitespace-nowrap" id="modusLabel">Beamer</span>
-                <label class="relative inline-block w-10 h-5 cursor-pointer flex-shrink-0">
+            <div class="flex items-center gap-2 bg-white dark:bg-[#2C2C2E] border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5 shadow-xs">
+                <span class="text-xs text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap" id="modusLabel">Beamer</span>
+                <label class="relative inline-block w-8 h-4 cursor-pointer flex-shrink-0">
                     <input type="checkbox" id="livestreamToggle" class="sr-only peer"/>
-                    <div class="w-10 h-5 bg-gray-300 peer-checked:bg-[#007AFF] rounded-full transition-colors"></div>
-                    <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5"></div>
+                    <div class="w-8 h-4 bg-gray-300 dark:bg-gray-600 peer-checked:bg-[#007AFF] rounded-full transition-colors"></div>
+                    <div class="absolute left-0.5 top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4"></div>
                 </label>
-                <span class="text-sm text-gray-500 font-medium whitespace-nowrap">Livestream</span>
-            </div>
-        </div>
-        
-    </div>
-    <div class="flex items-center gap-2 w-full md:w-auto mt-2 md:mt-0 justify-start md:justify-end">
-        <div class="inline-flex items-center gap-2 sm:gap-2.5 px-3 py-1.5 rounded-lg bg-white dark:bg-[#2C2C2E] border border-gray-200 dark:border-gray-700 text-xs shadow-xs text-gray-600 dark:text-gray-300">
-            <!-- 1. Bijbel API (Klikbaar) -->
-            <button type="button" onclick="checkBijbelAPI(true)" class="flex items-center gap-1.5 hover:text-[#007AFF] dark:hover:text-[#007AFF] transition-colors cursor-pointer" title="Bijbel API (klik om te testen)">
-                <span id="bijbelDot" class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse flex-shrink-0"></span>
-                <span id="bijbelBadge" class="font-medium text-[11px] whitespace-nowrap">Bijbel</span>
-            </button>
-            <span class="text-gray-300 dark:text-gray-600 select-none">·</span>
-            <!-- 2. AI Assistent -->
-            <div class="flex items-center gap-1.5" title="Gemini AI Assistent status">
-                <span id="statusDot" class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse flex-shrink-0"></span>
-                <span id="statusBadge" class="font-medium text-[11px] whitespace-nowrap">AI</span>
-            </div>
-            <span class="text-gray-300 dark:text-gray-600 select-none">·</span>
-            <!-- 3. Cloud Firestore Sync -->
-            <div class="flex items-center gap-1.5" title="Cloud synchronisatie status">
-                <span id="cloudDot" class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse flex-shrink-0"></span>
-                <span id="cloudBadge" class="font-medium text-[11px] whitespace-nowrap">Cloud</span>
-            </div>
-            <span class="text-gray-300 dark:text-gray-600 select-none">·</span>
-            <!-- 4. AI Capaciteit & Quota mini-meter -->
-            <div class="flex items-center gap-1.5" title="AI Capaciteit (reset per minuut)">
-                <span class="text-[10px] text-gray-400">⚡</span>
-                <div class="w-10 bg-gray-100 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
-                    <div id="quotaBar" class="bg-[#34C759] h-full transition-all duration-500 rounded-full" style="width: 100%"></div>
-                </div>
-                <span id="quotaPercentage" class="text-[10px] font-mono text-gray-500 dark:text-gray-400 font-bold">100%</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">Livestream</span>
             </div>
         </div>
     </div>
