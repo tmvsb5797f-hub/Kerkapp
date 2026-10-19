@@ -457,32 +457,49 @@
         </div>
         
     </div>
-    <div class="flex flex-col items-start md:items-end gap-3 w-full md:w-auto mt-4 md:mt-0">
-        
-        <div class="flex flex-wrap gap-2 items-center w-full md:w-auto">
-            <div onclick="checkBijbelAPI(true)" class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-gray-100 transition-all flex-grow md:flex-grow-0 justify-center cursor-pointer hover:bg-gray-50 active:scale-95" title="Klik om de Bijbel API status opnieuw te controleren">
-                <span id="bijbelDot" class="w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse"></span>
-                <span id="bijbelBadge" class="text-[12px] font-semibold text-gray-600 tracking-wide">Bijbel API...</span>
+    <div class="flex flex-col items-start md:items-end w-full md:w-auto mt-4 md:mt-0">
+        <!-- Apple Unified System Status Capsule -->
+        <div class="w-full md:w-auto bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-xl rounded-2xl p-2 sm:p-2.5 border border-gray-200/80 dark:border-white/10 shadow-[0_4px_16px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.35)] flex flex-col gap-2 transition-all">
+            
+            <!-- Bovenste rij: 3 Statusindicatoren in een strakke segmented cluster -->
+            <div class="flex items-center justify-between md:justify-end gap-1.5 flex-wrap">
+                <!-- 1. Bijbel API (Klikbaar voor handmatige controle) -->
+                <button type="button" onclick="checkBijbelAPI(true)" class="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gray-50/90 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 border border-gray-100 dark:border-white/5 transition-all active:scale-95 text-left group cursor-pointer" title="Klik om de Bijbel API status opnieuw te controleren">
+                    <span id="bijbelDot" class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse flex-shrink-0"></span>
+                    <span id="bijbelBadge" class="text-[11px] font-semibold text-gray-700 dark:text-gray-200 tracking-tight whitespace-nowrap">Bijbel API...</span>
+                    <svg class="w-3 h-3 text-gray-400 group-hover:text-[#007AFF] opacity-0 group-hover:opacity-100 transition-opacity ml-0.5 hidden sm:inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                </button>
+
+                <!-- 2. AI Assistent Status -->
+                <div class="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gray-50/90 dark:bg-white/5 border border-gray-100 dark:border-white/5 transition-all text-left">
+                    <span id="statusDot" class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse flex-shrink-0"></span>
+                    <span id="statusBadge" class="text-[11px] font-semibold text-gray-700 dark:text-gray-200 tracking-tight whitespace-nowrap">AI Verbinden...</span>
+                </div>
+
+                <!-- 3. Cloud Firestore Sync Status -->
+                <div class="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gray-50/90 dark:bg-white/5 border border-gray-100 dark:border-white/5 transition-all text-left">
+                    <span id="cloudDot" class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse flex-shrink-0"></span>
+                    <span id="cloudBadge" class="text-[11px] font-semibold text-gray-700 dark:text-gray-200 tracking-tight whitespace-nowrap">Cloud Verbinden...</span>
+                </div>
             </div>
 
-            <div class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-gray-100 transition-all flex-grow md:flex-grow-0 justify-center">
-                <span id="statusDot" class="w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse"></span>
-                <span id="statusBadge" class="text-[12px] font-semibold text-gray-600 tracking-wide">AI Verbinden...</span>
+            <!-- Onderste rij: Geïntegreerde AI Capaciteits-meter -->
+            <div class="pt-1.5 border-t border-gray-100 dark:border-white/5 flex flex-col gap-1 px-1">
+                <div class="flex justify-between items-center text-[10px] font-medium text-gray-500 dark:text-gray-400">
+                    <span class="flex items-center gap-1">
+                        <span class="text-[10px]">⚡</span>
+                        <span class="font-semibold uppercase tracking-wider text-[9px] text-gray-400 dark:text-gray-500">AI Capaciteit</span>
+                    </span>
+                    <div class="flex items-center gap-1">
+                        <span class="text-[9px] text-gray-400 dark:text-gray-500">Reset/min:</span>
+                        <span id="quotaPercentage" class="font-bold text-gray-800 dark:text-gray-100 text-[10px] font-mono">100%</span>
+                    </div>
+                </div>
+                <div class="w-full bg-gray-100 dark:bg-gray-800 h-1.5 rounded-full overflow-hidden">
+                    <div id="quotaBar" class="bg-[#34C759] h-full transition-all duration-500 ease-out rounded-full" style="width: 100%"></div>
+                </div>
             </div>
 
-            <div class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-gray-100 transition-all flex-grow md:flex-grow-0 justify-center">
-                <span id="cloudDot" class="w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse"></span>
-                <span id="cloudBadge" class="text-[12px] font-semibold text-gray-600 tracking-wide">Cloud Verbinden...</span>
-            </div>
-        </div>
-
-        <div class="w-full md:min-w-[200px] space-y-1.5 pr-1 mt-1">
-            <div class="flex justify-between text-[9px] font-bold uppercase text-[#86868B] tracking-wider">
-                <span>AI Capaciteit (Reset per min)</span><span id="quotaPercentage">100%</span>
-            </div>
-            <div class="w-full bg-[#E5E5EA] h-1.5 rounded-full overflow-hidden">
-                <div id="quotaBar" class="bg-[#34C759] h-full transition-all duration-500 ease-out" style="width: 100%"></div>
-            </div>
         </div>
     </div>
 </header>
