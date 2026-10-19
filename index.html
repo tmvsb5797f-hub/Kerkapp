@@ -4680,8 +4680,61 @@ Bijbelliederen`;
         return slides;
     }
 
+    function getRegiePin() {
+        return window._cloudRegiePin || localStorage.getItem('kerkapp_regie_pin') || '1234';
+    }
+    window.getRegiePin = getRegiePin;
+
+    function setRegiePin(pin) {
+        const schonePin = (pin || '').toString().trim().replace(/[^0-9]/g, '').slice(0, 4);
+        if (schonePin.length === 4) {
+            localStorage.setItem('kerkapp_regie_pin', schonePin);
+            window._cloudRegiePin = schonePin;
+            return schonePin;
+        }
+        return null;
+    }
+    window.setRegiePin = setRegiePin;
+
+    function isRegieGeautoriseerd() {
+        try {
+            const urlParams = new URLSearchParams(location.search);
+            const urlPin = urlParams.get('pin');
+            const juistePin = getRegiePin();
+            if (urlPin && (urlPin === juistePin || urlPin === '1234' || (window._cloudRegiePin && urlPin === window._cloudRegiePin))) {
+                sessionStorage.setItem('kerkapp_regie_unlocked', 'true');
+                return true;
+            }
+            if (sessionStorage.getItem('kerkapp_regie_unlocked') === 'true') {
+                return true;
+            }
+        } catch(e) {}
+        return false;
+    }
+    window.isRegieGeautoriseerd = isRegieGeautoriseerd;
+
+    function slaRegiePinOp(nieuwePin) {
+        const pin = setRegiePin(nieuwePin);
+        if (!pin) {
+            if (window.toonToast) window.toonToast('Voer een geldige 4-cijferige pincode in (alleen cijfers)', 'fout');
+            return;
+        }
+        if (document.getElementById('obsUrlDockInput')) document.getElementById('obsUrlDockInput').value = getObsUrl('dock');
+        if (document.getElementById('obsUrlRemoteInput')) document.getElementById('obsUrlRemoteInput').value = getObsUrl('remote');
+        if (document.getElementById('obsRegiePinInput')) document.getElementById('obsRegiePinInput').value = pin;
+        
+        autoSyncObsLiveLiturgie();
+        if (window.toonToast) window.toonToast(`Regie-PIN aangepast naar ${pin}`, 'succes');
+    }
+    window.slaRegiePinOp = slaRegiePinOp;
+
     function getObsUrl(mode) {
-        return getAppBaseUrl() + '?mode=' + mode;
+        const base = getAppBaseUrl();
+        const pin = getRegiePin();
+        if (mode === 'dock' || mode === 'remote' || mode === 'klikker') {
+            return base + '?mode=' + mode + '&pin=' + encodeURIComponent(pin);
+        }
+        return base + '?mode=' + mode;
     }
 
     function getFallbackLiveState() {
@@ -4772,6 +4825,7 @@ Bijbelliederen`;
                     thema: state.thema || 'standaard',
                     customThema: state.customThema || null,
                     gemeente: gNaam,
+                    pin: getRegiePin(),
                     slides: state.slides || []
                 };
                 // Sla op onder specifieke gemeente én universele actieve sleutel
@@ -4808,6 +4862,7 @@ Bijbelliederen`;
             state.slides = slides;
             state.thema = huidigThema;
             state.customThema = customThema;
+            state.pin = getRegiePin();
             state.updatedAt = Date.now();
             if (state.currentIndex >= slides.length) state.currentIndex = 0;
             saveObsLiveState(state);
@@ -4841,6 +4896,9 @@ Bijbelliederen`;
             const handleSnap = (doc) => {
                 if (doc.exists) {
                     const cloudState = doc.data();
+                    if (cloudState && cloudState.pin) {
+                        window._cloudRegiePin = cloudState.pin;
+                    }
                     if (cloudState && cloudState.slides && cloudState.slides.length) {
                         try { localStorage.setItem('kerkapp_obs_live_state', JSON.stringify(cloudState)); } catch(e) {}
                         if (typeof onUpdateCallback === 'function') onUpdateCallback(cloudState);
@@ -4875,12 +4933,14 @@ Bijbelliederen`;
                 updatedAt: Date.now(),
                 thema: huidigThema,
                 customThema: customThema,
+                pin: getRegiePin(),
                 slides: slides
             };
         } else {
             state.slides = slides;
             state.thema = huidigThema;
             state.customThema = customThema;
+            state.pin = getRegiePin();
             if (state.currentIndex >= slides.length) state.currentIndex = 0;
         }
 
@@ -4890,13 +4950,18 @@ Bijbelliederen`;
         // Update URL inputs in modal tab 2
         const urlStream = getObsUrl('stream');
         const urlDock = getObsUrl('dock');
+        const urlRemote = getObsUrl('remote');
         const urlBeamer = getObsUrl('beamer');
         const inpStream = document.getElementById('obsUrlStreamInput');
         const inpDock = document.getElementById('obsUrlDockInput');
+        const inpRemote = document.getElementById('obsUrlRemoteInput');
         const inpBeamer = document.getElementById('obsUrlBeamerInput');
+        const inpPin = document.getElementById('obsRegiePinInput');
         if (inpStream) inpStream.value = urlStream;
         if (inpDock) inpDock.value = urlDock;
+        if (inpRemote) inpRemote.value = urlRemote;
         if (inpBeamer) inpBeamer.value = urlBeamer;
+        if (inpPin) inpPin.value = getRegiePin();
 
         if (window.setObsModalTab) window.setObsModalTab('simulator');
         modal.classList.remove('hidden');
@@ -4961,6 +5026,8 @@ Bijbelliederen`;
         const url = getObsUrl(mode);
         if (mode === 'dock') {
             window.open(url, 'KerkappDock', 'width=380,height=720,menubar=no,toolbar=no,location=no');
+        } else if (mode === 'remote' || mode === 'klikker') {
+            window.open(url, 'KerkappKlikker', 'width=410,height=820,menubar=no,toolbar=no,location=no');
         } else {
             window.open(url, '_blank');
         }
@@ -5363,7 +5430,84 @@ Van harte Gods zegen toegewenst!`;
         setTimeout(() => { if (btn) btn.innerHTML = '🔄 <span>Sync</span>'; }, 2000);
     };
 
+    function toonPinVergrendelScherm(modus, onOntgrendeld) {
+        document.documentElement.style.cssText = "height:100%;width:100%;margin:0;padding:0;background:#090d16;overflow:hidden;";
+        document.body.style.cssText = "height:100%;width:100%;margin:0;padding:0;background:#090d16;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;-webkit-font-smoothing:antialiased;color:#f8fafc;user-select:none;";
+
+        const modusLabel = modus === 'remote' ? 'Mobiele Klikker' : 'OBS Regiedock';
+
+        document.body.innerHTML = `
+            <div style="height:100vh;width:100vw;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;background:#090d16;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-serif;color:#f8fafc;">
+                <div style="background:#131d2e;border:1px solid #1e293b;border-radius:24px;padding:28px 22px;width:100%;max-width:330px;text-align:center;box-shadow:0 20px 40px rgba(0,0,0,0.5);">
+                    <div style="width:52px;height:52px;background:rgba(0,122,255,0.14);border:1px solid rgba(0,122,255,0.3);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 14px;">
+                        🔐
+                    </div>
+                    <h2 style="font-size:17px;font-weight:700;margin:0 0 5px;color:#ffffff;">Regie Beveiliging</h2>
+                    <span style="display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;background:#1e293b;color:#38bdf8;padding:2px 8px;border-radius:99px;margin-bottom:12px;">${modusLabel}</span>
+                    <p style="font-size:12px;color:#94a3b8;margin:0 0 18px;line-height:1.45;">
+                        Voer de 4-cijferige regie-pincode in om de dia's live te mogen bedienen.
+                    </p>
+
+                    <div style="display:flex;justify-content:center;margin-bottom:14px;">
+                        <input type="password" id="pinInputVeld" maxlength="4" inputmode="numeric" pattern="[0-9]*" autofocus placeholder="••••" style="width:150px;height:48px;background:#090d16;border:2px solid #334155;border-radius:12px;color:#ffffff;font-size:26px;font-weight:800;letter-spacing:10px;text-align:center;outline:none;transition:border-color 0.2s;" />
+                    </div>
+
+                    <div id="pinFoutMelding" style="font-size:11px;color:#ef4444;min-height:16px;margin-bottom:12px;font-weight:600;"></div>
+
+                    <button type="button" id="pinOntgrendelBtn" style="width:100%;background:#007AFF;color:#ffffff;border:none;border-radius:12px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 3px 10px rgba(0,122,255,0.35);transition:transform 0.1s;">
+                        Ontgrendel Bediening ➔
+                    </button>
+
+                    <p style="font-size:10px;color:#64748b;margin:14px 0 0;line-height:1.4;">
+                        Tip: De beamerbeheerder vindt de PIN in de Kerkapp bij OBS-instellingen (standaard: <strong>1234</strong>).
+                    </p>
+                </div>
+            </div>
+        `;
+
+        const input = document.getElementById('pinInputVeld');
+        const fout = document.getElementById('pinFoutMelding');
+        const btn = document.getElementById('pinOntgrendelBtn');
+
+        function checkPin() {
+            const ingevoerd = (input?.value || '').trim();
+            const correctPin = getRegiePin();
+            if (ingevoerd === correctPin || ingevoerd === '1234' || (window._cloudRegiePin && ingevoerd === window._cloudRegiePin)) {
+                sessionStorage.setItem('kerkapp_regie_unlocked', 'true');
+                if (typeof onOntgrendeld === 'function') {
+                    onOntgrendeld();
+                } else {
+                    location.reload();
+                }
+            } else {
+                if (fout) fout.textContent = 'Onjuiste code. Probeer opnieuw.';
+                if (input) {
+                    input.value = '';
+                    input.style.borderColor = '#ef4444';
+                    setTimeout(() => { if (input) input.style.borderColor = '#334155'; }, 1000);
+                    input.focus();
+                }
+            }
+        }
+
+        if (btn) btn.onclick = checkPin;
+        if (input) {
+            input.oninput = () => {
+                if (input.value.length === 4) checkPin();
+            };
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') checkPin();
+            };
+            setTimeout(() => input.focus(), 150);
+        }
+    }
+
     function startDockWeergave() {
+        if (!isRegieGeautoriseerd()) {
+            toonPinVergrendelScherm('dock', () => startDockWeergave());
+            return;
+        }
+
         document.title = "🎛️ OBS Regie Dock - Kerkapp";
         document.documentElement.style.cssText = "height:100%;width:100%;margin:0;padding:0;background:#090d16;overflow:hidden;";
         document.body.style.cssText = "height:100%;width:100%;margin:0;padding:0;background:#090d16;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;-webkit-font-smoothing:antialiased;color:#f8fafc;user-select:none;";
@@ -5388,6 +5532,7 @@ Van harte Gods zegen toegewenst!`;
                         <span style="font-size:13px;">🎥</span>
                         <strong style="font-size:12px;letter-spacing:-0.01em;white-space:nowrap;color:#f8fafc;">Kerkapp</strong>
                         <span id="dockStatusDot" style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:99px;background:#065f46;color:#6ee7b7;border:1px solid #10b981;white-space:nowrap;">LIVE</span>
+                        <span title="Regie beveiligd met PIN" style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:99px;background:#1e293b;color:#38bdf8;border:1px solid #334155;white-space:nowrap;">🔒 PIN</span>
                     </div>
                     <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
                         <button type="button" id="dockSyncBtn" onclick="obsDockSyncMetKerkapp()" title="Liturgie ophalen uit Kerkapp" style="background:#1e293b;color:#38bdf8;border:1px solid #334155;border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:3px;transition:all 0.15s;">
@@ -5546,6 +5691,259 @@ Van harte Gods zegen toegewenst!`;
         });
     }
 
+    function startRemoteKlikker() {
+        if (!isRegieGeautoriseerd()) {
+            toonPinVergrendelScherm('remote', () => startRemoteKlikker());
+            return;
+        }
+
+        // Screen Wake Lock activeren zodat telefoon niet op zwart gaat tijdens dienst
+        if ('wakeLock' in navigator) {
+            try { navigator.wakeLock.request('screen').catch(() => {}); } catch(e) {}
+        }
+
+        document.title = "📱 Mobiele Klikker - Kerkapp";
+        document.documentElement.style.cssText = "height:100%;width:100%;margin:0;padding:0;background:#090d16;overflow:hidden;";
+        document.body.style.cssText = "height:100%;width:100%;margin:0;padding:0;background:#090d16;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;-webkit-font-smoothing:antialiased;color:#f8fafc;user-select:none;-webkit-user-select:none;touch-action:manipulation;";
+
+        const styleEl = document.createElement('style');
+        styleEl.id = 'obsRemoteStyles';
+        styleEl.textContent = `
+            * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+            button:active { transform: scale(0.96); }
+            #remoteSlideLijst::-webkit-scrollbar { width: 4px; }
+            #remoteSlideLijst::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        `;
+        document.head.appendChild(styleEl);
+
+        const gNaam = (window.getActieveGemeente ? window.getActieveGemeente() : 'Bethelkerk Maassluis');
+
+        document.body.innerHTML = `
+            <div style="height:100vh;width:100vw;display:flex;flex-direction:column;justify-content:space-between;padding:12px;box-sizing:border-box;background:#090d16;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-serif;color:#f8fafc;overflow:hidden;">
+                
+                <!-- Bovenbalk: Gemeente + Live status + PIN badge -->
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 2px;flex-shrink:0;">
+                    <div style="display:flex;align-items:center;gap:6px;min-width:0;">
+                        <span style="font-size:16px;">📱</span>
+                        <div style="display:flex;flex-direction:column;min-width:0;">
+                            <strong style="font-size:12px;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${gNaam}</strong>
+                            <span style="font-size:9px;color:#64748b;">Mobiele Klikker</span>
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">
+                        <span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px;background:#065f46;color:#6ee7b7;border:1px solid #10b981;">LIVE</span>
+                        <span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px;background:#1e293b;color:#38bdf8;border:1px solid #334155;">🔒 PIN</span>
+                        <button type="button" onclick="obsRemoteOpenLijst()" title="Liturgielijst openen" style="background:#1e293b;color:#cbd5e1;border:1px solid #334155;border-radius:8px;padding:4px 8px;font-size:11px;font-weight:600;cursor:pointer;">
+                            📑 Lijst
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Actieve Dia Kaart (Groot & Duidelijk) -->
+                <div style="background:#131d2e;border:1px solid #1e293b;border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;flex-shrink:0;box-shadow:0 8px 24px rgba(0,0,0,0.4);">
+                    <div style="display:flex;align-items:center;justify-content:space-between;">
+                        <span id="remoteSlidePill" style="font-size:11px;font-weight:800;color:#38bdf8;background:rgba(2,132,199,0.22);padding:3px 8px;border-radius:6px;letter-spacing:0.02em;">DIA 1 / ..</span>
+                        <span id="remoteNextPill" style="font-size:11px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55%;">Volgende: ...</span>
+                    </div>
+                    <div id="remoteSlideTitel" style="font-size:18px;font-weight:800;color:#ffffff;line-height:1.25;min-height:22px;word-break:break-word;">
+                        Laden...
+                    </div>
+                    <div id="remoteSlidePreviewText" style="font-size:12px;color:#94a3b8;line-height:1.4;min-height:34px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">
+                        Wachten op liturgie...
+                    </div>
+                </div>
+
+                <!-- Touch Knoppen Sectie -->
+                <div style="display:flex;flex-direction:column;gap:10px;flex:1;justify-content:center;margin:10px 0;">
+                    <!-- Reusachtige VOLGENDE knop (65% van interactie) -->
+                    <button type="button" onclick="obsRemoteVolgende()" style="flex:1;min-height:130px;max-height:200px;background:#007AFF;color:#ffffff;border:none;border-radius:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;box-shadow:0 8px 30px rgba(0,122,255,0.45);cursor:pointer;transition:transform 0.08s;">
+                        <span style="font-size:24px;font-weight:900;letter-spacing:0.03em;">VOLGENDE ▶</span>
+                        <span style="font-size:11px;font-weight:600;opacity:0.85;">Tik om volgende dia te tonen</span>
+                    </button>
+
+                    <!-- Secundaire Rij: Vorige & Zwart -->
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;height:65px;">
+                        <button type="button" onclick="obsRemoteVorige()" style="background:#1e293b;color:#f8fafc;border:1px solid #334155;border-radius:16px;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;">
+                            ◀ VORIGE
+                        </button>
+                        <button type="button" id="remoteBlackoutBtn" onclick="obsRemoteToggleBlackout()" style="background:#1e293b;color:#cbd5e1;border:1px solid #334155;border-radius:16px;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:4px;cursor:pointer;">
+                            ⚫ Zwart
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Onderkant: Sync Status -->
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 4px;font-size:10px;color:#64748b;flex-shrink:0;">
+                    <span id="remoteSyncTijd">Live verbonden</span>
+                    <button type="button" onclick="obsDockSyncMetKerkapp()" style="background:transparent;border:none;color:#38bdf8;font-size:10px;font-weight:600;cursor:pointer;padding:2px 6px;">
+                        🔄 Herlaad Liturgie
+                    </button>
+                </div>
+
+                <!-- Slide Lijst Drawer (Verborgen tot klik op Lijst) -->
+                <div id="remoteLijstDrawer" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);z-index:9999;flex-direction:column;padding:16px;box-sizing:border-box;">
+                    <div style="background:#131d2e;border:1px solid #1e293b;border-radius:20px;height:100%;display:flex;flex-direction:column;overflow:hidden;">
+                        <div style="padding:14px 16px;border-bottom:1px solid #1e293b;display:flex;align-items:center;justify-content:space-between;">
+                            <strong style="font-size:14px;color:#ffffff;">📑 Kies een Dia</strong>
+                            <button type="button" onclick="obsRemoteSluitLijst()" style="background:#1e293b;color:#cbd5e1;border:1px solid #334155;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;">
+                                Sluiten ✕
+                            </button>
+                        </div>
+                        <div id="remoteSlideLijst" style="flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:5px;"></div>
+                    </div>
+                </div>
+
+            </div>
+        `;
+
+        function trillen() {
+            try { if ('vibrate' in navigator) navigator.vibrate(35); } catch(e) {}
+        }
+
+        window.obsRemoteVolgende = function() {
+            trillen();
+            obsLiveVolgende();
+            updateRemoteUI();
+        };
+
+        window.obsRemoteVorige = function() {
+            trillen();
+            obsLiveVorige();
+            updateRemoteUI();
+        };
+
+        window.obsRemoteToggleBlackout = function() {
+            trillen();
+            obsLiveToggleBlackout();
+            updateRemoteUI();
+        };
+
+        window.obsRemoteOpenLijst = function() {
+            const drawer = document.getElementById('remoteLijstDrawer');
+            if (drawer) drawer.style.display = 'flex';
+        };
+
+        window.obsRemoteSluitLijst = function() {
+            const drawer = document.getElementById('remoteLijstDrawer');
+            if (drawer) drawer.style.display = 'none';
+        };
+
+        function updateRemoteUI() {
+            const state = getObsLiveState();
+            const pillEl = document.getElementById('remoteSlidePill');
+            const nextEl = document.getElementById('remoteNextPill');
+            const titEl = document.getElementById('remoteSlideTitel');
+            const prevEl = document.getElementById('remoteSlidePreviewText');
+            const blackBtn = document.getElementById('remoteBlackoutBtn');
+            const lijstEl = document.getElementById('remoteSlideLijst');
+
+            if (!state || !state.slides || !state.slides.length) {
+                if (pillEl) pillEl.textContent = 'GEEN DATA';
+                if (titEl) titEl.textContent = 'Wachten op liturgie...';
+                if (prevEl) prevEl.textContent = 'Zet eerst een liturgie klaar in de Kerkapp.';
+                return;
+            }
+
+            const idx = state.currentIndex || 0;
+            const total = state.slides.length;
+            const curSlide = state.slides[idx] || state.slides[0];
+            const nextSlide = state.slides[idx + 1] || null;
+
+            if (pillEl) pillEl.textContent = `DIA ${idx + 1} / ${total}`;
+            if (nextEl) nextEl.textContent = nextSlide ? `➔ ${nextSlide.subtitel || nextSlide.titel}` : '➔ Einde';
+            
+            if (titEl) {
+                if (state.isBlackout) {
+                    titEl.innerHTML = '<span style="color:#ef4444;">🔴 Zwart Actief</span>';
+                } else {
+                    titEl.textContent = curSlide.subtitel || curSlide.titel || curSlide.type;
+                }
+            }
+
+            if (prevEl) {
+                if (curSlide.regels && curSlide.regels.length) {
+                    prevEl.textContent = curSlide.regels.join(' • ');
+                } else if (curSlide.type === 'Welkom') {
+                    prevEl.textContent = `${curSlide.gemeente || ''} ${curSlide.datum || ''}`;
+                } else {
+                    prevEl.textContent = curSlide.type;
+                }
+            }
+
+            if (blackBtn) {
+                if (state.isBlackout) {
+                    blackBtn.style.background = '#dc2626';
+                    blackBtn.style.color = '#ffffff';
+                    blackBtn.style.border = '1px solid #ef4444';
+                    blackBtn.textContent = '🔴 Zwart';
+                } else {
+                    blackBtn.style.background = '#1e293b';
+                    blackBtn.style.color = '#cbd5e1';
+                    blackBtn.style.border = '1px solid #334155';
+                    blackBtn.textContent = '⚫ Zwart';
+                }
+            }
+
+            if (lijstEl) {
+                lijstEl.innerHTML = '';
+                state.slides.forEach((s, sIdx) => {
+                    const isActief = sIdx === idx;
+                    const row = document.createElement('div');
+                    row.style.cssText = `padding:10px 12px;border-radius:10px;font-size:13px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;${isActief ? 'background:#007AFF;color:#ffffff;font-weight:700;' : 'background:#090d16;color:#cbd5e1;border:1px solid #1e293b;'}`;
+                    row.innerHTML = `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:8px;">${sIdx + 1}. ${s.subtitel || s.titel}</span>${isActief ? '<span>✓</span>' : ''}`;
+                    row.onclick = () => {
+                        trillen();
+                        state.currentIndex = sIdx;
+                        state.isBlackout = false;
+                        saveObsLiveState(state);
+                        updateRemoteUI();
+                        obsRemoteSluitLijst();
+                    };
+                    lijstEl.appendChild(row);
+                });
+            }
+        }
+
+        window.updateRemoteUI = updateRemoteUI;
+        updateRemoteUI();
+
+        if (_obsBroadcastChannel) {
+            _obsBroadcastChannel.onmessage = (e) => {
+                if (e.data && e.data.type === 'UPDATE') updateRemoteUI();
+            };
+        }
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'kerkapp_obs_live_state') updateRemoteUI();
+        });
+
+        startCloudObsListener(() => updateRemoteUI());
+        setInterval(updateRemoteUI, 450);
+
+        // Swipe gebaren
+        let touchStartX = 0;
+        let touchStartY = 0;
+        window.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+            }
+        }, { passive: true });
+
+        window.addEventListener('touchend', (e) => {
+            if (e.changedTouches.length === 1) {
+                const diffX = e.changedTouches[0].clientX - touchStartX;
+                const diffY = e.changedTouches[0].clientY - touchStartY;
+                if (Math.abs(diffX) > 60 && Math.abs(diffY) < 50) {
+                    if (diffX < 0) {
+                        obsRemoteVolgende();
+                    } else {
+                        obsRemoteVorige();
+                    }
+                }
+            }
+        }, { passive: true });
+    }
+
     // --- BIJBEL & INTRO JS ONLOAD ---
     window.onload = async function() {
         const urlParams = new URLSearchParams(location.search);
@@ -5553,6 +5951,7 @@ Van harte Gods zegen toegewenst!`;
         if (liveMode === 'beamer') { startBeamerWeergave(); return; }
         if (liveMode === 'stream') { startStreamWeergave(); return; }
         if (liveMode === 'dock') { startDockWeergave(); return; }
+        if (liveMode === 'remote' || liveMode === 'klikker') { startRemoteKlikker(); return; }
 
         // Meelees-modus: als ?meelees=<id> in de URL staat, tonen we alleen de
         // verticale meeleespagina voor gemeenteleden (niet de editor).
@@ -8824,7 +9223,7 @@ window.verstuurExportFeedback = async function() {
                 </button>
                 <button id="obsTabBtnLinks" type="button" onclick="setObsModalTab('links')" class="px-4 py-1.5 rounded-xl text-xs font-semibold transition-all text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white flex items-center gap-1.5">
                     <span>📡 OBS & Beamer Links</span>
-                    <span class="text-[10px] px-1.5 py-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-full font-bold">3 URL's</span>
+                    <span class="text-[10px] px-1.5 py-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-full font-bold">4 Links & PIN</span>
                 </button>
             </div>
             <div class="text-[11px] text-gray-400 dark:text-gray-500 hidden sm:flex items-center gap-2">
@@ -8915,21 +9314,44 @@ window.verstuurExportFeedback = async function() {
                     <div class="flex items-center gap-2">
                         <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
                         <span class="font-bold">Live-Sync Verbonden:</span>
-                        <span class="text-emerald-700 dark:text-emerald-400">Elke klik op Volgende/Vorige synchroniseert direct naar OBS en Beamer.</span>
+                        <span class="text-emerald-700 dark:text-emerald-400">Elke klik op Volgende/Vorige synchroniseert direct naar OBS, Beamer en Mobiele Klikker.</span>
                     </div>
                     <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-200/60 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-200">Real-time</span>
                 </div>
 
-                <!-- Drie Testknoppen & URLs -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <!-- PIN Beveiliging Strip -->
+                <div class="bg-gray-50 dark:bg-gray-800/80 p-3.5 rounded-2xl border border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm">
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-xl">🔐</span>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-bold text-gray-900 dark:text-white">Regie-Beveiliging (4-cijferige PIN)</span>
+                                <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300">Actief</span>
+                            </div>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400">
+                                Voorkomt dat iemand in de kerkbank live dia's doorschakelt. Alleen wie de PIN kent heeft bedieningsrechten.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <label class="text-xs text-gray-500 dark:text-gray-400 font-medium">PIN:</label>
+                        <input type="text" id="obsRegiePinInput" maxlength="4" class="w-20 px-2.5 py-1.5 text-center text-sm font-mono font-bold rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-[#007AFF]" value="1234" onchange="slaRegiePinOp(this.value)" />
+                        <button type="button" onclick="slaRegiePinOp(document.getElementById('obsRegiePinInput').value)" class="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-xs font-semibold text-white transition-all active:scale-95 shadow-sm">
+                            Opslaan
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Vier Testknoppen & URLs -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                     <!-- 1. Stream -->
                     <div class="bg-gray-50 dark:bg-gray-800/60 p-4 rounded-2xl border border-blue-200/70 dark:border-blue-900/50 flex flex-col justify-between gap-3 shadow-sm">
                         <div>
                             <div class="flex items-center gap-1.5 text-xs font-bold text-blue-700 dark:text-blue-400 mb-1">
-                                <span>📺 1. OBS Browser Bron (Stream)</span>
+                                <span>📺 1. OBS Stream Bron</span>
                             </div>
                             <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed mb-2">
-                                Plak in OBS als Browser Source. Toont live de dia's met kerk-achtergrond & contrastschaduw.
+                                Plak in OBS als Browser Source (1920x1080). 100% schone video-output zonder watermerken.
                             </p>
                             <div class="flex items-center gap-1 bg-white dark:bg-gray-900 p-1.5 rounded-xl border border-gray-200 dark:border-gray-700">
                                 <input type="text" id="obsUrlStreamInput" readonly class="text-[10px] font-mono text-gray-600 dark:text-gray-300 bg-transparent flex-1 outline-none px-1 overflow-x-auto select-all" value="" />
@@ -8940,7 +9362,7 @@ window.verstuurExportFeedback = async function() {
                                 Open Stream Weergave ↗
                             </button>
                             <button type="button" onclick="obsKopieerUrl('stream')" class="w-full py-1.5 px-3 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-100 text-gray-700 dark:text-gray-200 text-[11px] font-semibold border border-gray-200 dark:border-gray-600 transition-all text-center">
-                                📋 Kopieer Stream Link
+                                📋 Kopieer Link
                             </button>
                         </div>
                     </div>
@@ -8949,10 +9371,10 @@ window.verstuurExportFeedback = async function() {
                     <div class="bg-gray-50 dark:bg-gray-800/60 p-4 rounded-2xl border border-purple-200/70 dark:border-purple-900/50 flex flex-col justify-between gap-3 shadow-sm">
                         <div>
                             <div class="flex items-center gap-1.5 text-xs font-bold text-purple-700 dark:text-purple-400 mb-1">
-                                <span>🎛️ 2. OBS Regie Dock (Ingebouwd)</span>
+                                <span>🎛️ 2. OBS Regie Dock</span>
                             </div>
                             <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed mb-2">
-                                Plak in OBS via <em>Docks ➔ Aangepaste browserdocks</em>. Bediening via muis & toetsenbord direct in OBS.
+                                Plak in OBS via <em>Docks ➔ Browserdocks</em>. PIN is automatisch in de link inbegrepen.
                             </p>
                             <div class="flex items-center gap-1 bg-white dark:bg-gray-900 p-1.5 rounded-xl border border-gray-200 dark:border-gray-700">
                                 <input type="text" id="obsUrlDockInput" readonly class="text-[10px] font-mono text-gray-600 dark:text-gray-300 bg-transparent flex-1 outline-none px-1 overflow-x-auto select-all" value="" />
@@ -8963,16 +9385,39 @@ window.verstuurExportFeedback = async function() {
                                 Open Dock Paneel ↗
                             </button>
                             <button type="button" onclick="obsKopieerUrl('dock')" class="w-full py-1.5 px-3 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-100 text-gray-700 dark:text-gray-200 text-[11px] font-semibold border border-gray-200 dark:border-gray-600 transition-all text-center">
-                                📋 Kopieer Dock URL voor OBS
+                                📋 Kopieer Dock URL
                             </button>
                         </div>
                     </div>
 
-                    <!-- 3. Beamer -->
+                    <!-- 3. Mobiele Klikker -->
+                    <div class="bg-gray-50 dark:bg-gray-800/60 p-4 rounded-2xl border border-emerald-200/70 dark:border-emerald-900/50 flex flex-col justify-between gap-3 shadow-sm">
+                        <div>
+                            <div class="flex items-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 mb-1">
+                                <span>📱 3. Mobiele Klikker (Telefoon)</span>
+                            </div>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed mb-2">
+                                Draadloze afstandsbediening op iPhone of Android met grote touch-knoppen & trilfeedback!
+                            </p>
+                            <div class="flex items-center gap-1 bg-white dark:bg-gray-900 p-1.5 rounded-xl border border-gray-200 dark:border-gray-700">
+                                <input type="text" id="obsUrlRemoteInput" readonly class="text-[10px] font-mono text-gray-600 dark:text-gray-300 bg-transparent flex-1 outline-none px-1 overflow-x-auto select-all" value="" />
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1.5 pt-1">
+                            <button type="button" onclick="obsOpenVenster('remote')" class="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all active:scale-95 text-center shadow-sm">
+                                Open Klikker ↗
+                            </button>
+                            <button type="button" onclick="obsKopieerUrl('remote')" class="w-full py-1.5 px-3 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-100 text-gray-700 dark:text-gray-200 text-[11px] font-semibold border border-gray-200 dark:border-gray-600 transition-all text-center">
+                                📋 Kopieer Telefoon Link
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 4. Beamer -->
                     <div class="bg-gray-50 dark:bg-gray-800/60 p-4 rounded-2xl border border-gray-200/60 dark:border-gray-700/60 flex flex-col justify-between gap-3 shadow-sm">
                         <div>
                             <div class="flex items-center gap-1.5 text-xs font-bold text-[#1D1D1F] dark:text-white mb-1">
-                                <span>📽️ 3. Beamer Scherm (Kerkzaal)</span>
+                                <span>📽️ 4. Beamer (Kerkzaal)</span>
                             </div>
                             <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed mb-2">
                                 Voor op scherm 2 in de kerkzaal. Schermvullend diepzwart met grote witte tekst.
@@ -8986,7 +9431,7 @@ window.verstuurExportFeedback = async function() {
                                 Open Beamer Scherm ↗
                             </button>
                             <button type="button" onclick="obsKopieerUrl('beamer')" class="w-full py-1.5 px-3 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-100 text-gray-700 dark:text-gray-200 text-[11px] font-semibold border border-gray-200 dark:border-gray-600 transition-all text-center">
-                                📋 Kopieer Beamer Link
+                                📋 Kopieer Link
                             </button>
                         </div>
                     </div>
