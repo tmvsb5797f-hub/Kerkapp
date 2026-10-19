@@ -584,13 +584,6 @@
     </div>
 </main>
 
-<div class="fixed bottom-8 left-6 md:left-12 z-40 flex items-center gap-2">
-    <p class="text-[10px] text-[#86868B] font-bold tracking-widest uppercase opacity-70 hidden md:block">Made by Sem</p>
-    <button onclick="document.getElementById('infoModal').classList.remove('hidden')" aria-label="Over deze app" title="Over deze app" class="w-8 h-8 rounded-full bg-white/80 backdrop-blur border border-gray-200 flex items-center justify-center hover:scale-110 transition-transform shadow-sm">
-        <svg class="w-4 h-4 text-[#86868B]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-    </button>
-</div>
-
 <div id="archiefModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/20 backdrop-blur-xl transition-opacity">
     <div class="bg-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] w-11/12 max-w-md overflow-hidden flex flex-col transform transition-all modal-animate max-h-[85vh]">
         <div class="p-5 border-b border-gray-100 flex justify-between items-center flex-shrink-0">
@@ -658,6 +651,26 @@
                 </div>
                 <button type="button" onclick="document.getElementById('infoModal').classList.add('hidden'); openGemeenteModal();" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-[#007AFF] bg-white dark:bg-gray-700 hover:bg-blue-50 border border-gray-200 dark:border-gray-600 transition-colors shadow-sm flex-shrink-0">
                     Wijzigen
+                </button>
+            </div>
+
+            <!-- OBS & Beamer Live Regie (Achter de 'i') -->
+            <div class="p-3.5 bg-gradient-to-r from-purple-500/10 via-blue-500/10 to-indigo-500/10 dark:from-purple-950/40 dark:via-blue-950/30 dark:to-indigo-950/40 rounded-2xl border border-purple-200/80 dark:border-purple-800/60 flex items-center justify-between gap-3 shadow-xs">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-9 h-9 rounded-xl bg-purple-500/15 text-purple-700 dark:text-purple-300 flex items-center justify-center text-lg flex-shrink-0">
+                        🎥
+                    </div>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-1.5">
+                            <strong class="text-xs font-bold text-[#1D1D1F] dark:text-white">OBS & Beamer Live</strong>
+                            <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300/40">TEST</span>
+                        </div>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 truncate">Beamer, livestream & klikker</p>
+                    </div>
+                </div>
+                <button type="button" onclick="document.getElementById('infoModal').classList.add('hidden'); openObsTestModal();" class="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all active:scale-95 shadow-xs flex-shrink-0 flex items-center gap-1">
+                    <span>Open</span>
+                    <span>➔</span>
                 </button>
             </div>
             <div class="flex items-center justify-between">
@@ -819,13 +832,28 @@
 </div>
 
 
-<div class="fixed bottom-16 left-6 z-50">
-    <button onclick="toggleChat()" aria-label="Vraag de assistent om hulp" class="bg-[#007AFF] text-white w-14 h-14 rounded-full shadow-xl flex items-center justify-center hover:scale-105 transition-transform duration-300 border border-blue-400" title="Hulp nodig? Stel een vraag!">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
-    </button>
+<!-- Gecombineerd Hulp- & Infodock (Linksonder) -->
+<div class="fixed bottom-6 left-6 z-40 flex items-center gap-2.5">
+    <div class="flex items-center p-1.5 bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-2xl rounded-full shadow-[0_12px_36px_rgba(0,0,0,0.14)] dark:shadow-[0_12px_36px_rgba(0,0,0,0.5)] border border-black/5 dark:border-white/15 gap-1.5 transition-all duration-300">
+        <!-- AI Hulp Chat Knop -->
+        <button onclick="toggleChat()" aria-label="Vraag de assistent om hulp" title="Hulp nodig? Stel een vraag aan de AI assistent" class="text-white bg-[#007AFF] hover:bg-blue-600 px-3.5 py-2 rounded-full text-xs font-semibold flex items-center gap-2 shadow-sm active:scale-95 transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+            <span class="hidden sm:inline">Hulp Chat</span>
+        </button>
+
+        <div class="h-5 w-px bg-gray-200 dark:bg-gray-700/60 my-auto"></div>
+
+        <!-- Info & Instellingen Knop (Hier zit OBS nu achter!) -->
+        <button onclick="document.getElementById('infoModal').classList.remove('hidden')" aria-label="Over deze app, instellingen en OBS live" title="Instellingen, OBS Live & info over de app" class="w-9 h-9 rounded-full text-gray-500 hover:text-[#007AFF] dark:text-gray-400 dark:hover:text-white flex items-center justify-center hover:bg-gray-100/80 dark:hover:bg-white/10 active:scale-95 transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        </button>
+    </div>
+
+    <!-- Made by Sem handtekening -->
+    <p class="text-[10px] text-[#86868B] font-bold tracking-widest uppercase opacity-60 hidden md:block select-none">Made by Sem</p>
 </div>
 
-<div id="chatWindow" class="fixed bottom-32 left-6 z-50 hidden flex-col w-80 max-w-[calc(100vw-3rem)] h-[28rem] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden transition-all">
+<div id="chatWindow" class="fixed bottom-20 left-6 z-50 hidden flex-col w-80 max-w-[calc(100vw-3rem)] h-[28rem] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden transition-all">
     <div class="bg-[#007AFF] p-3 text-white font-bold flex justify-between items-center shadow-sm">
         <div class="flex items-center gap-2">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
@@ -855,7 +883,7 @@
     </div>
 </div>
 
-<!-- Unified Floating Island Control Dock -->
+<!-- Unified Floating Island Control Dock (Rechtsonder) -->
 <div class="fixed bottom-6 right-6 z-50 flex items-center p-1.5 bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-2xl rounded-full shadow-[0_12px_36px_rgba(0,0,0,0.18)] dark:shadow-[0_12px_36px_rgba(0,0,0,0.5)] border border-black/5 dark:border-white/15 gap-1.5 transition-all duration-300">
     <!-- Rondleiding Hulp Knop -->
     <button id="rondleidingKnop" onclick="startUitleg()" aria-label="Start de rondleiding: hoe werkt deze app?" title="Hoe werkt deze app? Start de rondleiding" class="relative text-gray-500 hover:text-[#007AFF] dark:text-gray-400 dark:hover:text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100/80 dark:hover:bg-white/10 active:scale-95 transition-all">
@@ -865,16 +893,8 @@
 
     <div class="h-6 w-px bg-gray-200 dark:bg-gray-700/60 my-auto"></div>
 
-    <!-- Testknop: OBS & Beamer Live Regie -->
-    <button type="button" onclick="openObsTestModal()" title="Open OBS & Beamer Regie Testpaneel" class="text-gray-700 dark:text-gray-200 hover:text-black dark:hover:text-white hover:bg-gray-100/80 dark:hover:bg-white/10 px-3.5 py-2 rounded-full text-xs font-semibold flex items-center gap-2 active:scale-95 transition-all">
-        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span class="hidden sm:inline">🎥 OBS & Beamer</span>
-        <span class="sm:hidden">🎥 Live</span>
-        <span class="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">Test</span>
-    </button>
-
     <!-- Primaire Actie: Exporteer PowerPoint -->
-    <button onclick="maakPowerPoint()" class="bg-[#007AFF] hover:bg-blue-600 text-white px-5 py-2.5 rounded-full shadow-[0_4px_16px_rgba(0,122,255,0.32)] active:scale-95 transition-all duration-200 flex items-center gap-2 border border-white/20 font-semibold text-[13px] tracking-[-0.01em]">
+    <button id="exporteerKnop" onclick="maakPowerPoint()" class="bg-[#007AFF] hover:bg-blue-600 text-white px-5 py-2.5 rounded-full shadow-[0_4px_16px_rgba(0,122,255,0.32)] active:scale-95 transition-all duration-200 flex items-center gap-2 border border-white/20 font-semibold text-[13px] tracking-[-0.01em]">
         <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
         <span>Exporteer PowerPoint</span>
     </button>
