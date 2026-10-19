@@ -8359,9 +8359,7 @@ Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
         bewaarLiturgie();
         const lijst = document.getElementById('volgordeLijst');
         const mobielTeller = document.getElementById('mobielVolgordeTeller');
-        const mobielSubCount = document.getElementById('mobielInvoerLijstPreviewCount');
         if (mobielTeller) mobielTeller.textContent = liturgieVolgorde.length;
-        if (mobielSubCount) mobielSubCount.textContent = `(${liturgieVolgorde.length} items)`;
 
         if (liturgieVolgorde.length === 0) {
             previewItemIdx = -1;
