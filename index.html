@@ -4579,6 +4579,7 @@ Bijbelliederen`;
 
         // 2. Liturgie items
         actieveItems.forEach((item, itemIdx) => {
+            const basisTitel = (item.basisTitel || item.titel || '').split(' - ')[0].trim();
             if (item.type === 'Zang') {
                 const subSlides = (typeof berekenSubSlidesVoorItem === 'function') 
                     ? berekenSubSlidesVoorItem(item) 
@@ -4593,10 +4594,16 @@ Bijbelliederen`;
                         itemIndex: itemIdx,
                         type: 'Zang',
                         titel: item.titel,
+                        basisTitel: basisTitel,
                         subtitel: subtitel,
                         regels: sub.regels || [],
                         fontSize: sub.fontSize || 40,
-                        align: (window.getDiaAlign ? window.getDiaAlign(item, subIdx) : (item.align || 'center'))
+                        align: (window.getDiaAlign ? window.getDiaAlign(item, subIdx) : (item.align || 'left')),
+                        tekstX: item.tekstX,
+                        tekstY: item.tekstY,
+                        tekstW: item.tekstW,
+                        tekstH: item.tekstH,
+                        bold: item.bold
                     });
                 });
             } else if (item.type === 'Schriftlezing') {
@@ -4613,10 +4620,16 @@ Bijbelliederen`;
                         itemIndex: itemIdx,
                         type: 'Schriftlezing',
                         titel: item.titel,
+                        basisTitel: basisTitel,
                         subtitel: subtitel,
                         regels: sub.regels || [],
                         fontSize: sub.fontSize || 36,
-                        align: (window.getDiaAlign ? window.getDiaAlign(item, subIdx) : (item.align || 'left'))
+                        align: (window.getDiaAlign ? window.getDiaAlign(item, subIdx) : (item.align || 'left')),
+                        tekstX: item.tekstX,
+                        tekstY: item.tekstY,
+                        tekstW: item.tekstW,
+                        tekstH: item.tekstH,
+                        bold: item.bold
                     });
                 });
             } else if (item.type === 'Foto') {
@@ -4838,7 +4851,7 @@ Van harte Gods zegen toegewenst!`;
         const beamerEl = document.getElementById('obsSimBeamerScherm');
         if (beamerEl) {
             if (state.isBlackout) {
-                beamerEl.innerHTML = '<div class="text-xs text-gray-600 italic">Beamer op zwart (Blackout)</div>';
+                beamerEl.innerHTML = '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#666;font-style:italic;font-size:11px;">Beamer op zwart (Blackout)</div>';
             } else {
                 beamerEl.innerHTML = renderBeamerHtmlSlide(curSlide, true);
             }
@@ -4847,56 +4860,107 @@ Van harte Gods zegen toegewenst!`;
         const streamBg = document.getElementById('obsSimStreamBg');
         const streamEl = document.getElementById('obsSimStreamScherm');
         if (streamBg) {
-            const th = state.thema || 'standaard';
-            if (typeof meeleesSceneSVG === 'function') {
-                streamBg.innerHTML = meeleesSceneSVG(th);
-            }
+            streamBg.style.backgroundImage = `url('${LIVESTREAM_BG}')`;
+            streamBg.style.backgroundSize = 'cover';
+            streamBg.style.backgroundPosition = 'center';
         }
         if (streamEl) {
             if (state.isBlackout) {
-                streamEl.innerHTML = '<div class="text-xs text-white/40 italic">Livestream overlay op zwart</div>';
+                streamEl.innerHTML = '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.4);font-style:italic;font-size:11px;">Livestream op zwart</div>';
             } else {
                 streamEl.innerHTML = renderStreamHtmlSlide(curSlide, true);
             }
         }
     }
 
+    function renderWelkomSlideHtml(slide, isMini = false, isStream = false) {
+        const tShadow = isStream ? 'text-shadow: 0 2px 10px rgba(0,0,0,0.95);' : '';
+        const zangItems = (slide.zangLijst || []).slice(0, 5).map(z => `<div style="margin:2px 0;">• ${escapeHtml(z)}</div>`).join('');
+
+        if (isMini) {
+            return `
+                <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#ffffff;text-align:center;padding:10px;user-select:none;${tShadow}">
+                    <div style="font-size:14px;font-weight:800;letter-spacing:-0.02em;margin-bottom:2px;">Welkom</div>
+                    <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.85);">${escapeHtml(slide.gemeente || 'Bethelkerk Maassluis')}</div>
+                    <div style="font-size:9px;color:rgba(255,255,255,0.7);">${escapeHtml(slide.datum || '')}</div>
+                    ${slide.voorganger ? `<div style="font-size:9px;color:rgba(255,255,255,0.95);margin-top:2px;">${escapeHtml(slide.voorganger)}</div>` : ''}
+                </div>
+            `;
+        }
+
+        return `
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#ffffff;text-align:center;padding:40px;user-select:none;${tShadow}">
+                <div style="font-size:clamp(44px, 6vw, 84px);font-weight:800;letter-spacing:-0.02em;margin-bottom:8px;">Welkom</div>
+                <div style="font-size:clamp(20px, 2.6vw, 38px);font-weight:600;color:rgba(255,255,255,0.9);margin-bottom:6px;">${escapeHtml(slide.gemeente || 'Bethelkerk Maassluis')}</div>
+                <div style="font-size:clamp(15px, 1.6vw, 24px);color:rgba(255,255,255,0.7);margin-bottom:14px;">${escapeHtml(slide.datum || '')}</div>
+                ${slide.voorganger ? `<div style="font-size:clamp(16px, 1.9vw, 28px);font-weight:600;color:rgba(255,255,255,0.95);margin-bottom:20px;">${escapeHtml(slide.voorganger)}</div>` : ''}
+                ${zangItems ? `<div style="font-size:clamp(13px, 1.4vw, 20px);color:rgba(255,255,255,0.8);max-width:800px;line-height:1.4;">${zangItems}</div>` : ''}
+            </div>
+        `;
+    }
+
+    function renderQrSlideHtml(slide, isMini = false, isStream = false) {
+        const qrImg = (typeof maakQRDataURL === 'function') ? maakQRDataURL(slide.qrData, 5, 2) : '';
+        const tShadow = isStream ? 'text-shadow: 0 2px 10px rgba(0,0,0,0.95);' : '';
+
+        if (isMini) {
+            return `
+                <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#ffffff;text-align:center;padding:8px;user-select:none;${tShadow}">
+                    <div style="font-size:10px;font-weight:700;margin-bottom:3px;">${escapeHtml(slide.titel || 'Collecte')}</div>
+                    <div style="background:#ffffff;padding:4px;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.3);">
+                        <img src="${qrImg}" style="width:50px;height:50px;object-fit:contain;" alt="QR" />
+                    </div>
+                    <div style="font-size:7.5px;color:rgba(255,255,255,0.85);margin-top:3px;">Scan om bij te dragen</div>
+                </div>
+            `;
+        }
+
+        return `
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#ffffff;text-align:center;padding:30px;user-select:none;${tShadow}">
+                <div style="font-size:clamp(26px, 3.4vw, 50px);font-weight:800;letter-spacing:-0.01em;margin-bottom:16px;">${escapeHtml(slide.titel || 'Collecte Bethelkerk Maassluis')}</div>
+                <div style="background:#ffffff;padding:14px;border-radius:24px;box-shadow:0 12px 36px rgba(0,0,0,0.4);margin-bottom:16px;">
+                    <img src="${qrImg}" style="width:clamp(160px, 20vw, 300px);height:clamp(160px, 20vw, 300px);object-fit:contain;" alt="QR" />
+                </div>
+                <div style="font-size:clamp(16px, 2.0vw, 30px);font-weight:700;color:#ffffff;margin-bottom:4px;">IBAN: NL69 ABNA 0501488154</div>
+                <div style="font-size:clamp(13px, 1.5vw, 22px);color:rgba(255,255,255,0.8);">Scan met uw camera of bankapp om bij te dragen</div>
+            </div>
+        `;
+    }
+
     function renderBeamerHtmlSlide(slide, isMini = false) {
         if (!slide) return '';
-        if (slide.type === 'Welkom') {
-            return `
-                <div class="flex flex-col items-center justify-center text-white h-full select-none" style="padding:10px;">
-                    <div class="${isMini ? 'text-base font-bold' : 'text-5xl font-bold tracking-tight mb-3'}">Welkom</div>
-                    <div class="${isMini ? 'text-[10px] text-gray-300' : 'text-2xl text-gray-300 mb-2'}">${slide.gemeente || 'Bethelkerk Maassluis'}</div>
-                    <div class="${isMini ? 'text-[9px] text-gray-400' : 'text-lg text-gray-400 mb-5'}">${slide.datum || ''}</div>
-                    ${slide.voorganger ? `<div class="${isMini ? 'text-[9px] text-gray-200 mt-1' : 'text-xl text-gray-200 mt-2 font-medium'}">${slide.voorganger}</div>` : ''}
-                </div>
-            `;
-        }
-        if (slide.type === 'Leeg') {
-            return '<div class="w-full h-full bg-black"></div>';
-        }
-        if (slide.type === 'Foto') {
-            return `<img src="${slide.fotoUrl}" class="max-w-full max-h-full object-contain mx-auto" />`;
-        }
-        if (slide.type === 'QR') {
-            const qrImg = (typeof maakQRDataURL === 'function') ? maakQRDataURL(slide.qrData, 5, 2) : '';
-            return `
-                <div class="flex flex-col items-center justify-center h-full text-white text-center p-3">
-                    <div class="${isMini ? 'text-[11px] font-bold mb-1' : 'text-3xl font-bold mb-4'}">${slide.titel}</div>
-                    <div class="bg-white p-2 rounded-2xl inline-block shadow-lg">
-                        <img src="${qrImg}" class="${isMini ? 'w-16 h-16' : 'w-52 h-52'} object-contain" alt="QR" />
-                    </div>
-                    <div class="${isMini ? 'text-[8px] text-gray-300 mt-1' : 'text-lg text-gray-300 mt-3 font-medium'}">Scan om bij te dragen aan de collecte</div>
-                </div>
-            `;
-        }
-        const regelsHtml = (slide.regels || []).map(r => `<div style="margin:2px 0;">${r}</div>`).join('');
+        if (slide.type === 'Welkom') return renderWelkomSlideHtml(slide, isMini, false);
+        if (slide.type === 'Leeg') return '<div style="position:absolute;inset:0;background:#000000;"></div>';
+        if (slide.type === 'Foto') return `<div style="position:absolute;inset:0;background:#000000;display:flex;align-items:center;justify-content:center;"><img src="${slide.fotoUrl}" style="max-width:100%;max-height:100%;object-fit:contain;" /></div>`;
+        if (slide.type === 'QR') return renderQrSlideHtml(slide, isMini, false);
+
+        // Exacte coördinaten uit slide preview
+        const tLeft = (slide.tekstX ?? 0.4) / 10 * 100;
+        const tTop = (slide.tekstY ?? 0.9) / 5.625 * 100;
+        const tWidth = (slide.tekstW ?? 6.6) / 10 * 100;
+        const tHeight = (slide.tekstH ?? 4.4) / 5.625 * 100;
+        const titleLeft = tLeft;
+        const titleTop = (0.3 / 5.625) * 100;
+        const align = slide.align || 'left';
+        const isBold = !!slide.bold;
+        const tekst = (slide.regels || []).join('\n');
+        const titelTekst = slide.basisTitel || slide.titel || '';
+
+        const titleStyle = isMini 
+            ? `position:absolute;left:${titleLeft}%;top:${titleTop}%;width:${tWidth}%;font-size:9.5px;font-weight:700;color:#ffffff;opacity:0.72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;`
+            : `position:absolute;left:${titleLeft}%;top:${titleTop}%;width:${tWidth}%;font-size:clamp(18px, 2.3vw, 42px);font-weight:700;color:#ffffff;opacity:0.72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;`;
+
+        const textStyle = isMini
+            ? `position:absolute;left:${tLeft}%;top:${tTop}%;width:${tWidth}%;height:${tHeight}%;font-size:11px;font-weight:${isBold ? '700' : '400'};line-height:1.26;text-align:${align};color:#ffffff;white-space:pre-line;`
+            : `position:absolute;left:${tLeft}%;top:${tTop}%;width:${tWidth}%;height:${tHeight}%;font-size:clamp(28px, ${(slide.fontSize || 38) * 0.115}vw, 76px);font-weight:${isBold ? '700' : '400'};line-height:1.28;text-align:${align};color:#ffffff;white-space:pre-line;`;
+
         return `
-            <div class="flex flex-col justify-center h-full text-white ${slide.align === 'left' ? 'text-left items-start px-6' : 'text-center items-center px-4'} select-none">
-                <div class="${isMini ? 'text-[9px] text-gray-400 mb-1' : 'text-lg text-gray-400 uppercase tracking-widest mb-4 font-semibold'}">${slide.subtitel || slide.titel}</div>
-                <div class="${isMini ? 'text-[10px] leading-tight font-medium' : 'text-3xl md:text-4xl font-semibold leading-relaxed tracking-normal'}">
-                    ${regelsHtml}
+            <div style="position:absolute;inset:0;background:#000000;overflow:hidden;user-select:none;font-family:'Inter',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;">
+                <div style="${titleStyle}">
+                    ${escapeHtml(titelTekst)}
+                </div>
+                <div style="${textStyle}">
+                    ${formatteerMarkdownVoorHtml(tekst)}
                 </div>
             </div>
         `;
@@ -4904,38 +4968,38 @@ Van harte Gods zegen toegewenst!`;
 
     function renderStreamHtmlSlide(slide, isMini = false) {
         if (!slide) return '';
-        if (slide.type === 'Welkom') {
-            return `
-                <div class="flex flex-col items-center justify-center text-white h-full select-none" style="filter:drop-shadow(0 2px 8px rgba(0,0,0,0.92))">
-                    <div class="${isMini ? 'text-base font-bold' : 'text-5xl font-bold tracking-tight mb-3'}">Welkom</div>
-                    <div class="${isMini ? 'text-[10px] text-white/90 font-medium' : 'text-2xl text-white/90 mb-2'}">${slide.gemeente || 'Bethelkerk Maassluis'}</div>
-                    <div class="${isMini ? 'text-[9px] text-white/80' : 'text-lg text-white/80 mb-4'}">${slide.datum || ''}</div>
-                    ${slide.voorganger ? `<div class="${isMini ? 'text-[9px] text-white mt-1 font-semibold' : 'text-xl text-white font-semibold'}">${slide.voorganger}</div>` : ''}
-                </div>
-            `;
-        }
-        if (slide.type === 'Leeg') {
-            return '';
-        }
-        if (slide.type === 'QR') {
-            const qrImg = (typeof maakQRDataURL === 'function') ? maakQRDataURL(slide.qrData, 5, 2) : '';
-            return `
-                <div class="bg-white/95 text-gray-900 rounded-3xl p-4 md:p-6 shadow-2xl border border-white/40 flex flex-col items-center text-center max-w-[85%] mx-auto">
-                    <div class="${isMini ? 'text-[10px] font-bold text-gray-900' : 'text-2xl font-bold text-gray-900 mb-2'}">Collecte Bethelkerk Maassluis</div>
-                    <div class="bg-white p-2 rounded-2xl shadow-sm my-2">
-                        <img src="${qrImg}" class="${isMini ? 'w-16 h-16' : 'w-48 h-48'} object-contain" alt="QR" />
-                    </div>
-                    <div class="${isMini ? 'text-[8px] text-gray-700' : 'text-base text-gray-700 font-bold'}">IBAN: NL69 ABNA 0501488154</div>
-                    <div class="${isMini ? 'text-[7px] text-blue-600 font-semibold mt-0.5' : 'text-sm text-blue-600 font-semibold mt-1'}">Scan met uw camera of bankapp om bij te dragen</div>
-                </div>
-            `;
-        }
-        const regelsHtml = (slide.regels || []).map(r => `<div style="margin:2px 0;">${r}</div>`).join('');
+        if (slide.type === 'Welkom') return renderWelkomSlideHtml(slide, isMini, true);
+        if (slide.type === 'Leeg') return '';
+        if (slide.type === 'Foto') return `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><img src="${slide.fotoUrl}" style="max-width:100%;max-height:100%;object-fit:contain;" /></div>`;
+        if (slide.type === 'QR') return renderQrSlideHtml(slide, isMini, true);
+
+        // Exacte coördinaten en uitlijning identiek aan Beamer, met broadcast schaduw en contrast
+        const tLeft = (slide.tekstX ?? 0.4) / 10 * 100;
+        const tTop = (slide.tekstY ?? 0.9) / 5.625 * 100;
+        const tWidth = (slide.tekstW ?? 6.6) / 10 * 100;
+        const tHeight = (slide.tekstH ?? 4.4) / 5.625 * 100;
+        const titleLeft = tLeft;
+        const titleTop = (0.3 / 5.625) * 100;
+        const align = slide.align || 'left';
+        const isBold = !!slide.bold;
+        const tekst = (slide.regels || []).join('\n');
+        const titelTekst = slide.basisTitel || slide.titel || '';
+
+        const titleStyle = isMini 
+            ? `position:absolute;left:${titleLeft}%;top:${titleTop}%;width:${tWidth}%;font-size:9.5px;font-weight:700;color:#ffffff;opacity:0.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;text-shadow:0 1px 4px rgba(0,0,0,0.9);`
+            : `position:absolute;left:${titleLeft}%;top:${titleTop}%;width:${tWidth}%;font-size:clamp(18px, 2.3vw, 42px);font-weight:700;color:#ffffff;opacity:0.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;text-shadow:0 2px 8px rgba(0,0,0,0.95), 0 0 3px rgba(0,0,0,0.95);`;
+
+        const textStyle = isMini
+            ? `position:absolute;left:${tLeft}%;top:${tTop}%;width:${tWidth}%;height:${tHeight}%;font-size:11px;font-weight:${isBold ? '700' : '400'};line-height:1.26;text-align:${align};color:#ffffff;white-space:pre-line;text-shadow:0 1px 5px rgba(0,0,0,0.95);`
+            : `position:absolute;left:${tLeft}%;top:${tTop}%;width:${tWidth}%;height:${tHeight}%;font-size:clamp(28px, ${(slide.fontSize || 38) * 0.115}vw, 76px);font-weight:${isBold ? '700' : '400'};line-height:1.28;text-align:${align};color:#ffffff;white-space:pre-line;text-shadow:0 2px 10px rgba(0,0,0,0.95), 0 0 4px rgba(0,0,0,0.95);`;
+
         return `
-            <div class="flex flex-col justify-center h-full text-white ${slide.align === 'left' ? 'text-left items-start px-8' : 'text-center items-center px-6'} select-none" style="filter:drop-shadow(0 2px 10px rgba(0,0,0,0.95))">
-                <div class="${isMini ? 'text-[9px] text-yellow-300 font-bold mb-1' : 'text-xl text-yellow-300 uppercase tracking-wider mb-3 font-extrabold'}">${slide.subtitel || slide.titel}</div>
-                <div class="${isMini ? 'text-[10px] leading-tight font-bold text-white' : 'text-3xl md:text-4xl font-bold leading-relaxed tracking-normal text-white'}">
-                    ${regelsHtml}
+            <div style="position:absolute;inset:0;overflow:hidden;user-select:none;font-family:'Inter',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;">
+                <div style="${titleStyle}">
+                    ${escapeHtml(titelTekst)}
+                </div>
+                <div style="${textStyle}">
+                    ${formatteerMarkdownVoorHtml(tekst)}
                 </div>
             </div>
         `;
@@ -4943,9 +5007,13 @@ Van harte Gods zegen toegewenst!`;
 
     function startBeamerWeergave() {
         document.title = "📽️ Beamer Scherm (Kerkzaal) - Kerkapp";
+        document.body.style.margin = '0';
+        document.body.style.padding = '0';
+        document.body.style.background = '#000000';
+        document.body.style.overflow = 'hidden';
         document.body.innerHTML = `
-            <div id="beamerContainer" style="position:fixed;inset:0;background:#000000;color:#ffffff;display:flex;align-items:center;justify-content:center;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;user-select:none;">
-                <div id="beamerInhoud" style="width:90%;max-width:1400px;text-align:center;"></div>
+            <div id="beamerContainer" style="position:fixed;inset:0;background:#000000;color:#ffffff;overflow:hidden;font-family:'Inter',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;user-select:none;">
+                <div id="beamerInhoud" style="position:absolute;inset:0;width:100%;height:100%;"></div>
             </div>
         `;
 
@@ -4954,7 +5022,7 @@ Van harte Gods zegen toegewenst!`;
             const container = document.getElementById('beamerInhoud');
             if (!container) return;
             if (!state || !state.slides || !state.slides.length) {
-                container.innerHTML = '<div style="color:#666;font-style:italic;font-size:24px;">Wachten op liturgie... Open Kerkapp en klik op "OBS & Beamer Live (Test)"</div>';
+                container.innerHTML = '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#666;font-style:italic;font-size:24px;">Wachten op liturgie... Open Kerkapp en klik op "OBS & Beamer (Test)"</div>';
                 return;
             }
             if (state.isBlackout) {
@@ -4997,11 +5065,18 @@ Van harte Gods zegen toegewenst!`;
         document.title = "📺 OBS Livestream Bron - Kerkapp";
         const urlParams = new URLSearchParams(location.search);
         const isTransparent = urlParams.get('bg') === 'transparent';
+        const useTheme = urlParams.get('bg') === 'theme';
+
+        document.body.style.margin = '0';
+        document.body.style.padding = '0';
+        document.body.style.background = isTransparent ? 'transparent' : '#000000';
+        document.body.style.overflow = 'hidden';
 
         document.body.innerHTML = `
-            <div id="streamBgContainer" style="position:fixed;inset:0;pointer-events:none;z-index:1;${isTransparent ? 'background:transparent;' : ''}"></div>
-            <div id="streamContainer" style="position:fixed;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;user-select:none;">
-                <div id="streamInhoud" style="width:90%;max-width:1400px;text-align:center;"></div>
+            <div id="streamBgContainer" style="position:fixed;inset:0;pointer-events:none;z-index:1;background-size:cover;background-position:center;${isTransparent ? 'background:transparent;' : ''}"></div>
+            <div id="streamOverlay" style="position:fixed;inset:0;pointer-events:none;z-index:2;${isTransparent ? 'display:none;' : 'background:linear-gradient(90deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.48) 50%, rgba(0,0,0,0.1) 85%, rgba(0,0,0,0) 100%);'}"></div>
+            <div id="streamContainer" style="position:fixed;inset:0;z-index:3;overflow:hidden;font-family:'Inter',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;user-select:none;">
+                <div id="streamInhoud" style="position:absolute;inset:0;width:100%;height:100%;"></div>
             </div>
         `;
 
@@ -5017,8 +5092,14 @@ Van harte Gods zegen toegewenst!`;
             }
 
             if (!isTransparent && bgContainer) {
-                const th = state.thema || 'standaard';
-                bgContainer.innerHTML = (typeof meeleesSceneSVG === 'function') ? meeleesSceneSVG(th) : '';
+                if (useTheme) {
+                    const th = state.thema || 'standaard';
+                    bgContainer.innerHTML = (typeof meeleesSceneSVG === 'function') ? meeleesSceneSVG(th) : '';
+                    bgContainer.style.backgroundImage = 'none';
+                } else {
+                    bgContainer.style.backgroundImage = `url('${LIVESTREAM_BG}')`;
+                    bgContainer.innerHTML = '';
+                }
             }
 
             if (state.isBlackout) {
@@ -8495,22 +8576,23 @@ window.verstuurExportFeedback = async function() {
                                 <span>📽️ BEAMER (Kerkzaal)</span>
                                 <span class="text-[10px] text-gray-500 font-normal">Puur zwart · Witte tekst</span>
                             </div>
-                            <div class="aspect-video bg-black rounded-xl border border-gray-800 overflow-hidden relative p-3 flex flex-col items-center justify-center text-center shadow-md">
-                                <div id="obsSimBeamerScherm" class="w-full h-full flex flex-col items-center justify-center">
+                            <div class="aspect-video bg-black rounded-xl border border-gray-800 overflow-hidden relative shadow-md">
+                                <div id="obsSimBeamerScherm" class="absolute inset-0 w-full h-full">
                                     <!-- Dynamisch gevuld -->
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Scherm 2: Livestream (Thema Achtergrond) -->
+                        <!-- Scherm 2: Livestream (Kerkdienstgemist / OBS) -->
                         <div class="flex flex-col gap-1.5">
                             <div class="flex items-center justify-between text-[11px] font-bold text-blue-400">
                                 <span>📺 LIVESTREAM (OBS / Kerkdienstgemist)</span>
-                                <span class="text-[10px] text-gray-400 font-normal">Thema achtergrond + broadcast tekst</span>
+                                <span class="text-[10px] text-gray-400 font-normal">Kerkachtergrond + haarscherpe broadcast tekst</span>
                             </div>
                             <div class="aspect-video bg-gray-900 rounded-xl border border-blue-900/40 overflow-hidden relative shadow-md">
-                                <div id="obsSimStreamBg" class="absolute inset-0 pointer-events-none"></div>
-                                <div id="obsSimStreamScherm" class="relative z-10 w-full h-full flex flex-col items-center justify-center p-3 text-center">
+                                <div id="obsSimStreamBg" class="absolute inset-0 pointer-events-none bg-cover bg-center"></div>
+                                <div id="obsSimStreamOverlay" class="absolute inset-0 pointer-events-none" style="background:linear-gradient(90deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.48) 50%, rgba(0,0,0,0.1) 85%, rgba(0,0,0,0) 100%);"></div>
+                                <div id="obsSimStreamScherm" class="absolute inset-0 z-10 w-full h-full">
                                     <!-- Dynamisch gevuld -->
                                 </div>
                             </div>
