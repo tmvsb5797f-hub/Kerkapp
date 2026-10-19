@@ -693,6 +693,32 @@
                 <div class="grid grid-cols-3 gap-1.5" id="meeleesThemaKnoppen">
                     <!-- Dynamisch gevuld door updateMeeleesThemaUI() -->
                 </div>
+                <!-- AI Aangepaste Banner Maker -->
+                <div class="mt-2 pt-2.5 border-t border-gray-200/80 dark:border-gray-700 flex flex-col gap-1.5">
+                    <label for="aiBannerPrompt" class="text-[11px] font-bold text-gray-700 dark:text-gray-200 flex items-center justify-between">
+                        <span class="flex items-center gap-1.5">
+                            <span>✨</span>
+                            <span>Eigen thema ontwerpen (AI)</span>
+                        </span>
+                        <span class="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">Behoudt altijd het kruis ✝️</span>
+                    </label>
+                    <div class="flex gap-1.5">
+                        <input id="aiBannerPrompt" type="text" placeholder="Bijv: Biddag, Dankdag, Doopdienst..." class="flex-grow bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 text-xs text-[#1D1D1F] dark:text-white placeholder-gray-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-[#007AFF]/20 transition-all" onkeypress="if(event.key === 'Enter') genereerAiBanner()">
+                        <button id="aiBannerBtn" type="button" onclick="genereerAiBanner()" class="px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-[#007AFF] to-[#5856D6] hover:from-blue-600 hover:to-indigo-600 transition-all shadow-sm flex items-center gap-1.5 active:scale-95 flex-shrink-0" title="Genereer een unieke pastorale vectorbanner">
+                            <span id="aiBannerBtnSpinner" class="hidden">⏳</span>
+                            <span id="aiBannerBtnText">Genereer</span>
+                        </button>
+                    </div>
+                    <!-- Snelle suggesties -->
+                    <div class="flex items-center gap-1 mt-1 flex-wrap">
+                        <span class="text-[9px] text-gray-400 uppercase font-bold mr-0.5">Suggesties:</span>
+                        <button type="button" onclick="gebruikAiBannerSuggestie('Biddag voor gewas en arbeid')" class="text-[10px] px-2 py-0.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] hover:border-[#007AFF] transition-all">🌾 Biddag</button>
+                        <button type="button" onclick="gebruikAiBannerSuggestie('Dankdag voor gewas en arbeid')" class="text-[10px] px-2 py-0.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] hover:border-[#007AFF] transition-all">🍎 Dankdag</button>
+                        <button type="button" onclick="gebruikAiBannerSuggestie('Doopdienst van een kind')" class="text-[10px] px-2 py-0.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] hover:border-[#007AFF] transition-all">💧 Doop</button>
+                        <button type="button" onclick="gebruikAiBannerSuggestie('Viering van het Heilig Avondmaal')" class="text-[10px] px-2 py-0.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] hover:border-[#007AFF] transition-all">🍷 Avondmaal</button>
+                        <button type="button" onclick="gebruikAiBannerSuggestie('Huwelijksdienst en inzegening')" class="text-[10px] px-2 py-0.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] hover:border-[#007AFF] transition-all">💍 Huwelijk</button>
+                    </div>
+                </div>
             </div>
             <div class="bg-gray-50 rounded-2xl p-4 flex flex-col gap-2">
                 <div class="flex items-center gap-2 text-xs text-gray-500">
@@ -1335,6 +1361,488 @@
         }
     };
 
+    // Herstel eventueel eerder opgeslagen eigen thema uit localStorage
+    try {
+        const opgeslagenCustom = localStorage.getItem('meeleesCustomThema');
+        if (opgeslagenCustom) {
+            const parsed = JSON.parse(opgeslagenCustom);
+            if (parsed && parsed.id === 'custom' && parsed.svg) {
+                MEELEES_THEMAS.custom = parsed;
+            }
+        }
+    } catch (e) {
+        console.warn("Fout bij inladen meeleesCustomThema:", e);
+    }
+
+    // Garandeert dat er ALTIJD een zichtbaar en stijlvol houten kruis in de SVG staat
+    function zorgVoorKruisInSvg(svgStr) {
+        if (!svgStr || typeof svgStr !== 'string') return meeleesSceneSVG('standaard');
+        
+        // Controleer of de SVG al een expliciet kruis-element bevat
+        const heeftKruis = /id=["'](kruis|altijdKruis|cross)["']/i.test(svgStr) ||
+                           /aria-label=["'][^"']*kruis[^"']*["']/i.test(svgStr);
+        
+        if (heeftKruis) {
+            return svgStr;
+        }
+
+        // Als er nog geen specifiek kruis aanwezig is, voegen we een harmonieus houten kruis toe
+        const kruisSvg = `
+            <!-- Gegarandeerd Kruis -->
+            <g id="altijdKruis" transform="translate(305, 58)">
+                <rect x="-4.5" y="0" width="9" height="82" rx="2" fill="#5c381e" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.25))"/>
+                <rect x="-24" y="20" width="48" height="9" rx="2" fill="#5c381e"/>
+            </g>`;
+
+        if (svgStr.includes('</svg>')) {
+            return svgStr.replace('</svg>', kruisSvg + '\n</svg>');
+        }
+        return svgStr;
+    }
+
+    // Lokale instant fallbacks met hoogwaardige vector graphics inclusief kruis
+    function maakLokaleThemaFallback(promptTekst = '') {
+        const p = (promptTekst || '').toLowerCase();
+        
+        if (p.includes('bid') || p.includes('oogst') || p.includes('gewas') || p.includes('arbeid') || p.includes('zaai')) {
+            return {
+                naam: 'Biddag',
+                icoon: '🌾',
+                beschrijving: 'Graanvelden in ochtendzon met kruis',
+                bg: 'linear-gradient(180deg,#fef3c7 0%,#fde68a 25%,#fffbeb 100%)',
+                headerKleur: '#d97706',
+                titelKleur: '#78350f',
+                subKleur: '#92400e',
+                kaartBg: 'rgba(255,255,255,0.92)',
+                kaartTitel: '#451a03',
+                kaartTekst: '#573318',
+                divider: 'rgba(217,119,6,0.22)',
+                schaduw: 'rgba(217,119,6,0.12)',
+                voettekst: '#b45309',
+                svg: `<svg viewBox="0 0 400 170" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
+                    <defs>
+                        <linearGradient id="biddagLucht" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#fef08a"/>
+                            <stop offset="55%" stop-color="#fde047"/>
+                            <stop offset="100%" stop-color="#fed7aa"/>
+                        </linearGradient>
+                        <linearGradient id="graanHeuvel" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#eab308"/>
+                            <stop offset="100%" stop-color="#ca8a04"/>
+                        </linearGradient>
+                        <radialGradient id="biddagZon" cx="25%" cy="45%" r="60%">
+                            <stop offset="0%" stop-color="#ffffff"/>
+                            <stop offset="40%" stop-color="#fef08a" stop-opacity="0.7"/>
+                            <stop offset="100%" stop-color="#fde047" stop-opacity="0"/>
+                        </radialGradient>
+                    </defs>
+                    <rect width="400" height="170" fill="url(#biddagLucht)"/>
+                    <circle cx="100" cy="70" r="110" fill="url(#biddagZon)"/>
+                    <circle cx="100" cy="70" r="26" fill="#ffffff"/>
+                    <path d="M0 120 Q110 88 220 114 T400 102 V170 H0 Z" fill="#f59e0b" opacity="0.8"/>
+                    <path d="M0 134 Q130 106 260 132 T400 124 V170 H0 Z" fill="url(#graanHeuvel)"/>
+                    <g stroke="#78350f" stroke-width="2" fill="none">
+                        <path d="M45 155 Q50 130 60 115"/>
+                        <path d="M75 160 Q72 135 70 120"/>
+                        <path d="M140 155 Q145 132 155 118"/>
+                        <path d="M170 160 Q168 138 165 124"/>
+                    </g>
+                    <g fill="#ca8a04">
+                        <ellipse cx="60" cy="115" rx="3.5" ry="6" transform="rotate(-15 60 115)"/>
+                        <ellipse cx="55" cy="122" rx="3" ry="5" transform="rotate(-25 55 122)"/>
+                        <ellipse cx="65" cy="123" rx="3" ry="5" transform="rotate(15 65 123)"/>
+                        <ellipse cx="53" cy="130" rx="3" ry="5" transform="rotate(-25 53 130)"/>
+                        <ellipse cx="63" cy="131" rx="3" ry="5" transform="rotate(15 63 131)"/>
+                        <ellipse cx="70" cy="120" rx="3.5" ry="6"/>
+                        <ellipse cx="65" cy="127" rx="3" ry="5" transform="rotate(-20 65 127)"/>
+                        <ellipse cx="75" cy="128" rx="3" ry="5" transform="rotate(20 75 128)"/>
+                        <ellipse cx="155" cy="118" rx="3.5" ry="6" transform="rotate(15 155 118)"/>
+                        <ellipse cx="150" cy="125" rx="3" ry="5" transform="rotate(-15 150 125)"/>
+                        <ellipse cx="160" cy="126" rx="3" ry="5" transform="rotate(25 160 126)"/>
+                    </g>
+                    <g id="kruis" transform="translate(305, 58)">
+                        <rect x="-4.5" y="0" width="9" height="82" rx="2" fill="#5c381e"/>
+                        <rect x="-24" y="20" width="48" height="9" rx="2" fill="#5c381e"/>
+                    </g>
+                </svg>`
+            };
+        }
+        
+        if (p.includes('dank') || p.includes('vrucht') || p.includes('herfst')) {
+            return {
+                naam: 'Dankdag',
+                icoon: '🍎',
+                beschrijving: 'Rijke oogst en herfstwarmte met kruis',
+                bg: 'linear-gradient(180deg,#ffedd5 0%,#fed7aa 25%,#fff7ed 100%)',
+                headerKleur: '#ea580c',
+                titelKleur: '#7c2d12',
+                subKleur: '#9a3412',
+                kaartBg: 'rgba(255,255,255,0.92)',
+                kaartTitel: '#431407',
+                kaartTekst: '#5c1d09',
+                divider: 'rgba(234,88,12,0.22)',
+                schaduw: 'rgba(234,88,12,0.12)',
+                voettekst: '#c2410c',
+                svg: `<svg viewBox="0 0 400 170" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
+                    <defs>
+                        <linearGradient id="dankLucht" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#fed7aa"/>
+                            <stop offset="50%" stop-color="#fdba74"/>
+                            <stop offset="100%" stop-color="#f97316"/>
+                        </linearGradient>
+                        <linearGradient id="dankHeuvel" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#b45309"/>
+                            <stop offset="100%" stop-color="#78350f"/>
+                        </linearGradient>
+                    </defs>
+                    <rect width="400" height="170" fill="url(#dankLucht)"/>
+                    <circle cx="280" cy="50" r="34" fill="#ffedd5" opacity="0.8"/>
+                    <circle cx="280" cy="50" r="22" fill="#ffffff"/>
+                    <path d="M0 120 Q120 90 240 122 T400 110 V170 H0 Z" fill="#c2410c" opacity="0.85"/>
+                    <path d="M0 136 Q130 110 260 138 T400 128 V170 H0 Z" fill="url(#dankHeuvel)"/>
+                    <g transform="translate(85, 126)">
+                        <ellipse cx="0" cy="16" rx="24" ry="10" fill="#92400e"/>
+                        <circle cx="-12" cy="10" r="9" fill="#dc2626"/>
+                        <circle cx="0" cy="6" r="10" fill="#ea580c"/>
+                        <circle cx="12" cy="10" r="9" fill="#eab308"/>
+                        <path d="M-12 1 Q-10 -4 -6 -3" stroke="#451a03" stroke-width="2" fill="none"/>
+                        <path d="M0 -3 Q2 -8 6 -7" stroke="#451a03" stroke-width="2" fill="none"/>
+                        <path d="M12 1 Q14 -4 18 -3" stroke="#451a03" stroke-width="2" fill="none"/>
+                    </g>
+                    <g stroke="#fde047" stroke-width="1.8" fill="none" opacity="0.9">
+                        <path d="M140 155 Q144 136 150 125"/>
+                        <path d="M158 158 Q156 140 155 130"/>
+                    </g>
+                    <g id="kruis" transform="translate(305, 56)">
+                        <rect x="-4.5" y="0" width="9" height="84" rx="2" fill="#451a03"/>
+                        <rect x="-24" y="20" width="48" height="9" rx="2" fill="#451a03"/>
+                    </g>
+                </svg>`
+            };
+        }
+
+        if (p.includes('doop') || p.includes('water') || p.includes('kind') || p.includes('geboren')) {
+            return {
+                naam: 'Doopdienst',
+                icoon: '💧',
+                beschrijving: 'Levend water, zegen en vrede met kruis',
+                bg: 'linear-gradient(180deg,#e0f2fe 0%,#bae6fd 25%,#f0f9ff 100%)',
+                headerKleur: '#0284c7',
+                titelKleur: '#0c4a6e',
+                subKleur: '#0369a1',
+                kaartBg: 'rgba(255,255,255,0.92)',
+                kaartTitel: '#082f49',
+                kaartTekst: '#1e3a5f',
+                divider: 'rgba(2,132,199,0.20)',
+                schaduw: 'rgba(2,132,199,0.10)',
+                voettekst: '#0284c7',
+                svg: `<svg viewBox="0 0 400 170" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
+                    <defs>
+                        <linearGradient id="doopLucht" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#7dd3fc"/>
+                            <stop offset="60%" stop-color="#bae6fd"/>
+                            <stop offset="100%" stop-color="#e0f2fe"/>
+                        </linearGradient>
+                        <linearGradient id="doopWater" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#38bdf8"/>
+                            <stop offset="100%" stop-color="#0284c7"/>
+                        </linearGradient>
+                    </defs>
+                    <rect width="400" height="170" fill="url(#doopLucht)"/>
+                    <circle cx="80" cy="50" r="32" fill="#ffffff" opacity="0.8"/>
+                    <circle cx="80" cy="50" r="20" fill="#ffffff"/>
+                    <g transform="translate(160, 48)">
+                        <circle cx="0" cy="0" r="16" fill="#ffffff" opacity="0.6"/>
+                        <path d="M-2 -2 Q-10 -15 -20 -16 Q-15 -6 -8 0 Z" fill="#ffffff"/>
+                        <path d="M2 -2 Q10 -15 20 -16 Q15 -6 8 0 Z" fill="#ffffff"/>
+                        <ellipse cx="0" cy="2" rx="3.5" ry="6" fill="#ffffff"/>
+                        <circle cx="0" cy="-4" r="3" fill="#ffffff"/>
+                        <polygon points="0,-7 -1,-4 1,-4" fill="#f59e0b"/>
+                    </g>
+                    <path d="M0 122 Q120 95 240 124 T400 114 V170 H0 Z" fill="#86efac" opacity="0.9"/>
+                    <path d="M0 134 Q140 112 280 136 T400 130 V170 H0 Z" fill="#4ade80"/>
+                    <path d="M0 148 Q80 140 160 146 T320 142 Q360 146 400 144 V170 H0 Z" fill="url(#doopWater)"/>
+                    <path d="M20 156 Q60 152 100 156 M140 157 Q180 153 220 157" stroke="#ffffff" stroke-width="1.8" opacity="0.6" stroke-linecap="round" fill="none"/>
+                    <g id="kruis" transform="translate(305, 58)">
+                        <rect x="-4.5" y="0" width="9" height="82" rx="2" fill="#5c381e"/>
+                        <rect x="-24" y="20" width="48" height="9" rx="2" fill="#5c381e"/>
+                    </g>
+                </svg>`
+            };
+        }
+
+        if (p.includes('avondmaal') || p.includes('brood') || p.includes('wijn') || p.includes('beker') || p.includes('dis')) {
+            return {
+                naam: 'Avondmaal',
+                icoon: '🍷',
+                beschrijving: 'Brood en beker van het verbond met kruis',
+                bg: 'linear-gradient(180deg,#fce7f3 0%,#fbcfe8 25%,#fdf2f8 100%)',
+                headerKleur: '#be185d',
+                titelKleur: '#701a75',
+                subKleur: '#831843',
+                kaartBg: 'rgba(255,255,255,0.92)',
+                kaartTitel: '#500724',
+                kaartTekst: '#641b38',
+                divider: 'rgba(190,24,93,0.22)',
+                schaduw: 'rgba(190,24,93,0.12)',
+                voettekst: '#9d174d',
+                svg: `<svg viewBox="0 0 400 170" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
+                    <defs>
+                        <linearGradient id="avondmaalLucht" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#701a75"/>
+                            <stop offset="50%" stop-color="#9d174d"/>
+                            <stop offset="100%" stop-color="#f43f5e"/>
+                        </linearGradient>
+                    </defs>
+                    <rect width="400" height="170" fill="url(#avondmaalLucht)"/>
+                    <circle cx="200" cy="115" r="45" fill="#fde047" opacity="0.4"/>
+                    <circle cx="200" cy="115" r="25" fill="#fef08a" opacity="0.6"/>
+                    <path d="M0 130 Q120 102 240 128 T400 118 V170 H0 Z" fill="#4c0519" opacity="0.85"/>
+                    <path d="M0 142 Q140 120 280 144 T400 136 V170 H0 Z" fill="#2e0210"/>
+                    <g transform="translate(90, 118)">
+                        <path d="M-10 14 Q-12 30 0 32 Q12 30 10 14 Z" fill="#fbbf24"/>
+                        <rect x="-2" y="32" width="4" height="12" fill="#d97706"/>
+                        <ellipse cx="0" cy="44" rx="10" ry="3" fill="#d97706"/>
+                        <ellipse cx="0" cy="14" rx="10" ry="4" fill="#991b1b"/>
+                        <ellipse cx="22" cy="38" rx="12" ry="7" fill="#d97706"/>
+                        <path d="M16 33 L20 42 L24 34" stroke="#78350f" stroke-width="2" fill="none"/>
+                    </g>
+                    <g id="kruis" transform="translate(305, 56)">
+                        <rect x="-4.5" y="0" width="9" height="84" rx="2" fill="#0f0206"/>
+                        <rect x="-24" y="20" width="48" height="9" rx="2" fill="#0f0206"/>
+                    </g>
+                </svg>`
+            };
+        }
+
+        if (p.includes('trouw') || p.includes('huwelijk') || p.includes('zegen') || p.includes('liefde') || p.includes('belofte')) {
+            return {
+                naam: 'Huwelijk',
+                icoon: '💍',
+                beschrijving: 'Liefde, trouw en verbondenheid met kruis',
+                bg: 'linear-gradient(180deg,#ffe4e6 0%,#fecdd3 25%,#fff1f2 100%)',
+                headerKleur: '#e11d48',
+                titelKleur: '#881337',
+                subKleur: '#9f1239',
+                kaartBg: 'rgba(255,255,255,0.92)',
+                kaartTitel: '#4c0519',
+                kaartTekst: '#5e142b',
+                divider: 'rgba(225,29,72,0.22)',
+                schaduw: 'rgba(225,29,72,0.12)',
+                voettekst: '#be123c',
+                svg: `<svg viewBox="0 0 400 170" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
+                    <defs>
+                        <linearGradient id="huwelijkLucht" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#fecdd3"/>
+                            <stop offset="55%" stop-color="#ffe4e6"/>
+                            <stop offset="100%" stop-color="#fff1f2"/>
+                        </linearGradient>
+                        <linearGradient id="huwelijkHeuvel" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#fda4af"/>
+                            <stop offset="100%" stop-color="#f43f5e"/>
+                        </linearGradient>
+                    </defs>
+                    <rect width="400" height="170" fill="url(#huwelijkLucht)"/>
+                    <circle cx="110" cy="60" r="30" fill="#ffffff" opacity="0.9"/>
+                    <circle cx="110" cy="60" r="18" fill="#fff1f2"/>
+                    <path d="M0 124 Q110 96 220 122 T400 112 V170 H0 Z" fill="#fb7185" opacity="0.8"/>
+                    <path d="M0 138 Q130 112 260 138 T400 130 V170 H0 Z" fill="url(#huwelijkHeuvel)"/>
+                    <g transform="translate(100, 115)">
+                        <circle cx="-7" cy="0" r="13" stroke="#fbbf24" stroke-width="3" fill="none"/>
+                        <circle cx="7" cy="0" r="13" stroke="#f59e0b" stroke-width="3" fill="none"/>
+                        <polygon points="0,-16 -2,-13 2,-13" fill="#ffffff"/>
+                    </g>
+                    <g id="kruis" transform="translate(305, 58)">
+                        <rect x="-4.5" y="0" width="9" height="82" rx="2" fill="#881337"/>
+                        <rect x="-24" y="20" width="48" height="9" rx="2" fill="#881337"/>
+                    </g>
+                </svg>`
+            };
+        }
+
+        const schoneNaam = promptTekst ? (promptTekst.charAt(0).toUpperCase() + promptTekst.slice(1, 15)) : 'Eigen Thema';
+        return {
+            naam: schoneNaam,
+            icoon: '✨',
+            beschrijving: 'Warme heuvels in ochtendlicht met kruis',
+            bg: 'linear-gradient(180deg,#fef3c7 0%,#fde68a 22%,#fffbeb 100%)',
+            headerKleur: '#b45309',
+            titelKleur: '#451a03',
+            subKleur: '#78350f',
+            kaartBg: 'rgba(255,255,255,0.92)',
+            kaartTitel: '#3a2010',
+            kaartTekst: '#573318',
+            divider: 'rgba(180,83,9,0.20)',
+            schaduw: 'rgba(180,83,9,0.10)',
+            voettekst: '#b45309',
+            svg: `<svg viewBox="0 0 400 170" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
+                <defs>
+                    <linearGradient id="customLucht" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#fed7aa"/><stop offset="55%" stop-color="#fde68a"/><stop offset="100%" stop-color="#fffbeb"/>
+                    </linearGradient>
+                    <linearGradient id="customHeuvel" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#84cc16"/><stop offset="100%" stop-color="#65a30d"/>
+                    </linearGradient>
+                </defs>
+                <rect width="400" height="170" fill="url(#customLucht)"/>
+                <circle cx="90" cy="50" r="30" fill="#ffffff" opacity="0.85"/>
+                <circle cx="90" cy="50" r="18" fill="#ffffff"/>
+                <path d="M0 120 Q120 86 230 118 T400 108 V170 H0 Z" fill="#a3e635" opacity="0.85"/>
+                <path d="M0 136 Q140 108 270 136 T400 128 V170 H0 Z" fill="url(#customHeuvel)"/>
+                <g id="kruis" transform="translate(305, 58)">
+                    <rect x="-4.5" y="0" width="9" height="82" rx="2" fill="#5c381e"/>
+                    <rect x="-24" y="20" width="48" height="9" rx="2" fill="#5c381e"/>
+                </g>
+            </svg>`
+        };
+    }
+
+    window.gebruikAiBannerSuggestie = function(tekst) {
+        const inp = document.getElementById('aiBannerPrompt');
+        if (inp) inp.value = tekst;
+        window.genereerAiBanner();
+    };
+
+    window.verwijderCustomBanner = function() {
+        delete MEELEES_THEMAS.custom;
+        try { localStorage.removeItem('meeleesCustomThema'); } catch (e) {}
+        if (window.getActiefMeeleesThema() === 'custom') {
+            window.setActiefMeeleesThema('standaard');
+        } else {
+            updateMeeleesThemaUI();
+        }
+        if (window.toonToast) window.toonToast("Eigen thema gewist", "info");
+    };
+
+    window.genereerAiBanner = async function() {
+        const inp = document.getElementById('aiBannerPrompt');
+        const promptTekst = (inp ? inp.value : '').trim();
+        if (!promptTekst) {
+            if (window.toonToast) window.toonToast("Vul eerst een thema of zoekterm in", "warning");
+            if (inp) inp.focus();
+            return;
+        }
+
+        const btn = document.getElementById('aiBannerBtn');
+        const btnSpinner = document.getElementById('aiBannerBtnSpinner');
+        const btnText = document.getElementById('aiBannerBtnText');
+
+        if (btn) btn.disabled = true;
+        if (btnSpinner) btnSpinner.classList.remove('hidden');
+        if (btnText) btnText.textContent = 'Ontwerpen...';
+
+        try {
+            let themaData = null;
+            const proxy = (typeof PROXY_URL !== 'undefined') ? PROXY_URL : "https://gemini-proxy.kerkapp.workers.dev";
+            const model = (typeof gevondenModel !== 'undefined' && gevondenModel) ? gevondenModel : 'gemini-1.5-flash';
+
+            try {
+                const systemInstructie = `Je bent een christelijke grafische ontwerper gespecialiseerd in rustige, minimalistische pastorale vector banners voor kerkdiensten.
+Ontwerp op basis van de vraag van de gebruiker een SVG banner (viewBox="0 0 400 170") en een bijpassend kleurenpalet voor een mobiele meelees-pagina.
+
+STRIKTE EISEN:
+1. ER MOET ALTIJD EEN DUIDELIJK KRUIS (✝) IN DE BANNER STAAN (bijvoorbeeld vredig op een heuvel of in het landschap). Plaats het kruis ALTIJD in een <g id="kruis"> tag met balken (<rect> of <path>).
+2. De stijl moet exact aansluiten bij de rustige, warme pastorale vector-stijl: glooiende heuvels, zachte luchtgradienten, harmonieuze symbolen (graanaren, duif, water, bloemen, sterren, open bijbel, etc.). GEEN tekst of letters in de SVG zelf.
+3. Retourneer UITSLUITEND een valide JSON object met exact deze velden (geen markdown codeblokken, geen uitleg):
+{
+  "naam": "Korte themanaam (max 15 tekens)",
+  "icoon": "Enkel passend emoji icoon",
+  "beschrijving": "Korte beschrijving van de scène (max 60 tekens)",
+  "bg": "linear-gradient(180deg, #... 0%, #... 25%, #... 100%)",
+  "headerKleur": "HEX kleurcode voor categoriekopjes",
+  "titelKleur": "HEX kleurcode voor titels",
+  "subKleur": "HEX kleurcode voor subtitels",
+  "kaartBg": "rgba(255,255,255,0.92)",
+  "kaartTitel": "HEX kleurcode voor kaarttitels",
+  "kaartTekst": "HEX kleurcode voor liedtekst",
+  "divider": "rgba(r,g,b,0.20)",
+  "schaduw": "rgba(r,g,b,0.12)",
+  "voettekst": "HEX kleurcode voor voettekst",
+  "svg": "<svg viewBox=\\"0 0 400 170\\" xmlns=\\"http://www.w3.org/2000/svg\\" style=\\"width:100%;height:auto;display:block\\">...</svg>"
+}`;
+
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+                const res = await fetch(`${proxy}/v1beta/${model}:generateContent`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    signal: controller.signal,
+                    body: JSON.stringify({
+                        contents: [{
+                            role: 'user',
+                            parts: [{ text: `${systemInstructie}\n\nThema van de gebruiker: "${promptTekst}"` }]
+                        }],
+                        generationConfig: {
+                            responseMimeType: "application/json",
+                            temperature: 0.2
+                        }
+                    })
+                });
+                clearTimeout(timeoutId);
+
+                if (res.ok) {
+                    const resJson = await res.json();
+                    const part = resJson.candidates && resJson.candidates[0] && resJson.candidates[0].content && resJson.candidates[0].content.parts && resJson.candidates[0].content.parts[0];
+                    if (part && part.text) {
+                        let clean = part.text.trim();
+                        if (clean.startsWith('```json')) clean = clean.slice(7);
+                        if (clean.startsWith('```')) clean = clean.slice(3);
+                        if (clean.endsWith('```')) clean = clean.slice(0, -3);
+                        themaData = JSON.parse(clean.trim());
+                    }
+                }
+            } catch (netErr) {
+                console.warn("AI generation via Gemini niet gelukt, fallback wordt gebruikt:", netErr);
+            }
+
+            // Als AI niet beschikbaar was of geen geldige SVG teruggaf: gebruik de lokale fallback
+            if (!themaData || !themaData.svg) {
+                themaData = maakLokaleThemaFallback(promptTekst);
+                if (window.toonToast) window.toonToast(`Banner '${themaData.naam}' ontworpen!`, "info");
+            } else {
+                if (window.toonToast) window.toonToast(`AI Banner '${themaData.naam}' succesvol ontworpen!`, "success");
+            }
+
+            // Garandeer dat er ALTIJD een kruis in zit
+            const gegarandeerdeSvg = zorgVoorKruisInSvg(themaData.svg);
+
+            const customThema = {
+                id: 'custom',
+                naam: themaData.naam || 'Eigen Thema',
+                icoon: themaData.icoon || '✨',
+                beschrijving: themaData.beschrijving || promptTekst,
+                bg: themaData.bg || 'linear-gradient(180deg,#ffd9a0 0%,#ffe4b8 22%,#fff3e0 100%)',
+                headerKleur: themaData.headerKleur || '#c07f33',
+                titelKleur: themaData.titelKleur || '#4a3320',
+                subKleur: themaData.subKleur || '#8a6a45',
+                kaartBg: themaData.kaartBg || 'rgba(255,255,255,0.92)',
+                kaartTitel: themaData.kaartTitel || '#4a3320',
+                kaartTekst: themaData.kaartTekst || '#5c4630',
+                divider: themaData.divider || 'rgba(139,90,52,0.18)',
+                schaduw: themaData.schaduw || 'rgba(139,90,52,0.10)',
+                voettekst: themaData.voettekst || '#b08a5e',
+                svg: gegarandeerdeSvg
+            };
+
+            MEELEES_THEMAS.custom = customThema;
+            try {
+                localStorage.setItem('meeleesCustomThema', JSON.stringify(customThema));
+            } catch (e) {
+                console.warn("Kon custom thema niet opslaan in localStorage:", e);
+            }
+
+            window.setActiefMeeleesThema('custom');
+        } catch (err) {
+            console.error("Fout bij genereren banner:", err);
+            if (window.toonToast) window.toonToast("Kon banner niet genereren: " + err.message, "error");
+        } finally {
+            if (btn) btn.disabled = false;
+            if (btnSpinner) btnSpinner.classList.add('hidden');
+            if (btnText) btnText.textContent = 'Genereer';
+        }
+    };
+
     function meeleesAan() { const t = document.getElementById('meeleesToggle'); return t && t.checked; }
     function toggleMeelees() {
         const isAan = meeleesAan();
@@ -1386,12 +1894,24 @@
                     window.setActiefMeeleesThema(th.id);
                     if (window.toonToast) window.toonToast(`Banner thema ingesteld op: ${th.naam}`, "success");
                 };
-                btn.innerHTML = `
-                    <div class="flex items-center gap-1">
-                        <span class="text-sm">${th.icoon}</span>
-                        <span class="text-[11px] font-bold truncate">${th.naam}</span>
-                    </div>
-                `;
+                if (th.id === 'custom') {
+                    btn.innerHTML = `
+                        <div class="flex items-center justify-between gap-1 w-full">
+                            <div class="flex items-center gap-1 min-w-0">
+                                <span class="text-sm">${th.icoon}</span>
+                                <span class="text-[11px] font-bold truncate">${th.naam}</span>
+                            </div>
+                            <span onclick="event.stopPropagation(); window.verwijderCustomBanner();" class="text-[10px] text-gray-400 hover:text-red-500 px-1 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-all cursor-pointer" title="Verwijder dit eigen thema">✕</span>
+                        </div>
+                    `;
+                } else {
+                    btn.innerHTML = `
+                        <div class="flex items-center gap-1">
+                            <span class="text-sm">${th.icoon}</span>
+                            <span class="text-[11px] font-bold truncate">${th.naam}</span>
+                        </div>
+                    `;
+                }
                 knoppenContainer.appendChild(btn);
             });
         }
@@ -1443,13 +1963,17 @@
             .filter(it => it.type !== 'Foto' && it.type !== 'QR')
             .map(it => ({ type: it.type, titel: it.titel || '', tekst: it.type === 'Leeg' ? '' : (it.tekst || ''), align: it.align || 'left' }));
         const thema = window.getActiefMeeleesThema();
-        const ref = await db.collection("meelees").add({
+        const payload = {
             datum: datum, 
             voorganger: voorganger, 
             items: items, 
             thema: thema,
             gemaaktOp: firebase.firestore.FieldValue.serverTimestamp()
-        });
+        };
+        if (thema === 'custom' && MEELEES_THEMAS.custom) {
+            payload.customThema = MEELEES_THEMAS.custom;
+        }
+        const ref = await db.collection("meelees").add(payload);
         return location.origin + location.pathname + '?meelees=' + ref.id;
     }
 
@@ -1474,6 +1998,10 @@
     // Thema-specifieke kerkelijke SVG-scènes (Pasen, Kerst, Hemelvaart, Pinksteren, Lijdenstijd, Standaard).
     function meeleesSceneSVG(thema = 'standaard') {
         const t = (thema || 'standaard').toLowerCase();
+
+        if (t === 'custom' && MEELEES_THEMAS.custom && MEELEES_THEMAS.custom.svg) {
+            return zorgVoorKruisInSvg(MEELEES_THEMAS.custom.svg);
+        }
 
         if (t === 'pasen') {
             // Pasen: Vroege zonsopgang, open graf met weggerolde steen, leeg kruis met witte overwinningsdoek, witte lelies.
@@ -1841,6 +2369,9 @@
     }
 
     function renderMeelees(data, overlay) {
+        if (data && data.customThema && data.customThema.svg) {
+            MEELEES_THEMAS.custom = data.customThema;
+        }
         const themaId = (data.thema || window.getActiefMeeleesThema()).toLowerCase();
         const th = MEELEES_THEMAS[themaId] || MEELEES_THEMAS.standaard;
 
@@ -1893,6 +2424,7 @@
             datum: datum,
             voorganger: voorganger,
             thema: thema,
+            customThema: thema === 'custom' ? MEELEES_THEMAS.custom : null,
             items: items
         };
 
