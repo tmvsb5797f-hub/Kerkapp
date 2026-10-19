@@ -993,9 +993,16 @@
         if (preview) {
             if (tab === 'preview') {
                 preview.classList.remove('hidden');
-                if (typeof renderSlidePreview === 'function' && typeof previewItemIdx !== 'undefined' && previewItemIdx >= 0) {
-                    renderSlidePreview(previewItemIdx);
-                }
+                requestAnimationFrame(() => {
+                    const idx = (typeof previewItemIdx !== 'undefined' && previewItemIdx >= 0)
+                        ? previewItemIdx
+                        : ((typeof liturgieVolgorde !== 'undefined' && liturgieVolgorde.length > 0) ? 0 : -1);
+                    if (typeof renderSlidePreview === 'function' && idx >= 0) {
+                        renderSlidePreview(idx);
+                    } else if (typeof tekenSlidePreview === 'function') {
+                        tekenSlidePreview();
+                    }
+                });
             } else {
                 preview.classList.add('hidden');
             }
@@ -1055,6 +1062,9 @@
             if (preview) preview.classList.remove('hidden');
         } else {
             window.schakelMobieleTab(window.huidigeMobieleTab || 'invoer');
+        }
+        if (typeof tekenSlidePreview === 'function' && typeof previewItemIdx !== 'undefined' && previewItemIdx >= 0) {
+            tekenSlidePreview();
         }
     });
 
