@@ -5645,12 +5645,12 @@ Van harte Gods zegen toegewenst!`;
 
     function toonPinVergrendelScherm(modus, onOntgrendeld) {
         document.documentElement.style.cssText = "height:100%;width:100%;margin:0;padding:0;background:#090d16;overflow:hidden;";
-        document.body.style.cssText = "height:100%;width:100%;margin:0;padding:0;background:#090d16;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;-webkit-font-smoothing:antialiased;color:#f8fafc;user-select:none;";
+        document.body.style.cssText = "height:100%;height:100dvh;min-height:-webkit-fill-available;width:100%;margin:0;padding:0;background:#090d16;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;-webkit-font-smoothing:antialiased;color:#f8fafc;user-select:none;";
 
         const modusLabel = modus === 'remote' ? 'Mobiele Klikker' : 'OBS Regiedock';
 
         document.body.innerHTML = `
-            <div style="height:100vh;width:100vw;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;background:#090d16;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-serif;color:#f8fafc;">
+            <div style="height:100%;height:100dvh;min-height:-webkit-fill-available;width:100vw;display:flex;align-items:center;justify-content:center;padding:max(16px, env(safe-area-inset-top, 16px)) max(16px, env(safe-area-inset-right, 16px)) max(16px, env(safe-area-inset-bottom, 16px)) max(16px, env(safe-area-inset-left, 16px));box-sizing:border-box;background:#090d16;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-serif;color:#f8fafc;">
                 <div style="background:#131d2e;border:1px solid #1e293b;border-radius:24px;padding:28px 22px;width:100%;max-width:330px;text-align:center;box-shadow:0 20px 40px rgba(0,0,0,0.5);">
                     <div style="width:52px;height:52px;background:rgba(0,122,255,0.14);border:1px solid rgba(0,122,255,0.3);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 14px;">
                         🔐
@@ -5917,7 +5917,7 @@ Van harte Gods zegen toegewenst!`;
 
         document.title = "📱 Mobiele Klikker - Kerkapp";
         document.documentElement.style.cssText = "height:100%;width:100%;margin:0;padding:0;background:#090d16;overflow:hidden;";
-        document.body.style.cssText = "height:100%;width:100%;margin:0;padding:0;background:#090d16;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;-webkit-font-smoothing:antialiased;color:#f8fafc;user-select:none;-webkit-user-select:none;touch-action:manipulation;";
+        document.body.style.cssText = "height:100%;height:100dvh;min-height:-webkit-fill-available;width:100%;margin:0;padding:0;background:#090d16;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;-webkit-font-smoothing:antialiased;color:#f8fafc;user-select:none;-webkit-user-select:none;touch-action:manipulation;";
 
         const styleEl = document.createElement('style');
         styleEl.id = 'obsRemoteStyles';
@@ -5932,7 +5932,7 @@ Van harte Gods zegen toegewenst!`;
         const gNaam = (window.getActieveGemeente ? window.getActieveGemeente() : 'Bethelkerk Maassluis');
 
         document.body.innerHTML = `
-            <div style="height:100vh;width:100vw;display:flex;flex-direction:column;justify-content:space-between;padding:12px;box-sizing:border-box;background:#090d16;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-serif;color:#f8fafc;overflow:hidden;">
+            <div style="height:100%;height:100dvh;min-height:-webkit-fill-available;width:100vw;display:flex;flex-direction:column;justify-content:space-between;padding:max(12px, env(safe-area-inset-top, 12px)) max(12px, env(safe-area-inset-right, 12px)) max(12px, env(safe-area-inset-bottom, 12px)) max(12px, env(safe-area-inset-left, 12px));box-sizing:border-box;background:#090d16;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-serif;color:#f8fafc;overflow:hidden;">
                 
                 <!-- Bovenbalk: Gemeente + Live status + PIN badge -->
                 <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 2px;flex-shrink:0;">
@@ -9460,15 +9460,15 @@ window.verstuurExportFeedback = async function() {
                             <span class="text-xs font-bold uppercase tracking-wider text-gray-300">Interactieve Simulator</span>
                             <span id="obsSimIndexLabel" class="text-xs text-blue-400 font-semibold ml-2">Dia 1 van ...</span>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <button type="button" onclick="obsLiveVorige()" class="px-3.5 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-white transition-all active:scale-95 flex items-center gap-1">
+                        <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                            <button type="button" onclick="obsLiveVorige()" class="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-white transition-all active:scale-95 flex items-center justify-center gap-1">
                                 ◀ Vorige
                             </button>
-                            <button type="button" onclick="obsLiveVolgende()" class="px-4 py-1.5 rounded-xl bg-[#007AFF] hover:bg-blue-600 text-xs font-bold text-white transition-all active:scale-95 shadow-md flex items-center gap-1">
+                            <button type="button" onclick="obsLiveVolgende()" class="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-[#007AFF] hover:bg-blue-600 text-xs font-bold text-white transition-all active:scale-95 shadow-md flex items-center justify-center gap-1">
                                 Volgende ▶
                             </button>
-                            <button type="button" id="obsSimBlackoutBtn" onclick="obsLiveToggleBlackout()" class="px-3 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-300 hover:text-white transition-all active:scale-95">
-                                ⚫ Zwart Scherm (B)
+                            <button type="button" id="obsSimBlackoutBtn" onclick="obsLiveToggleBlackout()" class="flex-1 sm:flex-initial px-3 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-300 hover:text-white transition-all active:scale-95 text-center">
+                                ⚫ Zwart (B)
                             </button>
                         </div>
                     </div>
