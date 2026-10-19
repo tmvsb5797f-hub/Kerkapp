@@ -1939,6 +1939,151 @@
         if (window.toonToast) window.toonToast("Eigen thema gewist", "info");
     };
 
+    // Prompt Maker: zet 1, 2 of 3 willekeurige termen van de gebruiker geruisloos om in een rijke 'Master Prompt'
+    function maakMasterPrompt(userTermen) {
+        const raw = (userTermen || '').trim();
+        const str = raw.toLowerCase();
+
+        let focusNaam = raw.length > 18 ? raw.slice(0, 18) : raw;
+        let sfeer = 'Rustgevend pastoraal heuvellandschap in een warme ochtendschemering';
+        let luchtVerloop = 'Warm geelgoud (#fef08a) naar zacht abrikoos (#fed7aa)';
+        let heuvelVerloop = 'Fris grasgroen (#84cc16) naar warm weidegroen (#4d7c0f)';
+        let motieven = 'zacht wiegende veldbloemen en een stralende zon met lichtbundels';
+        let fallbackType = 'algemeen';
+        let headerKleur = '#d97706';
+        let titelKleur = '#451a03';
+        let bg = 'linear-gradient(180deg,#fef3c7 0%,#fde68a 25%,#fffbeb 100%)';
+
+        if (/bid|gewas|oogst|arbeid|zaai|koren|graan|veld/.test(str)) {
+            focusNaam = 'Biddag';
+            fallbackType = 'biddag';
+            sfeer = 'Eerbiedige ochtend over gouden graanvelden en glooiende akkers';
+            luchtVerloop = 'Warm goudgeel (#fef08a) naar amber (#fed7aa)';
+            heuvelVerloop = 'Goudoker (#eab308) naar rijp korengeel (#ca8a04)';
+            motieven = 'gedetailleerde korenaren en wuivende graanstengels op de heuvelrand';
+            headerKleur = '#d97706';
+            titelKleur = '#78350f';
+        } else if (/belijd|geloof|woord|bijbel|jawoord|trouw|belofte/.test(str)) {
+            focusNaam = 'Belijdenis';
+            fallbackType = 'belijdenis';
+            sfeer = 'Gewijd en hoopvol ochtendlicht over groene heuvels van het geloof';
+            luchtVerloop = 'Helder ochtendgoud (#fef08a) naar warm ivoor (#fed7aa)';
+            heuvelVerloop = 'Appelgroen (#65a30d) naar diep olijfgroen (#4d7c0f)';
+            motieven = 'een opengeslagen Bijbel met leeslint, een kaarsvlam en een zachtgroene olijftak';
+            headerKleur = '#ca8a04';
+            titelKleur = '#422006';
+            bg = 'linear-gradient(180deg,#fef9c3 0%,#fef08a 25%,#fffbeb 100%)';
+        } else if (/doop|water|bron|kind|geboren|rivier|stroom/.test(str)) {
+            focusNaam = 'Doopdienst';
+            fallbackType = 'doop';
+            sfeer = 'Levend water dat zacht door frisgroene oevers stroomt onder een hemelsblauwe lucht';
+            luchtVerloop = 'Hemelsblauw (#7dd3fc) naar zacht azuur (#e0f2fe)';
+            heuvelVerloop = 'Weelderig lentegroen (#4ade80) naar diepgroen (#16a34a)';
+            motieven = 'een stromende beek met waterrimpels en een neerdalende witte vredesduif';
+            headerKleur = '#0284c7';
+            titelKleur = '#0c4a6e';
+            bg = 'linear-gradient(180deg,#e0f2fe 0%,#bae6fd 25%,#f0f9ff 100%)';
+        } else if (/avondmaal|wijn|brood|beker|kelk|dis|verbond/.test(str)) {
+            focusNaam = 'Avondmaal';
+            fallbackType = 'avondmaal';
+            sfeer = 'Eerbiedige avondschemering van verzoening en verbondenheid';
+            luchtVerloop = 'Diep purper (#701a75) naar warm bordeauxrood (#f43f5e)';
+            heuvelVerloop = 'Avondheuvels (#4c0519) naar nachtrood (#2e0210)';
+            motieven = 'een gouden avondmaalskelk en gebroken brood op de heuvelrand';
+            headerKleur = '#be185d';
+            titelKleur = '#500724';
+            bg = 'linear-gradient(180deg,#fce7f3 0%,#fbcfe8 25%,#fdf2f8 100%)';
+        } else if (/paas|pasen|opstanding|leven|graf|verrijzenis/.test(str)) {
+            focusNaam = 'Pasen';
+            fallbackType = 'pasen';
+            sfeer = 'Glorieuze, zegevierende zonsopgang over de heuvels met open graf';
+            luchtVerloop = 'Zonsopgang-perzik (#ffd2b8) naar overwinningsgeel (#fff2cc)';
+            heuvelVerloop = 'Lentegroen (#98ca53) naar fris mosgroen (#6ea134)';
+            motieven = 'een open graf met weggerolde ronde steen en bloeiende witte paaslelies';
+            headerKleur = '#d97706';
+            titelKleur = '#451a03';
+            bg = 'linear-gradient(180deg,#ffe1c2 0%,#fff2d6 24%,#fbf9f4 100%)';
+        } else if (/kerst|advent|ster|stal|kribbe|nacht/.test(str)) {
+            focusNaam = 'Kerst';
+            fallbackType = 'kerst';
+            sfeer = 'Diepe sterrenhemel van Bethlehem met de stralende ster';
+            luchtVerloop = 'Middernachtblauw (#050a18) naar diep nachtblauw (#1e2c4d)';
+            heuvelVerloop = 'Nachtelijke heuvels (#15213b) naar diepblauw (#0d1527)';
+            motieven = 'de grote Ster van Bethlehem die omlaag schijnt naar de stal';
+            headerKleur = '#facc15';
+            titelKleur = '#f8fafc';
+            bg = 'linear-gradient(180deg,#0f172a 0%,#1e293b 35%,#0f172a 100%)';
+        } else if (/jeugd|jong|kinder|feest|blij|toekomst|school/.test(str)) {
+            focusNaam = 'Jeugddienst';
+            fallbackType = 'jeugd';
+            sfeer = 'Zonnige, vrolijke ochtend vol vreugde en hoop over frisse heuvels';
+            luchtVerloop = 'Mintgroen (#6ee7b7) naar zonnig geel (#fef08a)';
+            heuvelVerloop = 'Smaragdgroen (#10b981) naar fris weidegroen (#047857)';
+            motieven = 'vrolijke zonnebloemen en een opvliegende witte vogel in zonlicht';
+            headerKleur = '#059669';
+            titelKleur = '#064e3b';
+            bg = 'linear-gradient(180deg,#ecfdf5 0%,#d1fae5 25%,#f0fdf4 100%)';
+        } else if (/vrede|rust|troost|hoop|stilte|gebed/.test(str)) {
+            focusNaam = 'Vrede & Hoop';
+            fallbackType = 'algemeen';
+            sfeer = 'Kalme, rustgevende ochtendschemering met een zachte gouden gloed';
+            luchtVerloop = 'Lavendelroze (#e9d5ff) naar warme ochtendgloed (#fde68a)';
+            heuvelVerloop = 'Saliegroen (#84cc16) naar rustig bosgroen (#4d7c0f)';
+            motieven = 'zachte lichtstralen en olijftakken van vrede';
+            headerKleur = '#7e22ce';
+            titelKleur = '#3b0764';
+        }
+
+        const masterPrompt = `Je bent een meesterlijke pastorale vector illustrator voor een kerkelijke mobiele liturgie app.
+De gebruiker voerde de trefwoorden in: "${raw}".
+Vertaal deze termen naar een harmonieuze, warme vector SVG banner (viewBox="0 0 400 170") en een bijpassend kleurenpalet.
+
+KUNSTZINNIGE DIRECTIEVE (STRIKT VOLGEN):
+- Thema: ${focusNaam}
+- Sfeer en landschap: ${sfeer}.
+- Lucht-verloop (<defs><linearGradient id="lucht"...>): ${luchtVerloop}.
+- Heuvel-verloop (<defs><linearGradient id="heuvel"...>): ${heuvelVerloop}.
+- Structuur:
+  1. <rect width="400" height="170" fill="url(#lucht)"/>
+  2. Een warme zon of lichtgloed met <circle> of <radialGradient>.
+  3. Achtergrondheuvels met vloeiende <path d="M0 120 Q120 85 240 120 T400 110 V170 H0 Z" fill="..."/>
+  4. Voorgrondheuvel met <path d="M0 136 Q140 108 270 136 T400 128 V170 H0 Z" fill="url(#heuvel)"/>
+  5. Thematische pastorale elementen op de linkerheuvel (X: 50-180, Y: 100-150): ${motieven}.
+  6. Het Houten Kruis op de rechterheuvel (STRIKT VERPLICHT):
+     <g id="kruis" transform="translate(305, 58)">
+         <rect x="-4.5" y="0" width="9" height="82" rx="2" fill="#5c381e"/>
+         <rect x="-24" y="20" width="48" height="9" rx="2" fill="#5c381e"/>
+     </g>
+
+STRENG VERBODEN:
+- ABSOLUUT GEEN grijze cirkels (#ccc, #888, #999, gray) of minimalistische losse iconen op een lege achtergrond!
+- GEEN letters of tekst in de SVG.
+
+Retourneer UITSLUITEND een valide JSON object:
+{
+  "naam": "${focusNaam}",
+  "icoon": "✝️",
+  "beschrijving": "${sfeer.slice(0, 60)}",
+  "bg": "${bg}",
+  "headerKleur": "${headerKleur}",
+  "titelKleur": "${titelKleur}",
+  "subKleur": "#78350f",
+  "kaartBg": "rgba(255,255,255,0.92)",
+  "kaartTitel": "#3a2010",
+  "kaartTekst": "#573318",
+  "divider": "rgba(180,83,9,0.20)",
+  "schaduw": "rgba(180,83,9,0.10)",
+  "voettekst": "${headerKleur}",
+  "svg": "<svg viewBox=\\"0 0 400 170\\" xmlns=\\"http://www.w3.org/2000/svg\\" style=\\"width:100%;height:auto;display:block\\">...</svg>"
+}`;
+
+        return {
+            masterPrompt,
+            focusNaam,
+            fallbackType
+        };
+    }
+
     window.genereerAiBanner = async function() {
         const inp = document.getElementById('aiBannerPrompt');
         const promptTekst = (inp ? inp.value : '').trim();
@@ -1958,59 +2103,22 @@
 
         try {
             let themaData = null;
-            const pLower = promptTekst.toLowerCase();
             
-            // Controleer of de gebruiker een bekende kerkelijke dienst/feestdag intypt
-            const isBekendThema = pLower.includes('belijd') || pLower.includes('paas') || pLower.includes('pasen') ||
-                                  pLower.includes('kerst') || pLower.includes('hemelvaart') || pLower.includes('pinkster') ||
-                                  pLower.includes('bid') || pLower.includes('dank') || pLower.includes('doop') ||
-                                  pLower.includes('avondmaal') || pLower.includes('huwelijk') || pLower.includes('lijden');
+            // De Prompt Maker zet de ingevoerde termen geruisloos om in een rijke Master Prompt
+            const master = maakMasterPrompt(promptTekst);
+            console.log("[Prompt Maker] Input termen:", promptTekst, "-> Master briefing focus:", master.focusNaam);
+
+            const isBekendThema = master.fallbackType !== 'algemeen';
 
             if (isBekendThema) {
                 // Direct gebruikmaken van de geteste, prachtige vector illustratie
                 themaData = maakLokaleThemaFallback(promptTekst);
             } else {
-                // Voor unieke/creatieve thema's vragen we Gemini AI met strikte landschapsinstructies
+                // Voor unieke/creatieve thema's sturen we de Master Prompt naar Gemini AI
                 const proxy = (typeof PROXY_URL !== 'undefined') ? PROXY_URL : "https://gemini-proxy.kerkapp.workers.dev";
                 const model = (typeof gevondenModel !== 'undefined' && gevondenModel) ? gevondenModel : 'gemini-1.5-flash';
 
                 try {
-                    const systemInstructie = `Je bent een meesterlijke pastorale vector illustrator voor kerkbijeenkomsten.
-Teken voor de meelees-pagina van een kerkdienst een warme, sfeervolle vector SVG banner (viewBox="0 0 400 170") en een bijpassend kleurenpalet.
-
-STRIKTE ONTWERPSTRUCTUUR:
-De banner stelt ALTIJD een weids, warm en rustgevend heuvellandschap voor in Apple-stijl (GEEN abstracte logo's of saaie iconen!).
-De SVG MOET de volgende gelaagde structuur hebben:
-1. <defs> met ten minste 1 <linearGradient> voor de lucht (bijv. warm geel/oranje, hemelsblauw, ochtendroze, of zacht purper) en <linearGradient> voor de heuvels.
-2. Een lucht-rechthoek: <rect width="400" height="170" fill="url(#...Lucht)"/>
-3. Een warme zon of zachte lichtgloed (<circle> of <radialGradient>).
-4. Achtergrondheuvels via <path d="M0 120 Q120 85 240 120 T400 110 V170 H0 Z" fill="..."/>
-5. Voorgrondheuvel via <path d="M0 136 Q140 108 270 136 T400 128 V170 H0 Z" fill="url(#...Heuvel)"/>
-6. Thematische pastorale illustratie-elementen op de linkerheuvel (bijv. open bijbel, korenaren, water, bloemen, duif, kaarsvlam).
-7. Een duidelijk houten kruis op de rechterheuvel: <g id="kruis" transform="translate(305, 58)"><rect x="-4.5" y="0" width="9" height="82" rx="2" fill="#5c381e"/><rect x="-24" y="20" width="48" height="9" rx="2" fill="#5c381e"/></g>
-
-STRENG VERBODEN:
-- ABSOLUUT GEEN losse grijze cirkels (#ccc, #888, #aaa, gray) of platte grijze vormen!
-- GEEN letters of tekst in de SVG.
-
-Retourneer UITSLUITEND een valide JSON object:
-{
-  "naam": "Korte themanaam (max 15 tekens)",
-  "icoon": "Enkel passend symbool of emoji",
-  "beschrijving": "Korte sfeerbeschrijving (max 60 tekens)",
-  "bg": "linear-gradient(180deg, #... 0%, #... 25%, #... 100%)",
-  "headerKleur": "HEX kleur voor categoriekopjes",
-  "titelKleur": "HEX kleur voor titels",
-  "subKleur": "HEX kleur voor subtitels",
-  "kaartBg": "rgba(255,255,255,0.92)",
-  "kaartTitel": "HEX kleur voor kaarttitels",
-  "kaartTekst": "HEX kleur voor liedtekst",
-  "divider": "rgba(r,g,b,0.20)",
-  "schaduw": "rgba(r,g,b,0.12)",
-  "voettekst": "HEX kleur voor voettekst",
-  "svg": "<svg viewBox=\\"0 0 400 170\\" xmlns=\\"http://www.w3.org/2000/svg\\" style=\\"width:100%;height:auto;display:block\\">...</svg>"
-}`;
-
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), 12000);
 
@@ -2021,7 +2129,7 @@ Retourneer UITSLUITEND een valide JSON object:
                         body: JSON.stringify({
                             contents: [{
                                 role: 'user',
-                                parts: [{ text: `${systemInstructie}\n\nThema van de gebruiker: "${promptTekst}"` }]
+                                parts: [{ text: master.masterPrompt }]
                             }],
                             generationConfig: {
                                 responseMimeType: "application/json",
