@@ -1250,6 +1250,16 @@
         } catch(e) { console.warn('Kon laatste update niet ophalen:', e); }
     })();
 
+    // --- BASIS-URL HELPER ---
+    // Geeft de juiste basis-URL van de app terug (werkt over https://, http://localhost én lokaal file:///)
+    function getAppBaseUrl() {
+        if (location.protocol === 'file:') {
+            return location.href.split('?')[0].split('#')[0];
+        }
+        const origin = (location.origin && location.origin !== 'null') ? location.origin : '';
+        return origin + location.pathname;
+    }
+
     // --- BEVEILIGINGS-HELPERS ---
     // Zet gevaarlijke tekens om, zodat door de gebruiker/AI aangeleverde tekst
     // nooit als HTML wordt uitgevoerd (voorkomt kapotte weergave én XSS).
@@ -2478,7 +2488,7 @@ Retourneer UITSLUITEND een valide JSON object:
             payload.customThema = MEELEES_THEMAS.custom;
         }
         const ref = await db.collection("meelees").add(payload);
-        return location.origin + location.pathname + '?meelees=' + ref.id;
+        return getAppBaseUrl() + '?meelees=' + ref.id;
     }
 
     window.kopieerDeelLink = function() {
@@ -4668,6 +4678,74 @@ Bijbelliederen`;
         return slides;
     }
 
+    function getObsUrl(mode) {
+        return getAppBaseUrl() + '?mode=' + mode;
+    }
+
+    function getFallbackLiveState() {
+        const datum = (document.getElementById('datumInput')?.value) || new Date().toLocaleDateString('nl-NL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        const gemeente = (window.getActieveGemeente ? window.getActieveGemeente() : "Bethelkerk Maassluis");
+        return {
+            currentIndex: 0,
+            isBlackout: false,
+            updatedAt: Date.now(),
+            thema: (window.getActiefMeeleesThema ? window.getActiefMeeleesThema() : 'standaard'),
+            slides: [
+                {
+                    id: 'welkom-fallback',
+                    type: 'Welkom',
+                    titel: 'Welkom',
+                    gemeente: gemeente,
+                    datum: datum,
+                    voorganger: 'Welkom in de dienst',
+                    zangLijst: ['Weerklank Lied 116', 'Psalm 84', 'Lied 450'],
+                    regels: []
+                },
+                {
+                    id: 'lied-116-1',
+                    type: 'Zang',
+                    titel: 'Weerklank Lied 116',
+                    basisTitel: 'Weerklank Lied 116',
+                    subtitel: 'Weerklank Lied 116 (1/2)',
+                    fontSize: 40,
+                    align: 'left',
+                    regels: [
+                        'Heer, onze Heer, hoe heerlijk en verheven',
+                        'is op de ganse aarde uwe Naam!',
+                        'Gij hebt uw majesteit alom verheven,',
+                        'boven de hemel straalt uw luister zaam.'
+                    ]
+                },
+                {
+                    id: 'lied-116-2',
+                    type: 'Zang',
+                    titel: 'Weerklank Lied 116',
+                    basisTitel: 'Weerklank Lied 116',
+                    subtitel: 'Weerklank Lied 116 (2/2)',
+                    fontSize: 40,
+                    align: 'left',
+                    regels: [
+                        'Als ik uw hemel aanschouw, het werk van uw vingers,',
+                        'de maan en de sterren die Gij hebt bereid,',
+                        'wat is de mens dat Gij zijner gedenkt,',
+                        'en het mensenkind dat Gij naar hem omziet?'
+                    ]
+                },
+                {
+                    id: 'collecte-qr-fallback',
+                    type: 'QR',
+                    titel: 'Collecte Bethelkerk Maassluis',
+                    qrData: 'https://cgkmaassluis.nl/geven',
+                    regels: [
+                        'Collecte Bethelkerk Maassluis',
+                        'IBAN: NL69 ABNA 0501488154',
+                        'Scan met uw camera of bankapp'
+                    ]
+                }
+            ]
+        };
+    }
+
     function getObsLiveState() {
         try {
             const raw = localStorage.getItem('kerkapp_obs_live_state');
@@ -4676,12 +4754,58 @@ Bijbelliederen`;
         return null;
     }
 
+    let _firestoreObsSyncDebounce = null;
+    function syncObsToFirestore(state) {
+        if (typeof db === 'undefined' || !db || !state) return;
+        clearTimeout(_firestoreObsSyncDebounce);
+        _firestoreObsSyncDebounce = setTimeout(async () => {
+            try {
+                if (typeof authKlaar !== 'undefined') await authKlaar;
+                const gNaam = (window.getActieveGemeente ? window.getActieveGemeente() : 'bethelkerk_maassluis');
+                const docId = 'live_' + gNaam.toLowerCase().replace(/[^a-z0-9]/g, '_');
+                await db.collection("obs_live").doc(docId).set({
+                    currentIndex: state.currentIndex || 0,
+                    isBlackout: !!state.isBlackout,
+                    updatedAt: Date.now(),
+                    thema: state.thema || 'standaard',
+                    customThema: state.customThema || null,
+                    slides: state.slides || []
+                });
+            } catch(e) {
+                console.warn("Firestore live sync mislukt:", e);
+            }
+        }, 120);
+    }
+
     function saveObsLiveState(state) {
         try {
             localStorage.setItem('kerkapp_obs_live_state', JSON.stringify(state));
         } catch(e) {}
         if (_obsBroadcastChannel) {
-            _obsBroadcastChannel.postMessage({ type: 'UPDATE', state });
+            try { _obsBroadcastChannel.postMessage({ type: 'UPDATE', state }); } catch(e) {}
+        }
+        syncObsToFirestore(state);
+    }
+
+    function startCloudObsListener(onUpdateCallback) {
+        if (typeof db === 'undefined' || !db) return;
+        try {
+            const urlParams = new URLSearchParams(location.search);
+            const gNaam = (urlParams.get('gemeente') || (window.getActieveGemeente ? window.getActieveGemeente() : 'bethelkerk_maassluis'));
+            const docId = 'live_' + gNaam.toLowerCase().replace(/[^a-z0-9]/g, '_');
+            db.collection("obs_live").doc(docId).onSnapshot((doc) => {
+                if (doc.exists) {
+                    const cloudState = doc.data();
+                    if (cloudState && cloudState.slides && cloudState.slides.length) {
+                        try { localStorage.setItem('kerkapp_obs_live_state', JSON.stringify(cloudState)); } catch(e) {}
+                        if (typeof onUpdateCallback === 'function') onUpdateCallback(cloudState);
+                    }
+                }
+            }, (err) => {
+                console.warn("Cloud live sync listener fout:", err);
+            });
+        } catch(e) {
+            console.warn("Kon Cloud live listener niet starten:", e);
         }
     }
 
@@ -4712,6 +4836,18 @@ Bijbelliederen`;
 
         saveObsLiveState(state);
         updateObsModalSimulator();
+
+        // Update URL inputs in modal tab 2
+        const urlStream = getObsUrl('stream');
+        const urlDock = getObsUrl('dock');
+        const urlBeamer = getObsUrl('beamer');
+        const inpStream = document.getElementById('obsUrlStreamInput');
+        const inpDock = document.getElementById('obsUrlDockInput');
+        const inpBeamer = document.getElementById('obsUrlBeamerInput');
+        if (inpStream) inpStream.value = urlStream;
+        if (inpDock) inpDock.value = urlDock;
+        if (inpBeamer) inpBeamer.value = urlBeamer;
+
         if (window.setObsModalTab) window.setObsModalTab('simulator');
         modal.classList.remove('hidden');
     };
@@ -4742,7 +4878,7 @@ Bijbelliederen`;
     };
 
     window.obsLiveVolgende = function() {
-        const state = getObsLiveState();
+        const state = getObsLiveState() || getFallbackLiveState();
         if (!state || !state.slides || !state.slides.length) return;
         if (state.currentIndex < state.slides.length - 1) {
             state.currentIndex++;
@@ -4753,7 +4889,7 @@ Bijbelliederen`;
     };
 
     window.obsLiveVorige = function() {
-        const state = getObsLiveState();
+        const state = getObsLiveState() || getFallbackLiveState();
         if (!state || !state.slides || !state.slides.length) return;
         if (state.currentIndex > 0) {
             state.currentIndex--;
@@ -4764,7 +4900,7 @@ Bijbelliederen`;
     };
 
     window.obsLiveToggleBlackout = function() {
-        const state = getObsLiveState();
+        const state = getObsLiveState() || getFallbackLiveState();
         if (!state) return;
         state.isBlackout = !state.isBlackout;
         saveObsLiveState(state);
@@ -4772,7 +4908,7 @@ Bijbelliederen`;
     };
 
     window.obsOpenVenster = function(mode) {
-        const url = location.origin + location.pathname + '?mode=' + mode;
+        const url = getObsUrl(mode);
         if (mode === 'dock') {
             window.open(url, 'KerkappDock', 'width=380,height=720,menubar=no,toolbar=no,location=no');
         } else {
@@ -4781,7 +4917,7 @@ Bijbelliederen`;
     };
 
     window.obsKopieerUrl = function(mode) {
-        const url = location.origin + location.pathname + '?mode=' + mode;
+        const url = getObsUrl(mode);
         navigator.clipboard.writeText(url).then(() => {
             if (window.toonToast) window.toonToast(`${mode.toUpperCase()} link gekopieerd naar klembord!`, 'info');
         }).catch(() => {
@@ -4802,7 +4938,7 @@ Bijbelliederen`;
         });
         if (!zangLijstTekst) zangLijstTekst = '• Zie beamer en liturgieboekje\n';
 
-        const meeleesUrl = location.origin + location.pathname;
+        const meeleesUrl = getAppBaseUrl();
 
         const tekst = `Ochtenddienst ${gemeente} - ${datum}
 Voorganger: ${voorganger}
@@ -5018,11 +5154,12 @@ Van harte Gods zegen toegewenst!`;
         `;
 
         function updateBeamer() {
-            const state = getObsLiveState();
+            let state = getObsLiveState();
             const container = document.getElementById('beamerInhoud');
             if (!container) return;
             if (!state || !state.slides || !state.slides.length) {
-                container.innerHTML = '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#666;font-style:italic;font-size:24px;">Wachten op liturgie... Open Kerkapp en klik op "OBS & Beamer (Test)"</div>';
+                const fallback = getFallbackLiveState();
+                container.innerHTML = renderBeamerHtmlSlide(fallback.slides[0], false);
                 return;
             }
             if (state.isBlackout) {
@@ -5043,6 +5180,9 @@ Van harte Gods zegen toegewenst!`;
         window.addEventListener('storage', (e) => {
             if (e.key === 'kerkapp_obs_live_state') updateBeamer();
         });
+
+        startCloudObsListener(() => updateBeamer());
+        setInterval(updateBeamer, 350);
 
         window.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
@@ -5078,16 +5218,44 @@ Van harte Gods zegen toegewenst!`;
             <div id="streamContainer" style="position:fixed;inset:0;z-index:3;overflow:hidden;font-family:'Inter',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;user-select:none;">
                 <div id="streamInhoud" style="position:absolute;inset:0;width:100%;height:100%;"></div>
             </div>
+            <div id="obsStatusBadge" style="position:fixed;bottom:12px;right:16px;z-index:99;background:rgba(15,23,42,0.88);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.18);color:#38bdf8;padding:5px 12px;border-radius:99px;font-size:11px;font-weight:700;display:flex;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(0,0,0,0.4);transition:opacity 0.5s;opacity:1;pointer-events:none;font-family:sans-serif;">
+                <span id="obsStatusDot" style="width:7px;height:7px;border-radius:50%;background:#10b981;"></span>
+                <span id="obsStatusTekst">OBS Bron Verbonden</span>
+            </div>
         `;
 
+        let _badgeTimeout = null;
+        function updateStatusBadge(tekst, isOk = true) {
+            const b = document.getElementById('obsStatusBadge');
+            const d = document.getElementById('obsStatusDot');
+            const t = document.getElementById('obsStatusTekst');
+            if (!b || !t) return;
+            t.textContent = tekst;
+            if (d) d.style.background = isOk ? '#10b981' : '#f59e0b';
+            b.style.opacity = '1';
+            clearTimeout(_badgeTimeout);
+            _badgeTimeout = setTimeout(() => {
+                const s = getObsLiveState();
+                if (s && s.slides && s.slides.length > 0 && !s.isBlackout) {
+                    b.style.opacity = '0';
+                }
+            }, 5000);
+        }
+
         function updateStream() {
-            const state = getObsLiveState();
+            let state = getObsLiveState();
             const bgContainer = document.getElementById('streamBgContainer');
             const inhoud = document.getElementById('streamInhoud');
             if (!inhoud) return;
 
             if (!state || !state.slides || !state.slides.length) {
-                inhoud.innerHTML = '';
+                const fallback = getFallbackLiveState();
+                if (!isTransparent && bgContainer) {
+                    bgContainer.style.backgroundImage = `url('${LIVESTREAM_BG}')`;
+                    bgContainer.innerHTML = '';
+                }
+                inhoud.innerHTML = renderStreamHtmlSlide(fallback.slides[0], false);
+                updateStatusBadge("Wachten op liturgie... (Bethelkerk)", false);
                 return;
             }
 
@@ -5104,11 +5272,13 @@ Van harte Gods zegen toegewenst!`;
 
             if (state.isBlackout) {
                 inhoud.innerHTML = '';
+                updateStatusBadge("Zwart Scherm Actief", true);
                 return;
             }
 
             const curSlide = state.slides[state.currentIndex] || state.slides[0];
             inhoud.innerHTML = renderStreamHtmlSlide(curSlide, false);
+            updateStatusBadge(`Live: Dia ${state.currentIndex + 1} / ${state.slides.length}`, true);
         }
 
         updateStream();
@@ -5121,7 +5291,17 @@ Van harte Gods zegen toegewenst!`;
         window.addEventListener('storage', (e) => {
             if (e.key === 'kerkapp_obs_live_state') updateStream();
         });
+
+        startCloudObsListener(() => updateStream());
+        setInterval(updateStream, 350);
     }
+
+    window.obsDockLaadStandaard = function() {
+        const fallback = getFallbackLiveState();
+        saveObsLiveState(fallback);
+        if (window.updateDockUI) window.updateDockUI();
+        if (window.toonToast) window.toonToast("Voorbeeldliturgie geladen in OBS!", "success");
+    };
 
     function startDockWeergave() {
         document.title = "🎛️ OBS Regie Dock - Kerkapp";
@@ -5163,8 +5343,9 @@ Van harte Gods zegen toegewenst!`;
                     Volgende: ...
                 </div>
 
-                <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:6px;padding:0 2px;">
-                    Liturgie Volgorde
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding:0 2px;">
+                    <span style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;">Liturgie Volgorde</span>
+                    <button type="button" onclick="obsDockLaadStandaard()" style="background:transparent;border:none;color:#38bdf8;font-size:10px;font-weight:600;cursor:pointer;text-decoration:underline;">⚡ Voorbeeld laden</button>
                 </div>
                 <div id="dockSlideLijst" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:4px;max-height:42vh;border:1px solid #1e293b;border-radius:12px;padding:6px;background:#090d16;"></div>
             </div>
@@ -5172,18 +5353,35 @@ Van harte Gods zegen toegewenst!`;
 
         function updateDockUI() {
             const state = getObsLiveState();
-            if (!state || !state.slides || !state.slides.length) return;
-
-            const idx = state.currentIndex;
-            const total = state.slides.length;
-            const curSlide = state.slides[idx] || state.slides[0];
-            const nextSlide = state.slides[idx + 1] || null;
-
             const numEl = document.getElementById('dockSlideNummer');
             const titEl = document.getElementById('dockSlideTitel');
             const snipEl = document.getElementById('dockSlideSnippet');
             const nextEl = document.getElementById('dockVolgendeHint');
             const blackBtn = document.getElementById('dockBlackoutBtn');
+            const lijstEl = document.getElementById('dockSlideLijst');
+
+            if (!state || !state.slides || !state.slides.length) {
+                if (numEl) numEl.textContent = 'GEEN ACTIEVE DIENST';
+                if (titEl) titEl.textContent = 'Wachten op liturgie...';
+                if (snipEl) snipEl.innerHTML = '<span style="color:#f59e0b;">Open de Kerkapp en klik op "OBS & Beamer Live (Test)" om de liturgie te sturen, of klik hieronder:</span>';
+                if (nextEl) nextEl.textContent = 'Tip: Klik op "Voorbeeld laden" om direct te testen';
+                if (lijstEl && lijstEl.children.length === 0) {
+                    lijstEl.innerHTML = `
+                        <div style="padding:16px 10px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;">
+                            <span style="font-size:12px;color:#94a3b8;">Nog geen liturgie ontvangen in OBS dock.</span>
+                            <button type="button" onclick="obsDockLaadStandaard()" style="background:#007AFF;color:#ffffff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,122,255,0.4);">
+                                ⚡ Laad Voorbeeld Dienst
+                            </button>
+                        </div>
+                    `;
+                }
+                return;
+            }
+
+            const idx = state.currentIndex;
+            const total = state.slides.length;
+            const curSlide = state.slides[idx] || state.slides[0];
+            const nextSlide = state.slides[idx + 1] || null;
 
             if (numEl) numEl.textContent = `Dia ${idx + 1} van ${total}`;
             if (titEl) titEl.textContent = curSlide.subtitel || curSlide.titel || curSlide.type;
@@ -5216,7 +5414,6 @@ Van harte Gods zegen toegewenst!`;
                 }
             }
 
-            const lijstEl = document.getElementById('dockSlideLijst');
             if (lijstEl) {
                 lijstEl.innerHTML = '';
                 state.slides.forEach((s, sIdx) => {
@@ -5235,6 +5432,7 @@ Van harte Gods zegen toegewenst!`;
             }
         }
 
+        window.updateDockUI = updateDockUI;
         updateDockUI();
 
         if (_obsBroadcastChannel) {
@@ -5245,6 +5443,9 @@ Van harte Gods zegen toegewenst!`;
         window.addEventListener('storage', (e) => {
             if (e.key === 'kerkapp_obs_live_state') updateDockUI();
         });
+
+        startCloudObsListener(() => updateDockUI());
+        setInterval(updateDockUI, 400);
 
         window.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
@@ -8620,22 +8821,81 @@ window.verstuurExportFeedback = async function() {
                 </div>
             </div>
 
-            <!-- TAB 2: OBS & Beamer Links -->
+            <!-- TAB 2: OBS & Beamer Links & Gids -->
             <div id="obsTabContentLinks" class="hidden flex flex-col gap-4">
+                <!-- Status Banner -->
+                <div class="flex items-center justify-between p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-300 text-xs">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span class="font-bold">Live-Sync Verbonden:</span>
+                        <span class="text-emerald-700 dark:text-emerald-400">Elke klik op Volgende/Vorige synchroniseert direct naar OBS en Beamer.</span>
+                    </div>
+                    <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-200/60 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-200">Real-time</span>
+                </div>
+
                 <!-- Drie Testknoppen & URLs -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <!-- 1. Beamer -->
-                    <div class="bg-gray-50 dark:bg-gray-800/60 p-4 rounded-2xl border border-gray-200/60 dark:border-gray-700/60 flex flex-col justify-between gap-3">
+                    <!-- 1. Stream -->
+                    <div class="bg-gray-50 dark:bg-gray-800/60 p-4 rounded-2xl border border-blue-200/70 dark:border-blue-900/50 flex flex-col justify-between gap-3 shadow-sm">
+                        <div>
+                            <div class="flex items-center gap-1.5 text-xs font-bold text-blue-700 dark:text-blue-400 mb-1">
+                                <span>📺 1. OBS Browser Bron (Stream)</span>
+                            </div>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed mb-2">
+                                Plak in OBS als Browser Source. Toont live de dia's met kerk-achtergrond & contrastschaduw.
+                            </p>
+                            <div class="flex items-center gap-1 bg-white dark:bg-gray-900 p-1.5 rounded-xl border border-gray-200 dark:border-gray-700">
+                                <input type="text" id="obsUrlStreamInput" readonly class="text-[10px] font-mono text-gray-600 dark:text-gray-300 bg-transparent flex-1 outline-none px-1 overflow-x-auto select-all" value="" />
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1.5 pt-1">
+                            <button type="button" onclick="obsOpenVenster('stream')" class="w-full py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all active:scale-95 text-center shadow-sm">
+                                Open Stream Weergave ↗
+                            </button>
+                            <button type="button" onclick="obsKopieerUrl('stream')" class="w-full py-1.5 px-3 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-100 text-gray-700 dark:text-gray-200 text-[11px] font-semibold border border-gray-200 dark:border-gray-600 transition-all text-center">
+                                📋 Kopieer Stream Link
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 2. Dock -->
+                    <div class="bg-gray-50 dark:bg-gray-800/60 p-4 rounded-2xl border border-purple-200/70 dark:border-purple-900/50 flex flex-col justify-between gap-3 shadow-sm">
+                        <div>
+                            <div class="flex items-center gap-1.5 text-xs font-bold text-purple-700 dark:text-purple-400 mb-1">
+                                <span>🎛️ 2. OBS Regie Dock (Ingebouwd)</span>
+                            </div>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed mb-2">
+                                Plak in OBS via <em>Docks ➔ Aangepaste browserdocks</em>. Bediening via muis & toetsenbord direct in OBS.
+                            </p>
+                            <div class="flex items-center gap-1 bg-white dark:bg-gray-900 p-1.5 rounded-xl border border-gray-200 dark:border-gray-700">
+                                <input type="text" id="obsUrlDockInput" readonly class="text-[10px] font-mono text-gray-600 dark:text-gray-300 bg-transparent flex-1 outline-none px-1 overflow-x-auto select-all" value="" />
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1.5 pt-1">
+                            <button type="button" onclick="obsOpenVenster('dock')" class="w-full py-2 px-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all active:scale-95 text-center shadow-sm">
+                                Open Dock Paneel ↗
+                            </button>
+                            <button type="button" onclick="obsKopieerUrl('dock')" class="w-full py-1.5 px-3 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-100 text-gray-700 dark:text-gray-200 text-[11px] font-semibold border border-gray-200 dark:border-gray-600 transition-all text-center">
+                                📋 Kopieer Dock URL voor OBS
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 3. Beamer -->
+                    <div class="bg-gray-50 dark:bg-gray-800/60 p-4 rounded-2xl border border-gray-200/60 dark:border-gray-700/60 flex flex-col justify-between gap-3 shadow-sm">
                         <div>
                             <div class="flex items-center gap-1.5 text-xs font-bold text-[#1D1D1F] dark:text-white mb-1">
-                                <span>📽️ 1. Beamer Scherm</span>
+                                <span>📽️ 3. Beamer Scherm (Kerkzaal)</span>
                             </div>
-                            <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed mb-2">
                                 Voor op scherm 2 in de kerkzaal. Schermvullend diepzwart met grote witte tekst.
                             </p>
+                            <div class="flex items-center gap-1 bg-white dark:bg-gray-900 p-1.5 rounded-xl border border-gray-200 dark:border-gray-700">
+                                <input type="text" id="obsUrlBeamerInput" readonly class="text-[10px] font-mono text-gray-600 dark:text-gray-300 bg-transparent flex-1 outline-none px-1 overflow-x-auto select-all" value="" />
+                            </div>
                         </div>
-                        <div class="flex flex-col gap-1.5 pt-2">
-                            <button type="button" onclick="obsOpenVenster('beamer')" class="w-full py-2 px-3 rounded-xl bg-gray-900 hover:bg-black text-white text-xs font-semibold transition-all active:scale-95 text-center shadow-sm">
+                        <div class="flex flex-col gap-1.5 pt-1">
+                            <button type="button" onclick="obsOpenVenster('beamer')" class="w-full py-2 px-3 rounded-xl bg-gray-900 hover:bg-black text-white text-xs font-bold transition-all active:scale-95 text-center shadow-sm">
                                 Open Beamer Scherm ↗
                             </button>
                             <button type="button" onclick="obsKopieerUrl('beamer')" class="w-full py-1.5 px-3 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-100 text-gray-700 dark:text-gray-200 text-[11px] font-semibold border border-gray-200 dark:border-gray-600 transition-all text-center">
@@ -8643,45 +8903,45 @@ window.verstuurExportFeedback = async function() {
                             </button>
                         </div>
                     </div>
+                </div>
 
-                    <!-- 2. Stream -->
-                    <div class="bg-gray-50 dark:bg-gray-800/60 p-4 rounded-2xl border border-gray-200/60 dark:border-gray-700/60 flex flex-col justify-between gap-3">
-                        <div>
-                            <div class="flex items-center gap-1.5 text-xs font-bold text-[#1D1D1F] dark:text-white mb-1">
-                                <span>📺 2. OBS Livestream Bron</span>
+                <!-- OBS Setup Handleiding (3 Stappen) -->
+                <div class="bg-slate-900 text-white p-4 md:p-5 rounded-2xl flex flex-col gap-3 shadow-md border border-slate-800">
+                    <div class="flex items-center gap-2">
+                        <span class="text-base">🚀</span>
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-200">OBS Installatie in 3 eenvoudige stappen</h4>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                        <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60 flex flex-col gap-1.5">
+                            <div class="flex items-center gap-1.5 font-bold text-blue-400">
+                                <span class="w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-[10px]">1</span>
+                                <span>Livestream Bron</span>
                             </div>
-                            <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
-                                Voeg toe als Browser Source in OBS. Toont de actieve thema-achtergrond en collecte-QR.
+                            <p class="text-[11px] text-slate-300 leading-relaxed">
+                                Klik in OBS onder <em>Bronnen</em> op <strong>'+'</strong> ➔ <strong>Browser</strong>. Plak de <strong>Stream Link</strong>. Stel resolutie in op <strong>1920 × 1080</strong>. Vink <em>'Lokaal bestand'</em> <u>UIT</u>.
                             </p>
                         </div>
-                        <div class="flex flex-col gap-1.5 pt-2">
-                            <button type="button" onclick="obsOpenVenster('stream')" class="w-full py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-all active:scale-95 text-center shadow-sm">
-                                Open Stream Weergave ↗
-                            </button>
-                            <button type="button" onclick="obsKopieerUrl('stream')" class="w-full py-1.5 px-3 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-100 text-gray-700 dark:text-gray-200 text-[11px] font-semibold border border-gray-200 dark:border-gray-600 transition-all text-center">
-                                📋 Kopieer OBS Browser Link
-                            </button>
+                        <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60 flex flex-col gap-1.5">
+                            <div class="flex items-center gap-1.5 font-bold text-purple-400">
+                                <span class="w-4 h-4 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center text-[10px]">2</span>
+                                <span>Regie Dock in OBS</span>
+                            </div>
+                            <p class="text-[11px] text-slate-300 leading-relaxed">
+                                Ga in OBS bovenaan naar <strong>Docks</strong> ➔ <strong>Aangepaste browserdocks...</strong> Voer als docknaam <em>Kerkapp</em> in en plak de <strong>Dock URL</strong>. Klik op <strong>Toepassen</strong>. Het dock klikt vast in OBS!
+                            </p>
+                        </div>
+                        <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60 flex flex-col gap-1.5">
+                            <div class="flex items-center gap-1.5 font-bold text-emerald-400">
+                                <span class="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px]">3</span>
+                                <span>Beamer (Scherm 2)</span>
+                            </div>
+                            <p class="text-[11px] text-slate-300 leading-relaxed">
+                                Klik op <strong>'Open Beamer Scherm ↗'</strong>, sleep het venster naar scherm 2 van de beamer en druk op <strong>F</strong> voor volledig scherm. Bediening kan nu met pijltjestoetsen of de OBS Dock!
+                            </p>
                         </div>
                     </div>
-
-                    <!-- 3. Dock -->
-                    <div class="bg-gray-50 dark:bg-gray-800/60 p-4 rounded-2xl border border-gray-200/60 dark:border-gray-700/60 flex flex-col justify-between gap-3">
-                        <div>
-                            <div class="flex items-center gap-1.5 text-xs font-bold text-[#1D1D1F] dark:text-white mb-1">
-                                <span>🎛️ 3. OBS Regie Dock</span>
-                            </div>
-                            <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
-                                Plak in OBS via <em>Docks ➔ Custom Browser Docks</em>. Bediening met muis & pijltjestoetsen.
-                            </p>
-                        </div>
-                        <div class="flex flex-col gap-1.5 pt-2">
-                            <button type="button" onclick="obsOpenVenster('dock')" class="w-full py-2 px-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold transition-all active:scale-95 text-center shadow-sm">
-                                Open Dock Paneel ↗
-                            </button>
-                            <button type="button" onclick="obsKopieerUrl('dock')" class="w-full py-1.5 px-3 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-100 text-gray-700 dark:text-gray-200 text-[11px] font-semibold border border-gray-200 dark:border-gray-600 transition-all text-center">
-                                📋 Kopieer Dock URL voor OBS
-                            </button>
-                        </div>
+                    <div class="pt-1 text-[11px] text-slate-400 flex items-center gap-2 border-t border-slate-800">
+                        <span>💡 Tip: Zie je in OBS nog de vorige pagina? Klik met de rechtermuisknop op de Browser-bron in OBS en kies <em>'Cache van huidige pagina vernieuwen'</em>.</span>
                     </div>
                 </div>
 
