@@ -18,6 +18,11 @@
   }
 </script>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+        darkMode: 'class'
+    };
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/libs/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.min.js"></script>
@@ -35,28 +40,45 @@
         -webkit-font-smoothing: antialiased;
         transition: background-color 0.3s, color 0.3s;
     }
-    body.dark-mode {
+    body.dark-mode, html.dark body {
         background-color: #1C1C1E;
         color: #F5F5F7;
     }
-    body.dark-mode .bg-white { background-color: #2C2C2E !important; }
-    body.dark-mode .bg-gray-50, body.dark-mode .bg-\[\#F5F5F7\] { background-color: #1C1C1E !important; }
-    body.dark-mode .bg-\[\#F5F5F7\] { background-color: #1C1C1E !important; }
-    body.dark-mode .text-\[\#1D1D1F\] { color: #F5F5F7 !important; }
-    body.dark-mode .text-gray-700, body.dark-mode .text-gray-600, body.dark-mode .text-gray-500 { color: #A1A1A6 !important; }
-    body.dark-mode .text-gray-400, body.dark-mode .text-gray-300 { color: #8E8E93 !important; }
-    body.dark-mode .border-gray-100, body.dark-mode .border-gray-200 { border-color: #3A3A3C !important; }
-    body.dark-mode .shadow-2xl, body.dark-mode .shadow-xl { box-shadow: 0 4px 24px rgba(0,0,0,0.4) !important; }
-    body.dark-mode .apple-input, body.dark-mode input, body.dark-mode select, body.dark-mode textarea {
+    body.dark-mode .bg-white, html.dark .bg-white { background-color: #2C2C2E !important; }
+    body.dark-mode .bg-gray-50, body.dark-mode .bg-\[\#F5F5F7\], html.dark .bg-gray-50, html.dark .bg-\[\#F5F5F7\] { background-color: #1C1C1E !important; }
+    .text-\[\#86868B\] { color: #6E6E73 !important; }
+    body.dark-mode .text-\[\#1D1D1F\], html.dark .text-\[\#1D1D1F\] { color: #F5F5F7 !important; }
+    body.dark-mode .text-gray-700, body.dark-mode .text-gray-600, body.dark-mode .text-gray-500, html.dark .text-gray-700, html.dark .text-gray-600, html.dark .text-gray-500 { color: #C7C7CC !important; }
+    body.dark-mode .text-gray-400, body.dark-mode .text-gray-300, html.dark .text-gray-400, html.dark .text-gray-300,
+    body.dark-mode .text-\[\#86868B\], html.dark .text-\[\#86868B\] { color: #AEAEB2 !important; }
+    body.dark-mode .border-gray-100, body.dark-mode .border-gray-200, html.dark .border-gray-100, html.dark .border-gray-200 { border-color: #3A3A3C !important; }
+    body.dark-mode .shadow-2xl, body.dark-mode .shadow-xl, html.dark .shadow-2xl, html.dark .shadow-xl { box-shadow: 0 4px 24px rgba(0,0,0,0.4) !important; }
+    body.dark-mode .apple-input, body.dark-mode input, body.dark-mode select, body.dark-mode textarea,
+    html.dark .apple-input, html.dark input, html.dark select, html.dark textarea {
         background-color: #3A3A3C !important; color: #F5F5F7 !important; border-color: #48484A !important;
     }
-    body.dark-mode .apple-input::placeholder, body.dark-mode input::placeholder, body.dark-mode textarea::placeholder { color: #8E8E93 !important; }
-    body.dark-mode #infoModal .bg-gray-50 { background-color: #3A3A3C !important; }
-    body.dark-mode #infoModal .text-gray-700 { color: #E5E5EA !important; }
-    body.dark-mode #infoModal .bg-gradient-to-r { background: linear-gradient(to right, #1a2744, #1e2a4a) !important; }
+    body.dark-mode .apple-input::placeholder, body.dark-mode input::placeholder, body.dark-mode textarea::placeholder,
+    html.dark .apple-input::placeholder, html.dark input::placeholder, html.dark textarea::placeholder { color: #8E8E93 !important; }
+    body.dark-mode #infoModal .bg-gray-50, html.dark #infoModal .bg-gray-50 { background-color: #3A3A3C !important; }
+    body.dark-mode #infoModal .text-gray-700, html.dark #infoModal .text-gray-700 { color: #E5E5EA !important; }
+    body.dark-mode #infoModal .bg-gradient-to-r, html.dark #infoModal .bg-gradient-to-r { background: linear-gradient(to right, #1a2744, #1e2a4a) !important; }
+    
+    /* Apple HIG Tactile Micro-Interactions */
+    button:not(:disabled), [role="button"] {
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+    }
+    button:active:not(:disabled):not(.no-press) {
+        transform: scale(0.97);
+        transition: transform 0.1s cubic-bezier(0.2, 0, 0, 1);
+    }
+
     ::-webkit-scrollbar { width: 8px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #E5E5EA; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #D1D1D6; }
+    html.dark ::-webkit-scrollbar-thumb { background: #3A3A3C; }
+    html.dark ::-webkit-scrollbar-thumb:hover { background: #48484A; }
     ::-webkit-scrollbar-thumb:hover { background: #D1D1D6; }
     .apple-input:focus { outline: none; box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.15); border-color: #007AFF; }
     
@@ -796,12 +818,7 @@
     <span id="toastTekst">Succesvol opgeslagen!</span>
 </div>
 
-<div class="fixed bottom-24 right-6 md:bottom-6 md:right-[300px] z-50">
-    <button id="rondleidingKnop" onclick="startUitleg()" aria-label="Start de rondleiding: hoe werkt deze app?" title="Hoe werkt deze app? Start de rondleiding" class="relative bg-white text-[#1D1D1F] w-14 h-14 rounded-full shadow-xl flex items-center justify-center hover:scale-105 transition-transform duration-300 border border-gray-200">
-        <span id="rondleidingPulse" class="hidden absolute inset-0 rounded-full bg-[#007AFF] opacity-40 animate-ping"></span>
-        <svg class="w-7 h-7 text-[#007AFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-    </button>
-</div>
+
 <div class="fixed bottom-16 left-6 z-50">
     <button onclick="toggleChat()" aria-label="Vraag de assistent om hulp" class="bg-[#007AFF] text-white w-14 h-14 rounded-full shadow-xl flex items-center justify-center hover:scale-105 transition-transform duration-300 border border-blue-400" title="Hulp nodig? Stel een vraag!">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
@@ -838,15 +855,28 @@
     </div>
 </div>
 
-<div class="fixed bottom-6 right-6 z-50 flex flex-col gap-2.5 items-end">
-    <!-- Testknop: OBS & Beamer Live Regie -->
-    <button type="button" onclick="openObsTestModal()" class="bg-[#1D1D1F]/90 hover:bg-black text-white px-5 py-2.5 rounded-full shadow-[0_4px_16px_rgba(0,0,0,0.18)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.28)] active:scale-[0.98] transition-all duration-200 flex items-center gap-2 border border-white/15 backdrop-blur-md text-xs font-semibold">
-        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span>🎥 OBS & Beamer Regie (Test)</span>
+<!-- Unified Floating Island Control Dock -->
+<div class="fixed bottom-6 right-6 z-50 flex items-center p-1.5 bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-2xl rounded-full shadow-[0_12px_36px_rgba(0,0,0,0.18)] dark:shadow-[0_12px_36px_rgba(0,0,0,0.5)] border border-black/5 dark:border-white/15 gap-1.5 transition-all duration-300">
+    <!-- Rondleiding Hulp Knop -->
+    <button id="rondleidingKnop" onclick="startUitleg()" aria-label="Start de rondleiding: hoe werkt deze app?" title="Hoe werkt deze app? Start de rondleiding" class="relative text-gray-500 hover:text-[#007AFF] dark:text-gray-400 dark:hover:text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100/80 dark:hover:bg-white/10 active:scale-95 transition-all">
+        <span id="rondleidingPulse" class="hidden absolute inset-0 rounded-full bg-[#007AFF] opacity-40 animate-ping"></span>
+        <svg class="w-5 h-5 text-[#007AFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
     </button>
-    <button onclick="maakPowerPoint()" class="bg-[#007AFF] text-white px-7 py-3.5 rounded-full shadow-[0_8px_24px_rgba(0,122,255,0.32)] hover:shadow-[0_12px_28px_rgba(0,122,255,0.42)] active:scale-[0.98] transition-all duration-200 flex items-center gap-2.5 border border-white/20">
-        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-        <span class="font-semibold text-[15px] tracking-[-0.01em]">Exporteer PowerPoint</span>
+
+    <div class="h-6 w-px bg-gray-200 dark:bg-gray-700/60 my-auto"></div>
+
+    <!-- Testknop: OBS & Beamer Live Regie -->
+    <button type="button" onclick="openObsTestModal()" title="Open OBS & Beamer Regie Testpaneel" class="text-gray-700 dark:text-gray-200 hover:text-black dark:hover:text-white hover:bg-gray-100/80 dark:hover:bg-white/10 px-3.5 py-2 rounded-full text-xs font-semibold flex items-center gap-2 active:scale-95 transition-all">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span class="hidden sm:inline">🎥 OBS & Beamer</span>
+        <span class="sm:hidden">🎥 Live</span>
+        <span class="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">Test</span>
+    </button>
+
+    <!-- Primaire Actie: Exporteer PowerPoint -->
+    <button onclick="maakPowerPoint()" class="bg-[#007AFF] hover:bg-blue-600 text-white px-5 py-2.5 rounded-full shadow-[0_4px_16px_rgba(0,122,255,0.32)] active:scale-95 transition-all duration-200 flex items-center gap-2 border border-white/20 font-semibold text-[13px] tracking-[-0.01em]">
+        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+        <span>Exporteer PowerPoint</span>
     </button>
 </div>
 
@@ -1254,11 +1284,13 @@
     function toggleDarkMode() {
         const on = document.getElementById('darkModeToggle').checked;
         document.body.classList.toggle('dark-mode', on);
+        document.documentElement.classList.toggle('dark', on);
         localStorage.setItem('darkMode', on ? '1' : '0');
     }
     (function() {
         if (localStorage.getItem('darkMode') === '1') {
             document.body.classList.add('dark-mode');
+            document.documentElement.classList.add('dark');
             const cb = document.getElementById('darkModeToggle');
             if (cb) cb.checked = true;
         }
@@ -4667,7 +4699,28 @@ Bijbelliederen`;
 
         saveObsLiveState(state);
         updateObsModalSimulator();
+        if (window.setObsModalTab) window.setObsModalTab('simulator');
         modal.classList.remove('hidden');
+    };
+
+    window.setObsModalTab = function(tab) {
+        const isSim = tab === 'simulator';
+        const btnSim = document.getElementById('obsTabBtnSim');
+        const btnLinks = document.getElementById('obsTabBtnLinks');
+        const contentSim = document.getElementById('obsTabContentSim');
+        const contentLinks = document.getElementById('obsTabContentLinks');
+
+        if (btnSim && btnLinks) {
+            if (isSim) {
+                btnSim.className = 'px-4 py-1.5 rounded-xl text-xs font-bold transition-all bg-white dark:bg-gray-800 text-[#1D1D1F] dark:text-white shadow-sm flex items-center gap-1.5';
+                btnLinks.className = 'px-4 py-1.5 rounded-xl text-xs font-semibold transition-all text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white flex items-center gap-1.5';
+            } else {
+                btnLinks.className = 'px-4 py-1.5 rounded-xl text-xs font-bold transition-all bg-white dark:bg-gray-800 text-[#1D1D1F] dark:text-white shadow-sm flex items-center gap-1.5';
+                btnSim.className = 'px-4 py-1.5 rounded-xl text-xs font-semibold transition-all text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white flex items-center gap-1.5';
+            }
+        }
+        if (contentSim) contentSim.classList.toggle('hidden', !isSim);
+        if (contentLinks) contentLinks.classList.toggle('hidden', isSim);
     };
 
     window.sluitObsTestModal = function() {
@@ -8393,136 +8446,178 @@ window.verstuurExportFeedback = async function() {
             </button>
         </div>
 
-        <div class="p-5 md:p-6 flex flex-col gap-5">
-            <!-- Interactieve Live Simulator -->
-            <div class="bg-gray-950 rounded-2xl p-4 md:p-5 text-white flex flex-col gap-3.5 shadow-inner">
-                <div class="flex items-center justify-between flex-wrap gap-2">
-                    <div class="flex items-center gap-2">
-                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                        <span class="text-xs font-bold uppercase tracking-wider text-gray-300">Interactieve Simulator</span>
-                        <span id="obsSimIndexLabel" class="text-xs text-blue-400 font-semibold ml-2">Dia 1 van ...</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button type="button" onclick="obsLiveVorige()" class="px-3.5 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-white transition-all active:scale-95 flex items-center gap-1">
-                            ◀ Vorige
-                        </button>
-                        <button type="button" onclick="obsLiveVolgende()" class="px-4 py-1.5 rounded-xl bg-[#007AFF] hover:bg-blue-600 text-xs font-bold text-white transition-all active:scale-95 shadow-md flex items-center gap-1">
-                            Volgende ▶
-                        </button>
-                        <button type="button" id="obsSimBlackoutBtn" onclick="obsLiveToggleBlackout()" class="px-3 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-300 hover:text-white transition-all active:scale-95">
-                            ⚫ Zwart Scherm (B)
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Twee schermen naast elkaar: Beamer vs Livestream -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
-                    <!-- Scherm 1: Beamer (Zwart / Wit) -->
-                    <div class="flex flex-col gap-1.5">
-                        <div class="flex items-center justify-between text-[11px] font-bold text-gray-400">
-                            <span>📽️ BEAMER (Kerkzaal)</span>
-                            <span class="text-[10px] text-gray-500 font-normal">Puur zwart · Witte tekst</span>
-                        </div>
-                        <div class="aspect-video bg-black rounded-xl border border-gray-800 overflow-hidden relative p-3 flex flex-col items-center justify-center text-center shadow-md">
-                            <div id="obsSimBeamerScherm" class="w-full h-full flex flex-col items-center justify-center">
-                                <!-- Dynamisch gevuld -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Scherm 2: Livestream (Thema Achtergrond) -->
-                    <div class="flex flex-col gap-1.5">
-                        <div class="flex items-center justify-between text-[11px] font-bold text-blue-400">
-                            <span>📺 LIVESTREAM (OBS / Kerkdienstgemist)</span>
-                            <span class="text-[10px] text-gray-400 font-normal">Thema achtergrond + broadcast tekst</span>
-                        </div>
-                        <div class="aspect-video bg-gray-900 rounded-xl border border-blue-900/40 overflow-hidden relative shadow-md">
-                            <div id="obsSimStreamBg" class="absolute inset-0 pointer-events-none"></div>
-                            <div id="obsSimStreamScherm" class="relative z-10 w-full h-full flex flex-col items-center justify-center p-3 text-center">
-                                <!-- Dynamisch gevuld -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Drie Testknoppen & URLs -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <!-- 1. Beamer -->
-                <div class="bg-gray-50 dark:bg-gray-800/60 p-4 rounded-2xl border border-gray-200/60 dark:border-gray-700/60 flex flex-col justify-between gap-3">
-                    <div>
-                        <div class="flex items-center gap-1.5 text-xs font-bold text-[#1D1D1F] dark:text-white mb-1">
-                            <span>📽️ 1. Beamer Scherm</span>
-                        </div>
-                        <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
-                            Voor op scherm 2 in de kerkzaal. Schermvullend diepzwart met grote witte tekst.
-                        </p>
-                    </div>
-                    <div class="flex flex-col gap-1.5 pt-2">
-                        <button type="button" onclick="obsOpenVenster('beamer')" class="w-full py-2 px-3 rounded-xl bg-gray-900 hover:bg-black text-white text-xs font-semibold transition-all active:scale-95 text-center shadow-sm">
-                            Open Beamer Scherm ↗
-                        </button>
-                        <button type="button" onclick="obsKopieerUrl('beamer')" class="w-full py-1.5 px-3 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-100 text-gray-700 dark:text-gray-200 text-[11px] font-semibold border border-gray-200 dark:border-gray-600 transition-all text-center">
-                            📋 Kopieer Beamer Link
-                        </button>
-                    </div>
-                </div>
-
-                <!-- 2. Stream -->
-                <div class="bg-gray-50 dark:bg-gray-800/60 p-4 rounded-2xl border border-gray-200/60 dark:border-gray-700/60 flex flex-col justify-between gap-3">
-                    <div>
-                        <div class="flex items-center gap-1.5 text-xs font-bold text-[#1D1D1F] dark:text-white mb-1">
-                            <span>📺 2. OBS Livestream Bron</span>
-                        </div>
-                        <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
-                            Voeg toe als Browser Source in OBS. Toont de actieve thema-achtergrond en collecte-QR.
-                        </p>
-                    </div>
-                    <div class="flex flex-col gap-1.5 pt-2">
-                        <button type="button" onclick="obsOpenVenster('stream')" class="w-full py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-all active:scale-95 text-center shadow-sm">
-                            Open Stream Weergave ↗
-                        </button>
-                        <button type="button" onclick="obsKopieerUrl('stream')" class="w-full py-1.5 px-3 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-100 text-gray-700 dark:text-gray-200 text-[11px] font-semibold border border-gray-200 dark:border-gray-600 transition-all text-center">
-                            📋 Kopieer OBS Browser Link
-                        </button>
-                    </div>
-                </div>
-
-                <!-- 3. Dock -->
-                <div class="bg-gray-50 dark:bg-gray-800/60 p-4 rounded-2xl border border-gray-200/60 dark:border-gray-700/60 flex flex-col justify-between gap-3">
-                    <div>
-                        <div class="flex items-center gap-1.5 text-xs font-bold text-[#1D1D1F] dark:text-white mb-1">
-                            <span>🎛️ 3. OBS Regie Dock</span>
-                        </div>
-                        <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
-                            Plak in OBS via <em>Docks ➔ Custom Browser Docks</em>. Bediening met muis & pijltjestoetsen.
-                        </p>
-                    </div>
-                    <div class="flex flex-col gap-1.5 pt-2">
-                        <button type="button" onclick="obsOpenVenster('dock')" class="w-full py-2 px-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold transition-all active:scale-95 text-center shadow-sm">
-                            Open Dock Paneel ↗
-                        </button>
-                        <button type="button" onclick="obsKopieerUrl('dock')" class="w-full py-1.5 px-3 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-100 text-gray-700 dark:text-gray-200 text-[11px] font-semibold border border-gray-200 dark:border-gray-600 transition-all text-center">
-                            📋 Kopieer Dock URL voor OBS
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Extra tool: Kerkdienstgemist Kopieerder -->
-            <div class="bg-amber-50 dark:bg-amber-950/30 p-4 rounded-2xl border border-amber-200/60 dark:border-amber-800/50 flex flex-col sm:flex-row items-center justify-between gap-3">
-                <div class="flex items-center gap-3">
-                    <span class="text-2xl">📋</span>
-                    <div>
-                        <h4 class="text-xs font-bold text-amber-900 dark:text-amber-200">Kerkdienstgemist Beschrijvingstekst</h4>
-                        <p class="text-[11px] text-amber-700 dark:text-amber-400">
-                            Kopieer de kant-en-klare liturgie, datum, ds. Mark Bot en collecte-IBAN voor Kerkdienstgemist Station 228.
-                        </p>
-                    </div>
-                </div>
-                <button type="button" onclick="kopieerKerkdienstgemistTekst()" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all active:scale-95 shadow-sm whitespace-nowrap">
-                    Kopieer voor Kerkdienstgemist
+        <!-- Segmented Control Tab Bar -->
+        <div class="px-5 md:px-6 pt-3 pb-3 bg-gray-50/70 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between flex-wrap gap-2 flex-shrink-0">
+            <div class="inline-flex p-1 bg-gray-200/80 dark:bg-gray-900/80 rounded-2xl">
+                <button id="obsTabBtnSim" type="button" onclick="setObsModalTab('simulator')" class="px-4 py-1.5 rounded-xl text-xs font-bold transition-all bg-white dark:bg-gray-800 text-[#1D1D1F] dark:text-white shadow-sm flex items-center gap-1.5">
+                    <span>🎮 Live Simulator</span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                 </button>
+                <button id="obsTabBtnLinks" type="button" onclick="setObsModalTab('links')" class="px-4 py-1.5 rounded-xl text-xs font-semibold transition-all text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white flex items-center gap-1.5">
+                    <span>📡 OBS & Beamer Links</span>
+                    <span class="text-[10px] px-1.5 py-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-full font-bold">3 URL's</span>
+                </button>
+            </div>
+            <div class="text-[11px] text-gray-400 dark:text-gray-500 hidden sm:flex items-center gap-2">
+                <span>Toetsen: ◀ ▶ of Spatie (dia wisselen) · <b>B</b> (zwart scherm)</span>
+            </div>
+        </div>
+
+        <div class="p-5 md:p-6 flex flex-col gap-5">
+            <!-- TAB 1: Live Simulator & Regie -->
+            <div id="obsTabContentSim" class="flex flex-col gap-4">
+                <!-- Interactieve Live Simulator Card -->
+                <div class="bg-gray-950 rounded-2xl p-4 md:p-5 text-white flex flex-col gap-3.5 shadow-inner">
+                    <div class="flex items-center justify-between flex-wrap gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span class="text-xs font-bold uppercase tracking-wider text-gray-300">Interactieve Simulator</span>
+                            <span id="obsSimIndexLabel" class="text-xs text-blue-400 font-semibold ml-2">Dia 1 van ...</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="obsLiveVorige()" class="px-3.5 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-white transition-all active:scale-95 flex items-center gap-1">
+                                ◀ Vorige
+                            </button>
+                            <button type="button" onclick="obsLiveVolgende()" class="px-4 py-1.5 rounded-xl bg-[#007AFF] hover:bg-blue-600 text-xs font-bold text-white transition-all active:scale-95 shadow-md flex items-center gap-1">
+                                Volgende ▶
+                            </button>
+                            <button type="button" id="obsSimBlackoutBtn" onclick="obsLiveToggleBlackout()" class="px-3 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-300 hover:text-white transition-all active:scale-95">
+                                ⚫ Zwart Scherm (B)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Twee schermen naast elkaar: Beamer vs Livestream -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                        <!-- Scherm 1: Beamer (Zwart / Wit) -->
+                        <div class="flex flex-col gap-1.5">
+                            <div class="flex items-center justify-between text-[11px] font-bold text-gray-400">
+                                <span>📽️ BEAMER (Kerkzaal)</span>
+                                <span class="text-[10px] text-gray-500 font-normal">Puur zwart · Witte tekst</span>
+                            </div>
+                            <div class="aspect-video bg-black rounded-xl border border-gray-800 overflow-hidden relative p-3 flex flex-col items-center justify-center text-center shadow-md">
+                                <div id="obsSimBeamerScherm" class="w-full h-full flex flex-col items-center justify-center">
+                                    <!-- Dynamisch gevuld -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Scherm 2: Livestream (Thema Achtergrond) -->
+                        <div class="flex flex-col gap-1.5">
+                            <div class="flex items-center justify-between text-[11px] font-bold text-blue-400">
+                                <span>📺 LIVESTREAM (OBS / Kerkdienstgemist)</span>
+                                <span class="text-[10px] text-gray-400 font-normal">Thema achtergrond + broadcast tekst</span>
+                            </div>
+                            <div class="aspect-video bg-gray-900 rounded-xl border border-blue-900/40 overflow-hidden relative shadow-md">
+                                <div id="obsSimStreamBg" class="absolute inset-0 pointer-events-none"></div>
+                                <div id="obsSimStreamScherm" class="relative z-10 w-full h-full flex flex-col items-center justify-center p-3 text-center">
+                                    <!-- Dynamisch gevuld -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Handige Switcher & Kerkdienstgemist Snelknop -->
+                <div class="flex flex-col sm:flex-row items-center justify-between bg-blue-50/70 dark:bg-blue-950/30 p-3.5 rounded-2xl border border-blue-200/40 dark:border-blue-900/40 gap-3">
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-lg">📡</span>
+                        <div class="text-xs">
+                            <span class="font-bold text-blue-950 dark:text-blue-200">Klaar om te koppelen met OBS of Beamer?</span>
+                            <p class="text-[11px] text-blue-700 dark:text-blue-300">Open het links-tabblad voor browserbron-URL's en OBS dock-instellingen.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <button type="button" onclick="kopieerKerkdienstgemistTekst()" class="px-3 py-1.5 rounded-xl bg-white dark:bg-gray-800 text-blue-700 dark:text-blue-300 hover:bg-blue-50 text-xs font-semibold border border-blue-200 dark:border-blue-800 transition-all active:scale-95 shadow-sm">
+                            📋 Kopieer Liturgie
+                        </button>
+                        <button type="button" onclick="setObsModalTab('links')" class="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all active:scale-95 shadow-sm">
+                            Bekijk OBS Links ➔
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: OBS & Beamer Links -->
+            <div id="obsTabContentLinks" class="hidden flex flex-col gap-4">
+                <!-- Drie Testknoppen & URLs -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <!-- 1. Beamer -->
+                    <div class="bg-gray-50 dark:bg-gray-800/60 p-4 rounded-2xl border border-gray-200/60 dark:border-gray-700/60 flex flex-col justify-between gap-3">
+                        <div>
+                            <div class="flex items-center gap-1.5 text-xs font-bold text-[#1D1D1F] dark:text-white mb-1">
+                                <span>📽️ 1. Beamer Scherm</span>
+                            </div>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
+                                Voor op scherm 2 in de kerkzaal. Schermvullend diepzwart met grote witte tekst.
+                            </p>
+                        </div>
+                        <div class="flex flex-col gap-1.5 pt-2">
+                            <button type="button" onclick="obsOpenVenster('beamer')" class="w-full py-2 px-3 rounded-xl bg-gray-900 hover:bg-black text-white text-xs font-semibold transition-all active:scale-95 text-center shadow-sm">
+                                Open Beamer Scherm ↗
+                            </button>
+                            <button type="button" onclick="obsKopieerUrl('beamer')" class="w-full py-1.5 px-3 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-100 text-gray-700 dark:text-gray-200 text-[11px] font-semibold border border-gray-200 dark:border-gray-600 transition-all text-center">
+                                📋 Kopieer Beamer Link
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 2. Stream -->
+                    <div class="bg-gray-50 dark:bg-gray-800/60 p-4 rounded-2xl border border-gray-200/60 dark:border-gray-700/60 flex flex-col justify-between gap-3">
+                        <div>
+                            <div class="flex items-center gap-1.5 text-xs font-bold text-[#1D1D1F] dark:text-white mb-1">
+                                <span>📺 2. OBS Livestream Bron</span>
+                            </div>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
+                                Voeg toe als Browser Source in OBS. Toont de actieve thema-achtergrond en collecte-QR.
+                            </p>
+                        </div>
+                        <div class="flex flex-col gap-1.5 pt-2">
+                            <button type="button" onclick="obsOpenVenster('stream')" class="w-full py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-all active:scale-95 text-center shadow-sm">
+                                Open Stream Weergave ↗
+                            </button>
+                            <button type="button" onclick="obsKopieerUrl('stream')" class="w-full py-1.5 px-3 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-100 text-gray-700 dark:text-gray-200 text-[11px] font-semibold border border-gray-200 dark:border-gray-600 transition-all text-center">
+                                📋 Kopieer OBS Browser Link
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 3. Dock -->
+                    <div class="bg-gray-50 dark:bg-gray-800/60 p-4 rounded-2xl border border-gray-200/60 dark:border-gray-700/60 flex flex-col justify-between gap-3">
+                        <div>
+                            <div class="flex items-center gap-1.5 text-xs font-bold text-[#1D1D1F] dark:text-white mb-1">
+                                <span>🎛️ 3. OBS Regie Dock</span>
+                            </div>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
+                                Plak in OBS via <em>Docks ➔ Custom Browser Docks</em>. Bediening met muis & pijltjestoetsen.
+                            </p>
+                        </div>
+                        <div class="flex flex-col gap-1.5 pt-2">
+                            <button type="button" onclick="obsOpenVenster('dock')" class="w-full py-2 px-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold transition-all active:scale-95 text-center shadow-sm">
+                                Open Dock Paneel ↗
+                            </button>
+                            <button type="button" onclick="obsKopieerUrl('dock')" class="w-full py-1.5 px-3 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-100 text-gray-700 dark:text-gray-200 text-[11px] font-semibold border border-gray-200 dark:border-gray-600 transition-all text-center">
+                                📋 Kopieer Dock URL voor OBS
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Extra tool: Kerkdienstgemist Kopieerder -->
+                <div class="bg-amber-50 dark:bg-amber-950/30 p-4 rounded-2xl border border-amber-200/60 dark:border-amber-800/50 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl">📋</span>
+                        <div>
+                            <h4 class="text-xs font-bold text-amber-900 dark:text-amber-200">Kerkdienstgemist Beschrijvingstekst</h4>
+                            <p class="text-[11px] text-amber-700 dark:text-amber-400">
+                                Kopieer de kant-en-klare liturgie, datum, ds. Mark Bot en collecte-IBAN voor Kerkdienstgemist Station 228.
+                            </p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="kopieerKerkdienstgemistTekst()" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all active:scale-95 shadow-sm whitespace-nowrap">
+                        Kopieer voor Kerkdienstgemist
+                    </button>
+                </div>
             </div>
         </div>
     </div>
