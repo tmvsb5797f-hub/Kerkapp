@@ -2994,6 +2994,7 @@ Retourneer UITSLUITEND een valide JSON object:
             console.warn("Kon liturgie niet lokaal opslaan:", e);
         }
         if (typeof planAutoArchief === 'function') planAutoArchief();
+        if (typeof autoSyncObsLiveLiturgie === 'function') autoSyncObsLiveLiturgie();
     }
 
     function herstelLiturgie() {
@@ -3004,6 +3005,7 @@ Retourneer UITSLUITEND een valide JSON object:
             if (Array.isArray(data) && data.length > 0) {
                 liturgieVolgorde = data;
                 window.tekenVolgorde();
+                if (typeof autoSyncObsLiveLiturgie === 'function') autoSyncObsLiveLiturgie();
             }
         } catch (e) {
             console.warn("Kon opgeslagen liturgie niet herstellen:", e);
@@ -4763,14 +4765,20 @@ Bijbelliederen`;
                 if (typeof authKlaar !== 'undefined') await authKlaar;
                 const gNaam = (window.getActieveGemeente ? window.getActieveGemeente() : 'bethelkerk_maassluis');
                 const docId = 'live_' + gNaam.toLowerCase().replace(/[^a-z0-9]/g, '_');
-                await db.collection("obs_live").doc(docId).set({
+                const payload = {
                     currentIndex: state.currentIndex || 0,
                     isBlackout: !!state.isBlackout,
                     updatedAt: Date.now(),
                     thema: state.thema || 'standaard',
                     customThema: state.customThema || null,
+                    gemeente: gNaam,
                     slides: state.slides || []
-                });
+                };
+                // Sla op onder specifieke gemeente én universele actieve sleutel
+                await Promise.all([
+                    db.collection("obs_live").doc(docId).set(payload),
+                    db.collection("obs_live").doc("actief").set(payload)
+                ]);
             } catch(e) {
                 console.warn("Firestore live sync mislukt:", e);
             }
@@ -4787,13 +4795,50 @@ Bijbelliederen`;
         syncObsToFirestore(state);
     }
 
+    function autoSyncObsLiveLiturgie() {
+        try {
+            const slides = bouwwVolledigeDiaLijst();
+            if (!slides || !slides.length) return;
+            const huidigThema = (window.getActiefMeeleesThema ? window.getActiefMeeleesThema() : 'standaard');
+            const customThema = (typeof MEELEES_THEMAS !== 'undefined' && MEELEES_THEMAS.custom) ? MEELEES_THEMAS.custom : null;
+            let state = getObsLiveState();
+            if (!state) {
+                state = { currentIndex: 0, isBlackout: false };
+            }
+            state.slides = slides;
+            state.thema = huidigThema;
+            state.customThema = customThema;
+            state.updatedAt = Date.now();
+            if (state.currentIndex >= slides.length) state.currentIndex = 0;
+            saveObsLiveState(state);
+        } catch(e) {
+            console.warn("Auto-sync OBS mislukt:", e);
+        }
+    }
+    window.autoSyncObsLiveLiturgie = autoSyncObsLiveLiturgie;
+
+    function autoSyncObsSlideIndex(itemIdx) {
+        if (itemIdx < 0) return;
+        const state = getObsLiveState();
+        if (!state || !state.slides || !state.slides.length) return;
+        const target = state.slides.findIndex(s => s.itemIndex === itemIdx);
+        if (target !== -1 && target !== state.currentIndex) {
+            state.currentIndex = target;
+            state.isBlackout = false;
+            saveObsLiveState(state);
+        }
+    }
+    window.autoSyncObsSlideIndex = autoSyncObsSlideIndex;
+
     function startCloudObsListener(onUpdateCallback) {
         if (typeof db === 'undefined' || !db) return;
         try {
             const urlParams = new URLSearchParams(location.search);
-            const gNaam = (urlParams.get('gemeente') || (window.getActieveGemeente ? window.getActieveGemeente() : 'bethelkerk_maassluis'));
+            const gParam = urlParams.get('gemeente') || urlParams.get('g');
+            const gNaam = gParam || (window.getActieveGemeente ? window.getActieveGemeente() : 'bethelkerk_maassluis');
             const docId = 'live_' + gNaam.toLowerCase().replace(/[^a-z0-9]/g, '_');
-            db.collection("obs_live").doc(docId).onSnapshot((doc) => {
+
+            const handleSnap = (doc) => {
                 if (doc.exists) {
                     const cloudState = doc.data();
                     if (cloudState && cloudState.slides && cloudState.slides.length) {
@@ -4801,9 +4846,14 @@ Bijbelliederen`;
                         if (typeof onUpdateCallback === 'function') onUpdateCallback(cloudState);
                     }
                 }
-            }, (err) => {
-                console.warn("Cloud live sync listener fout:", err);
+            };
+
+            db.collection("obs_live").doc(docId).onSnapshot(handleSnap, (err) => {
+                console.warn("Cloud live listener fout (" + docId + "):", err);
             });
+            if (docId !== 'actief') {
+                db.collection("obs_live").doc("actief").onSnapshot(handleSnap, () => {});
+            }
         } catch(e) {
             console.warn("Kon Cloud live listener niet starten:", e);
         }
@@ -5207,10 +5257,8 @@ Van harte Gods zegen toegewenst!`;
         const isTransparent = urlParams.get('bg') === 'transparent';
         const useTheme = urlParams.get('bg') === 'theme';
 
-        document.body.style.margin = '0';
-        document.body.style.padding = '0';
-        document.body.style.background = isTransparent ? 'transparent' : '#000000';
-        document.body.style.overflow = 'hidden';
+        document.documentElement.style.cssText = "height:100%;width:100%;margin:0;padding:0;overflow:hidden;background:" + (isTransparent ? "transparent" : "#000000") + ";";
+        document.body.style.cssText = "height:100%;width:100%;margin:0;padding:0;overflow:hidden;background:" + (isTransparent ? "transparent" : "#000000") + ";";
 
         document.body.innerHTML = `
             <div id="streamBgContainer" style="position:fixed;inset:0;pointer-events:none;z-index:1;background-size:cover;background-position:center;${isTransparent ? 'background:transparent;' : ''}"></div>
@@ -5218,29 +5266,7 @@ Van harte Gods zegen toegewenst!`;
             <div id="streamContainer" style="position:fixed;inset:0;z-index:3;overflow:hidden;font-family:'Inter',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;user-select:none;">
                 <div id="streamInhoud" style="position:absolute;inset:0;width:100%;height:100%;"></div>
             </div>
-            <div id="obsStatusBadge" style="position:fixed;bottom:12px;right:16px;z-index:99;background:rgba(15,23,42,0.88);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.18);color:#38bdf8;padding:5px 12px;border-radius:99px;font-size:11px;font-weight:700;display:flex;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(0,0,0,0.4);transition:opacity 0.5s;opacity:1;pointer-events:none;font-family:sans-serif;">
-                <span id="obsStatusDot" style="width:7px;height:7px;border-radius:50%;background:#10b981;"></span>
-                <span id="obsStatusTekst">OBS Bron Verbonden</span>
-            </div>
         `;
-
-        let _badgeTimeout = null;
-        function updateStatusBadge(tekst, isOk = true) {
-            const b = document.getElementById('obsStatusBadge');
-            const d = document.getElementById('obsStatusDot');
-            const t = document.getElementById('obsStatusTekst');
-            if (!b || !t) return;
-            t.textContent = tekst;
-            if (d) d.style.background = isOk ? '#10b981' : '#f59e0b';
-            b.style.opacity = '1';
-            clearTimeout(_badgeTimeout);
-            _badgeTimeout = setTimeout(() => {
-                const s = getObsLiveState();
-                if (s && s.slides && s.slides.length > 0 && !s.isBlackout) {
-                    b.style.opacity = '0';
-                }
-            }, 5000);
-        }
 
         function updateStream() {
             let state = getObsLiveState();
@@ -5255,7 +5281,6 @@ Van harte Gods zegen toegewenst!`;
                     bgContainer.innerHTML = '';
                 }
                 inhoud.innerHTML = renderStreamHtmlSlide(fallback.slides[0], false);
-                updateStatusBadge("Wachten op liturgie... (Bethelkerk)", false);
                 return;
             }
 
@@ -5272,13 +5297,11 @@ Van harte Gods zegen toegewenst!`;
 
             if (state.isBlackout) {
                 inhoud.innerHTML = '';
-                updateStatusBadge("Zwart Scherm Actief", true);
                 return;
             }
 
             const curSlide = state.slides[state.currentIndex] || state.slides[0];
             inhoud.innerHTML = renderStreamHtmlSlide(curSlide, false);
-            updateStatusBadge(`Live: Dia ${state.currentIndex + 1} / ${state.slides.length}`, true);
         }
 
         updateStream();
@@ -5303,51 +5326,109 @@ Van harte Gods zegen toegewenst!`;
         if (window.toonToast) window.toonToast("Voorbeeldliturgie geladen in OBS!", "success");
     };
 
+    window.obsDockSyncMetKerkapp = async function() {
+        const btn = document.getElementById('dockSyncBtn');
+        if (btn) btn.innerHTML = '⏳ <span>Laden...</span>';
+        try {
+            if (typeof authKlaar !== 'undefined') await authKlaar;
+            const gNaam = (window.getActieveGemeente ? window.getActieveGemeente() : 'bethelkerk_maassluis');
+            const docId = 'live_' + gNaam.toLowerCase().replace(/[^a-z0-9]/g, '_');
+            
+            let doc = await db.collection("obs_live").doc(docId).get();
+            if (!doc.exists) {
+                doc = await db.collection("obs_live").doc("actief").get();
+            }
+
+            if (doc.exists && doc.data() && doc.data().slides && doc.data().slides.length) {
+                const data = doc.data();
+                saveObsLiveState(data);
+                if (window.updateDockUI) window.updateDockUI();
+                if (btn) btn.innerHTML = '✓ <span>Klaar</span>';
+                setTimeout(() => { if (btn) btn.innerHTML = '🔄 <span>Sync</span>'; }, 2000);
+                return;
+            }
+        } catch(e) {
+            console.warn("Direct sync fout:", e);
+        }
+
+        const local = getObsLiveState();
+        if (local && local.slides && local.slides.length) {
+            if (window.updateDockUI) window.updateDockUI();
+            if (btn) btn.innerHTML = '✓ <span>Lokaal</span>';
+            setTimeout(() => { if (btn) btn.innerHTML = '🔄 <span>Sync</span>'; }, 2000);
+            return;
+        }
+
+        if (btn) btn.innerHTML = '⚠️ <span>Geen data</span>';
+        setTimeout(() => { if (btn) btn.innerHTML = '🔄 <span>Sync</span>'; }, 2000);
+    };
+
     function startDockWeergave() {
         document.title = "🎛️ OBS Regie Dock - Kerkapp";
+        document.documentElement.style.cssText = "height:100%;width:100%;margin:0;padding:0;background:#090d16;overflow:hidden;";
+        document.body.style.cssText = "height:100%;width:100%;margin:0;padding:0;background:#090d16;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;-webkit-font-smoothing:antialiased;color:#f8fafc;user-select:none;";
+
+        const styleEl = document.createElement('style');
+        styleEl.id = 'obsDockStyles';
+        styleEl.textContent = `
+            * { box-sizing: border-box; }
+            #dockSlideLijst::-webkit-scrollbar { width: 4px; }
+            #dockSlideLijst::-webkit-scrollbar-track { background: transparent; }
+            #dockSlideLijst::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+            #dockSlideLijst::-webkit-scrollbar-thumb:hover { background: #475569; }
+            button:active { transform: scale(0.97); }
+        `;
+        document.head.appendChild(styleEl);
+
         document.body.innerHTML = `
-            <div style="background:#0f172a;color:#f8fafc;min-height:100vh;display:flex;flex-direction:column;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;user-select:none;padding:12px;box-sizing:border-box;">
-                <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:10px;border-bottom:1px solid #1e293b;margin-bottom:12px;">
-                    <div style="display:flex;align-items:center;gap:6px;">
-                        <span style="font-size:16px;">🎥</span>
-                        <strong style="font-size:13px;letter-spacing:-0.01em;">Kerkapp Regie</strong>
+            <div style="height:100vh;width:100vw;display:flex;flex-direction:column;padding:6px 8px;box-sizing:border-box;background:#090d16;overflow:hidden;gap:5px;">
+                <!-- Bovenbalk: Titel + Sync + Beamer knop -->
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;flex-shrink:0;">
+                    <div style="display:flex;align-items:center;gap:5px;min-width:0;">
+                        <span style="font-size:13px;">🎥</span>
+                        <strong style="font-size:12px;letter-spacing:-0.01em;white-space:nowrap;color:#f8fafc;">Kerkapp</strong>
+                        <span id="dockStatusDot" style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:99px;background:#065f46;color:#6ee7b7;border:1px solid #10b981;white-space:nowrap;">LIVE</span>
                     </div>
-                    <span id="dockStatusDot" style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:#065f46;color:#6ee7b7;border:1px solid #10b981;margin-left:auto;">LIVE SYNC</span>
+                    <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+                        <button type="button" id="dockSyncBtn" onclick="obsDockSyncMetKerkapp()" title="Liturgie ophalen uit Kerkapp" style="background:#1e293b;color:#38bdf8;border:1px solid #334155;border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:3px;transition:all 0.15s;">
+                            🔄 <span>Sync</span>
+                        </button>
+                        <button type="button" onclick="obsOpenVenster('beamer')" title="Open Beamer op Scherm 2" style="background:#1e293b;color:#94a3b8;border:1px solid #334155;border-radius:8px;padding:3px 8px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.15s;">
+                            📽️ ↗
+                        </button>
+                    </div>
                 </div>
 
-                <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:8px;margin-bottom:10px;">
-                    <button type="button" onclick="obsLiveVorige()" style="background:#1e293b;color:#f8fafc;border:1px solid #334155;border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;">
+                <!-- Hoofd Actieknoppen: Vorige, Volgende & Zwart -->
+                <div style="display:grid;grid-template-columns:1fr 1.6fr 0.9fr;gap:6px;flex-shrink:0;">
+                    <button type="button" onclick="obsLiveVorige()" style="background:#1e293b;color:#f8fafc;border:1px solid #334155;border-radius:10px;padding:9px 6px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:3px;transition:all 0.15s;">
                         ◀ VORIGE
                     </button>
-                    <button type="button" onclick="obsLiveVolgende()" style="background:#007AFF;color:#ffffff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 14px rgba(0,122,255,0.4);">
+                    <button type="button" onclick="obsLiveVolgende()" style="background:#007AFF;color:#ffffff;border:none;border-radius:10px;padding:9px 8px;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 3px 12px rgba(0,122,255,0.4);transition:all 0.15s;">
                         VOLGENDE ▶
                     </button>
-                </div>
-
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;">
-                    <button type="button" id="dockBlackoutBtn" onclick="obsLiveToggleBlackout()" style="background:#1e293b;color:#cbd5e1;border:1px solid #334155;border-radius:10px;padding:9px;font-size:11px;font-weight:600;cursor:pointer;">
-                        ⚫ Zwart Scherm (B)
-                    </button>
-                    <button type="button" onclick="obsOpenVenster('beamer')" style="background:#1e293b;color:#38bdf8;border:1px solid #0284c7;border-radius:10px;padding:9px;font-size:11px;font-weight:600;cursor:pointer;">
-                        📽️ Open Beamer ↗
+                    <button type="button" id="dockBlackoutBtn" onclick="obsLiveToggleBlackout()" style="background:#1e293b;color:#cbd5e1;border:1px solid #334155;border-radius:10px;padding:9px 4px;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;text-align:center;transition:all 0.15s;">
+                        ⚫ Zwart
                     </button>
                 </div>
 
-                <div id="dockActieveKaart" style="background:#1e293b;border:1px solid #334155;border-radius:14px;padding:12px;margin-bottom:12px;">
-                    <div id="dockSlideNummer" style="font-size:11px;font-weight:700;color:#38bdf8;text-transform:uppercase;margin-bottom:4px;">Dia 1 van ...</div>
-                    <div id="dockSlideTitel" style="font-size:14px;font-weight:700;color:#ffffff;margin-bottom:6px;">Laden...</div>
-                    <div id="dockSlideSnippet" style="font-size:12px;color:#94a3b8;line-height:1.35;max-height:48px;overflow:hidden;"></div>
+                <!-- Actieve Dia Strip (Pill card) -->
+                <div id="dockActieveKaart" style="background:#131d2e;border:1px solid #1e293b;border-radius:9px;padding:5px 8px;display:flex;align-items:center;justify-content:space-between;gap:6px;flex-shrink:0;">
+                    <div style="display:flex;align-items:center;gap:6px;min-width:0;flex:1;">
+                        <span id="dockSlideNummer" style="font-size:10px;font-weight:800;color:#38bdf8;background:rgba(2,132,199,0.22);padding:2px 6px;border-radius:5px;white-space:nowrap;">DIA 1/..</span>
+                        <span id="dockSlideTitel" style="font-size:12px;font-weight:700;color:#ffffff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Laden...</span>
+                    </div>
+                    <div id="dockVolgendeHint" style="font-size:10px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:42%;text-align:right;">
+                        ➔ Volgende: ...
+                    </div>
                 </div>
 
-                <div id="dockVolgendeHint" style="font-size:11px;color:#64748b;margin-bottom:10px;padding:0 4px;">
-                    Volgende: ...
+                <!-- Slide Picker Lijst -->
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:1px 2px;flex-shrink:0;">
+                    <span style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.04em;">Liturgie Volgorde</span>
+                    <span id="dockTotalCount" style="font-size:10px;color:#64748b;">... dia's</span>
                 </div>
-
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding:0 2px;">
-                    <span style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;">Liturgie Volgorde</span>
-                    <button type="button" onclick="obsDockLaadStandaard()" style="background:transparent;border:none;color:#38bdf8;font-size:10px;font-weight:600;cursor:pointer;text-decoration:underline;">⚡ Voorbeeld laden</button>
-                </div>
-                <div id="dockSlideLijst" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:4px;max-height:42vh;border:1px solid #1e293b;border-radius:12px;padding:6px;background:#090d16;"></div>
+                <div id="dockSlideLijst" style="flex:1;min-height:30px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;border:1px solid #1e293b;border-radius:9px;padding:4px;background:#060910;"></div>
             </div>
         `;
 
@@ -5355,49 +5436,50 @@ Van harte Gods zegen toegewenst!`;
             const state = getObsLiveState();
             const numEl = document.getElementById('dockSlideNummer');
             const titEl = document.getElementById('dockSlideTitel');
-            const snipEl = document.getElementById('dockSlideSnippet');
             const nextEl = document.getElementById('dockVolgendeHint');
             const blackBtn = document.getElementById('dockBlackoutBtn');
+            const countEl = document.getElementById('dockTotalCount');
             const lijstEl = document.getElementById('dockSlideLijst');
 
             if (!state || !state.slides || !state.slides.length) {
-                if (numEl) numEl.textContent = 'GEEN ACTIEVE DIENST';
+                if (numEl) numEl.textContent = 'GEEN DATA';
                 if (titEl) titEl.textContent = 'Wachten op liturgie...';
-                if (snipEl) snipEl.innerHTML = '<span style="color:#f59e0b;">Open de Kerkapp en klik op "OBS & Beamer Live (Test)" om de liturgie te sturen, of klik hieronder:</span>';
-                if (nextEl) nextEl.textContent = 'Tip: Klik op "Voorbeeld laden" om direct te testen';
+                if (nextEl) nextEl.textContent = 'Klik op Sync';
+                if (countEl) countEl.textContent = '0 dia\'s';
                 if (lijstEl && lijstEl.children.length === 0) {
                     lijstEl.innerHTML = `
-                        <div style="padding:16px 10px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;">
-                            <span style="font-size:12px;color:#94a3b8;">Nog geen liturgie ontvangen in OBS dock.</span>
-                            <button type="button" onclick="obsDockLaadStandaard()" style="background:#007AFF;color:#ffffff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,122,255,0.4);">
-                                ⚡ Laad Voorbeeld Dienst
-                            </button>
+                        <div style="padding:14px 8px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;">
+                            <span style="font-size:11px;color:#94a3b8;">Nog geen actieve liturgie ontvangen.</span>
+                            <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">
+                                <button type="button" onclick="obsDockSyncMetKerkapp()" style="background:#007AFF;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;">
+                                    🔄 Sync met Kerkapp
+                                </button>
+                                <button type="button" onclick="obsDockLaadStandaard()" style="background:#1e293b;color:#cbd5e1;border:1px solid #334155;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer;">
+                                    ⚡ Voorbeeld Dienst
+                                </button>
+                            </div>
                         </div>
                     `;
                 }
                 return;
             }
 
-            const idx = state.currentIndex;
+            const idx = state.currentIndex || 0;
             const total = state.slides.length;
             const curSlide = state.slides[idx] || state.slides[0];
             const nextSlide = state.slides[idx + 1] || null;
 
-            if (numEl) numEl.textContent = `Dia ${idx + 1} van ${total}`;
-            if (titEl) titEl.textContent = curSlide.subtitel || curSlide.titel || curSlide.type;
-            if (snipEl) {
-                if (curSlide.regels && curSlide.regels.length) {
-                    snipEl.textContent = curSlide.regels.slice(0, 2).join(' / ');
-                } else if (curSlide.type === 'Welkom') {
-                    snipEl.textContent = `${curSlide.gemeente || ''} · ${curSlide.datum || ''}`;
-                } else if (curSlide.type === 'QR') {
-                    snipEl.textContent = 'Collecte QR-code & IBAN';
+            if (numEl) numEl.textContent = `DIA ${idx + 1}/${total}`;
+            if (countEl) countEl.textContent = `${total} dia's`;
+            if (titEl) {
+                if (state.isBlackout) {
+                    titEl.innerHTML = '<span style="color:#ef4444;font-weight:800;">🔴 Zwart Actief</span>';
                 } else {
-                    snipEl.textContent = curSlide.type;
+                    titEl.textContent = curSlide.subtitel || curSlide.titel || curSlide.type;
                 }
             }
             if (nextEl) {
-                nextEl.textContent = nextSlide ? `Volgende: ${nextSlide.subtitel || nextSlide.titel}` : 'Einde van de liturgie';
+                nextEl.textContent = nextSlide ? `➔ ${nextSlide.subtitel || nextSlide.titel}` : '➔ Einde';
             }
 
             if (blackBtn) {
@@ -5405,12 +5487,12 @@ Van harte Gods zegen toegewenst!`;
                     blackBtn.style.background = '#dc2626';
                     blackBtn.style.color = '#ffffff';
                     blackBtn.style.border = '1px solid #ef4444';
-                    blackBtn.textContent = '🔴 Zwart Actief';
+                    blackBtn.textContent = '🔴 Zwart';
                 } else {
                     blackBtn.style.background = '#1e293b';
                     blackBtn.style.color = '#cbd5e1';
                     blackBtn.style.border = '1px solid #334155';
-                    blackBtn.textContent = '⚫ Zwart Scherm (B)';
+                    blackBtn.textContent = '⚫ Zwart';
                 }
             }
 
@@ -5419,8 +5501,8 @@ Van harte Gods zegen toegewenst!`;
                 state.slides.forEach((s, sIdx) => {
                     const isActief = sIdx === idx;
                     const row = document.createElement('div');
-                    row.style.cssText = `padding:8px 10px;border-radius:8px;font-size:11px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:all 0.15s;${isActief ? 'background:#007AFF;color:#ffffff;font-weight:700;' : 'background:#1e293b;color:#cbd5e1;'}`;
-                    row.innerHTML = `<span>${sIdx + 1}. ${s.subtitel || s.titel}</span>${isActief ? '<span>✓</span>' : ''}`;
+                    row.style.cssText = `padding:5px 8px;border-radius:6px;font-size:11px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:all 0.12s;${isActief ? 'background:#007AFF;color:#ffffff;font-weight:700;box-shadow:0 2px 8px rgba(0,122,255,0.35);' : 'background:#131d2e;color:#cbd5e1;'}`;
+                    row.innerHTML = `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:6px;">${sIdx + 1}. ${s.subtitel || s.titel}</span>${isActief ? '<span style="font-weight:800;font-size:10px;">✓</span>' : ''}`;
                     row.onclick = () => {
                         state.currentIndex = sIdx;
                         state.isBlackout = false;
@@ -5428,6 +5510,9 @@ Van harte Gods zegen toegewenst!`;
                         updateDockUI();
                     };
                     lijstEl.appendChild(row);
+                    if (isActief && lijstEl.scrollHeight > lijstEl.clientHeight) {
+                        setTimeout(() => row.scrollIntoView({ block: 'nearest' }), 10);
+                    }
                 });
             }
         }
@@ -7269,6 +7354,8 @@ Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
                 el.classList.add('border-black/[0.04]');
             }
         });
+
+        if (typeof autoSyncObsSlideIndex === 'function') autoSyncObsSlideIndex(idx);
     }
 
     window.navigeerSlide = function(dir) {
