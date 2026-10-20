@@ -27,6 +27,7 @@
 <script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/libs/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
 
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
@@ -381,8 +382,109 @@
     </div>
 </div>
 
+<!-- TIKKIE COLLECTE QR MODAL (WEEK-BEHEER MET GELDIGHEIDSDATUM) -->
+<div id="tikkieModal" class="fixed inset-0 z-[115] hidden flex items-center justify-center bg-black/30 backdrop-blur-xl transition-opacity p-2 sm:p-4">
+    <div class="bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.05] dark:ring-white/10 w-full max-w-lg overflow-hidden flex flex-col transform transition-all modal-animate max-h-[92vh]">
+        
+        <!-- Header -->
+        <div class="p-4 md:p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center flex-shrink-0 bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-md">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300 flex items-center justify-center font-bold text-sm shadow-xs">
+                    💳
+                </div>
+                <div>
+                    <h3 class="text-base md:text-lg font-bold text-[#1D1D1F] dark:text-white flex items-center gap-2">
+                        Week-Tikkie QR Beheer
+                    </h3>
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400">Automatisch gesynchroniseerd voor het hele beamerteam</p>
+                </div>
+            </div>
+            <button type="button" onclick="window.sluitTikkieModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 transition-colors" title="Sluiten">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
 
-<!-- VIDEO UITLEG MODAL: AUTOMATISCH BIJ OPENEN + ALTIJD TERUG TE KIJKEN MET AUDIO & SOUND FX -->
+        <div class="p-4 md:p-6 overflow-y-auto flex flex-col gap-4">
+            <!-- Huidige Status Card -->
+            <div id="tikkieStatusCard" class="p-3.5 rounded-2xl border transition-all flex items-start gap-3 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10">
+                <div id="tikkieStatusIcoontje" class="text-2xl flex-shrink-0">⚪</div>
+                <div class="flex flex-col min-w-0 flex-1">
+                    <span id="tikkieStatusTitel" class="text-xs font-bold text-gray-800 dark:text-gray-200">Nog geen actieve week-Tikkie</span>
+                    <span id="tikkieStatusSub" class="text-[11px] text-gray-500 dark:text-gray-400">Upload een screenshot of plak de Tikkie-link voor aankomende zondag.</span>
+                </div>
+            </div>
+
+            <!-- Invoer Opties: Screenshot uploaden of Link plakken -->
+            <div class="flex flex-col gap-2">
+                <label class="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center justify-between">
+                    <span>1. QR Afbeelding of Tikkie-link</span>
+                    <span class="text-[10px] text-gray-400 font-normal">Screenshot of tikkie.me link</span>
+                </label>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <button type="button" onclick="document.getElementById('tikkieModalFileInput').click()" class="p-3 rounded-xl border border-dashed border-emerald-300 dark:border-emerald-700/60 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 flex flex-col items-center justify-center gap-1 transition-all active:scale-95 text-center">
+                        <span class="text-lg">📸</span>
+                        <span class="text-xs font-bold">Upload screenshot</span>
+                        <span class="text-[10px] opacity-70">PNG of JPG van Tikkie</span>
+                    </button>
+                    <input id="tikkieModalFileInput" type="file" class="hidden" accept="image/*" onchange="window.verwerkTikkieModalBestand(event)"/>
+                    
+                    <div class="flex flex-col gap-1 justify-center">
+                        <input id="tikkieLinkInput" type="url" oninput="window.verwerkTikkieModalLink()" placeholder="https://tikkie.me/pay/..." class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-gray-200 dark:border-white/10 rounded-xl p-2.5 text-xs focus:bg-white focus:border-emerald-500 focus:outline-none"/>
+                        <span class="text-[10px] text-gray-400">Of plak hier direct de betaallink</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Preview -->
+            <div id="tikkieModalPreviewVak" class="hidden p-3 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center gap-3">
+                <div class="w-20 h-20 bg-white p-1 rounded-xl shadow-xs border border-gray-200 flex-shrink-0 flex items-center justify-center">
+                    <img id="tikkieModalPreviewImg" src="" alt="QR" class="w-full h-full object-contain"/>
+                </div>
+                <div class="flex flex-col min-w-0 flex-1">
+                    <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1"><span>✓</span> QR gereed</span>
+                    <span id="tikkieModalPreviewUrl" class="text-[11px] text-gray-500 dark:text-gray-400 truncate"></span>
+                    <span class="text-[10px] text-gray-400 mt-1">Deze QR wordt automatisch op de collecte-dia geplaatst.</span>
+                </div>
+            </div>
+
+            <!-- Geldig tot datum -->
+            <div class="flex flex-col gap-2">
+                <label class="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center justify-between">
+                    <span>2. Geldig tot en met:</span>
+                    <span class="text-[10px] text-gray-400 font-normal">Tikkies verlopen automatisch</span>
+                </label>
+                
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button type="button" onclick="window.kiesTikkieSnelleDatum('zondag')" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-gray-700 dark:text-gray-200 transition-all">Aanstaande zondag</button>
+                    <button type="button" onclick="window.kiesTikkieSnelleDatum('14dagen')" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-gray-700 dark:text-gray-200 transition-all">14 dagen (standaard)</button>
+                </div>
+                <input id="tikkieGeldigTotInput" type="date" class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-gray-200 dark:border-white/10 rounded-xl p-2.5 text-xs focus:bg-white focus:border-emerald-500 focus:outline-none"/>
+            </div>
+
+            <!-- Omschrijving (optioneel) -->
+            <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-gray-700 dark:text-gray-300">3. Doel of omschrijving (optioneel)</label>
+                <input id="tikkieOmschrijvingInput" type="text" placeholder="Bijv. 1e collecte: Kerk, 2e: Diaconie" class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-gray-200 dark:border-white/10 rounded-xl p-2.5 text-xs focus:bg-white focus:border-emerald-500 focus:outline-none"/>
+            </div>
+        </div>
+
+        <!-- Footer Buttons -->
+        <div class="p-4 md:p-5 border-t border-gray-100 dark:border-white/10 flex items-center justify-between gap-3 bg-gray-50/50 dark:bg-white/5 flex-shrink-0">
+            <button type="button" onclick="window.sluitTikkieModal()" class="px-4 py-2.5 rounded-xl text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
+                Sluiten
+            </button>
+            <div class="flex items-center gap-2">
+                <button type="button" onclick="window.slaTikkieOpVanuitModal(false)" class="px-3.5 py-2.5 rounded-xl text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 hover:bg-emerald-200 transition-all active:scale-95 shadow-xs">
+                    Opslaan voor Beamerteam
+                </button>
+                <button type="button" onclick="window.slaTikkieOpVanuitModal(true)" class="px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-all active:scale-95 shadow-sm">
+                    Opslaan & Toevoegen
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 <div id="videoUitlegModal" class="fixed inset-0 z-[250] hidden items-center justify-center bg-black/75 backdrop-blur-xl p-2 sm:p-4 md:p-6" onclick="if(event.target === this) sluitVideoUitleg()">
     <div class="bg-[#0D1117] text-white rounded-[28px] shadow-[0_25px_70px_rgba(0,0,0,0.85)] border border-white/15 w-full max-w-4xl overflow-hidden flex flex-col transform transition-all modal-animate max-h-[96vh]">
         <!-- Top header van de videospeler -->
@@ -717,10 +819,18 @@
                     <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
                     <span>Lege Dia</span>
                 </button>
-                <button onclick="document.getElementById('tikkieFile').click()" class="w-full bg-green-100 text-green-700 py-3 rounded-xl text-xs md:text-sm font-semibold flex items-center justify-center gap-2 hover:bg-green-200 transition-all shadow-sm border border-green-200 active:scale-95">
-                    <svg class="w-4 h-4 md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="3" height="3"></rect><line x1="21" y1="14" x2="21" y2="14.01"></line><line x1="21" y1="21" x2="21" y2="21.01"></line><line x1="14" y1="21" x2="14" y2="21.01"></line><line x1="17" y1="17" x2="21" y2="17"></line><line x1="17" y1="21" x2="17" y2="17"></line></svg>
-                    <span>Tikkie QR</span>
-                </button>
+                <div class="relative w-full">
+                    <button type="button" onclick="window.klikTikkieKnop()" class="w-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 py-3 px-3 rounded-xl text-xs md:text-sm font-semibold flex items-center justify-between gap-1.5 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-all shadow-sm border border-emerald-200 dark:border-emerald-800/60 active:scale-95" title="Voeg actieve week-Tikkie toe">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                            <svg class="w-4 h-4 md:w-5 md:h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="3" height="3"></rect><line x1="21" y1="14" x2="21" y2="14.01"></line><line x1="21" y1="21" x2="21" y2="21.01"></line><line x1="14" y1="21" x2="14" y2="21.01"></line><line x1="17" y1="17" x2="21" y2="17"></line><line x1="17" y1="21" x2="17" y2="17"></line></svg>
+                            <span class="font-bold truncate">Tikkie QR</span>
+                        </div>
+                        <span id="tikkieStatusBadge" class="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300 flex-shrink-0 border border-emerald-300/40">Laden...</span>
+                    </button>
+                    <button type="button" onclick="event.stopPropagation(); window.openTikkieModal();" class="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-white dark:bg-[#2C2C2E] border border-gray-200 dark:border-white/10 shadow-xs flex items-center justify-center text-[11px] hover:scale-110 active:scale-95 transition-all text-gray-500 hover:text-emerald-600 dark:text-gray-300" title="Beheer & upload week-Tikkie">
+                        ⚙️
+                    </button>
+                </div>
                 <input id="tikkieFile" type="file" class="hidden" accept="image/*" onchange="uploadTikkieQR(event)"/>
             </div>
         </section>
@@ -3847,6 +3957,16 @@ Retourneer UITSLUITEND een valide JSON object:
             const cache = localStorage.getItem('liederenCache');
             if (cache && (Date.now() - tijd) < 12 * 3600 * 1000) {
                 window.liederenDatabase = JSON.parse(cache);
+                if (window.liederenDatabase && window.liederenDatabase['__week_tikkie__']) {
+                    try {
+                        const cloudT = JSON.parse(window.liederenDatabase['__week_tikkie__']);
+                        const lcl = JSON.parse(localStorage.getItem('weekTikkieData') || 'null');
+                        if (!lcl || (cloudT.bijgewerktOp && (!lcl.bijgewerktOp || cloudT.bijgewerktOp > lcl.bijgewerktOp))) {
+                            localStorage.setItem('weekTikkieData', JSON.stringify(cloudT));
+                        }
+                    } catch(e) {}
+                }
+                if (typeof window.updateTikkieKnopUI === 'function') window.updateTikkieKnopUI();
                 setCloudStatus('ok', 'Cloud Actief');
                 return;
             }
@@ -3862,12 +3982,23 @@ Retourneer UITSLUITEND een valide JSON object:
                 localStorage.setItem('liederenCache', JSON.stringify(map));
                 localStorage.setItem('liederenCacheTijd', String(Date.now()));
             } catch (e) { /* opslag vol: niet erg */ }
+            if (window.liederenDatabase && window.liederenDatabase['__week_tikkie__']) {
+                try {
+                    const cloudT = JSON.parse(window.liederenDatabase['__week_tikkie__']);
+                    const lcl = JSON.parse(localStorage.getItem('weekTikkieData') || 'null');
+                    if (!lcl || (cloudT.bijgewerktOp && (!lcl.bijgewerktOp || cloudT.bijgewerktOp > lcl.bijgewerktOp))) {
+                        localStorage.setItem('weekTikkieData', JSON.stringify(cloudT));
+                    }
+                } catch(e) {}
+            }
+            if (typeof window.updateTikkieKnopUI === 'function') window.updateTikkieKnopUI();
             setCloudStatus('ok', 'Cloud Actief');
         } catch (error) {
             // Netwerk weg? Val terug op een (verouderde) cache als die er is.
             const cache = localStorage.getItem('liederenCache');
             if (cache) {
                 window.liederenDatabase = JSON.parse(cache);
+                if (typeof window.updateTikkieKnopUI === 'function') window.updateTikkieKnopUI();
                 setCloudStatus('ok', 'Cloud (offline)');
             } else {
                 setCloudStatus('err', 'Cloud Fout');
@@ -3889,6 +4020,7 @@ Retourneer UITSLUITEND een valide JSON object:
         const alleKeys = Object.keys(window.liederenDatabase);
         const basisNamen = new Set();
         alleKeys.forEach(key => {
+            if (key.startsWith('__')) return;
             const basisMatch = key.match(/^(.+?)\s+vers\s+\d+$/i);
             if (basisMatch) {
                 basisNamen.add(basisMatch[1].trim());
@@ -5017,9 +5149,9 @@ Bijbelliederen`;
                         id: `item-${itemIdx}-sub-${subIdx}`,
                         itemIndex: itemIdx,
                         type: 'Zang',
-                        titel: item.titel,
+                        titel: sub.diaTitel || item.titel,
                         basisTitel: basisTitel,
-                        subtitel: subtitel,
+                        subtitel: sub.diaTitel || subtitel,
                         regels: sub.regels || [],
                         fontSize: sub.fontSize || 40,
                         align: (window.getDiaAlign ? window.getDiaAlign(item, subIdx) : (item.align || 'left')),
@@ -6372,6 +6504,7 @@ Van harte Gods zegen toegewenst!`;
 
         initGemeente();
         initTypografieInstellingen();
+        if (typeof window.updateTikkieKnopUI === 'function') window.updateTikkieKnopUI();
         herstelLiturgie();
         checkBijbelAPI();
         ontdekAI().then(() => { console.log("AI Modellen geladen."); });
@@ -9205,22 +9338,330 @@ Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
         event.target.value = ''; 
     };
 
-    window.uploadTikkieQR = function(event) {
+    // =====================================================================
+    // --- WEEK-TIKKIE QR BEHEER (CENTRALE CLOUD-OPSLAG + GELDIGHEIDSDATUM) ---
+    // =====================================================================
+
+    // Hulpfunctie: datum van de eerstvolgende zondag (YYYY-MM-DD)
+    window.getVolgendeZondagDatum = function() {
+        const d = new Date();
+        const day = d.getDay(); // 0 = zondag
+        const diff = (7 - day) % 7;
+        const daysToAdd = (diff === 0) ? 0 : diff;
+        d.setDate(d.getDate() + daysToAdd);
+        return d.toISOString().split('T')[0];
+    };
+
+    // Hulpfunctie: datum over 14 dagen (standaard Tikkie geldigheid)
+    window.getVeertienDagenDatum = function() {
+        const d = new Date();
+        d.setDate(d.getDate() + 14);
+        return d.toISOString().split('T')[0];
+    };
+
+    // Haal actieve week-tikkie op uit localStorage of cloud cache
+    window.getActieveWeekTikkie = function() {
+        try {
+            const lcl = localStorage.getItem('weekTikkieData');
+            if (lcl) {
+                const parsed = JSON.parse(lcl);
+                if (parsed && (parsed.url || parsed.qrData)) return parsed;
+            }
+            if (window.liederenDatabase && window.liederenDatabase['__week_tikkie__']) {
+                const cloud = JSON.parse(window.liederenDatabase['__week_tikkie__']);
+                if (cloud && (cloud.url || cloud.qrData)) {
+                    localStorage.setItem('weekTikkieData', JSON.stringify(cloud));
+                    return cloud;
+                }
+            }
+        } catch(e) {}
+        return null;
+    };
+
+    // Controleer of een tikkie nog geldig is
+    window.isWeekTikkieGeldig = function(tikkie) {
+        if (!tikkie) return false;
+        if (!tikkie.geldigTot) return true; // Zonder datum = altijd geldig
+        const exp = new Date(tikkie.geldigTot + 'T23:59:59');
+        return !isNaN(exp.getTime()) && exp.getTime() >= Date.now();
+    };
+
+    // Formatteer resterende dagen
+    window.berekenTikkieStatusTekst = function(geldigTot) {
+        if (!geldigTot) return { geldig: true, tekst: "Actief (zonder vervaldatum)", dagen: 999 };
+        const exp = new Date(geldigTot + 'T23:59:59');
+        if (isNaN(exp.getTime())) return { geldig: true, tekst: "Actief", dagen: 999 };
+        const nu = Date.now();
+        const diffMs = exp.getTime() - nu;
+        const diffDagen = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+        if (diffDagen < 0) {
+            return { geldig: false, tekst: `Verlopen op ${geldigTot}`, dagen: diffDagen };
+        } else if (diffDagen === 0) {
+            return { geldig: true, tekst: `Vandaag laatste dag geldig!`, dagen: 0 };
+        } else if (diffDagen === 1) {
+            return { geldig: true, tekst: `Nog 1 dag geldig (t/m morgen)`, dagen: 1 };
+        } else {
+            return { geldig: true, tekst: `Nog ${diffDagen} dagen geldig (t/m ${geldigTot})`, dagen: diffDagen };
+        }
+    };
+
+    // Update de badge op de knop in de zijbalk
+    window.updateTikkieKnopUI = function() {
+        const badge = document.getElementById('tikkieStatusBadge');
+        if (!badge) return;
+        const tikkie = window.getActieveWeekTikkie();
+        if (!tikkie) {
+            badge.className = "text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-gray-100 text-gray-500 dark:bg-white/10 dark:text-gray-400 flex-shrink-0";
+            badge.innerText = "Instellen";
+            return;
+        }
+        const status = window.berekenTikkieStatusTekst(tikkie.geldigTot);
+        if (status.geldig) {
+            badge.className = "text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200 flex-shrink-0 border border-emerald-300/40";
+            badge.innerText = status.dagen <= 7 ? `Geldig t/m ${tikkie.geldigTot.slice(5)}` : "Actief";
+        } else {
+            badge.className = "text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-rose-100 text-rose-700 dark:bg-rose-900/60 dark:text-rose-200 flex-shrink-0 border border-rose-300/40 animate-pulse";
+            badge.innerText = "⚠️ Verlopen";
+        }
+    };
+
+    // Actie bij klik op de grote knop in de zijbalk
+    window.klikTikkieKnop = function() {
+        const tikkie = window.getActieveWeekTikkie();
+        if (!tikkie) {
+            window.openTikkieModal();
+            return;
+        }
+        const status = window.berekenTikkieStatusTekst(tikkie.geldigTot);
+        if (!status.geldig) {
+            window.toonToast(`⚠️ Let op: De week-Tikkie is verlopen op ${tikkie.geldigTot}! Upload een nieuwe.`, "error");
+            window.openTikkieModal();
+            return;
+        }
+        const qrData = tikkie.qrData || (tikkie.url ? (typeof maakQRDataURL === 'function' ? maakQRDataURL(tikkie.url, 8, 2) : tikkie.url) : '');
+        if (!qrData) {
+            window.openTikkieModal();
+            return;
+        }
+        const titel = tikkie.omschrijving ? `Collecte Tikkie (${tikkie.omschrijving})` : "Collecte Tikkie QR";
+        liturgieVolgorde.push({ 
+            type: "QR", 
+            titel: titel, 
+            tekst: qrData, 
+            qrUrl: tikkie.url || '',
+            geldigTot: tikkie.geldigTot || '',
+            qrSize: 3.5 
+        });
+        window.tekenVolgorde();
+        window.toonToast(`✨ Actieve Tikkie toegevoegd (${status.tekst})!`, "success");
+    };
+
+    let tijdelijkeModalTikkieData = { url: '', qrData: '', geldigTot: '', omschrijving: '' };
+
+    window.openTikkieModal = function() {
+        const modal = document.getElementById('tikkieModal');
+        if (!modal) return;
+
+        const bestaand = window.getActieveWeekTikkie() || {};
+        tijdelijkeModalTikkieData = {
+            url: bestaand.url || '',
+            qrData: bestaand.qrData || '',
+            geldigTot: bestaand.geldigTot || window.getVolgendeZondagDatum(),
+            omschrijving: bestaand.omschrijving || ''
+        };
+
+        const linkInp = document.getElementById('tikkieLinkInput');
+        if (linkInp) linkInp.value = tijdelijkeModalTikkieData.url;
+        const datumInp = document.getElementById('tikkieGeldigTotInput');
+        if (datumInp) datumInp.value = tijdelijkeModalTikkieData.geldigTot;
+        const omsInp = document.getElementById('tikkieOmschrijvingInput');
+        if (omsInp) omsInp.value = tijdelijkeModalTikkieData.omschrijving;
+
+        window.updateTikkieModalStatusCard();
+        window.updateTikkieModalPreview();
+
+        modal.classList.remove('hidden');
+    };
+
+    window.sluitTikkieModal = function() {
+        const modal = document.getElementById('tikkieModal');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    window.kiesTikkieSnelleDatum = function(type) {
+        const datumInp = document.getElementById('tikkieGeldigTotInput');
+        if (!datumInp) return;
+        if (type === 'zondag') {
+            datumInp.value = window.getVolgendeZondagDatum();
+        } else if (type === '14dagen') {
+            datumInp.value = window.getVeertienDagenDatum();
+        }
+        tijdelijkeModalTikkieData.geldigTot = datumInp.value;
+        window.updateTikkieModalStatusCard();
+    };
+
+    window.updateTikkieModalStatusCard = function() {
+        const bestaand = window.getActieveWeekTikkie();
+        const card = document.getElementById('tikkieStatusCard');
+        const icoon = document.getElementById('tikkieStatusIcoontje');
+        const titel = document.getElementById('tikkieStatusTitel');
+        const sub = document.getElementById('tikkieStatusSub');
+        if (!card || !titel || !sub || !icoon) return;
+
+        if (!bestaand || (!bestaand.url && !bestaand.qrData)) {
+            card.className = "p-3.5 rounded-2xl border transition-all flex items-start gap-3 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10";
+            icoon.innerText = "⚪";
+            titel.innerText = "Nog geen actieve week-Tikkie ingesteld";
+            sub.innerText = "Upload een QR-afbeelding of plak een Tikkie-link voor de komende dienst.";
+            return;
+        }
+
+        const status = window.berekenTikkieStatusTekst(bestaand.geldigTot);
+        if (status.geldig) {
+            card.className = "p-3.5 rounded-2xl border transition-all flex items-start gap-3 bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/40";
+            icoon.innerText = "🟢";
+            titel.innerHTML = `<span class="text-emerald-800 dark:text-emerald-200 font-bold">Actieve Tikkie (${status.tekst})</span>`;
+            sub.innerHTML = `Geldig t/m <b>${bestaand.geldigTot || 'onbeperkt'}</b> · ${escapeHtml(bestaand.omschrijving || 'Geen omschrijving')}`;
+        } else {
+            card.className = "p-3.5 rounded-2xl border transition-all flex items-start gap-3 bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/40";
+            icoon.innerText = "🔴";
+            titel.innerHTML = `<span class="text-rose-800 dark:text-rose-200 font-bold">⚠️ Tikkie is verlopen (${status.tekst})</span>`;
+            sub.innerText = "Upload hieronder een nieuwe QR om te voorkomen dat kerkgangers niet kunnen doneren.";
+        }
+    };
+
+    window.updateTikkieModalPreview = function() {
+        const preVak = document.getElementById('tikkieModalPreviewVak');
+        const preImg = document.getElementById('tikkieModalPreviewImg');
+        const preUrl = document.getElementById('tikkieModalPreviewUrl');
+        if (!preVak || !preImg || !preUrl) return;
+
+        let src = tijdelijkeModalTikkieData.qrData;
+        if (!src && tijdelijkeModalTikkieData.url && typeof maakQRDataURL === 'function') {
+            src = maakQRDataURL(tijdelijkeModalTikkieData.url, 8, 2);
+            tijdelijkeModalTikkieData.qrData = src;
+        }
+
+        if (src) {
+            preImg.src = src;
+            preUrl.innerText = tijdelijkeModalTikkieData.url || 'QR Afbeelding gereed';
+            preVak.classList.remove('hidden');
+        } else {
+            preVak.classList.add('hidden');
+        }
+    };
+
+    window.verwerkTikkieModalBestand = function(event) {
         const file = event.target.files[0];
         if (!file) return;
         const reader = new FileReader();
         reader.onload = function(e) {
             const img = new Image();
             img.onload = function() {
-                const qrData = extractQR(img);
-                liturgieVolgorde.push({ type: "QR", titel: "Tikkie QR Code", tekst: qrData, qrSize: 3.5 });
-                window.tekenVolgorde();
-                toonToast("QR code toegevoegd!");
+                let ontdekteUrl = '';
+                try {
+                    const cv = document.createElement('canvas');
+                    cv.width = img.naturalWidth || img.width;
+                    cv.height = img.naturalHeight || img.height;
+                    const ctx = cv.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    const imgData = ctx.getImageData(0, 0, cv.width, cv.height);
+                    if (typeof jsQR !== 'undefined') {
+                        const code = jsQR(imgData.data, imgData.width, imgData.height);
+                        if (code && code.data) {
+                            ontdekteUrl = code.data;
+                        }
+                    }
+                } catch(err) {
+                    console.warn("jsQR decode mislukt:", err);
+                }
+
+                if (ontdekteUrl) {
+                    tijdelijkeModalTikkieData.url = ontdekteUrl;
+                    tijdelijkeModalTikkieData.qrData = (typeof maakQRDataURL === 'function') ? maakQRDataURL(ontdekteUrl, 8, 2) : '';
+                    const linkInp = document.getElementById('tikkieLinkInput');
+                    if (linkInp) linkInp.value = ontdekteUrl;
+                    window.toonToast("Tikkie-link succesvol uit screenshot gelezen!", "success");
+                } else {
+                    const qrImg = extractQR(img);
+                    tijdelijkeModalTikkieData.qrData = qrImg;
+                    window.toonToast("QR screenshot verwerkt!", "info");
+                }
+                window.updateTikkieModalPreview();
             };
             img.src = e.target.result;
         };
         reader.readAsDataURL(file);
         event.target.value = '';
+    };
+
+    window.verwerkTikkieModalLink = function() {
+        const inp = document.getElementById('tikkieLinkInput');
+        if (!inp) return;
+        const url = inp.value.trim();
+        tijdelijkeModalTikkieData.url = url;
+        if (url && typeof maakQRDataURL === 'function') {
+            tijdelijkeModalTikkieData.qrData = maakQRDataURL(url, 8, 2);
+        } else if (!url) {
+            tijdelijkeModalTikkieData.qrData = '';
+        }
+        window.updateTikkieModalPreview();
+    };
+
+    window.slaTikkieOpVanuitModal = async function(directToevoegen = false) {
+        const datumInp = document.getElementById('tikkieGeldigTotInput');
+        const omsInp = document.getElementById('tikkieOmschrijvingInput');
+        const geldigTot = datumInp ? datumInp.value : tijdelijkeModalTikkieData.geldigTot;
+        const omschrijving = omsInp ? omsInp.value.trim() : tijdelijkeModalTikkieData.omschrijving;
+
+        if (!tijdelijkeModalTikkieData.qrData && !tijdelijkeModalTikkieData.url) {
+            window.toonToast("Upload eerst een QR-screenshot of plak een Tikkie-link.", "error");
+            return;
+        }
+
+        const tikkieOpslag = {
+            url: tijdelijkeModalTikkieData.url || '',
+            qrData: tijdelijkeModalTikkieData.qrData || '',
+            geldigTot: geldigTot || window.getVolgendeZondagDatum(),
+            omschrijving: omschrijving || '',
+            bijgewerktOp: Date.now()
+        };
+
+        try {
+            localStorage.setItem('weekTikkieData', JSON.stringify(tikkieOpslag));
+        } catch(e) {}
+
+        try {
+            if (typeof slaLiedOpInCloud === 'function') {
+                slaLiedOpInCloud('__week_tikkie__', JSON.stringify(tikkieOpslag));
+            }
+        } catch(e) {
+            console.warn("Cloud opslag week-tikkie mislukt:", e);
+        }
+
+        window.updateTikkieKnopUI();
+        window.updateTikkieModalStatusCard();
+        window.sluitTikkieModal();
+        window.toonToast("✅ Week-Tikkie succesvol opgeslagen en gesynchroniseerd!", "success");
+
+        if (directToevoegen) {
+            const titel = omschrijving ? `Collecte Tikkie (${omschrijving})` : "Collecte Tikkie QR";
+            liturgieVolgorde.push({ 
+                type: "QR", 
+                titel: titel, 
+                tekst: tikkieOpslag.qrData, 
+                qrUrl: tikkieOpslag.url || '',
+                geldigTot: tikkieOpslag.geldigTot,
+                qrSize: 3.5 
+            });
+            window.tekenVolgorde();
+            window.toonToast("Collecte dia toegevoegd aan liturgie!", "success");
+        }
+    };
+
+    // Oude compatibiliteit
+    window.uploadTikkieQR = function(event) {
+        window.verwerkTikkieModalBestand(event);
     };
 
     function extractQR(img) {
@@ -9514,10 +9955,46 @@ Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
         const tw = item.tekstW ?? TEKST_DEF_W;
         const th = item.tekstH ?? TEKST_DEF_H;
         let result = [];
-        blokken.forEach(regelsArr => {
+
+        const basisTitel = (item.basisTitel || item.titel || '')
+            .replace(/\s+(vers(en)?|vs\.?|couplet(ten)?)\s+[\d,\s\-–—en&]+$/i, '')
+            .replace(/:\s*[\d,\s\-–—en&]+$/, '')
+            .trim();
+
+        // Bepaal de versnummers voor elk couplet
+        const bekendeVerzen = (item.geselecteerdeVerzen && item.geselecteerdeVerzen.length > 0)
+            ? item.geselecteerdeVerzen
+            : (typeof window.extractVersNummers === 'function' ? window.extractVersNummers(item.titel) : []);
+
+        blokken.forEach((regelsArr, blokIdx) => {
             regelsArr = regelsArr.filter(r => !/^\d+\s*:\s*\d+\.?$/.test(r.trim()));
             if (!regelsArr.length) return;
-            result = result.concat(pptFitBlok(regelsArr, fSize, font, tw, th));
+
+            let versNr = null;
+            if (item.type === "Zang") {
+                if (bekendeVerzen && bekendeVerzen[blokIdx] != null) {
+                    versNr = bekendeVerzen[blokIdx];
+                } else if (blokken.length > 1) {
+                    versNr = blokIdx + 1;
+                } else if (bekendeVerzen.length === 1) {
+                    versNr = bekendeVerzen[0];
+                }
+            }
+
+            const subBlokken = pptFitBlok(regelsArr, fSize, font, tw, th);
+            subBlokken.forEach((sb, sIdx) => {
+                let diaTitel = item.titel;
+                if (item.type === "Zang" && versNr != null) {
+                    const sep = (item.titel && item.titel.includes(':')) ? ' : ' : ' vers ';
+                    const deelStr = subBlokken.length > 1 ? ` (${sIdx + 1}/${subBlokken.length})` : '';
+                    diaTitel = `${basisTitel}${sep}${versNr}${deelStr}`;
+                } else if (item.type === "Schriftlezing" && blokken.length > 1) {
+                    diaTitel = `${item.titel} (${blokIdx + 1}/${blokken.length})`;
+                }
+                sb.diaTitel = diaTitel;
+                sb.versNr = versNr;
+                result.push(sb);
+            });
         });
         return result.length ? result : [{ regels: [], fontSize: fSize }];
     }
@@ -9703,7 +10180,7 @@ Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
 
         preview.innerHTML = `
             <div id="slideTitleText" class="absolute text-white font-bold truncate pointer-events-none" style="left:${titleLeftPct}%;top:${titleTopPct}%;width:${tWidthPct}%;font-size:${titleFS}px;font-family:${font};opacity:0.7">
-                ${escapeHtml(item.titel)}
+                ${escapeHtml(slide.diaTitel || item.titel)}
             </div>
             <div id="slideTextBox" class="absolute text-white flex items-center ${tekstAlign === 'left' ? 'justify-start' : 'justify-center'} transition-shadow select-none"
                  style="left:${tLeftPct}%;top:${tTopPct}%;width:${tWidthPct}%;height:${tHeightPct}%;font-size:${previewFS}px;font-family:${font};font-weight:${isTekstBold ? 'bold' : 'normal'};line-height:${previewFS * 1.2}px;text-align:${tekstAlign};cursor:default;border:1px dashed transparent;border-radius:4px">
@@ -10539,6 +11016,20 @@ function bouwPptxTextRuns(regelsArr, fontSize, fontFace, basisBold) {
 window.maakPowerPoint = async function(customOpties = null) {
     if (liturgieVolgorde.length === 0) { window.toonToast("Voeg eerst een item toe aan de volgorde.", "error"); return; }
     
+    // Controleer of er een verlopen Tikkie QR in de liturgie zit
+    const verlopenTikkie = liturgieVolgorde.find(it => {
+        if (it.type !== "QR" || !it.geldigTot) return false;
+        const exp = new Date(it.geldigTot + 'T23:59:59');
+        return !isNaN(exp.getTime()) && exp.getTime() < Date.now();
+    });
+    if (verlopenTikkie) {
+        const gaDoor = confirm(`⚠️ Let op: De Tikkie QR op de dia is verlopen op ${verlopenTikkie.geldigTot}!\n\nKerkgangers kunnen mogelijk niet meer doneren als deze niet wordt vernieuwd.\n\nKlik op 'OK' om toch te exporteren, of 'Annuleren' om eerst de nieuwe QR van deze week in te stellen.`);
+        if (!gaDoor) {
+            window.openTikkieModal();
+            return;
+        }
+    }
+
     // Interceptie: als er geen customOpties zijn meegegeven én customizer ingeschakeld is, toon modal
     if (!customOpties && welkomstdiaAanpassenAan()) {
         openWelkomstdiaModal();
@@ -10716,7 +11207,8 @@ window.maakPowerPoint = async function(customOpties = null) {
             const tekstAlign = window.getDiaAlign(item, subIdx);
             let slide = pres.addSlide();
             slide.background = pptBg;
-            slide.addText(item.titel, { x: tx, y: TITEL_Y, w: tw, h: 0.4, color: "FFFFFF", fontSize: 18, bold: true, fontFace: pptFont, align: "left", valign: "top" });
+            const diaTitel = sub.diaTitel || item.titel;
+            slide.addText(diaTitel, { x: tx, y: TITEL_Y, w: tw, h: 0.4, color: "FFFFFF", fontSize: 18, bold: true, fontFace: pptFont, align: "left", valign: "top" });
 
             const heeftVetOpmaak = sub.regels.some(r => /\*\*.*?\*\*|<b>.*?<\/b>/i.test(r));
             if (heeftVetOpmaak) {
