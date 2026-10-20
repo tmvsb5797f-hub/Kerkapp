@@ -1282,6 +1282,15 @@
 
         <div class="h-4 w-px bg-gray-200 dark:bg-gray-700/60 my-auto flex-shrink-0"></div>
 
+        <!-- Pre-Flight Kwaliteitscontrole Knop & Live Indicator -->
+        <button id="preflightDockBtn" onclick="openPreflightModal()" aria-label="Pre-flight kwaliteitscontrole: zero-defect check voor de dienst" title="Pre-Flight Kwaliteitscontrole: zero-defect inspectie vóór vertoning" class="relative text-gray-700 dark:text-gray-200 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition-all flex-shrink-0">
+            <span id="preflightDockDot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)] flex-shrink-0 transition-all"></span>
+            <span class="hidden sm:inline font-semibold" id="preflightDockText">Pre-Flight</span>
+            <span id="preflightCountBadge" class="hidden text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-amber-500 text-white"></span>
+        </button>
+
+        <div class="h-4 w-px bg-gray-200 dark:bg-gray-700/60 my-auto flex-shrink-0"></div>
+
         <!-- 4. Primaire Actie: Exporteer PowerPoint -->
         <button id="exporteerKnop" onclick="maakPowerPoint()" class="bg-[#007AFF] hover:bg-blue-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-full shadow-[0_4px_16px_rgba(0,122,255,0.32)] active:scale-95 transition-all duration-200 flex items-center justify-center gap-1.5 border border-white/20 font-semibold text-xs sm:text-[13px] tracking-[-0.01em] flex-shrink-0 whitespace-nowrap">
             <svg class="w-4 h-4 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
@@ -10579,6 +10588,7 @@ Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
             previewItemIdx = -1;
             lijst.innerHTML = '<div class="bg-transparent border-2 border-dashed border-gray-200 rounded-[16px] md:rounded-[20px] p-6 md:p-8 text-center text-gray-400 font-medium text-[12px] md:text-[13px]">Nog geen items toegevoegd</div>';
             renderSlidePreview(-1);
+            if (window.updatePreflightBadge) window.updatePreflightBadge();
             return;
         }
 
@@ -10617,6 +10627,7 @@ Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
         });
 
         renderSlidePreview(previewItemIdx);
+        if (window.updatePreflightBadge) window.updatePreflightBadge();
     }
 
     window.verwijder = function(i) {
@@ -11175,19 +11186,14 @@ function bouwPptxTextRuns(regelsArr, fontSize, fontFace, basisBold) {
     return runs;
 }
 
-window.maakPowerPoint = async function(customOpties = null) {
+window.maakPowerPoint = async function(customOpties = null, forceExport = false) {
     if (liturgieVolgorde.length === 0) { window.toonToast("Voeg eerst een item toe aan de volgorde.", "error"); return; }
     
-    // Controleer of er een verlopen Tikkie QR in de liturgie zit
-    const verlopenTikkie = liturgieVolgorde.find(it => {
-        if (it.type !== "QR" || !it.geldigTot) return false;
-        const exp = new Date(it.geldigTot + 'T23:59:59');
-        return !isNaN(exp.getTime()) && exp.getTime() < Date.now();
-    });
-    if (verlopenTikkie) {
-        const gaDoor = confirm(`⚠️ Let op: De Tikkie QR op de dia is verlopen op ${verlopenTikkie.geldigTot}!\n\nKerkgangers kunnen mogelijk niet meer doneren als deze niet wordt vernieuwd.\n\nKlik op 'OK' om toch te exporteren, of 'Annuleren' om eerst de nieuwe QR van deze week in te stellen.`);
-        if (!gaDoor) {
-            window.openTikkieModal();
+    // Automatische Pre-Flight Zero-Defect Kwaliteitscontrole vóór export
+    if (!forceExport && window.voerPreflightControleUit) {
+        const report = window.voerPreflightControleUit();
+        if (report.heeftFouten) {
+            window.openPreflightModal(report);
             return;
         }
     }
@@ -12180,6 +12186,542 @@ window.verstuurExportFeedback = async function() {
         </div>
     </div>
 </div>
+
+<!-- PRE-FLIGHT KWALITEITSCONTROLE MODAL (ZERO-DEFECT EXPORT) -->
+<div id="preflightModal" class="fixed inset-0 z-[140] hidden flex items-center justify-center bg-black/40 backdrop-blur-xl transition-opacity p-2 sm:p-4" onclick="if(event.target === this) sluitPreflightModal()">
+    <div class="bg-white dark:bg-[#1C1C1E] text-[#1D1D1F] dark:text-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.05] dark:ring-white/10 w-full max-w-2xl overflow-hidden flex flex-col transform transition-all modal-animate max-h-[92vh]">
+        <!-- Header -->
+        <div class="p-4 md:p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center flex-shrink-0 bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-md">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white flex items-center justify-center font-bold text-base shadow-sm">
+                    🛫
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h3 class="text-base font-bold text-[#1D1D1F] dark:text-white">Pre-Flight Kwaliteitscontrole</h3>
+                        <span id="preflightScorePill" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300/40">100% GEREED</span>
+                    </div>
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400">Zero-defect inspectie vóór vertoning op de beamer</p>
+                </div>
+            </div>
+            <button type="button" onclick="sluitPreflightModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" title="Sluiten">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+
+        <!-- Scrollable Body -->
+        <div class="p-4 sm:p-6 overflow-y-auto flex flex-col gap-4">
+            <!-- Banner Box -->
+            <div id="preflightBannerBox" class="p-4 rounded-2xl border transition-all"></div>
+
+            <!-- Stats Bar -->
+            <div id="preflightStatsBar" class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs"></div>
+
+            <!-- Checklist Items -->
+            <div class="flex flex-col gap-2.5 pt-1">
+                <div class="flex items-center justify-between px-1">
+                    <h4 class="text-xs font-bold text-[#86868B] uppercase tracking-wider">Inspectie Checklist</h4>
+                    <span id="preflightTotalChecksLabel" class="text-[11px] font-medium text-gray-400"></span>
+                </div>
+                <div id="preflightChecklist" class="flex flex-col gap-2"></div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="p-4 md:p-5 border-t border-gray-100 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 bg-gray-50/70 dark:bg-gray-800/40 flex-shrink-0">
+            <button type="button" onclick="sluitPreflightModal()" class="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-white dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs font-semibold transition-all active:scale-95 text-center">
+                ← Terug naar Liturgie
+            </button>
+            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <button type="button" id="preflightExportBtn" onclick="exporteerNaPreflight()" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#007AFF] hover:bg-blue-600 text-white text-xs font-bold transition-all active:scale-95 shadow-md flex items-center justify-center gap-1.5">
+                    <span>Exporteer PowerPoint</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// --- PRE-FLIGHT ZERO-DEFECT KWALITEITSCONTROLE LOGICA ---
+(function() {
+    window.voerPreflightControleUit = function() {
+        const datum = document.getElementById('datumInput')?.value?.trim() || "";
+        const voorganger = document.getElementById('voorgangerInput')?.value?.trim() || "";
+        const items = window.liturgieVolgorde || [];
+
+        const checks = [];
+        let foutenAantal = 0;
+        let waarschuwingenAantal = 0;
+
+        // 1. Dienstgegevens: Datum
+        if (!datum) {
+            waarschuwingenAantal++;
+            checks.push({
+                categorie: 'dienst',
+                status: 'warning',
+                titel: 'Dienstdatum ontbreekt',
+                beschrijving: 'Er is nog geen datum ingevuld voor de welkomstdia.',
+                actieTekst: 'Datum invullen',
+                actieType: 'focus_datum'
+            });
+        } else {
+            checks.push({
+                categorie: 'dienst',
+                status: 'ok',
+                titel: 'Dienstdatum ingesteld',
+                beschrijving: `Datum: ${datum}`
+            });
+        }
+
+        // 2. Dienstgegevens: Voorganger
+        if (!voorganger) {
+            waarschuwingenAantal++;
+            checks.push({
+                categorie: 'dienst',
+                status: 'warning',
+                titel: 'Voorganger ontbreekt',
+                beschrijving: 'Er staat geen naam van de predikant of spreker ingevuld.',
+                actieTekst: 'Voorganger invullen',
+                actieType: 'focus_voorganger'
+            });
+        } else {
+            checks.push({
+                categorie: 'dienst',
+                status: 'ok',
+                titel: 'Voorganger ingevuld',
+                beschrijving: `Voorganger: ${voorganger}`
+            });
+        }
+
+        // 3. Liturgie Volgorde
+        if (items.length === 0) {
+            foutenAantal++;
+            checks.push({
+                categorie: 'liturgie',
+                status: 'error',
+                titel: 'Liturgie is leeg',
+                beschrijving: 'Er zijn nog geen liederen, schriftlezingen of dia\'s toegevoegd.',
+                actieTekst: 'Lied zoeken',
+                actieType: 'focus_invoer'
+            });
+        } else {
+            checks.push({
+                categorie: 'liturgie',
+                status: 'ok',
+                titel: 'Liturgie volgorde gevuld',
+                beschrijving: `${items.length} onderdeel${items.length === 1 ? '' : 'en'} in de liturgie.`
+            });
+        }
+
+        // 4. Liederen & Verzen inspectie
+        const liedItems = items.filter(it => it.type === 'Lied');
+        const ontbrekendeVerzen = [];
+        const legeLiederen = [];
+        liedItems.forEach((it, idx) => {
+            if (!it.verzen || !Array.isArray(it.verzen) || it.verzen.length === 0) {
+                ontbrekendeVerzen.push({ titel: it.titel || `Lied #${idx + 1}`, index: idx });
+            }
+            if (!it.regels || it.regels.length === 0 || it.regels.every(r => !r || !r.trim())) {
+                legeLiederen.push({ titel: it.titel || `Lied #${idx + 1}`, index: idx });
+            }
+        });
+
+        if (ontbrekendeVerzen.length > 0) {
+            foutenAantal++;
+            checks.push({
+                categorie: 'liederen',
+                status: 'error',
+                titel: 'Lied zonder couplet-selectie',
+                beschrijving: `Er zijn geen verzen geselecteerd voor: ${ontbrekendeVerzen.map(x => x.titel).join(', ')}.`,
+                actieTekst: 'Couplet kiezen',
+                actieType: 'kies_vers',
+                diaIndex: ontbrekendeVerzen[0].index
+            });
+        } else if (liedItems.length > 0) {
+            checks.push({
+                categorie: 'liederen',
+                status: 'ok',
+                titel: 'Liederen & verzen compleet',
+                beschrijving: `Alle ${liedItems.length} liederen hebben geselecteerde coupletten.`
+            });
+        }
+
+        if (legeLiederen.length > 0) {
+            foutenAantal++;
+            checks.push({
+                categorie: 'liederen',
+                status: 'error',
+                titel: 'Lied zonder zangtekst',
+                beschrijving: `Geen strofetekst gevonden voor: ${legeLiederen.map(x => x.titel).join(', ')}.`,
+                actieTekst: 'Tekst bewerken',
+                actieType: 'bewerk_dia',
+                diaIndex: legeLiederen[0].index
+            });
+        }
+
+        // 5. Schriftlezingen inspectie
+        const lezingItems = items.filter(it => it.type === 'Schriftlezing');
+        const legeLezingen = [];
+        lezingItems.forEach((it, idx) => {
+            if (!it.regels || it.regels.length === 0 || it.regels.every(r => !r || !r.trim())) {
+                legeLezingen.push({ titel: it.titel || `Lezing #${idx + 1}`, index: idx });
+            }
+        });
+
+        if (legeLezingen.length > 0) {
+            foutenAantal++;
+            checks.push({
+                categorie: 'schriftlezing',
+                status: 'error',
+                titel: 'Schriftlezing zonder Bijbeltekst',
+                beschrijving: `De tekst van ${legeLezingen.map(x => x.titel).join(', ')} is leeg.`,
+                actieTekst: 'Bijbeltekst invullen',
+                actieType: 'bewerk_dia',
+                diaIndex: legeLezingen[0].index
+            });
+        } else if (lezingItems.length > 0) {
+            checks.push({
+                categorie: 'schriftlezing',
+                status: 'ok',
+                titel: 'Schriftlezing compleet',
+                beschrijving: `${lezingItems.length} lezing${lezingItems.length === 1 ? '' : 'en'} met volledige Bijbeltekst.`
+            });
+        }
+
+        // 6. Week-Tikkie QR Collecte inspectie
+        const qrItems = items.filter(it => it.type === 'QR');
+        if (qrItems.length > 0) {
+            let verlopenQr = null;
+            let geldigeQr = null;
+            qrItems.forEach(it => {
+                if (it.geldigTot) {
+                    const exp = new Date(it.geldigTot + 'T23:59:59');
+                    if (!isNaN(exp.getTime()) && exp.getTime() < Date.now()) {
+                        verlopenQr = it;
+                    } else {
+                        geldigeQr = it;
+                    }
+                } else {
+                    geldigeQr = it;
+                }
+            });
+
+            if (verlopenQr) {
+                foutenAantal++;
+                checks.push({
+                    categorie: 'tikkie',
+                    status: 'error',
+                    titel: 'Tikkie QR is verlopen!',
+                    beschrijving: `De collectie-Tikkie QR op de dia is verlopen op ${verlopenQr.geldigTot}. Kerkgangers kunnen hierop niet doneren!`,
+                    actieTekst: 'Nieuwe Week-Tikkie',
+                    actieType: 'open_tikkie'
+                });
+            } else {
+                checks.push({
+                    categorie: 'tikkie',
+                    status: 'ok',
+                    titel: 'Tikkie QR Collecte gereed',
+                    beschrijving: geldigeQr?.geldigTot ? `Geldig t/m ${geldigeQr.geldigTot}.` : 'Digitale collecte QR aanwezig op dia.'
+                });
+            }
+        } else {
+            checks.push({
+                categorie: 'tikkie',
+                status: 'info',
+                titel: 'Geen Week-Tikkie dia in liturgie',
+                beschrijving: 'Er is geen digitale collecte QR toegevoegd aan deze dienst.',
+                actieTekst: 'Tikkie instellen',
+                actieType: 'open_tikkie'
+            });
+        }
+
+        // 7. Leesbaarheid & Regellengte (Overloop / Weesregels check)
+        let overvolleDia = null;
+        items.forEach((it, idx) => {
+            if (it.type !== 'Foto' && it.type !== 'Leeg' && it.type !== 'QR') {
+                if (it.regels && it.regels.length > 8) {
+                    overvolleDia = { index: idx, titel: it.titel, count: it.regels.length };
+                }
+            }
+        });
+        if (overvolleDia) {
+            waarschuwingenAantal++;
+            checks.push({
+                categorie: 'tekst',
+                status: 'warning',
+                titel: 'Dia met veel regels tekst',
+                beschrijving: `Dia #${overvolleDia.index + 1} (${overvolleDia.titel}) bevat ${overvolleDia.count} regels. Mogelijk klein op de beamer.`,
+                actieTekst: 'Bekijk dia',
+                actieType: 'bekijk_dia',
+                diaIndex: overvolleDia.index
+            });
+        } else if (items.length > 0) {
+            checks.push({
+                categorie: 'tekst',
+                status: 'ok',
+                titel: 'Dia-opmaak & regels gebalanceerd',
+                beschrijving: 'Geen overvolle dia\'s gevonden; teksten passen goed op het scherm.'
+            });
+        }
+
+        // Bereken statistieken
+        let totaalVerzen = 0;
+        liedItems.forEach(it => {
+            if (it.verzen && Array.isArray(it.verzen)) totaalVerzen += it.verzen.length;
+        });
+
+        const isGereed = foutenAantal === 0 && waarschuwingenAantal === 0 && items.length > 0;
+        const heeftFouten = foutenAantal > 0;
+
+        return {
+            isGereed,
+            heeftFouten,
+            foutenAantal,
+            waarschuwingenAantal,
+            checks,
+            stats: {
+                totaalItems: items.length,
+                totaalLiederen: liedItems.length,
+                totaalVerzen,
+                totaalLezingen: lezingItems.length
+            }
+        };
+    };
+
+    window.updatePreflightBadge = function() {
+        const dot = document.getElementById('preflightDockDot');
+        const badge = document.getElementById('preflightCountBadge');
+        const text = document.getElementById('preflightDockText');
+        const btn = document.getElementById('preflightDockBtn');
+        if (!dot) return;
+
+        const report = window.voerPreflightControleUit();
+
+        if (report.heeftFouten) {
+            dot.className = "w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-pulse flex-shrink-0 transition-all";
+            if (badge) {
+                badge.className = "text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-red-500 text-white";
+                badge.innerText = report.foutenAantal;
+            }
+            if (text) text.innerText = "Pre-Flight";
+            if (btn) btn.title = `Pre-Flight: ${report.foutenAantal} aandachtspunt(en) gevonden vóór export`;
+        } else if (report.waarschuwingenAantal > 0) {
+            dot.className = "w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)] flex-shrink-0 transition-all";
+            if (badge) {
+                badge.className = "text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-amber-500 text-white";
+                badge.innerText = report.waarschuwingenAantal;
+            }
+            if (text) text.innerText = "Pre-Flight";
+            if (btn) btn.title = `Pre-Flight: ${report.waarschuwingenAantal} tip(s) voor deze dienst`;
+        } else if (report.stats.totaalItems > 0) {
+            dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] flex-shrink-0 transition-all";
+            if (badge) badge.className = "hidden";
+            if (text) text.innerText = "Pre-Flight OK";
+            if (btn) btn.title = "Pre-Flight: 100% gereed voor vertoning op de beamer!";
+        } else {
+            dot.className = "w-2.5 h-2.5 rounded-full bg-gray-400 flex-shrink-0 transition-all";
+            if (badge) badge.className = "hidden";
+            if (text) text.innerText = "Pre-Flight";
+            if (btn) btn.title = "Pre-Flight Kwaliteitscontrole";
+        }
+    };
+
+    window.openPreflightModal = function(optReport = null) {
+        const report = optReport || window.voerPreflightControleUit();
+        const modal = document.getElementById('preflightModal');
+        if (!modal) return;
+
+        // 1. Status Pill in Header
+        const pill = document.getElementById('preflightScorePill');
+        if (pill) {
+            if (report.isGereed) {
+                pill.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300/40";
+                pill.innerText = "100% GEREED";
+            } else if (report.heeftFouten) {
+                pill.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border border-red-300/40";
+                pill.innerText = `${report.foutenAantal} AANDACHTSPUNTEN`;
+            } else {
+                pill.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-300/40";
+                pill.innerText = `${report.waarschuwingenAantal} TIPS`;
+            }
+        }
+
+        // 2. Banner Box
+        const bannerBox = document.getElementById('preflightBannerBox');
+        if (bannerBox) {
+            if (report.isGereed) {
+                bannerBox.className = "p-4 rounded-2xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/80 dark:bg-emerald-950/30 flex items-start gap-3";
+                bannerBox.innerHTML = `
+                    <div class="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-bold text-base flex-shrink-0 shadow-sm">✓</div>
+                    <div>
+                        <h4 class="text-sm font-bold text-emerald-950 dark:text-emerald-200">100% Klaar voor de beamer!</h4>
+                        <p class="text-xs text-emerald-800 dark:text-emerald-300 mt-0.5 leading-relaxed">
+                            Alle liederen, teksten, gegevens en de Week-Tikkie zijn gecontroleerd en vertoningsklaar. Je kunt direct exporteren.
+                        </p>
+                    </div>
+                `;
+            } else if (report.heeftFouten) {
+                bannerBox.className = "p-4 rounded-2xl border border-red-200 dark:border-red-800/60 bg-red-50/80 dark:bg-red-950/30 flex items-start gap-3";
+                bannerBox.innerHTML = `
+                    <div class="w-8 h-8 rounded-xl bg-red-500 text-white flex items-center justify-center font-bold text-base flex-shrink-0 shadow-sm">⚠️</div>
+                    <div>
+                        <h4 class="text-sm font-bold text-red-950 dark:text-red-200">${report.foutenAantal} aandachtspunt${report.foutenAantal === 1 ? '' : 'en'} gevonden</h4>
+                        <p class="text-xs text-red-800 dark:text-red-300 mt-0.5 leading-relaxed">
+                            We raden aan om onderstaande punten op te lossen voor een vlekkeloze dienst. Je kunt ook direct doordrukken via 'Toch Exporteren'.
+                        </p>
+                    </div>
+                `;
+            } else {
+                bannerBox.className = "p-4 rounded-2xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/80 dark:bg-amber-950/30 flex items-start gap-3";
+                bannerBox.innerHTML = `
+                    <div class="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-base flex-shrink-0 shadow-sm">💡</div>
+                    <div>
+                        <h4 class="text-sm font-bold text-amber-950 dark:text-amber-200">${report.waarschuwingenAantal} tip${report.waarschuwingenAantal === 1 ? '' : 's'} voor deze dienst</h4>
+                        <p class="text-xs text-amber-800 dark:text-amber-300 mt-0.5 leading-relaxed">
+                            Geen blokkerende fouten gevonden. Controleer eventueel nog even de ontbrekende gegevens voor een optimale welkomstdia.
+                        </p>
+                    </div>
+                `;
+            }
+        }
+
+        // 3. Stats Bar
+        const statsBar = document.getElementById('preflightStatsBar');
+        if (statsBar) {
+            statsBar.innerHTML = `
+                <div class="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-800">
+                    <span class="text-[10px] text-gray-400 font-semibold uppercase tracking-wider block">Onderdelen</span>
+                    <span class="text-base font-bold text-gray-800 dark:text-gray-100">${report.stats.totaalItems}</span>
+                </div>
+                <div class="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-800">
+                    <span class="text-[10px] text-gray-400 font-semibold uppercase tracking-wider block">Liederen</span>
+                    <span class="text-base font-bold text-gray-800 dark:text-gray-100">${report.stats.totaalLiederen}</span>
+                </div>
+                <div class="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-800">
+                    <span class="text-[10px] text-gray-400 font-semibold uppercase tracking-wider block">Verzen / Coup.</span>
+                    <span class="text-base font-bold text-gray-800 dark:text-gray-100">${report.stats.totaalVerzen}</span>
+                </div>
+                <div class="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-800">
+                    <span class="text-[10px] text-gray-400 font-semibold uppercase tracking-wider block">Lezingen</span>
+                    <span class="text-base font-bold text-gray-800 dark:text-gray-100">${report.stats.totaalLezingen}</span>
+                </div>
+            `;
+        }
+
+        // 4. Checklist Items
+        const totalChecksLabel = document.getElementById('preflightTotalChecksLabel');
+        if (totalChecksLabel) totalChecksLabel.innerText = `${report.checks.length} controles uitgevoerd`;
+
+        const checklistEl = document.getElementById('preflightChecklist');
+        if (checklistEl) {
+            checklistEl.innerHTML = report.checks.map((chk, i) => {
+                let badgeClass = "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800";
+                let icon = "✓";
+                let cardBorder = "border-gray-100 dark:border-gray-800/80 bg-white dark:bg-[#252528]";
+
+                if (chk.status === 'error') {
+                    badgeClass = "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-red-200 dark:border-red-800";
+                    icon = "✕";
+                    cardBorder = "border-red-200 dark:border-red-900/50 bg-red-50/30 dark:bg-red-950/20";
+                } else if (chk.status === 'warning') {
+                    badgeClass = "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border-amber-200 dark:border-amber-800";
+                    icon = "⚠️";
+                    cardBorder = "border-amber-200 dark:border-amber-900/50 bg-amber-50/30 dark:bg-amber-950/20";
+                } else if (chk.status === 'info') {
+                    badgeClass = "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border-blue-200 dark:border-blue-800";
+                    icon = "ℹ️";
+                    cardBorder = "border-gray-100 dark:border-gray-800 bg-white dark:bg-[#252528]";
+                }
+
+                let actieKnop = '';
+                if (chk.actieTekst) {
+                    actieKnop = `
+                        <button type="button" onclick="losPreflightActieOp('${chk.actieType}', ${chk.diaIndex ?? -1})" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#007AFF] hover:bg-blue-600 text-white transition-all active:scale-95 shadow-xs flex-shrink-0">
+                            ${chk.actieTekst} →
+                        </button>
+                    `;
+                }
+
+                return `
+                    <div class="p-3 sm:p-3.5 rounded-xl border ${cardBorder} flex items-center justify-between gap-3 transition-all">
+                        <div class="flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border ${badgeClass} flex-shrink-0 mt-0.5">
+                                ${icon}
+                            </span>
+                            <div>
+                                <h5 class="text-xs font-bold text-gray-900 dark:text-gray-100">${escapeHtml(chk.titel)}</h5>
+                                <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">${escapeHtml(chk.beschrijving)}</p>
+                            </div>
+                        </div>
+                        ${actieKnop}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 5. Update Export Knop in Footer
+        const exportBtn = document.getElementById('preflightExportBtn');
+        if (exportBtn) {
+            if (report.isGereed) {
+                exportBtn.className = "w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all active:scale-95 shadow-md flex items-center justify-center gap-1.5";
+                exportBtn.innerHTML = `<span>Direct Exporteren naar PowerPoint</span><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>`;
+            } else if (report.heeftFouten) {
+                exportBtn.className = "w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#007AFF] hover:bg-blue-600 text-white text-xs font-bold transition-all active:scale-95 shadow-md flex items-center justify-center gap-1.5";
+                exportBtn.innerHTML = `<span>Toch Exporteren (Negeer Waarschuwing)</span><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>`;
+            } else {
+                exportBtn.className = "w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#007AFF] hover:bg-blue-600 text-white text-xs font-bold transition-all active:scale-95 shadow-md flex items-center justify-center gap-1.5";
+                exportBtn.innerHTML = `<span>Exporteer PowerPoint</span><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>`;
+            }
+        }
+
+        modal.classList.remove('hidden');
+    };
+
+    window.sluitPreflightModal = function() {
+        const modal = document.getElementById('preflightModal');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    window.exporteerNaPreflight = function() {
+        sluitPreflightModal();
+        window.maakPowerPoint(null, true);
+    };
+
+    window.losPreflightActieOp = function(actieType, diaIndex) {
+        sluitPreflightModal();
+        if (actieType === 'focus_datum') {
+            const el = document.getElementById('datumInput');
+            if (el) { el.focus(); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+        } else if (actieType === 'focus_voorganger') {
+            const el = document.getElementById('voorgangerInput');
+            if (el) { el.focus(); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+        } else if (actieType === 'focus_invoer') {
+            const el = document.getElementById('liedZoekInput');
+            if (el) { el.focus(); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+        } else if (actieType === 'open_tikkie') {
+            if (window.openTikkieModal) window.openTikkieModal();
+        } else if (actieType === 'kies_vers' && diaIndex >= 0) {
+            kiesItemEnPreview(diaIndex);
+            if (window.openBewerkScherm) window.openBewerkScherm(diaIndex);
+        } else if (actieType === 'bewerk_dia' && diaIndex >= 0) {
+            kiesItemEnPreview(diaIndex);
+            if (window.openBewerkScherm) window.openBewerkScherm(diaIndex);
+        } else if (actieType === 'bekijk_dia' && diaIndex >= 0) {
+            kiesItemEnPreview(diaIndex);
+        }
+    };
+
+    // Luister naar datum en voorganger invoer om Pre-Flight live te updaten
+    window.addEventListener('DOMContentLoaded', () => {
+        const datumEl = document.getElementById('datumInput');
+        const voorgangerEl = document.getElementById('voorgangerInput');
+        if (datumEl) datumEl.addEventListener('input', window.updatePreflightBadge);
+        if (voorgangerEl) voorgangerEl.addEventListener('input', window.updatePreflightBadge);
+        setTimeout(window.updatePreflightBadge, 400);
+    });
+})();
+</script>
 
 </body>
 </html>
