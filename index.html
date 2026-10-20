@@ -1282,10 +1282,10 @@
 
         <div class="h-4 w-px bg-gray-200 dark:bg-gray-700/60 my-auto flex-shrink-0"></div>
 
-        <!-- Pre-Flight Kwaliteitscontrole Knop & Live Indicator -->
-        <button id="preflightDockBtn" onclick="openPreflightModal()" aria-label="Pre-flight kwaliteitscontrole: zero-defect check voor de dienst" title="Pre-Flight Kwaliteitscontrole: zero-defect inspectie vóór vertoning" class="relative text-gray-700 dark:text-gray-200 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition-all flex-shrink-0">
+        <!-- Kwaliteitscontrole Knop & Live Indicator -->
+        <button id="preflightDockBtn" onclick="openPreflightModal()" aria-label="Kwaliteitscontrole: controleer de liturgie voor de dienst" title="Kwaliteitscontrole: controleer liturgie op aandachtspunten vóór export" class="relative text-gray-700 dark:text-gray-200 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition-all flex-shrink-0">
             <span id="preflightDockDot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)] flex-shrink-0 transition-all"></span>
-            <span class="hidden sm:inline font-semibold" id="preflightDockText">Pre-Flight</span>
+            <span class="hidden sm:inline font-semibold" id="preflightDockText">Controle</span>
             <span id="preflightCountBadge" class="hidden text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-amber-500 text-white"></span>
         </button>
 
@@ -12187,21 +12187,21 @@ window.verstuurExportFeedback = async function() {
     </div>
 </div>
 
-<!-- PRE-FLIGHT KWALITEITSCONTROLE MODAL (ZERO-DEFECT EXPORT) -->
+<!-- KWALITEITSCONTROLE MODAL (ZERO-DEFECT EXPORT) -->
 <div id="preflightModal" class="fixed inset-0 z-[140] hidden flex items-center justify-center bg-black/40 backdrop-blur-xl transition-opacity p-2 sm:p-4" onclick="if(event.target === this) sluitPreflightModal()">
     <div class="bg-white dark:bg-[#1C1C1E] text-[#1D1D1F] dark:text-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.05] dark:ring-white/10 w-full max-w-2xl overflow-hidden flex flex-col transform transition-all modal-animate max-h-[92vh]">
         <!-- Header -->
         <div class="p-4 md:p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center flex-shrink-0 bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-md">
             <div class="flex items-center gap-2.5">
                 <div class="w-9 h-9 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white flex items-center justify-center font-bold text-base shadow-sm">
-                    🛫
+                    📋
                 </div>
                 <div>
                     <div class="flex items-center gap-2">
-                        <h3 class="text-base font-bold text-[#1D1D1F] dark:text-white">Pre-Flight Kwaliteitscontrole</h3>
+                        <h3 class="text-base font-bold text-[#1D1D1F] dark:text-white">Kwaliteitscontrole</h3>
                         <span id="preflightScorePill" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300/40">100% GEREED</span>
                     </div>
-                    <p class="text-[11px] text-gray-500 dark:text-gray-400">Zero-defect inspectie vóór vertoning op de beamer</p>
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400">Volledige inspectie van alle dia's en gegevens vóór de dienst</p>
                 </div>
             </div>
             <button type="button" onclick="sluitPreflightModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" title="Sluiten">
@@ -12504,26 +12504,26 @@ window.verstuurExportFeedback = async function() {
                 badge.className = "text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-red-500 text-white";
                 badge.innerText = report.foutenAantal;
             }
-            if (text) text.innerText = "Pre-Flight";
-            if (btn) btn.title = `Pre-Flight: ${report.foutenAantal} aandachtspunt(en) gevonden vóór export`;
+            if (text) text.innerText = "Controle";
+            if (btn) btn.title = `Controle: ${report.foutenAantal} aandachtspunt(en) gevonden vóór export`;
         } else if (report.waarschuwingenAantal > 0) {
             dot.className = "w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)] flex-shrink-0 transition-all";
             if (badge) {
                 badge.className = "text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-amber-500 text-white";
                 badge.innerText = report.waarschuwingenAantal;
             }
-            if (text) text.innerText = "Pre-Flight";
-            if (btn) btn.title = `Pre-Flight: ${report.waarschuwingenAantal} tip(s) voor deze dienst`;
+            if (text) text.innerText = "Controle";
+            if (btn) btn.title = `Controle: ${report.waarschuwingenAantal} tip(s) voor deze dienst`;
         } else if (report.stats.totaalItems > 0) {
             dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] flex-shrink-0 transition-all";
             if (badge) badge.className = "hidden";
-            if (text) text.innerText = "Pre-Flight OK";
-            if (btn) btn.title = "Pre-Flight: 100% gereed voor vertoning op de beamer!";
+            if (text) text.innerText = "Controle OK";
+            if (btn) btn.title = "Controle: 100% gereed voor vertoning op de beamer!";
         } else {
             dot.className = "w-2.5 h-2.5 rounded-full bg-gray-400 flex-shrink-0 transition-all";
             if (badge) badge.className = "hidden";
-            if (text) text.innerText = "Pre-Flight";
-            if (btn) btn.title = "Pre-Flight Kwaliteitscontrole";
+            if (text) text.innerText = "Controle";
+            if (btn) btn.title = "Kwaliteitscontrole van de liturgie";
         }
     };
 
