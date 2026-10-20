@@ -330,26 +330,53 @@
         </div>
     </div>
 </div>
-<div id="importModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/20 backdrop-blur-xl transition-opacity">
-    <div class="bg-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] w-11/12 max-w-lg overflow-hidden flex flex-col transform transition-all modal-animate">
-        <div class="p-4 md:p-6 border-b border-gray-100 flex justify-between items-center">
-            <h3 class="text-lg font-bold text-[#1D1D1F]">Slim Importeren</h3>
-            <button onclick="sluitImportModal()" class="text-gray-400 hover:text-gray-600 p-1">
+<div id="importModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/30 backdrop-blur-xl transition-opacity p-2 sm:p-4">
+    <div class="bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.05] dark:ring-white/10 w-full max-w-xl overflow-hidden flex flex-col transform transition-all modal-animate max-h-[92vh]">
+        <div class="p-4 md:p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center flex-shrink-0 bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-md">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 flex items-center justify-center font-bold text-sm shadow-xs">
+                    ✨
+                </div>
+                <div>
+                    <h3 class="text-base md:text-lg font-bold text-[#1D1D1F] dark:text-white flex items-center gap-2">
+                        Slim Importeren
+                        <span id="importStapBadge" class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 border border-purple-200/50">Stap 1: Plakken</span>
+                    </h3>
+                </div>
+            </div>
+            <button onclick="sluitImportModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 transition-colors" title="Sluiten">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
         
-        <div id="importStap1" class="p-4 md:p-6 flex flex-col gap-3">
-            <p class="text-[13px] text-gray-500 font-medium">Plak hier de complete liturgie (bijv. vanuit Word of WhatsApp). Ik zoek automatisch de Bijbelteksten en Liederen eruit.</p>
-            <textarea id="importTekst" rows="8" class="w-full bg-[#F5F5F7] border border-transparent rounded-xl p-4 text-[13px] focus:bg-white focus:border-[#007AFF] focus:ring-4 focus:ring-[#007AFF]/15 focus:outline-none transition-all duration-200 ease-out resize-none" placeholder="Plak je tekst hier..."></textarea>
-            <button onclick="analyseerImport()" class="w-full py-3 mt-2 rounded-xl text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 transition-colors shadow-md">Analyseer Tekst</button>
+        <!-- STAP 1: Liturgie Plakken -->
+        <div id="importStap1" class="p-4 md:p-6 flex flex-col gap-3 overflow-y-auto">
+            <p class="text-[13px] text-gray-500 dark:text-gray-400 font-medium">Plak hier de complete liturgie (bijv. vanuit Word of WhatsApp). De AI herkent automatisch liederen, psalmen, coupletten en schriftlezingen.</p>
+            <textarea id="importTekst" rows="8" class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-transparent rounded-2xl p-4 text-[13px] focus:bg-white focus:border-[#007AFF] focus:ring-4 focus:ring-[#007AFF]/15 focus:outline-none transition-all duration-200 ease-out resize-none font-sans" placeholder="Plak je liturgie hier (bijv: Zingen: Psalm 84: 1, 3 en 5; Schriftlezing: Romeinen 8:31-39; Slotlied: Weerklank 14:1-3)..."></textarea>
+            <button onclick="analyseerImport()" class="w-full py-3.5 mt-1 rounded-2xl text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 active:scale-98 transition-all shadow-md flex items-center justify-center gap-2">
+                <span>✨</span>
+                <span>Analyseer Liturgie</span>
+            </button>
         </div>
         
-        <div id="importStap2" class="p-4 md:p-6 hidden flex-col gap-3">
-            <p class="text-[13px] text-gray-500 font-medium mb-1">Controleer de gevonden onderdelen. Vink uit wat niet klopt.</p>
-            <div id="importResultaten" class="overflow-y-auto max-h-60 bg-gray-50 rounded-xl p-2 flex flex-col gap-2">
-                </div>
-            <button onclick="voegImportToe()" class="w-full py-3 mt-2 rounded-xl text-sm font-semibold text-white bg-[#34C759] hover:bg-green-600 transition-colors shadow-md">Geselecteerde Items Toevoegen</button>
+        <!-- STAP 2: Beoordelen, Inline Plakken & Coupletkeuze -->
+        <div id="importStap2" class="p-4 md:p-6 hidden flex-col gap-3 overflow-hidden flex-1">
+            <div class="flex items-center justify-between flex-shrink-0">
+                <button type="button" onclick="terugNaarImportStap1()" class="text-xs font-semibold text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1 active:scale-95">
+                    <span>←</span>
+                    <span>Pas tekst aan</span>
+                </button>
+                <span id="importTellerBadge" class="text-[11px] font-semibold text-gray-500 dark:text-gray-400"></span>
+            </div>
+            <div id="importResultaten" class="overflow-y-auto max-h-[58vh] pr-1 flex flex-col gap-3 no-scrollbar">
+                <!-- Dynamisch gevuld met interactieve kaarten met inline plakken & couplet-chips -->
+            </div>
+            <div class="pt-2 border-t border-gray-100 dark:border-white/10 flex flex-col gap-2 flex-shrink-0">
+                <button onclick="voegImportToe()" class="w-full py-3.5 rounded-2xl text-sm font-semibold text-white bg-[#34C759] hover:bg-green-600 active:scale-98 transition-all shadow-md flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                    <span>Geselecteerde Items Toevoegen</span>
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -8332,23 +8359,241 @@ Van harte Gods zegen toegewenst!`;
     })();
     
 
-// --- FUNCTIES VOOR DE SLIMME IMPORTER ---
+// --- FUNCTIES VOOR DE SLIMME IMPORTER (MET INLINE PLAKKEN & AUTO-VERSSELECTIE) ---
     window.gevondenImportItems = [];
-    
+
+    // Hulpfunctie: herken couplet/versnummers uit strings zoals '14 : 1, 3 en 5', 'vers 1-4', 'vs 2, 4', ': 1, 3'
+    window.extractVersNummers = function(str) {
+        if (!str) return [];
+        const colonAfterNumMatch = str.match(/\d+\s*[:]\s*([0-9\s,\-–—]|(?:\ben\b))+/i);
+        const versMatch = str.match(/\b(?:vers(?:en)?|vs\.?)\s*([0-9\s,\-–—]|(?:\ben\b))+/i);
+        
+        let raw = '';
+        if (colonAfterNumMatch) {
+            raw = colonAfterNumMatch[0].replace(/^\d+\s*[:]\s*/, '');
+        } else if (versMatch) {
+            raw = versMatch[0].replace(/^\b(?:vers(?:en)?|vs\.?)\s*/i, '');
+        }
+        if (!raw) return [];
+
+        const result = new Set();
+        const normalized = raw.replace(/\ben\b/gi, ',');
+        const parts = normalized.split(',');
+        for (let part of parts) {
+            part = part.trim();
+            if (!part) continue;
+            const range = part.match(/^(\d+)\s*[-–—]\s*(\d+)$/);
+            if (range) {
+                let a = parseInt(range[1], 10), b = parseInt(range[2], 10);
+                if (a > b) [a, b] = [b, a];
+                for (let v = a; v <= b; v++) result.add(v);
+            } else {
+                const single = part.match(/\b(\d+)\b/);
+                if (single) result.add(parseInt(single[1], 10));
+            }
+        }
+        return Array.from(result).sort((a,b) => a - b);
+    };
+
+    // Haal alle losse coupletten/verzen op uit tekst of losse database-keys
+    window.haalLiedVerzenOp = function(titel, bronTekst) {
+        if (bronTekst && bronTekst.trim() && bronTekst.trim() !== " ") {
+            return bronTekst.split(/\n[ \t]*\n/).map(v => v.trim()).filter(Boolean);
+        }
+        if (window.liederenDatabase && window.liederenDatabase[titel]) {
+            return window.liederenDatabase[titel].split(/\n[ \t]*\n/).map(v => v.trim()).filter(Boolean);
+        }
+        // Controleer of er losse vers-sleutels zijn (bijv. "Psalm 116 vers 1", etc.)
+        const alleKeys = Object.keys(window.liederenDatabase || {});
+        const versEntries = alleKeys
+            .filter(k => k.match(new RegExp('^' + (titel || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s+vers\\s+\\d+$', 'i')))
+            .sort((a, b) => {
+                const nA = parseInt(a.match(/\d+$/)?.[0] || 0);
+                const nB = parseInt(b.match(/\d+$/)?.[0] || 0);
+                return nA - nB;
+            });
+        if (versEntries.length > 0) {
+            return versEntries.map(k => window.liederenDatabase[k].trim()).filter(Boolean);
+        }
+        return [];
+    };
+
+    // Bouw de finale tekst en titel op basis van de geselecteerde verzen
+    window.bouwLiedTekstEnTitel = function(item) {
+        const alleVerzen = window.haalLiedVerzenOp(item.titel, item.definitieveTekst);
+        if (alleVerzen.length === 0) {
+            return { titel: item.titel, tekst: item.definitieveTekst || " ", verzen: [] };
+        }
+        const gekozenNummers = (item.geselecteerdeVerzen && item.geselecteerdeVerzen.length > 0)
+            ? item.geselecteerdeVerzen
+            : (item.gevondenVerzen && item.gevondenVerzen.length > 0 ? item.gevondenVerzen : []);
+        
+        // Als alle coupletten gekozen zijn of niets gespecificeerd:
+        if (gekozenNummers.length === 0 || gekozenNummers.length === alleVerzen.length) {
+            return {
+                titel: item.titel,
+                tekst: alleVerzen.join('\n\n'),
+                verzen: alleVerzen.map((_, i) => i + 1)
+            };
+        }
+        // Alleen specifieke coupletten gekozen
+        const gekozenTeksten = [];
+        for (let nr of gekozenNummers) {
+            const idx = nr - 1;
+            if (idx >= 0 && idx < alleVerzen.length) {
+                gekozenTeksten.push(alleVerzen[idx]);
+            }
+        }
+        const titelMetVers = item.titel + ' vers ' + gekozenNummers.join(', ');
+        return {
+            titel: titelMetVers,
+            tekst: gekozenTeksten.length > 0 ? gekozenTeksten.join('\n\n') : alleVerzen.join('\n\n'),
+            verzen: gekozenNummers
+        };
+    };
+
     window.openImportModal = function() {
-        document.getElementById('importTekst').value = '';
+        const tekstVak = document.getElementById('importTekst');
+        if (tekstVak) tekstVak.value = '';
+        const stapBadge = document.getElementById('importStapBadge');
+        if (stapBadge) stapBadge.innerText = 'Stap 1: Plakken';
         document.getElementById('importStap1').classList.remove('hidden');
         document.getElementById('importStap1').classList.add('flex');
         document.getElementById('importStap2').classList.add('hidden');
         document.getElementById('importStap2').classList.remove('flex');
         document.getElementById('importModal').classList.remove('hidden');
-    }
+    };
+
+    window.terugNaarImportStap1 = function() {
+        const stapBadge = document.getElementById('importStapBadge');
+        if (stapBadge) stapBadge.innerText = 'Stap 1: Plakken';
+        document.getElementById('importStap2').classList.add('hidden');
+        document.getElementById('importStap2').classList.remove('flex');
+        document.getElementById('importStap1').classList.remove('hidden');
+        document.getElementById('importStap1').classList.add('flex');
+    };
 
     window.sluitImportModal = function() {
         document.getElementById('importModal').classList.add('hidden');
-    }
+    };
 
-  window.analyseerImport = async function() {
+    window.toggleVersChip = function(itemIndex, versNr) {
+        const item = window.gevondenImportItems[itemIndex];
+        if (!item) return;
+        const verzen = window.haalLiedVerzenOp(item.titel, item.definitieveTekst);
+        if (!item.geselecteerdeVerzen || item.geselecteerdeVerzen.length === 0) {
+            // Was 'alle verzen', nu alles behalve deze
+            item.geselecteerdeVerzen = verzen.map((_, i) => i + 1).filter(n => n !== versNr);
+        } else {
+            if (item.geselecteerdeVerzen.includes(versNr)) {
+                item.geselecteerdeVerzen = item.geselecteerdeVerzen.filter(n => n !== versNr);
+            } else {
+                item.geselecteerdeVerzen.push(versNr);
+                item.geselecteerdeVerzen.sort((a, b) => a - b);
+            }
+        }
+        const chipContainer = document.getElementById(`versChipsContainer_${itemIndex}`);
+        if (chipContainer) chipContainer.innerHTML = window.renderVersChipsHtml(itemIndex);
+    };
+
+    window.toggleAlleVerzen = function(itemIndex) {
+        const item = window.gevondenImportItems[itemIndex];
+        if (!item) return;
+        const verzen = window.haalLiedVerzenOp(item.titel, item.definitieveTekst);
+        if (item.geselecteerdeVerzen && item.geselecteerdeVerzen.length > 0) {
+            item.geselecteerdeVerzen = []; // Leeg = alles
+        } else {
+            item.geselecteerdeVerzen = [1];
+        }
+        const chipContainer = document.getElementById(`versChipsContainer_${itemIndex}`);
+        if (chipContainer) chipContainer.innerHTML = window.renderVersChipsHtml(itemIndex);
+    };
+
+    window.renderVersChipsHtml = function(index) {
+        const item = window.gevondenImportItems[index];
+        if (!item) return '';
+        const verzen = window.haalLiedVerzenOp(item.titel, item.definitieveTekst);
+        if (verzen.length <= 1) return '';
+
+        const geselecteerd = item.geselecteerdeVerzen || [];
+        let html = `<div class="flex items-center gap-1.5 flex-wrap">`;
+        html += `<span class="text-[11px] font-bold text-gray-500 dark:text-gray-400 mr-1 select-none">Couplets:</span>`;
+
+        verzen.forEach((_, i) => {
+            const nr = i + 1;
+            const isActive = geselecteerd.length === 0 || geselecteerd.includes(nr);
+            const activeStyle = isActive 
+                ? 'bg-[#007AFF] text-white shadow-xs font-bold scale-105' 
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-medium hover:bg-gray-200 dark:hover:bg-gray-700';
+            html += `<button type="button" onclick="event.stopPropagation(); window.toggleVersChip(${index}, ${nr})" class="px-2 py-0.5 rounded-lg text-xs transition-all cursor-pointer ${activeStyle}" title="Klik om couplet ${nr} aan/uit te zetten">${nr}</button>`;
+        });
+
+        const isAlles = geselecteerd.length === 0 || geselecteerd.length === verzen.length;
+        html += `<button type="button" onclick="event.stopPropagation(); window.toggleAlleVerzen(${index})" class="text-[10px] font-semibold text-blue-600 dark:text-blue-400 hover:underline ml-1.5">${isAlles ? 'Deselecteer alles' : 'Alles zingen'}</button>`;
+        html += `</div>`;
+        return html;
+    };
+
+    window.toggleInlinePlakken = function(index) {
+        const box = document.getElementById(`inlinePlakBox_${index}`);
+        if (!box) return;
+        box.classList.toggle('hidden');
+        if (!box.classList.contains('hidden')) {
+            const textarea = document.getElementById(`inlineTekst_${index}`);
+            if (textarea) textarea.focus();
+        }
+    };
+
+    window.verwerkInlineTekst = function(index) {
+        const item = window.gevondenImportItems[index];
+        if (!item) return;
+        const textarea = document.getElementById(`inlineTekst_${index}`);
+        if (!textarea) return;
+        const val = textarea.value.trim();
+        item.definitieveTekst = val;
+
+        const badgeEl = document.getElementById(`itemBadge_${index}`);
+        const feedbackEl = document.getElementById(`inlineStatus_${index}`);
+        const chipContainer = document.getElementById(`inlineChipsContainer_${index}`);
+
+        if (val.length > 0) {
+            item.inCloud = true;
+            item.isNieuwIngevuld = true;
+            const verzen = window.haalLiedVerzenOp(item.titel, val);
+
+            // Indien er al versnummers uit de liturgie bekend waren, behoud die
+            if ((!item.geselecteerdeVerzen || item.geselecteerdeVerzen.length === 0) && item.gevondenVerzen && item.gevondenVerzen.length > 0) {
+                item.geselecteerdeVerzen = [...item.gevondenVerzen];
+            }
+
+            if (badgeEl) {
+                badgeEl.className = "text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide border border-emerald-200/50";
+                badgeEl.innerText = "✨ Tekst ingevuld";
+            }
+            if (feedbackEl) {
+                feedbackEl.classList.remove('hidden');
+                const gekozenStr = (item.geselecteerdeVerzen && item.geselecteerdeVerzen.length > 0)
+                    ? ` · Verzen ${item.geselecteerdeVerzen.join(', ')} actief`
+                    : ' · Alle coupletten actief';
+                feedbackEl.innerHTML = `✓ <b>${verzen.length} couplet(ten)</b> herkend${gekozenStr} · Wordt direct opgeslagen in Cloud!`;
+            }
+            if (chipContainer) {
+                chipContainer.classList.remove('hidden');
+                chipContainer.innerHTML = window.renderVersChipsHtml(index);
+            }
+        } else {
+            item.inCloud = false;
+            item.isNieuwIngevuld = false;
+            if (badgeEl) {
+                badgeEl.className = "text-amber-700 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-300 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide border border-amber-200/50";
+                badgeEl.innerText = "⚠️ Nog ophalen";
+            }
+            if (feedbackEl) feedbackEl.classList.add('hidden');
+            if (chipContainer) chipContainer.classList.add('hidden');
+        }
+    };
+
+    window.analyseerImport = async function() {
         const tekst = document.getElementById('importTekst').value;
         if (!tekst.trim()) return;
         window.gevondenImportItems = [];
@@ -8356,16 +8601,16 @@ Van harte Gods zegen toegewenst!`;
         resultatenDiv.innerHTML = '';
 
         const knop = document.querySelector('#importStap1 button');
-        const origineleKnopTekst = knop.innerText;
-        knop.innerText = "AI leest de liturgie...";
+        const origineleKnopTekst = knop.innerHTML;
+        knop.innerHTML = "<span>⏳</span><span>AI leest de liturgie...</span>";
         knop.disabled = true;
 
         try {
             if (!gevondenModel) throw new Error("Het AI-model is nog niet verbonden. Wacht een paar seconden en probeer opnieuw.");
 
-            // Haal de complete lijst met perfecte titels op, als referentie voor de AI
+            // Haal de complete lijst met bekende titels op als referentie voor de AI
             let alleBekendeTitels = bouwZoekLijst();
-            let dbTitels = Object.keys(window.liederenDatabase);
+            let dbTitels = Object.keys(window.liederenDatabase || {});
             let referentieTitels = [...new Set([...alleBekendeTitels, ...dbTitels])].slice(0, 500).join(", ");
 
             const prompt = `Je analyseert een kerkelijke liturgie die is geplakt vanuit Word, WhatsApp of e-mail. Het format verschilt per voorganger (opsomming, lopende tekst, tabel, met of zonder sleutelwoorden), dus lees de hele tekst inhoudelijk.
@@ -8382,11 +8627,12 @@ Bekende liedtitels ter referentie — gebruik EXACT deze schrijfwijze wanneer je
 
 Regels voor de titel in je antwoord:
 - Zang, wel herkend in de referentielijst: gebruik exact die schrijfwijze.
-- Zang, niet herkend: schrijf zo netjes mogelijk uit (bijv. "Weerklank 123", "Op Toonhoogte 45", "Psalm 84 vers 1 en 2").
+- Zang, niet herkend: schrijf zo netjes mogelijk uit (bijv. "Weerklank 123", "Op Toonhoogte 45", "Psalm 84").
 - Schriftlezing: exact als "<Bijbelboek> <hoofdstuk>:<verzen> (HSV)", bijv. "Johannes 3:1-16 (HSV)".
 - Geef ook het originele stukje brontekst terug in "origineel", zodat de gebruiker kan controleren.
+- Geef eventuele vers- of coupletnummers terug in "verzen" als een array van getallen (bijv. [1, 3, 5] voor "vers 1, 3 en 5", of [] indien niet vermeld of heel het lied).
 
-Geef UITSLUITEND geldige JSON terug: een array van objecten met de keys "type", "titel", "origineel". Geen uitleg, geen markdown-codeblok, alleen de JSON array. Als er niets te herkennen valt, geef een lege array [] terug.
+Geef UITSLUITEND geldige JSON terug: een array van objecten met de keys "type", "titel", "origineel", "verzen". Geen uitleg, geen markdown-codeblok, alleen de JSON array. Als er niets te herkennen valt, geef een lege array [] terug.
 
 Brontekst:
 """
@@ -8407,7 +8653,7 @@ ${tekst}
             ruweJson = ruweJson.replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();
             let herkendeItems = JSON.parse(ruweJson);
 
-            // Voor elk herkend item: kijk of de tekst al klaarstaat in de Cloud
+            // Voor elk herkend item: controleer database en extract versnummers
             for (let item of herkendeItems) {
                 if (item.type !== "Zang" && item.type !== "Schriftlezing") continue;
                 let titel = (item.titel || "").trim();
@@ -8415,10 +8661,21 @@ ${tekst}
                 let definitieveTekst = " ";
                 let inCloud = false;
 
+                // Combineer AI versnummers met lokale regex extractie voor 100% betrouwbaarheid
+                const aiVersNummers = Array.isArray(item.verzen) ? item.verzen.map(v => parseInt(v, 10)).filter(n => !isNaN(n)) : [];
+                const regexVersNummers = window.extractVersNummers(item.origineel || titel);
+                const versNummers = [...new Set([...aiVersNummers, ...regexVersNummers])].sort((a,b) => a - b);
+
                 if (item.type === "Zang") {
-                    if (window.liederenDatabase[titel]) {
+                    if (window.liederenDatabase && window.liederenDatabase[titel]) {
                         definitieveTekst = window.liederenDatabase[titel];
                         inCloud = true;
+                    } else {
+                        // Check losse vers-sleutels
+                        const versK = Object.keys(window.liederenDatabase || {}).filter(k => 
+                            k.match(new RegExp('^' + titel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s+vers\\s+\\d+$', 'i'))
+                        );
+                        if (versK.length > 0) inCloud = true;
                     }
                 } else {
                     let zoekTitel = titel.replace(" (HSV)", "").trim();
@@ -8432,16 +8689,24 @@ ${tekst}
                     } catch(e) {}
                 }
 
-                window.gevondenImportItems.push({ type: item.type, titel, origineel: item.origineel || titel, inCloud, definitieveTekst });
+                window.gevondenImportItems.push({
+                    type: item.type,
+                    titel,
+                    origineel: item.origineel || titel,
+                    gevondenVerzen: versNummers,
+                    geselecteerdeVerzen: [...versNummers],
+                    inCloud,
+                    definitieveTekst
+                });
             }
         } catch (err) {
-            knop.innerText = origineleKnopTekst;
+            knop.innerHTML = origineleKnopTekst;
             knop.disabled = false;
             window.toonToast("AI-analyse is mislukt: " + err.message, "error");
             return;
         }
 
-        knop.innerText = origineleKnopTekst;
+        knop.innerHTML = origineleKnopTekst;
         knop.disabled = false;
 
         if (window.gevondenImportItems.length === 0) {
@@ -8449,57 +8714,144 @@ ${tekst}
             return;
         }
 
+        // Update badge in Stap 2
+        const tellerBadge = document.getElementById('importTellerBadge');
+        if (tellerBadge) {
+            const klaarAantal = window.gevondenImportItems.filter(i => i.inCloud).length;
+            tellerBadge.innerText = `${klaarAantal} van de ${window.gevondenImportItems.length} klaar`;
+        }
+
+        // Render interactieve kaarten in Stap 2
         window.gevondenImportItems.forEach((item, index) => {
             let icon = item.type === "Zang" ? "🎵" : "📖";
             
             let statusBadge = item.inCloud
-                ? '<span class="text-green-600 bg-green-50 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide">✅ In Cloud</span>'
-                : '<span class="text-red-500 bg-red-50 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide">⚠️ Nog ophalen</span>';
+                ? `<span id="itemBadge_${index}" class="text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide border border-emerald-200/50">✅ In Cloud</span>`
+                : `<span id="itemBadge_${index}" class="text-amber-700 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-300 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide border border-amber-200/50">⚠️ Nog ophalen</span>`;
 
-            let liedbundelLink = '';
-            if (!item.inCloud && item.type === "Zang") {
+            // Liedbundel link en inline plakvenster voor ontbrekende zangitems
+            let actieSectie = '';
+            if (item.type === "Zang") {
                 const num = (item.titel || '').match(/\d+/)?.[0] || '';
-                if (/weerklank|op toonhoogte|oth/i.test(item.titel)) {
-                    const isOTH = /op toonhoogte|oth/i.test(item.titel);
-                    const bParam = isOTH ? 'bundles%5B0%5D=OTH' : 'bundles%5B0%5D=WK';
-                    const qParam = num ? ('&query=' + encodeURIComponent(num)) : '';
-                    const wkUrl = `https://www.liedbundelsonline.nl/nl/lied-zoeken?${bParam}${qParam}`;
-                    liedbundelLink = `<div class="mt-1"><a href="${wkUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="inline-flex items-center gap-1 text-[11px] font-bold text-purple-700 bg-purple-100 hover:bg-purple-200 px-2 py-0.5 rounded-md transition-colors" title="Open Liedbundels Online in nieuw tabblad">🔗 Zoek op Liedbundels Online (${num ? 'nr. ' + num : 'inloggen'}) ↗</a></div>`;
-                } else if (/\bdnp\b/i.test(item.titel)) {
-                    const dnpUrl = num ? `https://www.denieuwepsalmberijming.nl/de-psalmen/psalm-${num}` : `https://www.denieuwepsalmberijming.nl/berijmingen`;
-                    liedbundelLink = `<div class="mt-1"><a href="${dnpUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="inline-flex items-center gap-1 text-[11px] font-bold text-teal-700 bg-teal-100 hover:bg-teal-200 px-2 py-0.5 rounded-md transition-colors" title="Open De Nieuwe Psalmberijming in nieuw tabblad">🔗 Open Psalm ${num || ''} op DNP ↗</a></div>`;
+                
+                if (!item.inCloud) {
+                    let externeLinkHtml = '';
+                    if (/weerklank|op toonhoogte|oth/i.test(item.titel)) {
+                        const isOTH = /op toonhoogte|oth/i.test(item.titel);
+                        const bParam = isOTH ? 'bundles%5B0%5D=OTH' : 'bundles%5B0%5D=WK';
+                        const qParam = num ? ('&query=' + encodeURIComponent(num)) : '';
+                        const wkUrl = `https://www.liedbundelsonline.nl/nl/lied-zoeken?${bParam}${qParam}`;
+                        externeLinkHtml = `<a href="${wkUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="inline-flex items-center gap-1.5 text-xs font-bold text-purple-700 dark:text-purple-300 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/40 dark:hover:bg-purple-900/60 px-2.5 py-1 rounded-xl transition-all border border-purple-200/60 active:scale-95 shadow-xs" title="Open Liedbundels Online direct met dit lied in een nieuw tabblad">🔗 Zoek op Liedbundels Online (nr. ${num || '..'}) ↗</a>`;
+                    } else if (/\bdnp\b/i.test(item.titel)) {
+                        const dnpUrl = num ? `https://www.denieuwepsalmberijming.nl/de-psalmen/psalm-${num}` : `https://www.denieuwepsalmberijming.nl/berijmingen`;
+                        externeLinkHtml = `<a href="${dnpUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="inline-flex items-center gap-1.5 text-xs font-bold text-teal-700 dark:text-teal-300 bg-teal-100 hover:bg-teal-200 dark:bg-teal-900/40 dark:hover:bg-teal-900/60 px-2.5 py-1 rounded-xl transition-all border border-teal-200/60 active:scale-95 shadow-xs" title="Open De Nieuwe Psalmberijming in nieuw tabblad">🔗 Open Psalm ${num || ''} op DNP ↗</a>`;
+                    }
+
+                    actieSectie = `
+                        <div class="mt-2 flex flex-col gap-2">
+                            <div class="flex items-center justify-between gap-2 flex-wrap">
+                                ${externeLinkHtml}
+                                <button type="button" onclick="event.stopPropagation(); window.toggleInlinePlakken(${index})" class="text-xs font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 flex items-center gap-1 py-1 px-2 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-950/30 transition-all">
+                                    <span>📝</span>
+                                    <span>Plak tekst direct hier</span>
+                                    <span>▾</span>
+                                </button>
+                            </div>
+
+                            <!-- Inline Plakvenster -->
+                            <div id="inlinePlakBox_${index}" class="p-3 rounded-2xl bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200/80 dark:border-purple-800/40 flex flex-col gap-2">
+                                <div class="flex items-center justify-between text-xs text-purple-900 dark:text-purple-200">
+                                    <span class="font-bold flex items-center gap-1"><span>📋</span> Plak verzen van ${escapeHtml(item.titel)}:</span>
+                                    <span class="text-[10px] opacity-70">Dubbele enter tussen coupletten</span>
+                                </div>
+                                <textarea id="inlineTekst_${index}" oninput="window.verwerkInlineTekst(${index})" onclick="event.stopPropagation();" rows="3" class="w-full bg-white dark:bg-[#2C2C2E] dark:text-white border border-purple-200 dark:border-purple-700/60 rounded-xl p-2.5 text-xs placeholder-purple-400/70 focus:outline-none focus:ring-2 focus:ring-purple-400 resize-y font-sans" placeholder="Kopieer de coupletten van Liedbundels Online en plak ze hier..."></textarea>
+                                <div id="inlineStatus_${index}" class="text-[11px] font-semibold text-purple-800 dark:text-purple-300 hidden"></div>
+                                <div id="inlineChipsContainer_${index}" class="hidden"></div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // Item staat in Cloud: toon interactieve couplet-chips
+                    const chipsHtml = window.renderVersChipsHtml(index);
+                    if (chipsHtml) {
+                        actieSectie = `<div id="versChipsContainer_${index}" class="mt-1">${chipsHtml}</div>`;
+                    }
                 }
             }
 
+            // Toon vers-indicatie als tekst
+            let versBadge = '';
+            if (item.gevondenVerzen && item.gevondenVerzen.length > 0) {
+                versBadge = `<span class="ml-2 text-[11px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full border border-blue-200/50">Couplet ${item.gevondenVerzen.join(', ')}</span>`;
+            }
+
             resultatenDiv.innerHTML += `
-                <label class="flex items-start gap-3 p-3 bg-white border border-gray-200 rounded-xl cursor-pointer hover:bg-purple-50 transition-colors shadow-sm">
-                    <input type="checkbox" id="importCheck_${index}" checked class="mt-1 w-5 h-5 text-purple-600 rounded border-gray-300">
-                    <div class="flex flex-col w-full">
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="text-[13px] font-bold text-gray-800">${icon} ${escapeHtml(item.titel)}</span>
-                            ${statusBadge}
+                <div class="p-3.5 bg-white dark:bg-[#2C2C2E] border border-gray-200/90 dark:border-white/10 rounded-2xl shadow-xs transition-all hover:border-purple-300 dark:hover:border-purple-600">
+                    <div class="flex items-start gap-3">
+                        <input type="checkbox" id="importCheck_${index}" checked class="mt-1 w-5 h-5 text-purple-600 rounded-lg border-gray-300 dark:border-gray-600 focus:ring-purple-500 cursor-pointer flex-shrink-0">
+                        <div class="flex flex-col w-full min-w-0">
+                            <div class="flex justify-between items-center gap-2 mb-1 flex-wrap">
+                                <div class="flex items-center gap-1 min-w-0">
+                                    <span class="text-sm font-bold text-gray-900 dark:text-white truncate">${icon} ${escapeHtml(item.titel)}</span>
+                                    ${versBadge}
+                                </div>
+                                ${statusBadge}
+                            </div>
+                            <span class="text-[11px] text-gray-400 dark:text-gray-500 italic truncate" title="${escapeHtml(item.origineel)}">${escapeHtml(item.origineel)}</span>
+                            ${actieSectie}
                         </div>
-                        <span class="text-[11px] text-gray-400 italic truncate" title="${escapeHtml(item.origineel)}">${escapeHtml(item.origineel)}</span>
-                        ${liedbundelLink}
                     </div>
-                </label>
+                </div>
             `;
         });
+
+        const stapBadge = document.getElementById('importStapBadge');
+        if (stapBadge) stapBadge.innerText = 'Stap 2: Beoordelen & Invoeren';
 
         document.getElementById('importStap1').classList.add('hidden');
         document.getElementById('importStap1').classList.remove('flex');
         document.getElementById('importStap2').classList.remove('hidden');
         document.getElementById('importStap2').classList.add('flex');
-    }
+    };
+
     window.voegImportToe = function() {
         let directItems = [];
         let teVerwerken = [];
 
         window.gevondenImportItems.forEach((item, index) => {
             let checkbox = document.getElementById(`importCheck_${index}`);
-            if (checkbox && checkbox.checked) {
-                if (item.inCloud && item.definitieveTekst.trim() && item.type !== "Zang") {
-                    directItems.push(item);
+            if (!checkbox || !checkbox.checked) return;
+
+            if (item.type === "Schriftlezing") {
+                if (item.definitieveTekst && item.definitieveTekst.trim() && item.definitieveTekst !== " ") {
+                    directItems.push({
+                        type: "Schriftlezing",
+                        titel: item.titel,
+                        tekst: item.definitieveTekst
+                    });
+                } else {
+                    teVerwerken.push(item);
+                }
+            } else if (item.type === "Zang") {
+                // Check of de gebruiker ter plekke tekst heeft geplakt in het inline-veld
+                const inlineArea = document.getElementById(`inlineTekst_${index}`);
+                const inlineTekst = inlineArea ? inlineArea.value.trim() : '';
+                if (inlineTekst) {
+                    item.definitieveTekst = inlineTekst;
+                    item.inCloud = true;
+                    // Sla direct op in Cloud en lokale cache voor de hele gemeente
+                    slaLiedOpInCloud(item.titel, inlineTekst);
+                }
+
+                if (item.definitieveTekst && item.definitieveTekst.trim() && item.definitieveTekst !== " ") {
+                    const gebouwd = window.bouwLiedTekstEnTitel(item);
+                    directItems.push({
+                        type: "Zang",
+                        titel: gebouwd.titel,
+                        tekst: gebouwd.tekst,
+                        basisTitel: item.titel,
+                        geselecteerdeVerzen: gebouwd.verzen
+                    });
                 } else {
                     teVerwerken.push(item);
                 }
@@ -8507,21 +8859,23 @@ ${tekst}
         });
 
         directItems.forEach(item => {
-            liturgieVolgorde.push({ type: item.type, titel: item.titel, tekst: item.definitieveTekst });
+            liturgieVolgorde.push(item);
         });
 
         window.tekenVolgorde();
         window.sluitImportModal();
 
         if (directItems.length > 0 && teVerwerken.length === 0) {
-            window.toonToast("Liturgie geïmporteerd!", "success");
-        } else if (directItems.length > 0) {
-            window.toonToast(`${directItems.length} item(s) toegevoegd — ${teVerwerken.length} nog invullen`, "success");
+            window.toonToast(`✨ Alle ${directItems.length} items direct toegevoegd aan de liturgie!`, "success");
+        } else if (directItems.length > 0 && teVerwerken.length > 0) {
+            window.toonToast(`${directItems.length} items direct toegevoegd — ${teVerwerken.length} ontbrekende liederen ophalen...`, "success");
+            importWachtrij = teVerwerken;
+            setTimeout(() => verwerkVolgendeImportItem(), 400);
+        } else if (teVerwerken.length > 0) {
+            importWachtrij = teVerwerken;
+            setTimeout(() => verwerkVolgendeImportItem(), 400);
         }
-
-        importWachtrij = teVerwerken;
-        setTimeout(() => verwerkVolgendeImportItem(), 400);
-    }
+    };
 
     window.verwerkVolgendeImportItem = function() {
         if (importWachtrij.length === 0) return;
