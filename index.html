@@ -3952,6 +3952,17 @@ Retourneer UITSLUITEND een valide JSON object:
     // De Worker is origin-gelockt; er staat bewust geen schrijf-sleutel in de code.
     const DATA_URL = "https://kerkdata.kerkapp.workers.dev";
     let liturgieVolgorde = [];
+    try {
+        Object.defineProperty(window, 'liturgieVolgorde', {
+            get() { return liturgieVolgorde; },
+            set(v) { liturgieVolgorde = v; },
+            configurable: true
+        });
+        window.getLiturgieVolgorde = () => liturgieVolgorde;
+    } catch(e) {
+        window.liturgieVolgorde = liturgieVolgorde;
+        window.getLiturgieVolgorde = () => liturgieVolgorde;
+    }
     let gevondenModel = "";
     
     window.liederenDatabase = {};
@@ -12325,7 +12336,7 @@ window.verstuurExportFeedback = async function() {
     window.voerPreflightControleUit = function() {
         const datum = document.getElementById('datumInput')?.value?.trim() || "";
         const voorganger = document.getElementById('voorgangerInput')?.value?.trim() || "";
-        const items = window.liturgieVolgorde || [];
+        const items = (typeof window.getLiturgieVolgorde === 'function' ? window.getLiturgieVolgorde() : (window.liturgieVolgorde || []));
 
         const checks = [];
         let foutenAantal = 0;
@@ -12387,19 +12398,20 @@ window.verstuurExportFeedback = async function() {
                 categorie: 'liturgie',
                 status: 'ok',
                 titel: 'Liturgie volgorde gevuld',
-                beschrijving: `${items.length} onderdeel${items.length === 1 ? '' : 'en'} in de liturgie.`
+                beschrijving: `${items.length === 1 ? '1 onderdeel' : items.length + ' onderdelen'} in de liturgie.`
             });
         }
 
         // 4. Liederen & Verzen inspectie
-        const liedItems = items.filter(it => it.type === 'Lied');
+        const liedItems = items.filter(it => it && (it.type === 'Zang' || it.type === 'Lied'));
         const ontbrekendeVerzen = [];
         const legeLiederen = [];
         liedItems.forEach((it, idx) => {
-            if (!it.verzen || !Array.isArray(it.verzen) || it.verzen.length === 0) {
+            const hasTekst = Boolean(it.tekst && it.tekst.trim());
+            if (Array.isArray(it.geselecteerdeVerzen) && it.geselecteerdeVerzen.length === 0) {
                 ontbrekendeVerzen.push({ titel: it.titel || `Lied #${idx + 1}`, index: idx });
             }
-            if (!it.regels || it.regels.length === 0 || it.regels.every(r => !r || !r.trim())) {
+            if (!hasTekst) {
                 legeLiederen.push({ titel: it.titel || `Lied #${idx + 1}`, index: idx });
             }
         });
@@ -12420,7 +12432,7 @@ window.verstuurExportFeedback = async function() {
                 categorie: 'liederen',
                 status: 'ok',
                 titel: 'Liederen & verzen compleet',
-                beschrijving: `Alle ${liedItems.length} liederen hebben geselecteerde coupletten.`
+                beschrijving: `Alle ${liedItems.length} liederen hebben zangtekst en coupletten.`
             });
         }
 
@@ -12438,10 +12450,11 @@ window.verstuurExportFeedback = async function() {
         }
 
         // 5. Schriftlezingen inspectie
-        const lezingItems = items.filter(it => it.type === 'Schriftlezing');
+        const lezingItems = items.filter(it => it && it.type === 'Schriftlezing');
         const legeLezingen = [];
         lezingItems.forEach((it, idx) => {
-            if (!it.regels || it.regels.length === 0 || it.regels.every(r => !r || !r.trim())) {
+            const hasTekst = Boolean(it.tekst && it.tekst.trim());
+            if (!hasTekst) {
                 legeLezingen.push({ titel: it.titel || `Lezing #${idx + 1}`, index: idx });
             }
         });
@@ -12467,7 +12480,7 @@ window.verstuurExportFeedback = async function() {
         }
 
         // 6. Week-Tikkie QR Collecte inspectie
-        const qrItems = items.filter(it => it.type === 'QR');
+        const qrItems = items.filter(it => it && it.type === 'QR');
         if (qrItems.length > 0) {
             let verlopenQr = null;
             let geldigeQr = null;
@@ -12516,9 +12529,10 @@ window.verstuurExportFeedback = async function() {
         // 7. Leesbaarheid & Regellengte (Overloop / Weesregels check)
         let overvolleDia = null;
         items.forEach((it, idx) => {
-            if (it.type !== 'Foto' && it.type !== 'Leeg' && it.type !== 'QR') {
-                if (it.regels && it.regels.length > 8) {
-                    overvolleDia = { index: idx, titel: it.titel, count: it.regels.length };
+            if (it && it.type !== 'Foto' && it.type !== 'Leeg' && it.type !== 'QR') {
+                const regels = (it.tekst || '').split('\n').filter(r => r.trim().length > 0);
+                if (regels.length > 10) {
+                    overvolleDia = { index: idx, titel: it.titel || `Dia #${idx + 1}`, count: regels.length };
                 }
             }
         });
@@ -12545,7 +12559,12 @@ window.verstuurExportFeedback = async function() {
         // Bereken statistieken
         let totaalVerzen = 0;
         liedItems.forEach(it => {
-            if (it.verzen && Array.isArray(it.verzen)) totaalVerzen += it.verzen.length;
+            if (Array.isArray(it.geselecteerdeVerzen) && it.geselecteerdeVerzen.length > 0) {
+                totaalVerzen += it.geselecteerdeVerzen.length;
+            } else if (it.tekst && it.tekst.trim()) {
+                const stanzas = it.tekst.trim().split(/\n\s*\n/).filter(Boolean);
+                totaalVerzen += Math.max(1, stanzas.length);
+            }
         });
 
         const isGereed = foutenAantal === 0 && waarschuwingenAantal === 0 && items.length > 0;
@@ -12780,18 +12799,18 @@ window.verstuurExportFeedback = async function() {
             const el = document.getElementById('voorgangerInput');
             if (el) { el.focus(); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
         } else if (actieType === 'focus_invoer') {
-            const el = document.getElementById('liedZoekInput');
+            const el = document.getElementById('liedInput') || document.getElementById('liedZoekInput');
             if (el) { el.focus(); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
         } else if (actieType === 'open_tikkie') {
             if (window.openTikkieModal) window.openTikkieModal();
         } else if (actieType === 'kies_vers' && diaIndex >= 0) {
-            kiesItemEnPreview(diaIndex);
+            if (window.kiesItemEnPreview) window.kiesItemEnPreview(diaIndex);
             if (window.openBewerkScherm) window.openBewerkScherm(diaIndex);
         } else if (actieType === 'bewerk_dia' && diaIndex >= 0) {
-            kiesItemEnPreview(diaIndex);
+            if (window.kiesItemEnPreview) window.kiesItemEnPreview(diaIndex);
             if (window.openBewerkScherm) window.openBewerkScherm(diaIndex);
         } else if (actieType === 'bekijk_dia' && diaIndex >= 0) {
-            kiesItemEnPreview(diaIndex);
+            if (window.kiesItemEnPreview) window.kiesItemEnPreview(diaIndex);
         }
     };
 
