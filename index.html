@@ -424,23 +424,31 @@
 </div>
 
 <!-- TIKKIE COLLECTE QR MODAL (WEEK-BEHEER MET GELDIGHEIDSDATUM) -->
-<div id="tikkieModal" class="fixed inset-0 z-[115] hidden flex items-center justify-center bg-black/30 backdrop-blur-xl transition-opacity p-2 sm:p-4">
+<div id="tikkieModal" class="fixed inset-0 z-[115] hidden flex items-center justify-center bg-black/40 backdrop-blur-xl transition-opacity p-2 sm:p-4" onclick="if(event.target === this) window.sluitTikkieModal()">
     <div class="bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.05] dark:ring-white/10 w-full max-w-lg overflow-hidden flex flex-col transform transition-all modal-animate max-h-[92vh]">
         
         <!-- Header -->
         <div class="p-4 md:p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center flex-shrink-0 bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-md">
             <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300 flex items-center justify-center font-bold text-sm shadow-xs">
-                    💳
+                <div class="w-9 h-9 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-base shadow-xs">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="3" height="3"></rect>
+                        <line x1="21" y1="14" x2="21" y2="14.01"></line>
+                        <line x1="21" y1="21" x2="21" y2="21.01"></line>
+                        <line x1="14" y1="21" x2="14" y2="21.01"></line>
+                    </svg>
                 </div>
                 <div>
-                    <h3 class="text-base md:text-lg font-bold text-[#1D1D1F] dark:text-white flex items-center gap-2">
-                        Week-Tikkie QR Beheer
+                    <h3 class="text-base font-bold text-[#1D1D1F] dark:text-white">
+                        Collecte &amp; Week-Tikkie
                     </h3>
                     <p class="text-[11px] text-gray-500 dark:text-gray-400">Automatisch gesynchroniseerd voor het hele beamerteam</p>
                 </div>
             </div>
-            <button type="button" onclick="window.sluitTikkieModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 transition-colors" title="Sluiten">
+            <button type="button" onclick="window.sluitTikkieModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors" title="Sluiten">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
@@ -448,79 +456,115 @@
         <div class="p-4 md:p-6 overflow-y-auto flex flex-col gap-4">
             <!-- Huidige Status Card -->
             <div id="tikkieStatusCard" class="p-3.5 rounded-2xl border transition-all flex items-start gap-3 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10">
-                <div id="tikkieStatusIcoontje" class="text-2xl flex-shrink-0">⚪</div>
+                <div id="tikkieStatusIcoonContainer" class="w-8 h-8 rounded-xl bg-gray-100 dark:bg-white/10 flex items-center justify-center flex-shrink-0 text-gray-400">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
                 <div class="flex flex-col min-w-0 flex-1">
-                    <span id="tikkieStatusTitel" class="text-xs font-bold text-gray-800 dark:text-gray-200">Nog geen actieve week-Tikkie</span>
-                    <span id="tikkieStatusSub" class="text-[11px] text-gray-500 dark:text-gray-400">Upload een screenshot of plak de Tikkie-link voor aankomende zondag.</span>
+                    <div class="flex items-center gap-2">
+                        <span id="tikkieStatusTitel" class="text-xs font-bold text-gray-800 dark:text-gray-200">Nog geen actieve week-Tikkie</span>
+                    </div>
+                    <span id="tikkieStatusSub" class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">Upload een screenshot of plak de Tikkie-link voor aankomende zondag.</span>
                 </div>
             </div>
 
-            <!-- Invoer Opties: Screenshot uploaden of Link plakken -->
+            <!-- Invoer Tabs (Segmented control) -->
             <div class="flex flex-col gap-2">
-                <label class="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center justify-between">
-                    <span>1. QR Afbeelding of Tikkie-link</span>
-                    <span class="text-[10px] text-gray-400 font-normal">Screenshot of tikkie.me link</span>
-                </label>
-                
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <button type="button" onclick="document.getElementById('tikkieModalFileInput').click()" class="p-3 rounded-xl border border-dashed border-emerald-300 dark:border-emerald-700/60 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 flex flex-col items-center justify-center gap-1 transition-all active:scale-95 text-center">
-                        <span class="text-lg">📸</span>
-                        <span class="text-xs font-bold">Upload screenshot</span>
-                        <span class="text-[10px] opacity-70">PNG of JPG van Tikkie</span>
+                <div class="flex items-center justify-between px-0.5">
+                    <label class="text-xs font-bold text-gray-700 dark:text-gray-300">1. QR Invoeren</label>
+                    <span class="text-[11px] text-gray-400">Kies gewenste methode</span>
+                </div>
+
+                <div class="grid grid-cols-2 p-1 bg-gray-100 dark:bg-white/5 rounded-2xl border border-gray-200/60 dark:border-white/10 text-xs">
+                    <button type="button" id="tikkieTabBtnScreenshot" onclick="window.setTikkieInvoerTab('screenshot')" class="py-2 rounded-xl font-bold bg-white dark:bg-[#2C2C2E] text-emerald-700 dark:text-emerald-300 shadow-xs transition-all flex items-center justify-center gap-1.5 active:scale-95">
+                        <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <span>Screenshot Uploaden</span>
                     </button>
-                    <input id="tikkieModalFileInput" type="file" class="hidden" accept="image/*" onchange="window.verwerkTikkieModalBestand(event)"/>
-                    
-                    <div class="flex flex-col gap-1 justify-center">
-                        <input id="tikkieLinkInput" type="url" oninput="window.verwerkTikkieModalLink()" placeholder="https://tikkie.me/pay/..." class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-gray-200 dark:border-white/10 rounded-xl p-2.5 text-xs focus:bg-white focus:border-emerald-500 focus:outline-none"/>
-                        <span class="text-[10px] text-gray-400">Of plak hier direct de betaallink</span>
+                    <button type="button" id="tikkieTabBtnLink" onclick="window.setTikkieInvoerTab('link')" class="py-2 rounded-xl font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-all flex items-center justify-center gap-1.5 active:scale-95">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                        <span>Tikkie Link Plakken</span>
+                    </button>
+                </div>
+
+                <!-- Paneel 1: Screenshot uploaden -->
+                <div id="tikkiePaneScreenshot" class="mt-1">
+                    <div onclick="document.getElementById('tikkieModalFileInput').click()" class="border-2 border-dashed border-emerald-300 dark:border-emerald-700/60 bg-emerald-50/40 dark:bg-emerald-950/20 hover:bg-emerald-50/80 dark:hover:bg-emerald-950/40 rounded-2xl p-5 text-center cursor-pointer transition-all active:scale-[0.99] flex flex-col items-center justify-center gap-2 group">
+                        <div class="w-12 h-12 rounded-2xl bg-white dark:bg-[#2C2C2E] shadow-sm flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                        </div>
+                        <div>
+                            <span class="text-xs font-bold text-emerald-900 dark:text-emerald-200 block">Klik of sleep hier de Tikkie screenshot</span>
+                            <span class="text-[11px] text-gray-500 dark:text-gray-400">PNG of JPG · De app haalt de QR-code direct automatisch op</span>
+                        </div>
                     </div>
+                    <input id="tikkieModalFileInput" type="file" class="hidden" accept="image/*" onchange="window.verwerkTikkieModalBestand(event)"/>
+                </div>
+
+                <!-- Paneel 2: Link plakken -->
+                <div id="tikkiePaneLink" class="hidden mt-1 flex flex-col gap-1.5">
+                    <div class="relative flex items-center">
+                        <span class="absolute left-3 text-gray-400 flex items-center pointer-events-none">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                        </span>
+                        <input id="tikkieLinkInput" type="url" oninput="window.verwerkTikkieModalLink()" placeholder="https://tikkie.me/pay/..." class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-gray-200 dark:border-white/10 rounded-xl py-2.5 pl-9 pr-3 text-xs focus:bg-white focus:border-emerald-500 focus:outline-none"/>
+                    </div>
+                    <p class="text-[10px] text-gray-400 px-1">Plak de volledige deellink vanuit de Tikkie app of bankomgeving.</p>
                 </div>
             </div>
 
             <!-- Live Preview -->
-            <div id="tikkieModalPreviewVak" class="hidden p-3 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center gap-3">
+            <div id="tikkieModalPreviewVak" class="hidden p-3.5 rounded-2xl bg-gray-50 dark:bg-white/5 border border-emerald-200/80 dark:border-emerald-800/40 flex items-center gap-3.5 shadow-xs">
                 <div class="w-20 h-20 bg-white p-1 rounded-xl shadow-xs border border-gray-200 flex-shrink-0 flex items-center justify-center">
                     <img id="tikkieModalPreviewImg" src="" alt="QR" class="w-full h-full object-contain"/>
                 </div>
                 <div class="flex flex-col min-w-0 flex-1">
-                    <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1"><span>✓</span> QR gereed</span>
-                    <span id="tikkieModalPreviewUrl" class="text-[11px] text-gray-500 dark:text-gray-400 truncate"></span>
-                    <span class="text-[10px] text-gray-400 mt-1">Deze QR wordt automatisch op de collecte-dia geplaatst.</span>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <span class="text-xs font-bold text-emerald-700 dark:text-emerald-300">QR-code gereed voor beamer</span>
+                    </div>
+                    <span id="tikkieModalPreviewUrl" class="text-[11px] text-gray-600 dark:text-gray-300 font-mono truncate mt-0.5"></span>
+                    <span class="text-[10px] text-gray-400 mt-1">Wordt automatisch in de PowerPoint collecte-dia geplaatst.</span>
                 </div>
             </div>
 
             <!-- Geldig tot datum -->
-            <div class="flex flex-col gap-2">
-                <label class="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center justify-between">
-                    <span>2. Geldig tot en met:</span>
-                    <span class="text-[10px] text-gray-400 font-normal">Tikkies verlopen automatisch</span>
-                </label>
+            <div class="flex flex-col gap-2 pt-1">
+                <div class="flex items-center justify-between px-0.5">
+                    <label class="text-xs font-bold text-gray-700 dark:text-gray-300">2. Geldig tot en met</label>
+                    <span class="text-[10px] text-gray-400">Voorkomt verlopen Tikkies</span>
+                </div>
                 
                 <div class="flex items-center gap-2 flex-wrap">
-                    <button type="button" onclick="window.kiesTikkieSnelleDatum('zondag')" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-gray-700 dark:text-gray-200 transition-all">Aanstaande zondag</button>
-                    <button type="button" onclick="window.kiesTikkieSnelleDatum('14dagen')" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-gray-700 dark:text-gray-200 transition-all">14 dagen (standaard)</button>
+                    <button type="button" onclick="window.kiesTikkieSnelleDatum('zondag')" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-gray-700 dark:text-gray-200 transition-all active:scale-95">
+                        Aanstaande zondag
+                    </button>
+                    <button type="button" onclick="window.kiesTikkieSnelleDatum('14dagen')" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-gray-700 dark:text-gray-200 transition-all active:scale-95">
+                        14 dagen (standaard)
+                    </button>
                 </div>
-                <input id="tikkieGeldigTotInput" type="date" class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-gray-200 dark:border-white/10 rounded-xl p-2.5 text-xs focus:bg-white focus:border-emerald-500 focus:outline-none"/>
+                <div class="relative flex items-center">
+                    <input id="tikkieGeldigTotInput" type="date" onchange="window.tijdelijkeModalTikkieData.geldigTot=this.value; window.updateTikkieModalStatusCard();" class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-gray-200 dark:border-white/10 rounded-xl p-2.5 text-xs focus:bg-white focus:border-emerald-500 focus:outline-none"/>
+                </div>
             </div>
 
             <!-- Omschrijving (optioneel) -->
-            <div class="flex flex-col gap-1">
-                <label class="text-xs font-bold text-gray-700 dark:text-gray-300">3. Doel of omschrijving (optioneel)</label>
+            <div class="flex flex-col gap-1.5 pt-1">
+                <label class="text-xs font-bold text-gray-700 dark:text-gray-300 px-0.5">3. Doel of bestemming (optioneel)</label>
                 <input id="tikkieOmschrijvingInput" type="text" placeholder="Bijv. 1e collecte: Kerk, 2e: Diaconie" class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-gray-200 dark:border-white/10 rounded-xl p-2.5 text-xs focus:bg-white focus:border-emerald-500 focus:outline-none"/>
             </div>
         </div>
 
         <!-- Footer Buttons -->
-        <div class="p-4 md:p-5 border-t border-gray-100 dark:border-white/10 flex items-center justify-between gap-3 bg-gray-50/50 dark:bg-white/5 flex-shrink-0">
-            <button type="button" onclick="window.sluitTikkieModal()" class="px-4 py-2.5 rounded-xl text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
-                Sluiten
+        <div class="p-4 md:p-5 border-t border-gray-100 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-2.5 bg-gray-50/70 dark:bg-gray-800/40 flex-shrink-0">
+            <button type="button" onclick="window.sluitTikkieModal()" class="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 transition-colors text-center">
+                Annuleren
             </button>
-            <div class="flex items-center gap-2">
-                <button type="button" onclick="window.slaTikkieOpVanuitModal(false)" class="px-3.5 py-2.5 rounded-xl text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 hover:bg-emerald-200 transition-all active:scale-95 shadow-xs">
-                    Opslaan voor Beamerteam
+            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <button type="button" onclick="window.slaTikkieOpVanuitModal(false)" class="flex-1 sm:flex-initial px-3.5 py-2.5 rounded-xl text-xs font-semibold text-emerald-800 dark:text-emerald-200 bg-emerald-100/70 dark:bg-emerald-950/60 hover:bg-emerald-100 transition-all active:scale-95 shadow-xs border border-emerald-200/60 dark:border-emerald-800/40 text-center">
+                    Alleen Opslaan in Cloud
                 </button>
-                <button type="button" onclick="window.slaTikkieOpVanuitModal(true)" class="px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-all active:scale-95 shadow-sm">
-                    Opslaan & Toevoegen
+                <button type="button" onclick="window.slaTikkieOpVanuitModal(true)" class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-all active:scale-95 shadow-md flex items-center justify-center gap-1.5 text-center">
+                    <span>Opslaan &amp; Toevoegen</span>
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                 </button>
             </div>
         </div>
@@ -870,16 +914,16 @@
                     <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
                     <span>Lege Dia</span>
                 </button>
-                <div class="relative w-full">
-                    <button type="button" onclick="window.klikTikkieKnop()" class="w-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 py-3 px-3 rounded-xl text-xs md:text-sm font-semibold flex items-center justify-between gap-1.5 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-all shadow-sm border border-emerald-200 dark:border-emerald-800/60 active:scale-95" title="Voeg actieve week-Tikkie toe">
+                <div class="w-full flex items-center rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 shadow-xs overflow-hidden group">
+                    <button type="button" onclick="window.klikTikkieKnop()" class="flex-1 py-3 px-3 text-xs md:text-sm font-semibold text-emerald-900 dark:text-emerald-200 flex items-center justify-between gap-1.5 hover:bg-emerald-100/60 dark:hover:bg-emerald-900/40 transition-colors text-left active:scale-[0.99]" title="Voeg actieve week-Tikkie toe aan de liturgie">
                         <div class="flex items-center gap-1.5 min-w-0">
                             <svg class="w-4 h-4 md:w-5 md:h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="3" height="3"></rect><line x1="21" y1="14" x2="21" y2="14.01"></line><line x1="21" y1="21" x2="21" y2="21.01"></line><line x1="14" y1="21" x2="14" y2="21.01"></line><line x1="17" y1="17" x2="21" y2="17"></line><line x1="17" y1="21" x2="17" y2="17"></line></svg>
                             <span class="font-bold truncate">Tikkie QR</span>
                         </div>
-                        <span id="tikkieStatusBadge" class="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300 flex-shrink-0 border border-emerald-300/40">Laden...</span>
+                        <span id="tikkieStatusBadge" class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300 flex-shrink-0 border border-emerald-300/40">Laden...</span>
                     </button>
-                    <button type="button" onclick="event.stopPropagation(); window.openTikkieModal();" class="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-white dark:bg-[#2C2C2E] border border-gray-200 dark:border-white/10 shadow-xs flex items-center justify-center text-[11px] hover:scale-110 active:scale-95 transition-all text-gray-500 hover:text-emerald-600 dark:text-gray-300" title="Beheer & upload week-Tikkie">
-                        ⚙️
+                    <button type="button" onclick="event.stopPropagation(); window.openTikkieModal();" class="px-2.5 py-3 border-l border-emerald-200/80 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors active:scale-95 flex items-center justify-center" title="Beheer & instellingen week-Tikkie">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                     </button>
                 </div>
                 <input id="tikkieFile" type="file" class="hidden" accept="image/*" onchange="uploadTikkieQR(event)"/>
@@ -1284,7 +1328,8 @@
 
         <!-- Kwaliteitscontrole Knop & Live Indicator -->
         <button id="preflightDockBtn" onclick="openPreflightModal()" aria-label="Kwaliteitscontrole: controleer de liturgie voor de dienst" title="Kwaliteitscontrole: controleer liturgie op aandachtspunten vóór export" class="relative text-gray-700 dark:text-gray-200 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition-all flex-shrink-0">
-            <span id="preflightDockDot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)] flex-shrink-0 transition-all"></span>
+            <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <span id="preflightDockDot" class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)] flex-shrink-0 transition-all"></span>
             <span class="hidden sm:inline font-semibold" id="preflightDockText">Controle</span>
             <span id="preflightCountBadge" class="hidden text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-amber-500 text-white"></span>
         </button>
@@ -9650,6 +9695,11 @@ Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
 
         window.updateTikkieModalStatusCard();
         window.updateTikkieModalPreview();
+        if (tijdelijkeModalTikkieData.url && !tijdelijkeModalTikkieData.qrData?.startsWith('data:image')) {
+            window.setTikkieInvoerTab('link');
+        } else {
+            window.setTikkieInvoerTab('screenshot');
+        }
 
         modal.classList.remove('hidden');
     };
@@ -9671,33 +9721,60 @@ Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
         window.updateTikkieModalStatusCard();
     };
 
+    window.setTikkieInvoerTab = function(tab) {
+        const btnShot = document.getElementById('tikkieTabBtnScreenshot');
+        const btnLink = document.getElementById('tikkieTabBtnLink');
+        const paneShot = document.getElementById('tikkiePaneScreenshot');
+        const paneLink = document.getElementById('tikkiePaneLink');
+
+        if (tab === 'screenshot') {
+            btnShot?.classList.add('bg-white', 'dark:bg-[#2C2C2E]', 'shadow-xs', 'text-emerald-700', 'dark:text-emerald-300', 'font-bold');
+            btnShot?.classList.remove('text-gray-500', 'dark:text-gray-400', 'font-semibold');
+            btnLink?.classList.remove('bg-white', 'dark:bg-[#2C2C2E]', 'shadow-xs', 'text-emerald-700', 'dark:text-emerald-300', 'font-bold');
+            btnLink?.classList.add('text-gray-500', 'dark:text-gray-400', 'font-semibold');
+            paneShot?.classList.remove('hidden');
+            paneLink?.classList.add('hidden');
+        } else {
+            btnLink?.classList.add('bg-white', 'dark:bg-[#2C2C2E]', 'shadow-xs', 'text-emerald-700', 'dark:text-emerald-300', 'font-bold');
+            btnLink?.classList.remove('text-gray-500', 'dark:text-gray-400', 'font-semibold');
+            btnShot?.classList.remove('bg-white', 'dark:bg-[#2C2C2E]', 'shadow-xs', 'text-emerald-700', 'dark:text-emerald-300', 'font-bold');
+            btnShot?.classList.add('text-gray-500', 'dark:text-gray-400', 'font-semibold');
+            paneShot?.classList.add('hidden');
+            paneLink?.classList.remove('hidden');
+            document.getElementById('tikkieLinkInput')?.focus();
+        }
+    };
+
     window.updateTikkieModalStatusCard = function() {
         const bestaand = window.getActieveWeekTikkie();
         const card = document.getElementById('tikkieStatusCard');
-        const icoon = document.getElementById('tikkieStatusIcoontje');
+        const icoonContainer = document.getElementById('tikkieStatusIcoonContainer');
         const titel = document.getElementById('tikkieStatusTitel');
         const sub = document.getElementById('tikkieStatusSub');
-        if (!card || !titel || !sub || !icoon) return;
+        if (!card || !titel || !sub || !icoonContainer) return;
 
         if (!bestaand || (!bestaand.url && !bestaand.qrData)) {
             card.className = "p-3.5 rounded-2xl border transition-all flex items-start gap-3 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10";
-            icoon.innerText = "⚪";
-            titel.innerText = "Nog geen actieve week-Tikkie ingesteld";
-            sub.innerText = "Upload een QR-afbeelding of plak een Tikkie-link voor de komende dienst.";
+            icoonContainer.className = "w-8 h-8 rounded-xl bg-gray-100 dark:bg-white/10 flex items-center justify-center flex-shrink-0 text-gray-400";
+            icoonContainer.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            titel.innerHTML = `<span class="text-xs font-bold text-gray-800 dark:text-gray-200">Nog geen actieve week-Tikkie ingesteld</span>`;
+            sub.innerText = "Upload een QR-screenshot of plak een Tikkie-link voor de komende dienst.";
             return;
         }
 
         const status = window.berekenTikkieStatusTekst(bestaand.geldigTot);
         if (status.geldig) {
             card.className = "p-3.5 rounded-2xl border transition-all flex items-start gap-3 bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/40";
-            icoon.innerText = "🟢";
-            titel.innerHTML = `<span class="text-emerald-800 dark:text-emerald-200 font-bold">Actieve Tikkie (${status.tekst})</span>`;
+            icoonContainer.className = "w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center flex-shrink-0 text-emerald-600 dark:text-emerald-400";
+            icoonContainer.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>`;
+            titel.innerHTML = `<span class="text-emerald-800 dark:text-emerald-200 font-bold text-xs">Actieve Tikkie (${status.tekst})</span>`;
             sub.innerHTML = `Geldig t/m <b>${bestaand.geldigTot || 'onbeperkt'}</b> · ${escapeHtml(bestaand.omschrijving || 'Geen omschrijving')}`;
         } else {
             card.className = "p-3.5 rounded-2xl border transition-all flex items-start gap-3 bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/40";
-            icoon.innerText = "🔴";
-            titel.innerHTML = `<span class="text-rose-800 dark:text-rose-200 font-bold">⚠️ Tikkie is verlopen (${status.tekst})</span>`;
-            sub.innerText = "Upload hieronder een nieuwe QR om te voorkomen dat kerkgangers niet kunnen doneren.";
+            icoonContainer.className = "w-8 h-8 rounded-xl bg-rose-100 dark:bg-rose-900/40 flex items-center justify-center flex-shrink-0 text-rose-600 dark:text-rose-400";
+            icoonContainer.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`;
+            titel.innerHTML = `<span class="text-rose-800 dark:text-rose-200 font-bold text-xs">Tikkie is verlopen (${status.tekst})</span>`;
+            sub.innerText = "Upload een nieuwe QR om te voorkomen dat kerkgangers niet kunnen doneren.";
         }
     };
 
@@ -12194,7 +12271,7 @@ window.verstuurExportFeedback = async function() {
         <div class="p-4 md:p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center flex-shrink-0 bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-md">
             <div class="flex items-center gap-2.5">
                 <div class="w-9 h-9 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white flex items-center justify-center font-bold text-base shadow-sm">
-                    📋
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
                 </div>
                 <div>
                     <div class="flex items-center gap-2">
@@ -12553,7 +12630,9 @@ window.verstuurExportFeedback = async function() {
             if (report.isGereed) {
                 bannerBox.className = "p-4 rounded-2xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/80 dark:bg-emerald-950/30 flex items-start gap-3";
                 bannerBox.innerHTML = `
-                    <div class="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-bold text-base flex-shrink-0 shadow-sm">✓</div>
+                    <div class="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                    </div>
                     <div>
                         <h4 class="text-sm font-bold text-emerald-950 dark:text-emerald-200">100% Klaar voor de beamer!</h4>
                         <p class="text-xs text-emerald-800 dark:text-emerald-300 mt-0.5 leading-relaxed">
@@ -12564,7 +12643,9 @@ window.verstuurExportFeedback = async function() {
             } else if (report.heeftFouten) {
                 bannerBox.className = "p-4 rounded-2xl border border-red-200 dark:border-red-800/60 bg-red-50/80 dark:bg-red-950/30 flex items-start gap-3";
                 bannerBox.innerHTML = `
-                    <div class="w-8 h-8 rounded-xl bg-red-500 text-white flex items-center justify-center font-bold text-base flex-shrink-0 shadow-sm">⚠️</div>
+                    <div class="w-8 h-8 rounded-xl bg-red-500 text-white flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    </div>
                     <div>
                         <h4 class="text-sm font-bold text-red-950 dark:text-red-200">${report.foutenAantal} aandachtspunt${report.foutenAantal === 1 ? '' : 'en'} gevonden</h4>
                         <p class="text-xs text-red-800 dark:text-red-300 mt-0.5 leading-relaxed">
@@ -12575,7 +12656,9 @@ window.verstuurExportFeedback = async function() {
             } else {
                 bannerBox.className = "p-4 rounded-2xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/80 dark:bg-amber-950/30 flex items-start gap-3";
                 bannerBox.innerHTML = `
-                    <div class="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-base flex-shrink-0 shadow-sm">💡</div>
+                    <div class="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
                     <div>
                         <h4 class="text-sm font-bold text-amber-950 dark:text-amber-200">${report.waarschuwingenAantal} tip${report.waarschuwingenAantal === 1 ? '' : 's'} voor deze dienst</h4>
                         <p class="text-xs text-amber-800 dark:text-amber-300 mt-0.5 leading-relaxed">
@@ -12617,20 +12700,20 @@ window.verstuurExportFeedback = async function() {
         if (checklistEl) {
             checklistEl.innerHTML = report.checks.map((chk, i) => {
                 let badgeClass = "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800";
-                let icon = "✓";
+                let iconSvg = `<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>`;
                 let cardBorder = "border-gray-100 dark:border-gray-800/80 bg-white dark:bg-[#252528]";
 
                 if (chk.status === 'error') {
                     badgeClass = "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-red-200 dark:border-red-800";
-                    icon = "✕";
+                    iconSvg = `<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>`;
                     cardBorder = "border-red-200 dark:border-red-900/50 bg-red-50/30 dark:bg-red-950/20";
                 } else if (chk.status === 'warning') {
                     badgeClass = "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border-amber-200 dark:border-amber-800";
-                    icon = "⚠️";
+                    iconSvg = `<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`;
                     cardBorder = "border-amber-200 dark:border-amber-900/50 bg-amber-50/30 dark:bg-amber-950/20";
                 } else if (chk.status === 'info') {
                     badgeClass = "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border-blue-200 dark:border-blue-800";
-                    icon = "ℹ️";
+                    iconSvg = `<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
                     cardBorder = "border-gray-100 dark:border-gray-800 bg-white dark:bg-[#252528]";
                 }
 
@@ -12646,8 +12729,8 @@ window.verstuurExportFeedback = async function() {
                 return `
                     <div class="p-3 sm:p-3.5 rounded-xl border ${cardBorder} flex items-center justify-between gap-3 transition-all">
                         <div class="flex items-start gap-2.5">
-                            <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border ${badgeClass} flex-shrink-0 mt-0.5">
-                                ${icon}
+                            <span class="w-5 h-5 rounded-full flex items-center justify-center border ${badgeClass} flex-shrink-0 mt-0.5">
+                                ${iconSvg}
                             </span>
                             <div>
                                 <h5 class="text-xs font-bold text-gray-900 dark:text-gray-100">${escapeHtml(chk.titel)}</h5>
