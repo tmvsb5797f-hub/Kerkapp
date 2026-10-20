@@ -275,11 +275,11 @@
             <button onclick="kiesLeeg()" class="w-full py-3 rounded-xl text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">Overslaan (Lege dia voor later)</button>
         </div>
         <div id="modalKnoppen3" class="p-4 md:p-6 hidden flex-col gap-3 bg-white border-t border-gray-100">
-            <a id="liedbundelKnop" href="#" onclick="openLiedbundelOnline(); return false;" class="hidden w-full py-2.5 rounded-xl text-sm font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors text-center items-center justify-center gap-2">
-                🔗 Open Liedbundel Online &amp; log in
+            <a id="liedbundelKnop" href="https://www.liedbundelsonline.nl/nl/lied-zoeken?bundles%5B0%5D=WK&bundles%5B1%5D=OTH" target="_blank" rel="noopener noreferrer" class="hidden w-full py-2.5 rounded-xl text-sm font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors text-center items-center justify-center gap-2 border border-purple-200 shadow-xs">
+                <span>🔗 Open Liedbundels Online &amp; log in ↗</span>
             </a>
-            <a id="dnpKnop" href="#" onclick="openDNPOnline(); return false;" class="hidden w-full py-2.5 rounded-xl text-sm font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 transition-colors text-center items-center justify-center gap-2">
-                🔗 Open De Nieuwe Psalmberijming
+            <a id="dnpKnop" href="https://www.denieuwepsalmberijming.nl/berijmingen" target="_blank" rel="noopener noreferrer" class="hidden w-full py-2.5 rounded-xl text-sm font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 transition-colors text-center items-center justify-center gap-2 border border-teal-200 shadow-xs">
+                <span>🔗 Open De Nieuwe Psalmberijming ↗</span>
             </a>
             <div id="bijbelFoutBanner" class="hidden p-3.5 rounded-2xl bg-amber-50/90 border border-amber-200/80 text-amber-900 text-xs font-medium flex items-start gap-3">
                 <div class="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 text-amber-600 font-bold text-xs">⚠️</div>
@@ -509,9 +509,9 @@
             </button>
         </div>
 
-        <!-- Rechts: Slanke status-pill (Helemaal bovenaan, op dezelfde hoogte als de titel) -->
-        <div class="flex items-center gap-2 self-start sm:self-auto">
-            <div class="inline-flex items-center gap-2 sm:gap-2.5 px-3 py-1.5 rounded-full bg-white dark:bg-[#2C2C2E] border border-gray-200 dark:border-gray-700 text-xs shadow-xs text-gray-600 dark:text-gray-300">
+        <!-- Rechts: Slanke status-pill (Helemaal bovenaan, wrap-resistant op iPhone) -->
+        <div class="flex items-center gap-2 self-start sm:self-auto max-w-full overflow-x-auto no-scrollbar py-0.5">
+            <div class="inline-flex items-center gap-2 sm:gap-2.5 px-3 py-1.5 rounded-full bg-white dark:bg-[#2C2C2E] border border-gray-200 dark:border-gray-700 text-xs shadow-xs text-gray-600 dark:text-gray-300 flex-shrink-0">
                 <!-- 1. Bijbel API (Klikbaar) -->
                 <button type="button" onclick="checkBijbelAPI(true)" class="flex items-center gap-1.5 hover:text-[#007AFF] dark:hover:text-[#007AFF] transition-colors cursor-pointer active:scale-95" title="Bijbel API (klik om te testen)">
                     <span id="bijbelDot" class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse flex-shrink-0"></span>
@@ -1059,53 +1059,50 @@
     </div>
 </div>
 
-<!-- Unified Floating Action Dock (Harmonisch gevuld, perfect gebalanceerd zonder lege ruimte) -->
-<nav id="unifiedControlDock" aria-label="Snelle bediening" class="fixed bottom-4 sm:bottom-6 inset-x-3 sm:inset-x-0 mx-auto z-40 max-w-sm sm:max-w-none sm:w-fit p-1.5 sm:p-2 bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl rounded-full shadow-[0_12px_36px_rgba(0,0,0,0.18)] dark:shadow-[0_12px_36px_rgba(0,0,0,0.5)] border border-black/5 dark:border-white/15 transition-all duration-300 select-none">
-    <div class="flex items-center justify-between sm:justify-start gap-1 sm:gap-2 w-full">
+<!-- Unified Floating Action Dock (Perfect responsive op elk schermformaat, no overlap) -->
+<nav id="unifiedControlDock" aria-label="Snelle bediening" class="fixed bottom-3 sm:bottom-6 inset-x-2 sm:inset-x-0 mx-auto z-40 max-w-fit p-1 sm:p-2 bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl rounded-full shadow-[0_12px_36px_rgba(0,0,0,0.18)] dark:shadow-[0_12px_36px_rgba(0,0,0,0.5)] border border-black/5 dark:border-white/15 transition-all duration-300 select-none">
+    <div class="flex items-center justify-center gap-1 sm:gap-2">
         <!-- 1. AI Hulp Chat Knop -->
-        <button onclick="toggleChat()" aria-label="Vraag de AI assistent om hulp" title="Hulp nodig? Stel een vraag aan de AI assistent" class="flex-1 sm:flex-initial text-gray-700 dark:text-gray-200 hover:text-[#007AFF] dark:hover:text-[#007AFF] hover:bg-gray-100/80 dark:hover:bg-white/10 px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition-all">
+        <button onclick="toggleChat()" aria-label="Vraag de AI assistent om hulp" title="Hulp nodig? Stel een vraag aan de AI assistent" class="text-gray-700 dark:text-gray-200 hover:text-[#007AFF] dark:hover:text-[#007AFF] hover:bg-gray-100/80 dark:hover:bg-white/10 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition-all flex-shrink-0">
             <svg class="w-4 h-4 text-[#007AFF] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
-            <span class="sm:hidden text-[11px]">Chat</span>
-            <span class="hidden sm:inline">Hulp Chat</span>
+            <span class="hidden md:inline">Hulp Chat</span>
         </button>
 
-        <div class="hidden sm:block h-5 w-px bg-gray-200 dark:bg-gray-700/60 my-auto"></div>
+        <div class="h-4 w-px bg-gray-200 dark:bg-gray-700/60 my-auto flex-shrink-0"></div>
 
         <!-- 2. Info & Instellingen Knop (Hier zit OBS Live nu achter) -->
-        <button onclick="document.getElementById('infoModal').classList.remove('hidden')" aria-label="Over deze app, instellingen en OBS live" title="Instellingen, OBS Live & info over de app" class="flex-1 sm:flex-initial text-gray-700 dark:text-gray-200 hover:text-[#007AFF] dark:hover:text-[#007AFF] hover:bg-gray-100/80 dark:hover:bg-white/10 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition-all">
+        <button onclick="document.getElementById('infoModal').classList.remove('hidden')" aria-label="Over deze app, instellingen en OBS live" title="Instellingen, OBS Live & info over de app" class="text-gray-700 dark:text-gray-200 hover:text-[#007AFF] dark:hover:text-[#007AFF] hover:bg-gray-100/80 dark:hover:bg-white/10 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition-all flex-shrink-0">
             <svg class="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            <span class="sm:hidden text-[11px]">Info</span>
-            <span class="hidden sm:inline">Info &amp; OBS</span>
+            <span class="hidden md:inline">Info &amp; OBS</span>
         </button>
 
-        <!-- 3. Rondleiding Hulp Knop -->
+        <div class="h-4 w-px bg-gray-200 dark:bg-gray-700/60 my-auto flex-shrink-0"></div>
+
         <!-- Video Uitleg Knop (Altijd terugkijken) -->
-        <button id="videoUitlegKnop" onclick="openVideoUitlegModal(true)" aria-label="Bekijk de video-uitleg met geluid" title="Bekijk de 3-minuten video-uitleg met gesproken toelichting" class="relative flex-1 sm:flex-initial text-gray-700 dark:text-gray-200 hover:text-[#007AFF] dark:hover:text-[#007AFF] hover:bg-gray-100/80 dark:hover:bg-white/10 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition-all">
+        <button id="videoUitlegKnop" onclick="openVideoUitlegModal(true)" aria-label="Bekijk de video-uitleg met geluid" title="Bekijk de 3-minuten video-uitleg met gesproken toelichting" class="relative text-gray-700 dark:text-gray-200 hover:text-[#007AFF] dark:hover:text-[#007AFF] hover:bg-gray-100/80 dark:hover:bg-white/10 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs font-semibold flex items-center justify-center gap-1 active:scale-95 transition-all flex-shrink-0">
             <span class="text-sm">🎬</span>
-            <span class="sm:hidden text-[11px]">Video</span>
-            <span class="hidden sm:inline">Video Uitleg</span>
+            <span class="hidden md:inline">Video Uitleg</span>
         </button>
 
-        <div class="hidden sm:block h-5 w-px bg-gray-200 dark:bg-gray-700/60 my-auto"></div>
+        <div class="h-4 w-px bg-gray-200 dark:bg-gray-700/60 my-auto flex-shrink-0"></div>
 
-        <button id="rondleidingKnop" onclick="startUitleg()" aria-label="Start de rondleiding: hoe werkt deze app?" title="Hoe werkt deze app? Start de rondleiding" class="relative flex-1 sm:flex-initial text-gray-700 dark:text-gray-200 hover:text-[#007AFF] dark:hover:text-[#007AFF] hover:bg-gray-100/80 dark:hover:bg-white/10 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition-all">
+        <button id="rondleidingKnop" onclick="startUitleg()" aria-label="Start de rondleiding: hoe werkt deze app?" title="Hoe werkt deze app? Start de rondleiding" class="relative text-gray-700 dark:text-gray-200 hover:text-[#007AFF] dark:hover:text-[#007AFF] hover:bg-gray-100/80 dark:hover:bg-white/10 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition-all flex-shrink-0">
             <span id="rondleidingPulse" class="hidden absolute inset-0 rounded-full bg-[#007AFF] opacity-40 animate-ping"></span>
             <svg class="w-4 h-4 text-[#007AFF] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            <span class="sm:hidden text-[11px]">Gids</span>
-            <span class="hidden sm:inline">Rondleiding</span>
+            <span class="hidden md:inline">Rondleiding</span>
         </button>
 
-        <div class="hidden sm:block h-5 w-px bg-gray-200 dark:bg-gray-700/60 my-auto"></div>
+        <div class="h-4 w-px bg-gray-200 dark:bg-gray-700/60 my-auto flex-shrink-0"></div>
 
         <!-- 4. Primaire Actie: Exporteer PowerPoint -->
-        <button id="exporteerKnop" onclick="maakPowerPoint()" class="flex-1 sm:flex-initial bg-[#007AFF] hover:bg-blue-600 text-white px-3 sm:px-5 py-2 sm:py-2.5 rounded-full shadow-[0_4px_16px_rgba(0,122,255,0.32)] active:scale-95 transition-all duration-200 flex items-center justify-center gap-1.5 border border-white/20 font-semibold text-xs sm:text-[13px] tracking-[-0.01em]">
+        <button id="exporteerKnop" onclick="maakPowerPoint()" class="bg-[#007AFF] hover:bg-blue-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-full shadow-[0_4px_16px_rgba(0,122,255,0.32)] active:scale-95 transition-all duration-200 flex items-center justify-center gap-1.5 border border-white/20 font-semibold text-xs sm:text-[13px] tracking-[-0.01em] flex-shrink-0 whitespace-nowrap">
             <svg class="w-4 h-4 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-            <span class="sm:hidden text-[11px]">Exporteer</span>
-            <span class="hidden sm:inline">Exporteer PowerPoint</span>
+            <span>Exporteer</span>
+            <span class="hidden sm:inline">PowerPoint</span>
         </button>
 
         <!-- Made by Sem handtekening (subtiel op desktop) -->
-        <span class="text-[10px] text-[#86868B] font-bold tracking-widest uppercase opacity-60 hidden lg:inline px-2 select-none">Made by Sem</span>
+        <span class="text-[10px] text-[#86868B] font-bold tracking-widest uppercase opacity-60 hidden xl:inline px-1 select-none">Made by Sem</span>
     </div>
 </nav>
 
@@ -4332,21 +4329,55 @@ Bijbelliederen`;
         document.getElementById('controleModal').classList.remove('hidden');
     }
 
-    window.openLiedbundelOnline = function() {
-        const url = "https://liedbundelsonline.nl/nl/lied-zoeken?bundles%5B0%5D=WK&bundles%5B1%5D=OTH";
-        window.open(url, "liedbundelonline", "width=1000,height=850,noopener,noreferrer");
+    window.openLiedbundelOnline = function(titel) {
+        const zoekTitel = titel || (typeof tijdelijkeTitel !== 'undefined' ? tijdelijkeTitel : '');
+        const num = zoekTitel.match(/\d+/)?.[0] || '';
+        const isOTH = /op toonhoogte|oth/i.test(zoekTitel);
+        const bundleParam = isOTH ? 'bundles%5B0%5D=OTH' : 'bundles%5B0%5D=WK';
+        const qParam = num ? ('&query=' + encodeURIComponent(num)) : '';
+        const url = 'https://www.liedbundelsonline.nl/nl/lied-zoeken?' + bundleParam + qParam;
+        window.open(url, '_blank', 'noopener,noreferrer');
     }
 
-    window.openDNPOnline = function() {
-        const url = "https://www.denieuwepsalmberijming.nl/berijmingen";
-        window.open(url, "dnponline", "width=1000,height=850,noopener,noreferrer");
+    window.openDNPOnline = function(titel) {
+        const zoekTitel = titel || (typeof tijdelijkeTitel !== 'undefined' ? tijdelijkeTitel : '');
+        const num = zoekTitel.match(/\d+/)?.[0] || '';
+        const url = num ? ('https://www.denieuwepsalmberijming.nl/de-psalmen/psalm-' + num) : 'https://www.denieuwepsalmberijming.nl/berijmingen';
+        window.open(url, '_blank', 'noopener,noreferrer');
     }
 
     function updateLiedbundelKnop(titel, type) {
         const liedbundelKnop = document.getElementById('liedbundelKnop');
         const dnpKnop = document.getElementById('dnpKnop');
-        const isLiedbundel = type === "Zang" && /weerklank|op toonhoogte/i.test(titel || "");
+        if (!liedbundelKnop || !dnpKnop) return;
+
+        const isLiedbundel = type === "Zang" && /weerklank|op toonhoogte|oth/i.test(titel || "");
         const isDNP = type === "Zang" && /\bdnp\b/i.test(titel || "");
+        const num = (titel || '').match(/\d+/)?.[0] || '';
+
+        if (isLiedbundel) {
+            const isOTH = /op toonhoogte|oth/i.test(titel || '');
+            const bundleParam = isOTH ? 'bundles%5B0%5D=OTH' : 'bundles%5B0%5D=WK';
+            const qParam = num ? ('&query=' + encodeURIComponent(num)) : '';
+            const targetUrl = 'https://www.liedbundelsonline.nl/nl/lied-zoeken?' + bundleParam + qParam;
+            liedbundelKnop.href = targetUrl;
+            liedbundelKnop.target = '_blank';
+            liedbundelKnop.rel = 'noopener noreferrer';
+            liedbundelKnop.innerHTML = num 
+                ? `<span>🔗 Zoek <b>${escapeHtml(titel)}</b> op Liedbundels Online ↗</span>`
+                : `<span>🔗 Open Liedbundels Online &amp; log in ↗</span>`;
+        }
+
+        if (isDNP) {
+            const dnpUrl = num ? ('https://www.denieuwepsalmberijming.nl/de-psalmen/psalm-' + num) : 'https://www.denieuwepsalmberijming.nl/berijmingen';
+            dnpKnop.href = dnpUrl;
+            dnpKnop.target = '_blank';
+            dnpKnop.rel = 'noopener noreferrer';
+            dnpKnop.innerHTML = num
+                ? `<span>🔗 Open <b>Psalm ${num}</b> op De Nieuwe Psalmberijming ↗</span>`
+                : `<span>🔗 Open De Nieuwe Psalmberijming ↗</span>`;
+        }
+
         liedbundelKnop.classList.toggle('hidden', !isLiedbundel);
         liedbundelKnop.classList.toggle('flex', isLiedbundel);
         dnpKnop.classList.toggle('hidden', !isDNP);
@@ -8427,10 +8458,16 @@ ${tekst}
 
             let liedbundelLink = '';
             if (!item.inCloud && item.type === "Zang") {
-                if (/weerklank|op toonhoogte/i.test(item.titel)) {
-                    liedbundelLink = `<a href="#" onclick="event.preventDefault(); event.stopPropagation(); openLiedbundelOnline();" class="text-[11px] font-semibold text-purple-600 hover:text-purple-800 flex items-center gap-1 mt-1">🔗 Open Liedbundel Online</a>`;
+                const num = (item.titel || '').match(/\d+/)?.[0] || '';
+                if (/weerklank|op toonhoogte|oth/i.test(item.titel)) {
+                    const isOTH = /op toonhoogte|oth/i.test(item.titel);
+                    const bParam = isOTH ? 'bundles%5B0%5D=OTH' : 'bundles%5B0%5D=WK';
+                    const qParam = num ? ('&query=' + encodeURIComponent(num)) : '';
+                    const wkUrl = `https://www.liedbundelsonline.nl/nl/lied-zoeken?${bParam}${qParam}`;
+                    liedbundelLink = `<div class="mt-1"><a href="${wkUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="inline-flex items-center gap-1 text-[11px] font-bold text-purple-700 bg-purple-100 hover:bg-purple-200 px-2 py-0.5 rounded-md transition-colors" title="Open Liedbundels Online in nieuw tabblad">🔗 Zoek op Liedbundels Online (${num ? 'nr. ' + num : 'inloggen'}) ↗</a></div>`;
                 } else if (/\bdnp\b/i.test(item.titel)) {
-                    liedbundelLink = `<a href="#" onclick="event.preventDefault(); event.stopPropagation(); openDNPOnline();" class="text-[11px] font-semibold text-teal-600 hover:text-teal-800 flex items-center gap-1 mt-1">🔗 Open De Nieuwe Psalmberijming</a>`;
+                    const dnpUrl = num ? `https://www.denieuwepsalmberijming.nl/de-psalmen/psalm-${num}` : `https://www.denieuwepsalmberijming.nl/berijmingen`;
+                    liedbundelLink = `<div class="mt-1"><a href="${dnpUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="inline-flex items-center gap-1 text-[11px] font-bold text-teal-700 bg-teal-100 hover:bg-teal-200 px-2 py-0.5 rounded-md transition-colors" title="Open De Nieuwe Psalmberijming in nieuw tabblad">🔗 Open Psalm ${num || ''} op DNP ↗</a></div>`;
                 }
             }
 
