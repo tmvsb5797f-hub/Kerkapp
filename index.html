@@ -3584,9 +3584,16 @@ Retourneer UITSLUITEND een valide JSON object:
         try {
             localStorage.setItem(LITURGIE_OPSLAG_SLEUTEL, JSON.stringify(liturgieVolgorde));
         } catch (e) {
-            // Meestal: opslag vol (bijv. veel foto-dia's). App blijft gewoon werken,
-            // alleen automatisch herstel na een refresh is dan niet gegarandeerd.
-            console.warn("Kon liturgie niet lokaal opslaan:", e);
+            // LocalStorage vol (meestal door zware base64 afbeeldingen in Foto-dia's).
+            // Val direct terug op een lichte versie waarbij zware foto data URLs worden gestript,
+            // zodat alle liederen, teksten, schriftlezingen en volgorde ALTIJD behouden blijven!
+            console.warn("Kon volledige liturgie niet lokaal opslaan (waarschijnlijk 5MB quota overschreden), sla lichte versie op:", e);
+            try {
+                const licht = liturgieVolgorde.map(it => (it.type === 'Foto' || it.type === 'QR') ? { ...it, tekst: '' } : it);
+                localStorage.setItem(LITURGIE_OPSLAG_SLEUTEL, JSON.stringify(licht));
+            } catch(err2) {
+                console.warn("Kon ook lichte liturgie niet lokaal opslaan:", err2);
+            }
         }
         if (typeof planAutoArchief === 'function') planAutoArchief();
         if (typeof autoSyncObsLiveLiturgie === 'function') autoSyncObsLiveLiturgie();
@@ -5478,6 +5485,13 @@ Bijbelliederen`;
                 if (typeof authKlaar !== 'undefined') await authKlaar;
                 const gNaam = (window.getActieveGemeente ? window.getActieveGemeente() : 'bethelkerk_maassluis');
                 const docId = 'live_' + gNaam.toLowerCase().replace(/[^a-z0-9]/g, '_');
+                // Strip gigantische base64 data URLs van foto-dia's om de Firestore 1MB documentlimiet NOOIT te overschrijden
+                const veiligeSlides = (state.slides || []).map(s => {
+                    if (s.type === 'Foto' && s.fotoUrl && s.fotoUrl.length > 500) {
+                        return { ...s, fotoUrl: '' };
+                    }
+                    return s;
+                });
                 const payload = {
                     currentIndex: state.currentIndex || 0,
                     isBlackout: !!state.isBlackout,
@@ -5486,7 +5500,7 @@ Bijbelliederen`;
                     customThema: state.customThema || null,
                     gemeente: gNaam,
                     pin: getRegiePin(),
-                    slides: state.slides || []
+                    slides: veiligeSlides
                 };
                 // Sla op onder specifieke gemeente én universele actieve sleutel
                 await Promise.all([
@@ -9569,6 +9583,14 @@ Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
     // --- WEEK-TIKKIE QR BEHEER (CENTRALE CLOUD-OPSLAG + GELDIGHEIDSDATUM) ---
     // =====================================================================
 
+    // Hulpfunctie: formatteer lokale datum als YYYY-MM-DD (zonder UTC-tijdzoneverschuiving)
+    function formatteerLokaleDatum(d) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    }
+
     // Hulpfunctie: datum van de eerstvolgende zondag (YYYY-MM-DD)
     window.getVolgendeZondagDatum = function() {
         const d = new Date();
@@ -9576,14 +9598,14 @@ Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
         const diff = (7 - day) % 7;
         const daysToAdd = (diff === 0) ? 0 : diff;
         d.setDate(d.getDate() + daysToAdd);
-        return d.toISOString().split('T')[0];
+        return formatteerLokaleDatum(d);
     };
 
     // Hulpfunctie: datum over 14 dagen (standaard Tikkie geldigheid)
     window.getVeertienDagenDatum = function() {
         const d = new Date();
         d.setDate(d.getDate() + 14);
-        return d.toISOString().split('T')[0];
+        return formatteerLokaleDatum(d);
     };
 
     // Haal actieve week-tikkie op uit localStorage of cloud cache
@@ -10304,6 +10326,7 @@ Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
 
         const item = liturgieVolgorde[previewItemIdx];
         const canvas = document.getElementById('slideCanvas');
+        if (canvas) canvas.onwheel = null;
         const canvasW = canvas.clientWidth || 400;
         const scale = canvasW / 720;
         const gewenstFS = parseInt(document.getElementById('fontSizeSelect').value) || 40;
@@ -10379,14 +10402,15 @@ Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
                     qrBox.ontouchstart = startDrag;
                 });
 
-                canvas.addEventListener('wheel', (e) => {
+                // Voorkom exponentiële event listener stapeling door direct onwheel toe te wijzen
+                canvas.onwheel = (e) => {
                     if (!document.querySelector('#qrPreviewBox[style*="border-color"]')) return;
                     e.preventDefault();
                     const delta = e.deltaY > 0 ? -0.25 : 0.25;
                     item.qrSize = Math.max(1, Math.min(8, (item.qrSize || 3.5) + delta));
                     bewaarLiturgie();
                     tekenSlidePreview();
-                }, { passive: false });
+                };
             }
             return;
         }
@@ -10900,7 +10924,11 @@ window.exporteerLiturgiePDF = function() {
         var regelsTekst = [];
         if (item.tekst && item.tekst.trim()) {
             doc.setFontSize(9);
-            regelsTekst = doc.splitTextToSize(item.tekst.trim(), bruikbareBreedte - 10);
+            // Schoon markdown asterisks (**woord**) en HTML tags op voor een nette geprinte PDF
+            const schoneTekst = item.tekst.trim()
+                .replace(/\*\*(.*?)\*\*/g, '$1')
+                .replace(/<b>(.*?)<\/b>/gi, '$1');
+            regelsTekst = doc.splitTextToSize(schoneTekst, bruikbareBreedte - 10);
             // Beperk tot max 30 regels per item om een gigantische PDF te voorkomen
             if (regelsTekst.length > 30) {
                 regelsTekst = regelsTekst.slice(0, 30);
@@ -11226,10 +11254,28 @@ window.addEventListener('resize', () => {
 
 window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-        const modal = document.getElementById('welkomstdiaModal');
-        if (modal && !modal.classList.contains('hidden')) {
-            sluitWelkomstdiaModal();
-        }
+        const checkModal = (id, closeFn) => {
+            const el = document.getElementById(id);
+            if (el && !el.classList.contains('hidden')) {
+                if (typeof closeFn === 'function') closeFn();
+                else el.classList.add('hidden');
+                return true;
+            }
+            return false;
+        };
+
+        if (checkModal('welkomstdiaModal', sluitWelkomstdiaModal)) return;
+        if (checkModal('preflightModal', window.sluitPreflightModal)) return;
+        if (checkModal('tikkieModal', window.sluitTikkieModal)) return;
+        if (checkModal('versModal', window.sluitVersModal)) return;
+        if (checkModal('controleModal', window.sluitModal)) return;
+        if (checkModal('importModal', window.sluitImportModal)) return;
+        if (checkModal('archiefModal')) return;
+        if (checkModal('deelModal')) return;
+        if (checkModal('infoModal')) return;
+        if (checkModal('gemeenteModal')) return;
+        if (checkModal('exportFeedbackModal', window.sluitExportFeedback)) return;
+        if (checkModal('obsTestModal')) return;
     }
 });
 
@@ -11445,7 +11491,7 @@ window.maakPowerPoint = async function(customOpties = null, forceExport = false)
         if (!item.tekst || item.tekst.trim() === "") {
             let slide = pres.addSlide();
             slide.background = pptBg;
-            slide.addText(item.titel, { x: 0.5, y: 0.3, w: 9, h: 0.4, color: "AAAAAA", fontSize: 18, fontFace: pptFont, align: "left" });
+            slide.addText(item.titel || "", { x: 0.5, y: 0.3, w: 9, h: 0.4, color: "AAAAAA", fontSize: 18, fontFace: pptFont, align: "left" });
             slide.addText("⚠️ Tekst nog niet ingevuld", { x: 0.5, y: 2, w: 9, h: 1, color: "FF3B30", fontSize: 32, fontFace: pptFont, align: "center", bold: true });
             return;
         }
@@ -11463,7 +11509,7 @@ window.maakPowerPoint = async function(customOpties = null, forceExport = false)
             const tekstAlign = window.getDiaAlign(item, subIdx);
             let slide = pres.addSlide();
             slide.background = pptBg;
-            const diaTitel = sub.diaTitel || item.titel;
+            const diaTitel = sub.diaTitel || item.titel || "";
             slide.addText(diaTitel, { x: tx, y: TITEL_Y, w: tw, h: 0.4, color: "FFFFFF", fontSize: 18, bold: true, fontFace: pptFont, align: "left", valign: "top" });
 
             const heeftVetOpmaak = sub.regels.some(r => /\*\*.*?\*\*|<b>.*?<\/b>/i.test(r));

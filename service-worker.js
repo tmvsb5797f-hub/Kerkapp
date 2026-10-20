@@ -28,7 +28,7 @@ self.addEventListener('activate', (e) => {
 // Hosts met live data nooit cachen (auth, database, AI, bijbel, e-mail, github).
 const DYNAMISCH = [
   'firestore.googleapis.com', 'firebaseio.com', 'identitytoolkit.googleapis.com',
-  'securetoken.googleapis.com', 'gemini-proxy.kerkapp.workers.dev', 'bolls.life',
+  'securetoken.googleapis.com', 'gemini-proxy.kerkapp.workers.dev', 'kerkdata.kerkapp.workers.dev', 'bolls.life',
   'api.github.com', 'api.web3forms.com'
 ];
 
