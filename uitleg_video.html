@@ -301,79 +301,79 @@
       } catch (e) {}
     }
 
-    // --- 2. DE 9 TIJDSGESYNCHRONISEERDE SCÈNES (TOTAAL 210.6 SECONDES) ---
-    const TOTAL_AUDIO_SECONDS = 210.6;
+    // --- 2. DE 9 TIJDSGESYNCHRONISEERDE SCÈNES (TOTAAL 246.0 SECONDES) ---
+    const TOTAL_AUDIO_SECONDS = 246.0;
 
     const scenes = [
       {
         id: "intro",
         title: "1. Introductie & Overzicht",
         start: 0.0,
-        end: 20.5,
+        end: 23.0,
         render: renderIntro,
         update: updateIntro
       },
       {
         id: "datum",
         title: "2. Datum & Voorganger",
-        start: 20.5,
-        end: 37.5,
+        start: 23.0,
+        end: 42.0,
         render: renderDatum,
         update: updateDatum
       },
       {
         id: "liederen",
         title: "3. Liederen & Bijbel",
-        start: 37.5,
-        end: 67.5,
+        start: 42.0,
+        end: 75.0,
         render: renderLiederen,
         update: updateLiederen
       },
       {
         id: "import",
         title: "4. Slim Importeren (AI)",
-        start: 67.5,
-        end: 99.5,
+        start: 75.0,
+        end: 112.0,
         render: renderImport,
         update: updateImport
       },
       {
         id: "volgorde",
         title: "5. Volgorde & Resize",
-        start: 99.5,
-        end: 129.5,
+        start: 112.0,
+        end: 148.0,
         render: renderVolgorde,
         update: updateVolgorde
       },
       {
         id: "extras",
         title: "6. Meelezen & Tikkie",
-        start: 129.5,
-        end: 149.5,
+        start: 148.0,
+        end: 170.0,
         render: renderExtras,
         update: updateExtras
       },
       {
         id: "export",
         title: "7. Exporteer PowerPoint",
-        start: 149.5,
-        end: 170.5,
+        start: 170.0,
+        end: 197.0,
         render: renderExport,
         update: updateExport
       },
       {
         id: "obs",
         title: "8. OBS Live Regie",
-        start: 170.5,
-        end: 197.5,
+        start: 197.0,
+        end: 230.0,
         render: renderObs,
         update: updateObs
       },
       {
         id: "outro",
         title: "9. Afsluiting & Zegen",
-        start: 197.5,
-        end: 210.6,
+        start: 230.0,
+        end: 246.0,
         render: renderOutro,
         update: updateOutro
       }
@@ -421,16 +421,16 @@
 
     function updateIntro(relTime, absTime) {
       checkSfx('s1_whoosh', absTime, 0.2, playWhooshSfx);
-      checkSfx('s1_chime', absTime, 17.5, playSuccessChime);
+      checkSfx('s1_chime', absTime, 18.0, playSuccessChime);
 
       const stressBadge = document.getElementById('introNoStressBadge');
       if (stressBadge) {
-        stressBadge.style.opacity = relTime >= 9.0 ? '1' : '0';
+        stressBadge.style.opacity = relTime >= 10.0 ? '1' : '0';
       }
 
-      if (relTime < 5.0) {
+      if (relTime < 6.0) {
         moveCursor(50, 78);
-      } else if (relTime < 14.0) {
+      } else if (relTime < 16.0) {
         moveCursor(50, 68);
       } else {
         moveCursor(50, 85);
@@ -478,11 +478,11 @@
     }
 
     function updateDatum(relTime, absTime) {
-      checkSfx('s2_whoosh', absTime, 20.6, playWhooshSfx);
-      checkSfx('s2_click_datum', absTime, 23.0, () => { triggerClick(); playClickSfx(); });
-      checkSfx('s2_click_zondag', absTime, 26.0, () => { triggerClick(); playClickSfx(); });
-      checkSfx('s2_click_voorganger', absTime, 28.5, () => { triggerClick(); playClickSfx(); });
-      checkSfx('s2_chime', absTime, 34.0, playSuccessChime);
+      checkSfx('s2_whoosh', absTime, 23.2, playWhooshSfx);
+      checkSfx('s2_click_datum', absTime, 25.0, () => { triggerClick(); playClickSfx(); });
+      checkSfx('s2_click_zondag', absTime, 28.0, () => { triggerClick(); playClickSfx(); });
+      checkSfx('s2_click_voorganger', absTime, 30.5, () => { triggerClick(); playClickSfx(); });
+      checkSfx('s2_chime', absTime, 38.0, playSuccessChime);
 
       const dBox = document.getElementById('demoDatumBox');
       const dTxt = document.getElementById('demoDatumTxt');
@@ -492,35 +492,37 @@
       const vTxt = document.getElementById('demoVoorgangerTxt');
       const statusPill = document.getElementById('datumStatusPill');
 
-      // 0 - 2.5s: beweeg naar datumveld
-      if (relTime < 2.5) {
+      // 0 - 2.0s: beweeg naar datumveld
+      if (relTime < 2.0) {
         moveCursor(32, 42);
         if (dBox) dBox.className = "bg-gray-800 border-2 border-transparent rounded-xl px-3.5 py-2.5 text-xs text-gray-400 flex items-center justify-between";
         if (kal) kal.style.opacity = '0';
       } 
-      // 2.5s - 5.5s: kalender open en kies zondag 18
-      else if (relTime < 5.5) {
+      // 2.0s - 5.0s: kalender open en kies zondag 18
+      else if (relTime < 5.0) {
         if (dBox) dBox.className = "bg-gray-800 border-2 border-[#007AFF] rounded-xl px-3.5 py-2.5 text-xs text-white flex items-center justify-between";
         if (kal) kal.style.opacity = '1';
         moveCursor(48, 64);
-        if (zPill && relTime >= 5.0) {
+      } 
+      // 5.0s - 7.5s: datum gevuld, cursor beweegt naar voorganger
+      else if (relTime < 7.5) {
+        if (zPill) {
           zPill.className = "bg-[#007AFF] text-white font-bold rounded-lg py-1 shadow scale-105";
         }
-      } 
-      // 5.5s - 8.0s: datum gevuld, cursor beweegt naar voorganger
-      else if (relTime < 8.0) {
         if (kal) kal.style.opacity = '0';
         if (dTxt) { dTxt.innerText = "Zondag 18 januari 2026"; dTxt.className = "text-white font-bold"; }
         if (dBox) dBox.className = "bg-gray-800 border-2 border-transparent rounded-xl px-3.5 py-2.5 text-xs text-white flex items-center justify-between";
         moveCursor(70, 42);
       }
-      // 8.0s - 12.0s: typ "ds. Mark Bot" synchroon
+      // 7.5s - 15.0s: typ "dominee Mark Pot" synchroon
       else {
+        if (zPill) zPill.className = "bg-[#007AFF] text-white font-bold rounded-lg py-1 shadow scale-105";
+        if (kal) kal.style.opacity = '0';
         if (dTxt) { dTxt.innerText = "Zondag 18 januari 2026"; dTxt.className = "text-white font-bold"; }
         if (vBox) vBox.className = "bg-gray-800 border-2 border-[#007AFF] rounded-xl px-3.5 py-2.5 text-xs text-white flex items-center";
         
-        const full = "ds. Mark Bot";
-        const progress = Math.min(1, Math.max(0, (relTime - 8.2) / 3.0));
+        const full = "dominee Mark Pot";
+        const progress = Math.min(1, Math.max(0, (relTime - 7.5) / 4.0));
         const chars = Math.floor(progress * full.length);
         if (vTxt) {
           vTxt.innerText = full.substring(0, chars);
@@ -529,11 +531,11 @@
 
         // Typ sound triggers
         for (let i = 1; i <= full.length; i++) {
-          const typeTime = 28.7 + (i * 0.22);
+          const typeTime = 30.5 + (i * 0.22);
           checkSfx('s2_type_' + i, absTime, typeTime, playTypeSfx);
         }
 
-        if (relTime >= 12.5) {
+        if (relTime >= 15.0) {
           if (vBox) vBox.className = "bg-gray-800 border-2 border-emerald-500 rounded-xl px-3.5 py-2.5 text-xs text-white flex items-center";
           if (statusPill) {
             statusPill.className = "text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-400/30";
@@ -594,14 +596,14 @@
     }
 
     function updateLiederen(relTime, absTime) {
-      checkSfx('s3_whoosh', absTime, 37.6, playWhooshSfx);
-      checkSfx('s3_click_zoek', absTime, 44.5, () => { triggerClick(); playClickSfx(); });
-      checkSfx('s3_song_found', absTime, 48.0, playSuccessChime);
-      checkSfx('s3_click_v1', absTime, 56.0, () => { triggerClick(); playClickSfx(); });
-      checkSfx('s3_click_v2', absTime, 57.5, () => { triggerClick(); playClickSfx(); });
-      checkSfx('s3_click_v4', absTime, 59.0, () => { triggerClick(); playClickSfx(); });
-      checkSfx('s3_click_bijbel', absTime, 62.0, () => { triggerClick(); playClickSfx(); });
-      checkSfx('s3_bible_chime', absTime, 65.5, playSuccessChime);
+      checkSfx('s3_whoosh', absTime, 42.2, playWhooshSfx);
+      checkSfx('s3_click_zoek', absTime, 49.0, () => { triggerClick(); playClickSfx(); });
+      checkSfx('s3_song_found', absTime, 54.0, playSuccessChime);
+      checkSfx('s3_click_v1', absTime, 60.0, () => { triggerClick(); playClickSfx(); });
+      checkSfx('s3_click_v2', absTime, 61.5, () => { triggerClick(); playClickSfx(); });
+      checkSfx('s3_click_v4', absTime, 63.0, () => { triggerClick(); playClickSfx(); });
+      checkSfx('s3_click_bijbel', absTime, 68.0, () => { triggerClick(); playClickSfx(); });
+      checkSfx('s3_bible_chime', absTime, 72.5, playSuccessChime);
 
       const zBox = document.getElementById('demoZoekInputBox');
       const zTxt = document.getElementById('demoZoekText');
@@ -611,46 +613,46 @@
       const v2 = document.getElementById('vers2');
       const v4 = document.getElementById('vers4');
 
-      // 0 - 6.5s: cursor naar zoekveld
-      if (relTime < 6.5) {
+      // 0 - 7.0s: cursor naar zoekveld
+      if (relTime < 7.0) {
         moveCursor(50, 38);
       }
-      // 6.5s - 10.5s: typ "wk 14"
-      else if (relTime < 10.5) {
+      // 7.0s - 12.0s: typ "wk 14"
+      else if (relTime < 12.0) {
         if (zBox) zBox.className = "w-full bg-gray-800 border-2 border-[#007AFF] rounded-xl px-4 py-3 text-xs text-white flex items-center justify-between";
         const query = "wk 14";
-        const p = Math.min(1, (relTime - 7.0) / 2.0);
+        const p = Math.min(1, (relTime - 7.0) / 2.5);
         const chars = Math.floor(p * query.length);
         if (zTxt) {
           zTxt.innerText = query.substring(0, chars);
           zTxt.className = "text-white font-bold";
         }
         for (let i = 1; i <= query.length; i++) {
-          checkSfx('s3_type_wk_' + i, absTime, 44.6 + i * 0.3, playTypeSfx);
+          checkSfx('s3_type_wk_' + i, absTime, 49.0 + i * 0.35, playTypeSfx);
         }
       }
-      // 10.5s - 17.5s: toon liedkaart
-      else if (relTime < 17.5) {
+      // 12.0s - 18.0s: toon liedkaart
+      else if (relTime < 18.0) {
         if (card) card.style.opacity = '1';
         moveCursor(48, 55);
       }
-      // 17.5s - 23.5s: klik verzen 1, 2, 4
-      else if (relTime < 23.5) {
+      // 18.0s - 25.0s: klik verzen 1, 2, 4
+      else if (relTime < 25.0) {
         if (card) card.style.opacity = '1';
-        if (relTime >= 18.5) {
+        if (relTime >= 18.0) {
           moveCursor(48, 55);
           if (v1) v1.className = "px-2.5 py-1 rounded-lg text-[11px] font-bold bg-[#007AFF] text-white shadow";
         }
-        if (relTime >= 20.0) {
+        if (relTime >= 19.5) {
           moveCursor(58, 55);
           if (v2) v2.className = "px-2.5 py-1 rounded-lg text-[11px] font-bold bg-[#007AFF] text-white shadow";
         }
-        if (relTime >= 21.5) {
+        if (relTime >= 21.0) {
           moveCursor(78, 55);
           if (v4) v4.className = "px-2.5 py-1 rounded-lg text-[11px] font-bold bg-[#007AFF] text-white shadow";
         }
       }
-      // 23.5s - 30.0s: toon schriftlezing
+      // 25.0s - 33.0s: toon schriftlezing
       else {
         if (card) card.style.opacity = '1';
         if (v1) v1.className = "px-2.5 py-1 rounded-lg text-[11px] font-bold bg-[#007AFF] text-white shadow";
@@ -703,37 +705,37 @@
     }
 
     function updateImport(relTime, absTime) {
-      checkSfx('s4_whoosh', absTime, 67.6, playWhooshSfx);
+      checkSfx('s4_whoosh', absTime, 75.2, playWhooshSfx);
       // Grapje jingle exact op het lachje in de audio (1:21 = 81.2s)!
       checkSfx('s4_chuckle', absTime, 81.2, playChuckleSfx);
-      checkSfx('s4_click_mail', absTime, 84.5, () => { triggerClick(); playClickSfx(); });
-      checkSfx('s4_scan_whoosh', absTime, 89.0, playWhooshSfx);
-      checkSfx('s4_click_add', absTime, 97.5, () => { triggerClick(); playClickSfx(); });
-      checkSfx('s4_add_chime', absTime, 98.0, playSuccessChime);
+      checkSfx('s4_click_mail', absTime, 93.0, () => { triggerClick(); playClickSfx(); });
+      checkSfx('s4_scan_whoosh', absTime, 99.0, playWhooshSfx);
+      checkSfx('s4_click_add', absTime, 108.0, () => { triggerClick(); playClickSfx(); });
+      checkSfx('s4_add_chime', absTime, 109.0, playSuccessChime);
 
       const tags = document.getElementById('demoAiTags');
       const btn = document.getElementById('demoBtnAllesToevoegen');
 
-      // 0 - 13.5s: kijk naar de mail
-      if (relTime < 13.5) {
+      // 0 - 18.0s: kijk naar de mail
+      if (relTime < 18.0) {
         moveCursor(50, 48);
       }
-      // 13.5s - 17.0s: selecteer mail
-      else if (relTime < 17.0) {
+      // 18.0s - 24.0s: selecteer mail
+      else if (relTime < 24.0) {
         moveCursor(50, 52);
       }
-      // 17.0s - 25.0s: AI analyseert & toont tags
-      else if (relTime < 25.0) {
+      // 24.0s - 33.0s: AI analyseert & toont tags
+      else if (relTime < 33.0) {
         if (tags) tags.style.opacity = '1';
         if (btn) btn.style.opacity = '1';
         moveCursor(50, 72);
       }
-      // 25.0s - 32.0s: klik op toevoegen knop
+      // 33.0s - 37.0s: klik op toevoegen knop
       else {
         if (tags) tags.style.opacity = '1';
         if (btn) {
           btn.style.opacity = '1';
-          if (relTime >= 29.5) {
+          if (relTime >= 33.0) {
             btn.className = "px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-lg scale-105";
             btn.innerText = "✓ Gehele Dienst Toegevoegd!";
           }
@@ -788,13 +790,13 @@
     }
 
     function updateVolgorde(relTime, absTime) {
-      checkSfx('s5_whoosh', absTime, 99.6, playWhooshSfx);
-      checkSfx('s5_click_grab', absTime, 105.0, () => { triggerClick(); playClickSfx(); });
-      checkSfx('s5_drag_whoosh', absTime, 107.0, playWhooshSfx);
-      checkSfx('s5_drop_click', absTime, 108.5, () => { triggerClick(); playClickSfx(); });
-      checkSfx('s5_click_textbox', absTime, 118.0, () => { triggerClick(); playClickSfx(); });
-      checkSfx('s5_click_corner', absTime, 122.0, () => { triggerClick(); playClickSfx(); });
-      checkSfx('s5_resize_chime', absTime, 126.5, playSuccessChime);
+      checkSfx('s5_whoosh', absTime, 112.2, playWhooshSfx);
+      checkSfx('s5_click_grab', absTime, 121.0, () => { triggerClick(); playClickSfx(); });
+      checkSfx('s5_drag_whoosh', absTime, 123.0, playWhooshSfx);
+      checkSfx('s5_drop_click', absTime, 125.0, () => { triggerClick(); playClickSfx(); });
+      checkSfx('s5_click_textbox', absTime, 134.0, () => { triggerClick(); playClickSfx(); });
+      checkSfx('s5_click_corner', absTime, 137.0, () => { triggerClick(); playClickSfx(); });
+      checkSfx('s5_resize_chime', absTime, 144.0, playSuccessChime);
 
       const dragCard = document.getElementById('vItemCollecte');
       const sBox = document.getElementById('demoSlideBox');
@@ -804,33 +806,33 @@
       const hBL = document.getElementById('handleBL');
       const hBR = document.getElementById('handleBR');
 
-      // 0 - 5.0s: cursor beweegt naar collecte item
-      if (relTime < 5.0) {
+      // 0 - 9.0s: cursor beweegt naar collecte item
+      if (relTime < 9.0) {
         moveCursor(25, 42);
       }
-      // 5.0s - 10.0s: sleep collecte item onder preek
-      else if (relTime < 10.0) {
+      // 9.0s - 13.0s: sleep collecte item onder preek
+      else if (relTime < 13.0) {
         moveCursor(25, 68);
         if (dragCard) {
           dragCard.style.transform = "translateY(55px)";
-          if (relTime >= 8.5) {
+          if (relTime >= 12.0) {
             dragCard.className = "p-2.5 bg-emerald-600/30 border border-emerald-500 rounded-xl text-xs font-bold text-emerald-200 flex items-center justify-between shadow-md";
             dragCard.innerHTML = "<span>5. Collecte (Na de preek!)</span><span>✓</span>";
           }
         }
       }
-      // 10.0s - 17.5s: cursor beweegt naar canvas rechts
-      else if (relTime < 17.5) {
+      // 13.0s - 22.0s: cursor beweegt naar canvas rechts
+      else if (relTime < 22.0) {
         moveCursor(70, 48);
         if (dragCard) dragCard.style.transform = "translateY(55px)";
       }
-      // 17.5s - 21.0s: klik op tekstvak, 4 hoekpunten verschijnen
-      else if (relTime < 21.0) {
+      // 22.0s - 25.0s: klik op tekstvak, 4 hoekpunten verschijnen
+      else if (relTime < 25.0) {
         moveCursor(70, 48);
         if (sBox) sBox.className = "border-2 border-[#007AFF] bg-blue-500/15 p-3 rounded-xl relative transition-all duration-300 flex items-center justify-center text-center";
         [hTL, hTR, hBL, hBR].forEach(h => { if (h) h.style.opacity = '1'; });
       }
-      // 21.0s - 30.0s: versleep hoekpunt rechtsonder en vergroot
+      // 25.0s - 36.0s: versleep hoekpunt rechtsonder en vergroot
       else {
         moveCursor(84, 68);
         if (sBox) {
@@ -875,19 +877,19 @@
     }
 
     function updateExtras(relTime, absTime) {
-      checkSfx('s6_whoosh', absTime, 129.6, playWhooshSfx);
-      checkSfx('s6_click_tikkie', absTime, 133.5, () => { triggerClick(); playClickSfx(); });
-      checkSfx('s6_click_meelees', absTime, 138.5, () => { triggerClick(); playClickSfx(); });
-      checkSfx('s6_chime', absTime, 146.5, playSuccessChime);
+      checkSfx('s6_whoosh', absTime, 148.2, playWhooshSfx);
+      checkSfx('s6_click_tikkie', absTime, 152.0, () => { triggerClick(); playClickSfx(); });
+      checkSfx('s6_click_meelees', absTime, 156.0, () => { triggerClick(); playClickSfx(); });
+      checkSfx('s6_chime', absTime, 166.0, playSuccessChime);
 
       const cT = document.getElementById('cardTikkie');
       const cM = document.getElementById('cardMeelees');
       const bT = document.getElementById('tikkieBadge');
       const bM = document.getElementById('meeleesBadge');
 
-      if (relTime < 3.5) {
+      if (relTime < 4.0) {
         moveCursor(35, 52);
-      } else if (relTime < 8.5) {
+      } else if (relTime < 8.0) {
         moveCursor(35, 52);
         if (cT) cT.className = "bg-gray-800 p-4 rounded-2xl border-2 border-emerald-500 flex flex-col items-center text-center gap-2 scale-105 transition-all shadow-lg";
         if (bT) bT.style.opacity = '1';
@@ -933,18 +935,18 @@
     }
 
     function updateExport(relTime, absTime) {
-      checkSfx('s7_whoosh', absTime, 149.6, playWhooshSfx);
-      checkSfx('s7_click_export', absTime, 153.5, () => { triggerClick(); playClickSfx(); });
-      checkSfx('s7_click_modal', absTime, 160.0, () => { triggerClick(); playClickSfx(); });
-      checkSfx('s7_click_final', absTime, 164.5, () => { triggerClick(); playClickSfx(); });
-      checkSfx('s7_dl_chime', absTime, 167.5, playSuccessChime);
+      checkSfx('s7_whoosh', absTime, 170.2, playWhooshSfx);
+      checkSfx('s7_click_export', absTime, 174.5, () => { triggerClick(); playClickSfx(); });
+      checkSfx('s7_click_modal', absTime, 182.0, () => { triggerClick(); playClickSfx(); });
+      checkSfx('s7_click_final', absTime, 187.0, () => { triggerClick(); playClickSfx(); });
+      checkSfx('s7_dl_chime', absTime, 193.0, playSuccessChime);
 
       const modal = document.getElementById('demoModalCustomizer');
       const badge = document.getElementById('demoDownloadBadge');
 
-      if (relTime < 4.0) {
+      if (relTime < 4.5) {
         moveCursor(50, 48);
-      } else if (relTime < 14.0) {
+      } else if (relTime < 17.0) {
         if (modal) modal.style.opacity = '1';
         moveCursor(50, 68);
       } else {
@@ -990,24 +992,24 @@
     }
 
     function updateObs(relTime, absTime) {
-      checkSfx('s8_whoosh', absTime, 170.6, playWhooshSfx);
-      checkSfx('s8_click_info', absTime, 177.5, () => { triggerClick(); playClickSfx(); });
-      checkSfx('s8_key_space', absTime, 186.0, () => { triggerClick(); playClickSfx(); });
-      checkSfx('s8_key_b', absTime, 188.0, () => { triggerClick(); playClickSfx(); });
-      checkSfx('s8_key_b_off', absTime, 190.0, () => { triggerClick(); playClickSfx(); });
-      checkSfx('s8_remote_click', absTime, 193.5, () => { triggerClick(); playClickSfx(); });
-      checkSfx('s8_chime', absTime, 195.0, playSuccessChime);
+      checkSfx('s8_whoosh', absTime, 197.2, playWhooshSfx);
+      checkSfx('s8_click_info', absTime, 204.0, () => { triggerClick(); playClickSfx(); });
+      checkSfx('s8_key_space', absTime, 212.0, () => { triggerClick(); playClickSfx(); });
+      checkSfx('s8_key_b', absTime, 215.0, () => { triggerClick(); playClickSfx(); });
+      checkSfx('s8_key_b_off', absTime, 218.0, () => { triggerClick(); playClickSfx(); });
+      checkSfx('s8_remote_click', absTime, 221.0, () => { triggerClick(); playClickSfx(); });
+      checkSfx('s8_chime', absTime, 226.0, playSuccessChime);
 
       const bInner = document.getElementById('obsBeamerInner');
       const rNext = document.getElementById('remoteBtnNext');
 
-      if (relTime < 14.0) {
+      if (relTime < 15.0) {
         moveCursor(50, 50);
       } 
-      // 14.0s - 19.0s: toets B zwart scherm demonstratie
-      else if (relTime < 19.0) {
+      // 15.0s - 24.0s: toets B zwart scherm demonstratie
+      else if (relTime < 24.0) {
         moveCursor(20, 58);
-        if (relTime >= 17.5 && relTime <= 19.5) {
+        if (relTime >= 18.0 && relTime <= 21.0) {
           if (bInner) {
             bInner.className = "aspect-video bg-black rounded-lg flex items-center justify-center text-[10px] text-red-400 font-bold p-1 border border-red-900";
             bInner.innerText = "ZWART SCHERM (Toets B)";
@@ -1019,7 +1021,7 @@
           }
         }
       } 
-      // 19.0s - 27.0s: telefoon klikker demonstratie
+      // 24.0s - 33.0s: telefoon klikker demonstratie
       else {
         moveCursor(82, 58);
         if (bInner) {
@@ -1051,8 +1053,8 @@
     }
 
     function updateOutro(relTime, absTime) {
-      checkSfx('s9_whoosh', absTime, 197.6, playWhooshSfx);
-      checkSfx('s9_final_chime', absTime, 206.5, playSuccessChime);
+      checkSfx('s9_whoosh', absTime, 230.2, playWhooshSfx);
+      checkSfx('s9_final_chime', absTime, 241.0, playSuccessChime);
       moveCursor(50, 75);
     }
 

@@ -7569,7 +7569,7 @@ Van harte Gods zegen toegewenst!`;
             } catch (e) {}
         }
 
-        const TOTAL_AUDIO_SEC = 210.6;
+        const TOTAL_AUDIO_SEC = 246.0;
         let vmCurrentIdx = -1;
         let vmIsPlaying = false;
         let vmTriggeredSfx = new Set();
@@ -7579,7 +7579,7 @@ Van harte Gods zegen toegewenst!`;
                 id: "intro",
                 title: "1. Introductie & Overzicht",
                 start: 0.0,
-                end: 20.5,
+                end: 23.0,
                 render: function(c) {
                     c.innerHTML = `
                         <div class="flex flex-col items-center justify-center text-center gap-4 max-w-lg">
@@ -7603,17 +7603,17 @@ Van harte Gods zegen toegewenst!`;
                 },
                 update: function(relTime, absTime) {
                     checkVmSfx('s1_whoosh', absTime, 0.2, playVmWhoosh);
-                    checkVmSfx('s1_chime', absTime, 17.5, playVmSuccess);
+                    checkVmSfx('s1_chime', absTime, 18.0, playVmSuccess);
                     const b = document.getElementById('vmNoStressBadge');
-                    if (b) b.style.opacity = relTime >= 9.0 ? '1' : '0';
-                    moveVmCursor(50, relTime < 5.0 ? 75 : (relTime < 14.0 ? 65 : 80));
+                    if (b) b.style.opacity = relTime >= 10.0 ? '1' : '0';
+                    moveVmCursor(50, relTime < 6.0 ? 75 : (relTime < 16.0 ? 65 : 80));
                 }
             },
             {
                 id: "datum",
                 title: "2. Datum & Voorganger",
-                start: 20.5,
-                end: 37.5,
+                start: 23.0,
+                end: 42.0,
                 render: function(c) {
                     c.innerHTML = `
                         <div class="w-full max-w-lg bg-gray-900/95 rounded-2xl p-5 border border-white/10 shadow-2xl flex flex-col gap-3.5">
@@ -7635,7 +7635,7 @@ Van harte Gods zegen toegewenst!`;
                                 <div>
                                     <label class="text-[10px] font-semibold text-gray-400 block mb-1">Voorganger</label>
                                     <div id="vmVoorgangerBox" class="bg-gray-800 border-2 border-transparent rounded-xl px-3 py-2 text-xs text-gray-400 flex items-center transition-all">
-                                        <span id="vmVoorgangerTxt">Bijv: dominee Mark Bot</span>
+                                        <span id="vmVoorgangerTxt">Bijv: dominee Mark Pot</span>
                                     </div>
                                 </div>
                             </div>
@@ -7652,11 +7652,11 @@ Van harte Gods zegen toegewenst!`;
                     `;
                 },
                 update: function(relTime, absTime) {
-                    checkVmSfx('s2_whoosh', absTime, 20.6, playVmWhoosh);
-                    checkVmSfx('s2_click_datum', absTime, 23.0, () => { triggerVmClick(); playVmClick(); });
-                    checkVmSfx('s2_click_zondag', absTime, 26.0, () => { triggerVmClick(); playVmClick(); });
-                    checkVmSfx('s2_click_voorganger', absTime, 28.5, () => { triggerVmClick(); playVmClick(); });
-                    checkVmSfx('s2_chime', absTime, 34.0, playVmSuccess);
+                    checkVmSfx('s2_whoosh', absTime, 23.2, playVmWhoosh);
+                    checkVmSfx('s2_click_datum', absTime, 25.0, () => { triggerVmClick(); playVmClick(); });
+                    checkVmSfx('s2_click_zondag', absTime, 28.0, () => { triggerVmClick(); playVmClick(); });
+                    checkVmSfx('s2_click_voorganger', absTime, 30.5, () => { triggerVmClick(); playVmClick(); });
+                    checkVmSfx('s2_chime', absTime, 38.0, playVmSuccess);
 
                     const dBox = document.getElementById('vmDatumBox');
                     const dTxt = document.getElementById('vmDatumTxt');
@@ -7666,33 +7666,38 @@ Van harte Gods zegen toegewenst!`;
                     const vTxt = document.getElementById('vmVoorgangerTxt');
                     const pill = document.getElementById('vmDatumPill');
 
-                    if (relTime < 2.5) {
-                        moveVmCursor(32, 45);
-                    } else if (relTime < 5.5) {
-                        if (dBox) dBox.className = "bg-gray-800 border-2 border-[#007AFF] rounded-xl px-3 py-2 text-xs text-white flex items-center justify-between";
+                    if (relTime < 2.0) {
+                        moveVmCursor(30, 35);
+                    } else if (relTime < 5.0) {
+                        if (dBox) dBox.className = "bg-gray-800 border-2 border-blue-400 rounded-xl px-3 py-2 text-xs text-white flex items-center justify-between";
                         if (kal) kal.style.opacity = '1';
-                        moveVmCursor(48, 65);
-                        if (zPill && relTime >= 5.0) {
-                            zPill.className = "bg-[#007AFF] text-white font-bold rounded-lg py-1 shadow scale-105";
-                        }
-                    } else if (relTime < 8.0) {
+                        moveVmCursor(45, 65);
+                    } else if (relTime < 7.5) {
+                        if (zPill) zPill.className = "bg-blue-600 text-white font-bold rounded-lg py-1 shadow";
+                        if (dTxt) dTxt.innerText = "Zondag 18 januari 2026";
                         if (kal) kal.style.opacity = '0';
-                        if (dTxt) { dTxt.innerText = "Zondag 18 januari 2026"; dTxt.className = "text-white font-bold"; }
-                        if (dBox) dBox.className = "bg-gray-800 border-2 border-transparent rounded-xl px-3 py-2 text-xs text-white flex items-center justify-between";
-                        moveVmCursor(70, 45);
+                        moveVmCursor(70, 35);
                     } else {
-                        if (dTxt) { dTxt.innerText = "Zondag 18 januari 2026"; dTxt.className = "text-white font-bold"; }
-                        if (vBox) vBox.className = "bg-gray-800 border-2 border-[#007AFF] rounded-xl px-3 py-2 text-xs text-white flex items-center";
-                        const full = "ds. Mark Bot";
-                        const p = Math.min(1, Math.max(0, (relTime - 8.2) / 3.0));
-                        const chars = Math.floor(p * full.length);
-                        if (vTxt) { vTxt.innerText = full.substring(0, chars); vTxt.className = "text-white font-bold"; }
+                        if (zPill) zPill.className = "bg-blue-600 text-white font-bold rounded-lg py-1 shadow";
+                        if (kal) kal.style.opacity = '0';
+                        if (dTxt) dTxt.innerText = "Zondag 18 januari 2026";
+                        if (vBox) vBox.className = "bg-gray-800 border-2 border-blue-400 rounded-xl px-3 py-2 text-xs text-white flex items-center";
+                        
+                        const full = "dominee Mark Pot";
+                        const progress = Math.min(1, Math.max(0, (relTime - 7.5) / 4.0));
+                        const chars = Math.floor(progress * full.length);
+                        if (vTxt) vTxt.innerText = full.substring(0, chars);
+
                         for (let i = 1; i <= full.length; i++) {
-                            checkVmSfx('s2_type_' + i, absTime, 28.7 + (i * 0.22), playVmType);
+                            checkVmSfx('s2_vm_type_' + i, absTime, 30.5 + i * 0.22, playVmType);
                         }
-                        if (relTime >= 12.5) {
+
+                        if (relTime >= 15.0) {
                             if (vBox) vBox.className = "bg-gray-800 border-2 border-emerald-500 rounded-xl px-3 py-2 text-xs text-white flex items-center";
-                            if (pill) { pill.className = "text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-400/30"; pill.innerText = "✓ Welkomstdia Klaar"; }
+                            if (pill) {
+                                pill.className = "text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-400/30";
+                                pill.innerText = "✓ Welkomstdia Klaar";
+                            }
                         }
                     }
                 }
@@ -7700,192 +7705,190 @@ Van harte Gods zegen toegewenst!`;
             {
                 id: "liederen",
                 title: "3. Liederen & Bijbel",
-                start: 37.5,
-                end: 67.5,
+                start: 42.0,
+                end: 75.0,
                 render: function(c) {
                     c.innerHTML = `
-                        <div class="w-full max-w-lg bg-gray-900/95 rounded-2xl p-5 border border-white/10 shadow-2xl flex flex-col gap-3">
-                            <div class="flex items-center justify-between border-b border-white/10 pb-2.5">
-                                <span class="text-xs font-bold text-gray-300 uppercase tracking-wider">1. Liederen &amp; Lezingen Zoeken</span>
-                                <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-400/30">Liedbundels Online</span>
-                            </div>
-                            <div class="relative">
-                                <div id="vmZoekBox" class="w-full bg-gray-800 border-2 border-transparent rounded-xl px-3.5 py-2.5 text-xs text-white flex items-center justify-between">
-                                    <span id="vmZoekTxt" class="text-gray-400">Typ 'wk 14', 'ps 84', 'sela'...</span>
-                                    <span class="text-blue-400">🔍</span>
+                        <div class="w-full max-w-lg flex flex-col gap-3">
+                            <div class="bg-gray-900/90 rounded-2xl p-4 border border-white/10 shadow-2xl flex flex-col gap-3">
+                                <div class="text-xs font-bold text-gray-300 flex items-center justify-between">
+                                    <span>🎵 1. Liederen Zoeken</span>
+                                    <span class="text-[10px] text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full">Database: 6.000+ liederen</span>
                                 </div>
-                            </div>
-                            <div id="vmLiedCard" class="bg-gray-800/90 rounded-xl p-3 border border-gray-700 flex flex-col gap-2.5 opacity-0 transition-all duration-300">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <span class="text-xs font-bold text-white block">Weerklank Lied 14 - De Here is mijn Herder</span>
-                                        <span class="text-[10px] text-gray-400">Melodie: Psalm 23 · 5 coupletten</span>
+                                <div id="vmLiedInputBox" class="bg-gray-800 border-2 border-transparent rounded-xl px-3.5 py-2 text-xs text-gray-400 flex items-center justify-between transition-all">
+                                    <span id="vmLiedQuery">Zoek lied (bijv. 'wk 14', 'psalm 84', 'sela')...</span>
+                                    <span>🔍</span>
+                                </div>
+                                <div id="vmLiedCard" class="bg-gray-800/90 p-3 rounded-xl border border-gray-700 opacity-0 transition-all duration-300 flex flex-col gap-2">
+                                    <div class="flex justify-between items-center text-xs font-bold text-white">
+                                        <span>Weerklank Lied 14 - Halleluja! Laat opklinken</span>
+                                        <span class="text-[10px] text-blue-400 font-normal">4 coupletten</span>
                                     </div>
-                                    <span class="text-[9px] px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 font-bold">Weerklank</span>
-                                </div>
-                                <div class="flex items-center gap-1.5 pt-1 flex-wrap">
-                                    <span class="text-[10px] text-gray-400 font-semibold">Selecteer verzen:</span>
-                                    <span id="vmV1" class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-gray-700 text-gray-300">Vers 1</span>
-                                    <span id="vmV2" class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-gray-700 text-gray-300">Vers 2</span>
-                                    <span id="vmV4" class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-gray-700 text-gray-300">Vers 4</span>
-                                </div>
-                            </div>
-                            <div id="vmBijbelCard" class="bg-gray-800/70 rounded-xl p-2.5 border border-gray-700 opacity-0 transition-all duration-300 flex items-center justify-between">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-sm">📖</span>
-                                    <div>
-                                        <span class="text-xs font-bold text-white block">Johannes 3:16-17</span>
-                                        <span class="text-[10px] text-gray-400">HSV Schriftlezing</span>
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="text-[10px] text-gray-400">Kies verzen:</span>
+                                        <span id="vmV1" class="px-2 py-0.5 rounded bg-gray-700 text-[10px] font-bold text-gray-300 transition-all">Vers 1</span>
+                                        <span id="vmV2" class="px-2 py-0.5 rounded bg-gray-700 text-[10px] font-bold text-gray-300 transition-all">Vers 2</span>
+                                        <span id="vmV3" class="px-2 py-0.5 rounded bg-gray-700 text-[10px] font-bold text-gray-300 transition-all">Vers 3</span>
+                                        <span id="vmV4" class="px-2 py-0.5 rounded bg-gray-700 text-[10px] font-bold text-gray-300 transition-all">Vers 4</span>
                                     </div>
                                 </div>
-                                <span class="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold">✓ Toegevoegd</span>
+                            </div>
+                            <div id="vmBijbelCard" class="bg-gray-900/90 rounded-2xl p-3 border border-white/10 opacity-0 transition-all duration-300 flex items-center justify-between shadow-lg">
+                                <div class="flex items-center gap-2 text-xs font-bold text-white">
+                                    <span>📖</span>
+                                    <span>Schriftlezing: Johannes 3:1-16 (HSV)</span>
+                                </div>
+                                <span class="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full font-bold">16 verzen klaar</span>
                             </div>
                         </div>
                     `;
                 },
                 update: function(relTime, absTime) {
-                    checkVmSfx('s3_whoosh', absTime, 37.6, playVmWhoosh);
-                    checkVmSfx('s3_click_zoek', absTime, 44.5, () => { triggerVmClick(); playVmClick(); });
-                    checkVmSfx('s3_song_found', absTime, 48.0, playVmSuccess);
-                    checkVmSfx('s3_click_v1', absTime, 56.0, () => { triggerVmClick(); playVmClick(); });
-                    checkVmSfx('s3_click_v2', absTime, 57.5, () => { triggerVmClick(); playVmClick(); });
-                    checkVmSfx('s3_click_v4', absTime, 59.0, () => { triggerVmClick(); playVmClick(); });
-                    checkVmSfx('s3_bible_chime', absTime, 65.5, playVmSuccess);
+                    checkVmSfx('s3_whoosh', absTime, 42.2, playVmWhoosh);
+                    checkVmSfx('s3_click_zoek', absTime, 49.0, () => { triggerVmClick(); playVmClick(); });
+                    checkVmSfx('s3_song_found', absTime, 54.0, playVmSuccess);
+                    checkVmSfx('s3_click_v1', absTime, 60.0, () => { triggerVmClick(); playVmClick(); });
+                    checkVmSfx('s3_click_v2', absTime, 61.5, () => { triggerVmClick(); playVmClick(); });
+                    checkVmSfx('s3_click_v4', absTime, 63.0, () => { triggerVmClick(); playVmClick(); });
+                    checkVmSfx('s3_click_bijbel', absTime, 68.0, () => { triggerVmClick(); playVmClick(); });
+                    checkVmSfx('s3_bible_chime', absTime, 72.5, playVmSuccess);
 
-                    const zBox = document.getElementById('vmZoekBox');
-                    const zTxt = document.getElementById('vmZoekTxt');
+                    const zBox = document.getElementById('vmLiedInputBox');
+                    const zTxt = document.getElementById('vmLiedQuery');
                     const card = document.getElementById('vmLiedCard');
                     const bCard = document.getElementById('vmBijbelCard');
                     const v1 = document.getElementById('vmV1');
                     const v2 = document.getElementById('vmV2');
                     const v4 = document.getElementById('vmV4');
 
-                    if (relTime < 6.5) {
-                        moveVmCursor(50, 38);
-                    } else if (relTime < 10.5) {
-                        if (zBox) zBox.className = "w-full bg-gray-800 border-2 border-[#007AFF] rounded-xl px-3.5 py-2.5 text-xs text-white flex items-center justify-between";
-                        const q = "wk 14";
-                        const p = Math.min(1, (relTime - 7.0) / 2.0);
-                        const chars = Math.floor(p * q.length);
-                        if (zTxt) { zTxt.innerText = q.substring(0, chars); zTxt.className = "text-white font-bold"; }
-                        for (let i = 1; i <= q.length; i++) checkVmSfx('s3_type_wk_' + i, absTime, 44.6 + i * 0.3, playVmType);
-                    } else if (relTime < 17.5) {
+                    if (relTime < 7.0) {
+                        moveVmCursor(50, 35);
+                    } else if (relTime < 12.0) {
+                        if (zBox) zBox.className = "bg-gray-800 border-2 border-blue-400 rounded-xl px-3.5 py-2 text-xs text-white flex items-center justify-between";
+                        const query = "wk 14";
+                        const p = Math.min(1, (relTime - 7.0) / 2.5);
+                        const chars = Math.floor(p * query.length);
+                        if (zTxt) zTxt.innerText = query.substring(0, chars);
+                        for (let i = 1; i <= query.length; i++) {
+                            checkVmSfx('s3_vm_type_' + i, absTime, 49.0 + i * 0.35, playVmType);
+                        }
+                    } else if (relTime < 18.0) {
                         if (card) card.style.opacity = '1';
-                        moveVmCursor(48, 55);
-                    } else if (relTime < 23.5) {
+                        moveVmCursor(45, 50);
+                    } else if (relTime < 25.0) {
                         if (card) card.style.opacity = '1';
-                        if (relTime >= 18.5 && v1) v1.className = "px-2 py-0.5 rounded-lg text-[10px] font-bold bg-[#007AFF] text-white shadow";
-                        if (relTime >= 20.0 && v2) v2.className = "px-2 py-0.5 rounded-lg text-[10px] font-bold bg-[#007AFF] text-white shadow";
-                        if (relTime >= 21.5 && v4) v4.className = "px-2 py-0.5 rounded-lg text-[10px] font-bold bg-[#007AFF] text-white shadow";
+                        if (relTime >= 18.0 && v1) v1.className = "px-2 py-0.5 rounded bg-blue-600 text-[10px] font-bold text-white shadow";
+                        if (relTime >= 19.5 && v2) v2.className = "px-2 py-0.5 rounded bg-blue-600 text-[10px] font-bold text-white shadow";
+                        if (relTime >= 21.0 && v4) v4.className = "px-2 py-0.5 rounded bg-blue-600 text-[10px] font-bold text-white shadow";
+                        moveVmCursor(relTime < 19.5 ? 45 : (relTime < 21.0 ? 55 : 75), 50);
                     } else {
                         if (card) card.style.opacity = '1';
-                        if (v1) v1.className = "px-2 py-0.5 rounded-lg text-[10px] font-bold bg-[#007AFF] text-white shadow";
-                        if (v2) v2.className = "px-2 py-0.5 rounded-lg text-[10px] font-bold bg-[#007AFF] text-white shadow";
-                        if (v4) v4.className = "px-2 py-0.5 rounded-lg text-[10px] font-bold bg-[#007AFF] text-white shadow";
-                        moveVmCursor(50, 75);
+                        if (v1) v1.className = "px-2 py-0.5 rounded bg-blue-600 text-[10px] font-bold text-white shadow";
+                        if (v2) v2.className = "px-2 py-0.5 rounded bg-blue-600 text-[10px] font-bold text-white shadow";
+                        if (v4) v4.className = "px-2 py-0.5 rounded bg-blue-600 text-[10px] font-bold text-white shadow";
                         if (bCard) bCard.style.opacity = '1';
+                        moveVmCursor(50, 75);
                     }
                 }
             },
             {
                 id: "import",
                 title: "4. Slim Importeren (AI)",
-                start: 67.5,
-                end: 99.5,
+                start: 75.0,
+                end: 112.0,
                 render: function(c) {
                     c.innerHTML = `
-                        <div class="w-full max-w-xl bg-gray-900/95 rounded-2xl p-5 border border-purple-500/40 shadow-2xl flex flex-col gap-3">
-                            <div class="flex items-center justify-between border-b border-white/10 pb-2.5">
-                                <span class="text-xs font-bold text-purple-400 uppercase tracking-wider flex items-center gap-1.5">
-                                    <span>⚡</span> Slim Importeren
-                                </span>
-                                <span class="text-[10px] px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-bold border border-purple-400/30">Zaterdagavond Mail</span>
-                            </div>
-                            <div class="bg-gray-950 p-3.5 rounded-xl border border-gray-800 text-xs font-mono text-gray-300 flex flex-col gap-1.5">
-                                <div class="flex items-center justify-between text-gray-500 text-[10px] border-b border-gray-800 pb-1">
-                                    <span>Van: ds. Mark Bot</span>
-                                    <span class="text-purple-400 font-bold">Zaterdag 23:14 uur</span>
+                        <div class="w-full max-w-lg bg-gray-900/95 rounded-2xl p-5 border border-white/10 shadow-2xl flex flex-col gap-3">
+                            <div class="flex items-center justify-between border-b border-white/10 pb-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-base">📋</span>
+                                    <span class="text-xs font-bold text-gray-200">Plak Hele Mail van Predikant</span>
                                 </div>
-                                <div class="text-gray-300 font-sans text-xs leading-relaxed">
-                                    "Beste beamist, hierbij de liturgie: zingen Ps 84:1,3; lezing Johannes 3:16; preek: De liefde Gods; slotzang Wk 14:1,4."
-                                </div>
+                                <span class="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-bold border border-purple-400/30">AI Herkenning</span>
                             </div>
-                            <div id="vmAiTags" class="flex items-center gap-1.5 pt-1 opacity-0 transition-all duration-300 flex-wrap">
-                                <span class="text-[10px] text-gray-400 font-bold">AI Detectie:</span>
-                                <span class="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-lg text-[11px] font-bold">✓ Psalm 84 (1, 3)</span>
-                                <span class="px-2.5 py-0.5 bg-blue-500/20 text-blue-300 border border-blue-500/40 rounded-lg text-[11px] font-bold">✓ Johannes 3:16</span>
-                                <span class="px-2.5 py-0.5 bg-purple-500/20 text-purple-300 border border-purple-500/40 rounded-lg text-[11px] font-bold">✓ Weerklank 14 (1, 4)</span>
+                            <div class="bg-gray-950 p-3 rounded-xl border border-gray-800 text-[11px] font-mono text-gray-300 leading-relaxed max-h-28 overflow-hidden select-none">
+                                "Beste koster, hierbij nog snel de liturgie voor morgen:<br/>
+                                Votum en groet<br/>
+                                Zingen: WK 14: 1, 2 en 4<br/>
+                                Lezing: Johannes 3:1-16 (HSV)<br/>
+                                Zingen na preek: Psalm 84: 1 en 3<br/>
+                                Collecte voor de diaconie"
                             </div>
-                            <div class="flex justify-end pt-1">
-                                <button id="vmBtnAlles" class="px-3.5 py-1.5 rounded-xl bg-purple-600 text-white text-xs font-bold opacity-0 transition-all duration-300 shadow-md">
-                                    ✓ Alles Toevoegen aan Dienst
-                                </button>
+                            <div id="vmImportTags" class="flex flex-wrap gap-1.5 opacity-0 transition-opacity duration-300">
+                                <span class="text-[10px] font-bold bg-blue-500/20 text-blue-300 px-2.5 py-1 rounded-lg border border-blue-400/30">🎵 Weerklank 14 (v1,2,4)</span>
+                                <span class="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-lg border border-emerald-400/30">📖 Johannes 3:1-16 (HSV)</span>
+                                <span class="text-[10px] font-bold bg-blue-500/20 text-blue-300 px-2.5 py-1 rounded-lg border border-blue-400/30">🎵 Psalm 84 (v1,3)</span>
                             </div>
+                            <button id="vmBtnImport" class="w-full py-2.5 rounded-xl bg-[#007AFF] text-white text-xs font-bold shadow-lg opacity-0 transition-all flex items-center justify-center gap-1.5">
+                                <span>⚡</span> Direct Toevoegen aan Liturgie
+                            </button>
                         </div>
                     `;
                 },
                 update: function(relTime, absTime) {
-                    checkVmSfx('s4_whoosh', absTime, 67.6, playVmWhoosh);
+                    checkVmSfx('s4_whoosh', absTime, 75.2, playVmWhoosh);
                     checkVmSfx('s4_chuckle', absTime, 81.2, playVmChuckle);
-                    checkVmSfx('s4_click_mail', absTime, 84.5, () => { triggerVmClick(); playVmClick(); });
-                    checkVmSfx('s4_scan_whoosh', absTime, 89.0, playVmWhoosh);
-                    checkVmSfx('s4_click_add', absTime, 97.5, () => { triggerVmClick(); playVmClick(); });
-                    checkVmSfx('s4_add_chime', absTime, 98.0, playVmSuccess);
+                    checkVmSfx('s4_click_mail', absTime, 93.0, () => { triggerVmClick(); playVmClick(); });
+                    checkVmSfx('s4_scan_whoosh', absTime, 99.0, playVmWhoosh);
+                    checkVmSfx('s4_click_add', absTime, 108.0, () => { triggerVmClick(); playVmClick(); });
+                    checkVmSfx('s4_add_chime', absTime, 109.0, playVmSuccess);
 
-                    const tags = document.getElementById('vmAiTags');
-                    const btn = document.getElementById('vmBtnAlles');
+                    const tags = document.getElementById('vmImportTags');
+                    const btn = document.getElementById('vmBtnImport');
 
-                    if (relTime < 13.5) {
-                        moveVmCursor(50, 48);
-                    } else if (relTime < 17.0) {
-                        moveVmCursor(50, 52);
-                    } else if (relTime < 25.0) {
+                    if (relTime < 18.0) {
+                        moveVmCursor(50, 45);
+                    } else if (relTime < 24.0) {
+                        moveVmCursor(50, 50);
+                    } else if (relTime < 33.0) {
                         if (tags) tags.style.opacity = '1';
                         if (btn) btn.style.opacity = '1';
-                        moveVmCursor(50, 72);
+                        moveVmCursor(50, 70);
                     } else {
                         if (tags) tags.style.opacity = '1';
                         if (btn) {
                             btn.style.opacity = '1';
-                            if (relTime >= 29.5) {
-                                btn.className = "px-3.5 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-lg scale-105";
-                                btn.innerText = "✓ Gehele Dienst Toegevoegd!";
+                            if (relTime >= 33.0) {
+                                btn.className = "w-full py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-lg scale-105 flex items-center justify-center gap-1.5";
+                                btn.innerText = "✓ 4 items direct toegevoegd!";
                             }
                         }
-                        moveVmCursor(80, 88);
+                        moveVmCursor(50, 85);
                     }
                 }
             },
             {
                 id: "volgorde",
                 title: "5. Volgorde & Resize",
-                start: 99.5,
-                end: 129.5,
+                start: 112.0,
+                end: 148.0,
                 render: function(c) {
                     c.innerHTML = `
-                        <div class="w-full max-w-xl grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div class="bg-gray-900/95 rounded-2xl p-3 border border-white/10 flex flex-col gap-1.5">
-                                <div class="text-[11px] font-bold text-gray-300 uppercase tracking-wider mb-1 flex items-center justify-between">
-                                    <span>Volgorde</span>
-                                    <span class="text-[9px] text-blue-400 font-bold">Sleep &amp; drop</span>
+                        <div class="w-full max-w-2xl grid grid-cols-2 gap-4">
+                            <!-- Linker kolom: volgorde lijst -->
+                            <div class="bg-gray-900/90 rounded-2xl p-3 border border-white/10 flex flex-col gap-2">
+                                <span class="text-xs font-bold text-gray-300">Volgorde &amp; Slepen</span>
+                                <div class="flex flex-col gap-1.5 text-xs">
+                                    <div class="p-2 bg-gray-800 rounded-lg text-gray-300">1. Welkom &amp; Groet</div>
+                                    <div class="p-2 bg-gray-800 rounded-lg text-gray-300">2. Weerklank 14</div>
+                                    <div id="vmItemCollecte" class="p-2 bg-blue-500/20 border border-blue-400/50 rounded-lg text-white font-bold transition-all duration-500 shadow">3. Collecte</div>
+                                    <div class="p-2 bg-gray-800 rounded-lg text-gray-300">4. Schriftlezing &amp; Preek</div>
                                 </div>
-                                <div class="p-2 bg-gray-800 rounded-lg text-xs font-semibold text-white flex justify-between"><span>1. Votum &amp; Groet</span><span>⠿</span></div>
-                                <div id="vmCollecteCard" class="p-2 bg-blue-600/30 border border-blue-500 rounded-lg text-xs font-bold text-blue-200 flex justify-between shadow transition-all duration-500"><span>2. Collecte</span><span>⠿</span></div>
-                                <div class="p-2 bg-gray-800 rounded-lg text-xs font-semibold text-white flex justify-between"><span>3. Psalm 84 : 1, 3</span><span>⠿</span></div>
-                                <div class="p-2 bg-gray-800 rounded-lg text-xs font-semibold text-white flex justify-between"><span>4. Preek</span><span>⠿</span></div>
                             </div>
-                            <div class="bg-gray-900/95 rounded-2xl p-3 border border-white/10 flex flex-col gap-1.5">
-                                <div class="text-[11px] font-bold text-gray-300 uppercase tracking-wider mb-1 flex items-center justify-between">
-                                    <span>Dia Preview</span>
-                                    <span class="text-[9px] text-blue-400 font-bold">4 Hoekpunten</span>
+                            <!-- Rechter kolom: dia preview canvas -->
+                            <div class="bg-gray-900/90 rounded-2xl p-3 border border-white/10 flex flex-col gap-2">
+                                <div class="flex justify-between items-center text-xs font-bold text-gray-300">
+                                    <span>Preview Scherm</span>
+                                    <span class="text-[10px] text-blue-400">Tekstvak Resizen</span>
                                 </div>
-                                <div class="aspect-video bg-black rounded-xl border border-gray-800 relative overflow-hidden flex items-center justify-center p-2">
-                                    <div id="vmSlideBox" class="border-2 border-transparent bg-blue-500/10 p-2 rounded-lg relative transition-all duration-500 flex items-center justify-center text-center" style="width:70%;height:60%">
-                                        <span id="vmSlideTxt" class="text-[10px] font-bold text-white leading-tight">Wat hou ik van Uw huis,<br/>HEER der heerscharen!</span>
-                                        <div id="vmHTL" class="absolute -top-1 -left-1 w-2.5 h-2.5 bg-[#007AFF] rounded shadow opacity-0"></div>
-                                        <div id="vmHTR" class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#007AFF] rounded shadow opacity-0"></div>
-                                        <div id="vmHBL" class="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-[#007AFF] rounded shadow opacity-0"></div>
-                                        <div id="vmHBR" class="absolute -bottom-1 -right-1 w-3 h-3 bg-[#007AFF] rounded shadow opacity-0"></div>
+                                <div class="aspect-video bg-black rounded-xl p-3 relative flex items-center justify-center border border-gray-800 overflow-hidden">
+                                    <div id="vmSlideBox" class="border-2 border-transparent bg-white/5 p-2 rounded-lg relative transition-all duration-300 flex items-center justify-center text-center">
+                                        <span id="vmSlideTxt" class="text-[11px] font-bold text-white">Psalm 84 : 1</span>
+                                        <!-- 4 hoek resize handles -->
+                                        <div id="vmHtl" class="absolute -top-1 -left-1 w-2.5 h-2.5 bg-[#007AFF] rounded-full opacity-0"></div>
+                                        <div id="vmHtr" class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#007AFF] rounded-full opacity-0"></div>
+                                        <div id="vmHbl" class="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-[#007AFF] rounded-full opacity-0"></div>
+                                        <div id="vmHbr" class="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-[#007AFF] rounded-full opacity-0"></div>
                                     </div>
                                 </div>
                             </div>
@@ -7893,48 +7896,49 @@ Van harte Gods zegen toegewenst!`;
                     `;
                 },
                 update: function(relTime, absTime) {
-                    checkVmSfx('s5_whoosh', absTime, 99.6, playVmWhoosh);
-                    checkVmSfx('s5_click_grab', absTime, 105.0, () => { triggerVmClick(); playVmClick(); });
-                    checkVmSfx('s5_drag_whoosh', absTime, 107.0, playVmWhoosh);
-                    checkVmSfx('s5_drop_click', absTime, 108.5, () => { triggerVmClick(); playVmClick(); });
-                    checkVmSfx('s5_click_textbox', absTime, 118.0, () => { triggerVmClick(); playVmClick(); });
-                    checkVmSfx('s5_click_corner', absTime, 122.0, () => { triggerVmClick(); playVmClick(); });
-                    checkVmSfx('s5_resize_chime', absTime, 126.5, playVmSuccess);
+                    checkVmSfx('s5_whoosh', absTime, 112.2, playVmWhoosh);
+                    checkVmSfx('s5_click_grab', absTime, 121.0, () => { triggerVmClick(); playVmClick(); });
+                    checkVmSfx('s5_drag_whoosh', absTime, 123.0, playVmWhoosh);
+                    checkVmSfx('s5_drop_click', absTime, 125.0, () => { triggerVmClick(); playVmClick(); });
+                    checkVmSfx('s5_click_textbox', absTime, 134.0, () => { triggerVmClick(); playVmClick(); });
+                    checkVmSfx('s5_click_corner', absTime, 137.0, () => { triggerVmClick(); playVmClick(); });
+                    checkVmSfx('s5_resize_chime', absTime, 144.0, playVmSuccess);
 
-                    const drag = document.getElementById('vmCollecteCard');
+                    const dragCard = document.getElementById('vmItemCollecte');
                     const sBox = document.getElementById('vmSlideBox');
                     const sTxt = document.getElementById('vmSlideTxt');
-                    const hTL = document.getElementById('vmHTL');
-                    const hTR = document.getElementById('vmHTR');
-                    const hBL = document.getElementById('vmHBL');
-                    const hBR = document.getElementById('vmHBR');
+                    const hTL = document.getElementById('vmHtl');
+                    const hTR = document.getElementById('vmHtr');
+                    const hBL = document.getElementById('vmHbl');
+                    const hBR = document.getElementById('vmHbr');
 
-                    if (relTime < 5.0) {
+                    if (relTime < 9.0) {
                         moveVmCursor(25, 42);
-                    } else if (relTime < 10.0) {
-                        moveVmCursor(25, 68);
-                        if (drag) {
-                            drag.style.transform = "translateY(55px)";
-                            if (relTime >= 8.5) {
-                                drag.className = "p-2 bg-emerald-600/30 border border-emerald-500 rounded-lg text-xs font-bold text-emerald-200 flex justify-between shadow";
-                                drag.innerHTML = "<span>5. Collecte (Na preek)</span><span>✓</span>";
+                    } else if (relTime < 13.0) {
+                        moveVmCursor(25, 65);
+                        if (dragCard) {
+                            dragCard.style.transform = "translateY(42px)";
+                            if (relTime >= 12.0) {
+                                dragCard.className = "p-2 bg-emerald-600/30 border border-emerald-500 rounded-lg text-emerald-200 font-bold shadow";
+                                dragCard.innerText = "5. Collecte (Na de preek!) ✓";
                             }
                         }
-                    } else if (relTime < 17.5) {
+                    } else if (relTime < 22.0) {
                         moveVmCursor(70, 48);
-                    } else if (relTime < 21.0) {
+                        if (dragCard) dragCard.style.transform = "translateY(42px)";
+                    } else if (relTime < 25.0) {
                         moveVmCursor(70, 48);
                         if (sBox) sBox.className = "border-2 border-[#007AFF] bg-blue-500/15 p-2 rounded-lg relative transition-all duration-300 flex items-center justify-center text-center";
                         [hTL, hTR, hBL, hBR].forEach(h => { if (h) h.style.opacity = '1'; });
                     } else {
-                        moveVmCursor(84, 68);
+                        moveVmCursor(84, 65);
                         if (sBox) {
                             sBox.className = "border-2 border-[#007AFF] bg-blue-500/15 p-2 rounded-lg relative transition-all duration-500 flex items-center justify-center text-center shadow-lg";
-                            sBox.style.width = "94%";
-                            sBox.style.height = "86%";
+                            sBox.style.width = "92%";
+                            sBox.style.height = "80%";
                         }
                         if (sTxt) {
-                            sTxt.innerHTML = "Wat hou ik van Uw huis,<br/>HEER der heerscharen!<br/><span class='text-[9px] text-blue-300 font-normal'>- Vers 1 (Volledige breedte)</span>";
+                            sTxt.innerHTML = "Psalm 84 : 1<br/><span class='text-[9px] text-blue-300 font-normal'>- Versleepbaar &amp; Breder kader</span>";
                         }
                         [hTL, hTR, hBL, hBR].forEach(h => { if (h) h.style.opacity = '1'; });
                     }
@@ -7943,98 +7947,94 @@ Van harte Gods zegen toegewenst!`;
             {
                 id: "extras",
                 title: "6. Meelezen & Tikkie",
-                start: 129.5,
-                end: 149.5,
+                start: 148.0,
+                end: 170.0,
                 render: function(c) {
                     c.innerHTML = `
-                        <div class="w-full max-w-lg bg-gray-900/95 rounded-2xl p-5 border border-white/10 shadow-2xl flex flex-col gap-3.5">
-                            <div class="flex items-center justify-between border-b border-white/10 pb-2.5">
-                                <span class="text-xs font-bold text-gray-300 uppercase tracking-wider">Gemeente Service</span>
-                                <span class="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-400/30">Mobiel &amp; Toegankelijk</span>
+                        <div class="w-full max-w-lg grid grid-cols-2 gap-4">
+                            <div id="vmCardTikkie" class="bg-gray-900/90 p-4 rounded-2xl border border-white/10 flex flex-col items-center text-center gap-2 transition-all">
+                                <span class="text-2xl">📱</span>
+                                <span class="text-xs font-bold text-white">Tikkie QR Collecte</span>
+                                <span class="text-[10px] text-gray-400">Automatische dia met QR code</span>
+                                <span id="vmTikkieBadge" class="opacity-0 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-400/30 transition-opacity">✓ Toegevoegd als Dia</span>
                             </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div id="vmCardTikkie" class="bg-gray-800 p-3.5 rounded-xl border border-gray-700 flex flex-col items-center text-center gap-1.5 transition-all">
-                                    <span class="text-2xl">💳</span>
-                                    <span class="text-xs font-bold text-white">Tikkie QR-Collecte</span>
-                                    <span class="text-[10px] text-gray-400">Automatische digitale collecte QR-dia.</span>
-                                </div>
-                                <div id="vmCardMeelees" class="bg-gray-800 p-3.5 rounded-xl border border-gray-700 flex flex-col items-center text-center gap-1.5 transition-all">
-                                    <span class="text-2xl">📱</span>
-                                    <span class="text-xs font-bold text-white">Live Meelees-pagina</span>
-                                    <span class="text-[10px] text-gray-400">Ouderen lezen live mee op smartphone.</span>
-                                </div>
+                            <div id="vmCardMeelees" class="bg-gray-900/90 p-4 rounded-2xl border border-white/10 flex flex-col items-center text-center gap-2 transition-all">
+                                <span class="text-2xl">📖</span>
+                                <span class="text-xs font-bold text-white">Live Meeleesversie</span>
+                                <span class="text-[10px] text-gray-400">Voor slechthorenden &amp; ouderen</span>
+                                <span id="vmMeeleesBadge" class="opacity-0 text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 font-bold border border-blue-400/30 transition-opacity">✓ Live Synchroon</span>
                             </div>
                         </div>
                     `;
                 },
                 update: function(relTime, absTime) {
-                    checkVmSfx('s6_whoosh', absTime, 129.6, playVmWhoosh);
-                    checkVmSfx('s6_click_tikkie', absTime, 133.5, () => { triggerVmClick(); playVmClick(); });
-                    checkVmSfx('s6_click_meelees', absTime, 138.5, () => { triggerVmClick(); playVmClick(); });
-                    checkVmSfx('s6_chime', absTime, 146.5, playVmSuccess);
+                    checkVmSfx('s6_whoosh', absTime, 148.2, playVmWhoosh);
+                    checkVmSfx('s6_click_tikkie', absTime, 152.0, () => { triggerVmClick(); playVmClick(); });
+                    checkVmSfx('s6_click_meelees', absTime, 156.0, () => { triggerVmClick(); playVmClick(); });
+                    checkVmSfx('s6_chime', absTime, 166.0, playVmSuccess);
 
                     const cT = document.getElementById('vmCardTikkie');
                     const cM = document.getElementById('vmCardMeelees');
+                    const bT = document.getElementById('vmTikkieBadge');
+                    const bM = document.getElementById('vmMeeleesBadge');
 
-                    if (relTime < 3.5) {
+                    if (relTime < 4.0) {
                         moveVmCursor(35, 52);
-                    } else if (relTime < 8.5) {
+                    } else if (relTime < 8.0) {
                         moveVmCursor(35, 52);
-                        if (cT) cT.className = "bg-gray-800 p-3.5 rounded-xl border-2 border-emerald-500 flex flex-col items-center text-center gap-1.5 scale-105 shadow-lg";
+                        if (cT) cT.className = "bg-gray-800 p-4 rounded-2xl border-2 border-emerald-500 flex flex-col items-center text-center gap-2 scale-105 transition-all shadow-lg";
+                        if (bT) bT.style.opacity = '1';
                     } else {
                         moveVmCursor(68, 52);
-                        if (cT) cT.className = "bg-gray-800 p-3.5 rounded-xl border-2 border-emerald-500 flex flex-col items-center text-center gap-1.5";
-                        if (cM) cM.className = "bg-gray-800 p-3.5 rounded-xl border-2 border-[#007AFF] flex flex-col items-center text-center gap-1.5 scale-105 shadow-lg";
+                        if (cT) cT.className = "bg-gray-800 p-4 rounded-2xl border-2 border-emerald-500 flex flex-col items-center text-center gap-2 transition-all";
+                        if (bT) bT.style.opacity = '1';
+                        if (cM) cM.className = "bg-gray-800 p-4 rounded-2xl border-2 border-[#007AFF] flex flex-col items-center text-center gap-2 scale-105 transition-all shadow-lg";
+                        if (bM) bM.style.opacity = '1';
                     }
                 }
             },
             {
                 id: "export",
                 title: "7. Exporteer PowerPoint",
-                start: 149.5,
-                end: 170.5,
+                start: 170.0,
+                end: 197.0,
                 render: function(c) {
                     c.innerHTML = `
-                        <div class="w-full max-w-md bg-gray-900/95 rounded-2xl p-5 border border-blue-500/40 shadow-2xl flex flex-col items-center justify-center gap-3 text-center">
-                            <div class="w-14 h-14 rounded-2xl bg-[#007AFF] text-white flex items-center justify-center text-2xl shadow-[0_8px_30px_rgba(0,122,255,0.6)]">
-                                💾
+                        <div class="w-full max-w-md bg-gray-900/95 rounded-2xl p-5 border border-white/10 shadow-2xl flex flex-col gap-3">
+                            <div class="flex items-center justify-between border-b border-white/10 pb-2">
+                                <span class="text-xs font-bold text-gray-200">Exporteer PowerPoint</span>
+                                <span class="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 font-bold border border-blue-400/30">16:9 Breedbeeld</span>
                             </div>
-                            <div>
-                                <h3 class="text-base font-bold text-white">Exporteer PowerPoint</h3>
-                                <p class="text-[11px] text-gray-400 mt-0.5">16:9 breedbeeld presentatie direct klaar voor beamer.</p>
+                            <div id="vmExportModal" class="bg-gray-800 p-3 rounded-xl border border-gray-700 opacity-0 transition-all duration-300 flex flex-col gap-2">
+                                <span class="text-[11px] font-bold text-white">Welkomstdia Aanpassen (Optioneel)</span>
+                                <div class="text-[10px] text-gray-400">✓ Titel aanpassen &nbsp; ✓ Liednummers instellen</div>
                             </div>
-                            <div id="vmCustomizerBox" class="bg-gray-800/90 rounded-xl p-2.5 border border-gray-700 w-full text-left flex flex-col gap-1.5 opacity-0 transition-all duration-300">
-                                <div class="flex items-center justify-between text-[11px] font-bold text-white border-b border-gray-700 pb-1">
-                                    <span>Welkomstdia Aanpassen</span>
-                                    <span class="text-blue-400 text-[10px]">Stap vóór export</span>
-                                </div>
-                                <div class="flex items-center justify-between text-[10px] text-gray-300">
-                                    <span>Liednummers tonen</span>
-                                    <span class="text-emerald-400 font-bold">✓ Ingeschakeld</span>
-                                </div>
+                            <div id="vmDownloadBadge" class="opacity-0 transition-opacity duration-300 p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-bold flex items-center justify-center gap-2">
+                                <span>📥</span> Liturgie_18-01-2026.pptx gedownload!
                             </div>
-                            <div id="vmDlBadge" class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 opacity-0 transition-opacity shadow-md">
-                                <span>✓</span> Bethelkerk_18_Januari.pptx gereed!
-                            </div>
+                            <button id="vmBtnExport" class="w-full py-2.5 rounded-xl bg-[#007AFF] text-white text-xs font-bold shadow-lg flex items-center justify-center gap-1.5">
+                                <span>📊</span> Exporteer PowerPoint
+                            </button>
                         </div>
                     `;
                 },
                 update: function(relTime, absTime) {
-                    checkVmSfx('s7_whoosh', absTime, 149.6, playVmWhoosh);
-                    checkVmSfx('s7_click_export', absTime, 153.5, () => { triggerVmClick(); playVmClick(); });
-                    checkVmSfx('s7_click_final', absTime, 164.5, () => { triggerVmClick(); playVmClick(); });
-                    checkVmSfx('s7_dl_chime', absTime, 167.5, playVmSuccess);
+                    checkVmSfx('s7_whoosh', absTime, 170.2, playVmWhoosh);
+                    checkVmSfx('s7_click_export', absTime, 174.5, () => { triggerVmClick(); playVmClick(); });
+                    checkVmSfx('s7_click_modal', absTime, 182.0, () => { triggerVmClick(); playVmClick(); });
+                    checkVmSfx('s7_click_final', absTime, 187.0, () => { triggerVmClick(); playVmClick(); });
+                    checkVmSfx('s7_dl_chime', absTime, 193.0, playVmSuccess);
 
-                    const box = document.getElementById('vmCustomizerBox');
-                    const badge = document.getElementById('vmDlBadge');
+                    const modal = document.getElementById('vmExportModal');
+                    const badge = document.getElementById('vmDownloadBadge');
 
-                    if (relTime < 4.0) {
+                    if (relTime < 4.5) {
                         moveVmCursor(50, 48);
-                    } else if (relTime < 14.0) {
-                        if (box) box.style.opacity = '1';
+                    } else if (relTime < 17.0) {
+                        if (modal) modal.style.opacity = '1';
                         moveVmCursor(50, 68);
                     } else {
-                        if (box) box.style.opacity = '0.3';
+                        if (modal) modal.style.opacity = '0.4';
                         if (badge) badge.style.opacity = '1';
                         moveVmCursor(50, 80);
                     }
@@ -8043,72 +8043,66 @@ Van harte Gods zegen toegewenst!`;
             {
                 id: "obs",
                 title: "8. OBS Live Regie",
-                start: 170.5,
-                end: 197.5,
+                start: 197.0,
+                end: 230.0,
                 render: function(c) {
                     c.innerHTML = `
-                        <div class="w-full max-w-xl bg-gray-900/95 rounded-2xl p-4 border border-purple-500/50 shadow-2xl flex flex-col gap-3">
+                        <div class="w-full max-w-lg bg-gray-900/95 rounded-2xl p-5 border border-white/10 shadow-2xl flex flex-col gap-3">
                             <div class="flex items-center justify-between border-b border-white/10 pb-2">
-                                <span class="text-xs font-bold text-purple-400 uppercase tracking-wider flex items-center gap-1.5">
-                                    <span>🎥</span> OBS &amp; Beamer Live Regie
-                                </span>
-                                <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-400/30">PIN: 1234 · &lt;50ms</span>
+                                <span class="text-xs font-bold text-gray-200">🎥 OBS &amp; Beamer Regie (Live Zonder PowerPoint)</span>
+                                <span class="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-bold border border-purple-400/30">Browser Live</span>
                             </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                                <div class="bg-black p-2.5 rounded-xl border border-gray-800 text-center flex flex-col gap-1">
-                                    <span class="text-[9px] text-gray-400 font-bold uppercase">1. Zaalbeamer</span>
-                                    <div id="vmObsBeamer" class="aspect-video bg-gray-950 rounded-lg flex items-center justify-center text-[9px] text-white font-bold p-1 border border-gray-800">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="bg-gray-950 p-2.5 rounded-xl border border-gray-800 flex flex-col gap-1.5">
+                                    <span class="text-[10px] text-gray-400 font-bold">Beamer Output</span>
+                                    <div id="vmObsBeamerInner" class="aspect-video bg-gray-950 rounded-lg flex items-center justify-center text-[10px] text-white font-bold p-1 border border-gray-800">
                                         Lied 14 : Vers 1
                                     </div>
+                                    <span class="text-[9px] text-gray-500 text-center">Spatiebalk = Volgende dia · Toets B = Zwart</span>
                                 </div>
-                                <div class="bg-black p-2.5 rounded-xl border border-blue-900/60 text-center flex flex-col gap-1">
-                                    <span class="text-[9px] text-blue-400 font-bold uppercase">2. OBS Livestream</span>
-                                    <div class="aspect-video bg-blue-950/40 rounded-lg flex items-center justify-center text-[9px] text-blue-200 font-bold p-1 border border-blue-900/40">
-                                        Lower-third Overlay
+                                <div class="bg-gray-950 p-2.5 rounded-xl border border-gray-800 flex flex-col gap-1.5">
+                                    <span class="text-[10px] text-gray-400 font-bold">Draadloze Mobiele Remote</span>
+                                    <div class="aspect-video bg-gray-900 rounded-lg flex flex-col items-center justify-center p-1.5 gap-1 border border-gray-700">
+                                        <span class="text-[9px] text-gray-300">Pincode: 1234</span>
+                                        <button id="vmRemoteBtnNext" class="bg-blue-600 text-white font-bold px-2 py-0.5 rounded text-[10px] shadow">Volgende Dia</button>
                                     </div>
-                                </div>
-                                <div class="bg-black p-2.5 rounded-xl border border-emerald-900/60 text-center flex flex-col gap-1">
-                                    <span class="text-[9px] text-emerald-400 font-bold uppercase">3. Telefoon Klikker</span>
-                                    <div class="aspect-video bg-emerald-950/40 rounded-lg flex items-center justify-around text-[9px] text-emerald-300 font-bold p-1 border border-emerald-900/40">
-                                        <span>◀</span>
-                                        <span id="vmRemoteBtn" class="bg-emerald-600/50 px-1.5 py-0.5 rounded">Volgende ▶</span>
-                                    </div>
+                                    <span class="text-[9px] text-emerald-400 text-center">✓ Verbonden met telefoon</span>
                                 </div>
                             </div>
                         </div>
                     `;
                 },
                 update: function(relTime, absTime) {
-                    checkVmSfx('s8_whoosh', absTime, 170.6, playVmWhoosh);
-                    checkVmSfx('s8_click_info', absTime, 177.5, () => { triggerVmClick(); playVmClick(); });
-                    checkVmSfx('s8_key_space', absTime, 186.0, () => { triggerVmClick(); playVmClick(); });
-                    checkVmSfx('s8_key_b', absTime, 188.0, () => { triggerVmClick(); playVmClick(); });
-                    checkVmSfx('s8_key_b_off', absTime, 190.0, () => { triggerVmClick(); playVmClick(); });
-                    checkVmSfx('s8_remote_click', absTime, 193.5, () => { triggerVmClick(); playVmClick(); });
-                    checkVmSfx('s8_chime', absTime, 195.0, playVmSuccess);
+                    checkVmSfx('s8_whoosh', absTime, 197.2, playVmWhoosh);
+                    checkVmSfx('s8_click_info', absTime, 204.0, () => { triggerVmClick(); playVmClick(); });
+                    checkVmSfx('s8_key_space', absTime, 212.0, () => { triggerVmClick(); playVmClick(); });
+                    checkVmSfx('s8_key_b', absTime, 215.0, () => { triggerVmClick(); playVmClick(); });
+                    checkVmSfx('s8_key_b_off', absTime, 218.0, () => { triggerVmClick(); playVmClick(); });
+                    checkVmSfx('s8_remote_click', absTime, 221.0, () => { triggerVmClick(); playVmClick(); });
+                    checkVmSfx('s8_chime', absTime, 226.0, playVmSuccess);
 
-                    const bInner = document.getElementById('vmObsBeamer');
-                    const rNext = document.getElementById('vmRemoteBtn');
+                    const bInner = document.getElementById('vmObsBeamerInner');
+                    const rNext = document.getElementById('vmRemoteBtnNext');
 
-                    if (relTime < 14.0) {
+                    if (relTime < 15.0) {
                         moveVmCursor(50, 50);
-                    } else if (relTime < 19.0) {
+                    } else if (relTime < 24.0) {
                         moveVmCursor(20, 58);
-                        if (relTime >= 17.5 && relTime <= 19.5) {
+                        if (relTime >= 18.0 && relTime <= 21.0) {
                             if (bInner) {
-                                bInner.className = "aspect-video bg-black rounded-lg flex items-center justify-center text-[9px] text-red-400 font-bold p-1 border border-red-900";
+                                bInner.className = "aspect-video bg-black rounded-lg flex items-center justify-center text-[10px] text-red-400 font-bold p-1 border border-red-900";
                                 bInner.innerText = "ZWART SCHERM (Toets B)";
                             }
                         } else {
                             if (bInner) {
-                                bInner.className = "aspect-video bg-gray-950 rounded-lg flex items-center justify-center text-[9px] text-white font-bold p-1 border border-gray-800";
+                                bInner.className = "aspect-video bg-gray-950 rounded-lg flex items-center justify-center text-[10px] text-white font-bold p-1 border border-gray-800";
                                 bInner.innerText = "Lied 14 : Vers 2";
                             }
                         }
                     } else {
                         moveVmCursor(82, 58);
                         if (bInner) {
-                            bInner.className = "aspect-video bg-gray-950 rounded-lg flex items-center justify-center text-[9px] text-emerald-300 font-bold p-1 border border-emerald-700";
+                            bInner.className = "aspect-video bg-gray-950 rounded-lg flex items-center justify-center text-[10px] text-emerald-300 font-bold p-1 border border-emerald-700";
                             bInner.innerText = "Lied 14 : Vers 3 (via Mobiel)";
                         }
                         if (rNext) {
@@ -8120,8 +8114,8 @@ Van harte Gods zegen toegewenst!`;
             {
                 id: "outro",
                 title: "9. Afsluiting & Zegen",
-                start: 197.5,
-                end: 210.6,
+                start: 230.0,
+                end: 246.0,
                 render: function(c) {
                     c.innerHTML = `
                         <div class="flex flex-col items-center justify-center text-center gap-3.5 max-w-md">
@@ -8137,8 +8131,8 @@ Van harte Gods zegen toegewenst!`;
                     `;
                 },
                 update: function(relTime, absTime) {
-                    checkVmSfx('s9_whoosh', absTime, 197.6, playVmWhoosh);
-                    checkVmSfx('s9_final_chime', absTime, 206.5, playVmSuccess);
+                    checkVmSfx('s9_whoosh', absTime, 230.2, playVmWhoosh);
+                    checkVmSfx('s9_final_chime', absTime, 241.0, playVmSuccess);
                     moveVmCursor(50, 75);
                 }
             }
