@@ -4617,7 +4617,7 @@ Bijbelliederen`;
         setTimeout(() => verwerkVolgendeImportItem(), 300);
     }
 
-    window.toonVersSelectie = function(titel, tekst, versNummers = null) {
+    window.toonVersSelectie = function(titel, tekst, versNummers = null, voorgeselecteerd = null) {
         tijdelijkeTitel = titel; // Bewaar titel voor opslaan
         document.getElementById('versModalTitel').innerText = "Kies verzen voor: " + titel;
         const versLijst = document.getElementById('versLijst');
@@ -4641,9 +4641,14 @@ Bijbelliederen`;
             let previewText = vers.split('\n')[0]; 
             if(previewText.length > 50) previewText = previewText.substring(0, 50) + "...";
 
+            // Check alleen als dit vers voorkomt in voorgeselecteerd, of vink alles aan indien geen specificatie
+            const isChecked = (voorgeselecteerd && voorgeselecteerd.length > 0)
+                ? voorgeselecteerd.includes(versNr)
+                : true;
+
             versLijst.innerHTML += `
                 <label class="flex items-start gap-3 p-3 bg-white border border-gray-200 rounded-xl cursor-pointer hover:bg-blue-50 transition-colors">
-                    <input type="checkbox" id="versCheck_${index}" value="${index}" checked class="mt-1 w-5 h-5 text-[#007AFF] rounded border-gray-300 focus:ring-[#007AFF]">
+                    <input type="checkbox" id="versCheck_${index}" value="${index}" ${isChecked ? 'checked' : ''} onchange="updateSelectAllesKnop()" class="mt-1 w-5 h-5 text-[#007AFF] rounded border-gray-300 focus:ring-[#007AFF]">
                     <div class="flex flex-col">
                         <span class="text-sm font-bold text-gray-800">Vers ${versNr}</span>
                         <span class="text-xs text-gray-500 italic">${escapeHtml(previewText)}</span>
@@ -4651,6 +4656,14 @@ Bijbelliederen`;
                 </label>
             `;
         });
+
+        // Knop tekst bijwerken
+        const knop = document.getElementById('selectAllesKnop');
+        if (knop) {
+            const checkboxes = tijdelijkeLiedVerzen.map((_, i) => document.getElementById(`versCheck_${i}`));
+            const alleChecked = checkboxes.every(cb => cb && cb.checked);
+            knop.textContent = alleChecked ? 'Deselecteer alles' : 'Selecteer alles';
+        }
 
         document.getElementById('versModal').classList.remove('hidden');
     }
@@ -4661,6 +4674,13 @@ Bijbelliederen`;
         checkboxes.forEach(cb => { if (cb) cb.checked = !alleAangevinkt; });
         const knop = document.getElementById('selectAllesKnop');
         if (knop) knop.textContent = alleAangevinkt ? 'Selecteer alles' : 'Deselecteer alles';
+    }
+
+    window.updateSelectAllesKnop = function() {
+        const checkboxes = tijdelijkeLiedVerzen.map((_, i) => document.getElementById(`versCheck_${i}`));
+        const alleAangevinkt = checkboxes.every(cb => cb && cb.checked);
+        const knop = document.getElementById('selectAllesKnop');
+        if (knop) knop.textContent = alleAangevinkt ? 'Deselecteer alles' : 'Selecteer alles';
     }
 
     window.voegGeselecteerdeVerzenToe = function() {
@@ -4694,7 +4714,7 @@ Bijbelliederen`;
 
     // --- LIEDEREN VERWERKEN ---
 
-    window.handleLiedSelectie = async (titel, keepOpen = false) => {
+    window.handleLiedSelectie = async (titel, keepOpen = false, voorgeselecteerd = null) => {
         const preview = document.getElementById('previewVak');
         
         if (!keepOpen) {
@@ -4711,7 +4731,7 @@ Bijbelliederen`;
             if (emptyLines >= textLines - 2 && textLines > 2) {
                 tekst = lines.filter(l => l.trim() !== '').join('\n');
             }
-            window.toonVersSelectie(titel, tekst);
+            window.toonVersSelectie(titel, tekst, null, voorgeselecteerd);
             return;
         }
 
@@ -4738,7 +4758,7 @@ Bijbelliederen`;
             const gecombineerdeTekst = genormaliseerd.join('\n\n');
             // Geef ook de echte versnummers mee (uit de key-namen)
             const versNummers = versEntries.map(k => parseInt(k.match(/\d+$/)?.[0] || 0));
-            window.toonVersSelectie(titel, gecombineerdeTekst, versNummers);
+            window.toonVersSelectie(titel, gecombineerdeTekst, versNummers, voorgeselecteerd);
             return;
         }
 
@@ -8395,25 +8415,75 @@ Van harte Gods zegen toegewenst!`;
         return Array.from(result).sort((a,b) => a - b);
     };
 
+    // Zoek een lied in window.liederenDatabase, inclusief losse vers-sleutels ("Psalm 84 vers 1") en hoofdletter-ongevoelig
+    window.zoekLiedInDatabase = function(titel) {
+        if (!window.liederenDatabase) return { inCloud: false, tekst: "", versNummers: [] };
+        const cleanTitel = (titel || "").trim();
+        if (!cleanTitel) return { inCloud: false, tekst: "", versNummers: [] };
+
+        const vindMatch = (zoekTerm) => {
+            if (!zoekTerm) return null;
+            // 1. Directe exacte match
+            if (window.liederenDatabase[zoekTerm]) {
+                const tekst = window.liederenDatabase[zoekTerm];
+                const verzen = tekst.split(/\n[ \t]*\n/).map(v => v.trim()).filter(Boolean);
+                return { inCloud: true, tekst: tekst, versNummers: verzen.map((_, i) => i + 1) };
+            }
+
+            // 2. Case-insensitive match
+            const alleKeys = Object.keys(window.liederenDatabase);
+            const lowerTerm = zoekTerm.toLowerCase();
+            const ciKey = alleKeys.find(k => k.toLowerCase() === lowerTerm);
+            if (ciKey && window.liederenDatabase[ciKey]) {
+                const tekst = window.liederenDatabase[ciKey];
+                const verzen = tekst.split(/\n[ \t]*\n/).map(v => v.trim()).filter(Boolean);
+                return { inCloud: true, tekst: tekst, versNummers: verzen.map((_, i) => i + 1) };
+            }
+
+            // 3. Match op losse vers-sleutels (bijv. "Psalm 84 vers 1", "Psalm 84 vers 2")
+            const escaped = zoekTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            const versRegex = new RegExp("^" + escaped + "\\s+vers\\s+(\\d+)$", "i");
+            const versKeys = alleKeys
+                .filter(k => versRegex.test(k))
+                .sort((a, b) => {
+                    const nA = parseInt(a.match(/vers\s+(\d+)$/i)?.[1] || 0, 10);
+                    const nB = parseInt(b.match(/vers\s+(\d+)$/i)?.[1] || 0, 10);
+                    return nA - nB;
+                });
+
+            if (versKeys.length > 0) {
+                const gecombineerdeTekst = versKeys.map(k => window.liederenDatabase[k].trim()).join("\n\n");
+                const versNummers = versKeys.map(k => parseInt(k.match(/vers\s+(\d+)$/i)?.[1] || 0, 10));
+                return { inCloud: true, tekst: gecombineerdeTekst, versNummers: versNummers };
+            }
+
+            return null;
+        };
+
+        const directResult = vindMatch(cleanTitel);
+        if (directResult) return directResult;
+
+        // Probeer zonder vers annotatie (bijv. "Psalm 84: 1, 3" -> "Psalm 84")
+        const baseTitel = cleanTitel
+            .replace(/\s+(vers(en)?|couplet(ten)?)\s+[\d,\s-]+$/i, '')
+            .replace(/:\s*[\d,\s-]+$/, '')
+            .trim();
+        if (baseTitel && baseTitel !== cleanTitel) {
+            const baseResult = vindMatch(baseTitel);
+            if (baseResult) return baseResult;
+        }
+
+        return { inCloud: false, tekst: "", versNummers: [] };
+    };
+
     // Haal alle losse coupletten/verzen op uit tekst of losse database-keys
     window.haalLiedVerzenOp = function(titel, bronTekst) {
         if (bronTekst && bronTekst.trim() && bronTekst.trim() !== " ") {
             return bronTekst.split(/\n[ \t]*\n/).map(v => v.trim()).filter(Boolean);
         }
-        if (window.liederenDatabase && window.liederenDatabase[titel]) {
-            return window.liederenDatabase[titel].split(/\n[ \t]*\n/).map(v => v.trim()).filter(Boolean);
-        }
-        // Controleer of er losse vers-sleutels zijn (bijv. "Psalm 116 vers 1", etc.)
-        const alleKeys = Object.keys(window.liederenDatabase || {});
-        const versEntries = alleKeys
-            .filter(k => k.match(new RegExp('^' + (titel || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s+vers\\s+\\d+$', 'i')))
-            .sort((a, b) => {
-                const nA = parseInt(a.match(/\d+$/)?.[0] || 0);
-                const nB = parseInt(b.match(/\d+$/)?.[0] || 0);
-                return nA - nB;
-            });
-        if (versEntries.length > 0) {
-            return versEntries.map(k => window.liederenDatabase[k].trim()).filter(Boolean);
+        const dbResult = window.zoekLiedInDatabase(titel);
+        if (dbResult.inCloud && dbResult.tekst) {
+            return dbResult.tekst.split(/\n[ \t]*\n/).map(v => v.trim()).filter(Boolean);
         }
         return [];
     };
@@ -8428,10 +8498,15 @@ Van harte Gods zegen toegewenst!`;
             ? item.geselecteerdeVerzen
             : (item.gevondenVerzen && item.gevondenVerzen.length > 0 ? item.gevondenVerzen : []);
         
+        const basisTitel = (item.titel || '')
+            .replace(/\s+(vers(en)?|couplet(ten)?)\s+[\d,\s-]+$/i, '')
+            .replace(/:\s*[\d,\s-]+$/, '')
+            .trim();
+
         // Als alle coupletten gekozen zijn of niets gespecificeerd:
         if (gekozenNummers.length === 0 || gekozenNummers.length === alleVerzen.length) {
             return {
-                titel: item.titel,
+                titel: basisTitel,
                 tekst: alleVerzen.join('\n\n'),
                 verzen: alleVerzen.map((_, i) => i + 1)
             };
@@ -8444,7 +8519,7 @@ Van harte Gods zegen toegewenst!`;
                 gekozenTeksten.push(alleVerzen[idx]);
             }
         }
-        const titelMetVers = item.titel + ' vers ' + gekozenNummers.join(', ');
+        const titelMetVers = basisTitel + ' vers ' + gekozenNummers.join(', ');
         return {
             titel: titelMetVers,
             tekst: gekozenTeksten.length > 0 ? gekozenTeksten.join('\n\n') : alleVerzen.join('\n\n'),
@@ -8494,9 +8569,21 @@ Van harte Gods zegen toegewenst!`;
         }
         const chipContainer = document.getElementById(`versChipsContainer_${itemIndex}`);
         if (chipContainer) chipContainer.innerHTML = window.renderVersChipsHtml(itemIndex);
+
+        // Update live vers badge in de kaart
+        const badgeEl = document.getElementById(`versBadge_${itemIndex}`);
+        if (badgeEl) {
+            if (item.geselecteerdeVerzen.length > 0 && item.geselecteerdeVerzen.length < verzen.length) {
+                badgeEl.innerText = `Couplet ${item.geselecteerdeVerzen.join(', ')}`;
+                badgeEl.classList.remove('hidden');
+            } else {
+                badgeEl.innerText = `Alle coupletten`;
+                badgeEl.classList.remove('hidden');
+            }
+        }
     };
 
-    window.toggleAlleVerzen = function(itemIndex) {
+    window.toggleAlleImportVerzen = function(itemIndex) {
         const item = window.gevondenImportItems[itemIndex];
         if (!item) return;
         const verzen = window.haalLiedVerzenOp(item.titel, item.definitieveTekst);
@@ -8507,6 +8594,15 @@ Van harte Gods zegen toegewenst!`;
         }
         const chipContainer = document.getElementById(`versChipsContainer_${itemIndex}`);
         if (chipContainer) chipContainer.innerHTML = window.renderVersChipsHtml(itemIndex);
+
+        const badgeEl = document.getElementById(`versBadge_${itemIndex}`);
+        if (badgeEl) {
+            if (item.geselecteerdeVerzen.length > 0 && item.geselecteerdeVerzen.length < verzen.length) {
+                badgeEl.innerText = `Couplet ${item.geselecteerdeVerzen.join(', ')}`;
+            } else {
+                badgeEl.innerText = `Alle coupletten`;
+            }
+        }
     };
 
     window.renderVersChipsHtml = function(index) {
@@ -8521,7 +8617,7 @@ Van harte Gods zegen toegewenst!`;
 
         verzen.forEach((_, i) => {
             const nr = i + 1;
-            const isActive = geselecteerd.length === 0 || geselecteerd.includes(nr);
+            const isActive = geselecteerd.length === 0 ? true : geselecteerd.includes(nr);
             const activeStyle = isActive 
                 ? 'bg-[#007AFF] text-white shadow-xs font-bold scale-105' 
                 : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-medium hover:bg-gray-200 dark:hover:bg-gray-700';
@@ -8529,7 +8625,7 @@ Van harte Gods zegen toegewenst!`;
         });
 
         const isAlles = geselecteerd.length === 0 || geselecteerd.length === verzen.length;
-        html += `<button type="button" onclick="event.stopPropagation(); window.toggleAlleVerzen(${index})" class="text-[10px] font-semibold text-blue-600 dark:text-blue-400 hover:underline ml-1.5">${isAlles ? 'Deselecteer alles' : 'Alles zingen'}</button>`;
+        html += `<button type="button" onclick="event.stopPropagation(); window.toggleAlleImportVerzen(${index})" class="text-[10px] font-semibold text-blue-600 dark:text-blue-400 hover:underline ml-1.5">${isAlles ? 'Deselecteer alles' : 'Alles zingen'}</button>`;
         html += `</div>`;
         return html;
     };
@@ -8667,15 +8763,10 @@ ${tekst}
                 const versNummers = [...new Set([...aiVersNummers, ...regexVersNummers])].sort((a,b) => a - b);
 
                 if (item.type === "Zang") {
-                    if (window.liederenDatabase && window.liederenDatabase[titel]) {
-                        definitieveTekst = window.liederenDatabase[titel];
+                    const dbResult = window.zoekLiedInDatabase(titel);
+                    if (dbResult.inCloud) {
                         inCloud = true;
-                    } else {
-                        // Check losse vers-sleutels
-                        const versK = Object.keys(window.liederenDatabase || {}).filter(k => 
-                            k.match(new RegExp('^' + titel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s+vers\\s+\\d+$', 'i'))
-                        );
-                        if (versK.length > 0) inCloud = true;
+                        definitieveTekst = dbResult.tekst;
                     }
                 } else {
                     let zoekTitel = titel.replace(" (HSV)", "").trim();
@@ -8782,7 +8873,9 @@ ${tekst}
             // Toon vers-indicatie als tekst
             let versBadge = '';
             if (item.gevondenVerzen && item.gevondenVerzen.length > 0) {
-                versBadge = `<span class="ml-2 text-[11px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full border border-blue-200/50">Couplet ${item.gevondenVerzen.join(', ')}</span>`;
+                versBadge = `<span id="versBadge_${index}" class="ml-2 text-[11px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full border border-blue-200/50">Couplet ${item.gevondenVerzen.join(', ')}</span>`;
+            } else {
+                versBadge = `<span id="versBadge_${index}" class="ml-2 text-[11px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full border border-blue-200/50 hidden"></span>`;
             }
 
             resultatenDiv.innerHTML += `
@@ -8882,7 +8975,10 @@ ${tekst}
         let item = importWachtrij.shift();
 
         if (item.type === "Zang") {
-            window.handleLiedSelectie(item.titel, false);
+            const voorgeselecteerd = (item.geselecteerdeVerzen && item.geselecteerdeVerzen.length > 0)
+                ? item.geselecteerdeVerzen
+                : item.gevondenVerzen;
+            window.handleLiedSelectie(item.titel, false, voorgeselecteerd);
         } else if (item.type === "Schriftlezing") {
             let titel = item.titel;
             if (!titel.includes("(HSV)")) titel = titel + " (HSV)";
