@@ -3929,22 +3929,85 @@ Retourneer UITSLUITEND een valide JSON object:
                 }
 
                 const data = await res.json();
-                if (data && data.gevonden && data.slides && data.slides.length > 0) {
+                if (data && data.gevonden && ((data.items && data.items.length > 0) || (data.slides && data.slides.length > 0))) {
                     gelukt = true;
+                    const itemsAantal = (data.items && data.items.length) || data.slides.length;
                     const bevestigd = confirm(
                         `📬 Nieuwe liturgie per e-mail ontvangen!\n\n` +
                         `Gemeente: ${data.gemeente_naam || actieveGemeente}\n` +
                         `Voorganger: ${data.voorganger || 'Onbekend'}\n` +
-                        `Datum: ${data.datum || 'Komende dienst'}\n` +
-                        `Aantal dia's: ${data.slides.length}\n\n` +
-                        `Wil je deze liturgie direct inladen in de app?`
+                        `Dienst: ${data.datum || 'Komende dienst'}\n` +
+                        `Aantal onderdelen: ${itemsAantal} items\n\n` +
+                        `Wil je deze liturgie direct inladen in de beamer presentatie?`
                     );
                     if (bevestigd) {
-                        liturgieVolgorde = data.slides.map(s => ({
-                            type: s.type || "Vrije tekst",
-                            titel: s.titel || "Onderdeel",
-                            tekst: Array.isArray(s.regels) ? s.regels.join('\n') : (s.tekst || "")
-                        }));
+                        if (data.items && data.items.length > 0) {
+                            liturgieVolgorde = [];
+                            for (const it of data.items) {
+                                if (it.type === "Zang") {
+                                    let liedTekst = it.tekst || "";
+                                    if (!liedTekst || liedTekst.includes("ontbreekt in database")) {
+                                        const dbRes = window.zoekLiedInDatabase(it.titel);
+                                        if (dbRes && dbRes.inCloud && dbRes.tekst) {
+                                            liedTekst = dbRes.tekst;
+                                        }
+                                    }
+                                    const vNummers = it.verzen && it.verzen.length > 0 ? it.verzen : [];
+                                    const versAanduiding = vNummers.length > 0 ? `: ${vNummers.join(', ')}` : '';
+                                    liturgieVolgorde.push({
+                                        type: "Zang",
+                                        titel: `${it.titel}${versAanduiding}`,
+                                        basisTitel: it.titel,
+                                        geselecteerdeVerzen: vNummers,
+                                        tekst: liedTekst
+                                    });
+                                } else if (it.type === "Schriftlezing") {
+                                    let bTekst = it.tekst || "";
+                                    if (!bTekst || bTekst.startsWith("Schriftlezing uit")) {
+                                        try {
+                                            const apiTekst = await haalBijbelViaAPI(it.titel);
+                                            if (apiTekst) bTekst = apiTekst;
+                                        } catch(e) {}
+                                    }
+                                    liturgieVolgorde.push({
+                                        type: "Schriftlezing",
+                                        titel: it.titel.includes("(HSV)") ? it.titel : `${it.titel} (HSV)`,
+                                        tekst: bTekst
+                                    });
+                                } else if (it.type === "Preek") {
+                                    liturgieVolgorde.push({
+                                        type: "Vrije tekst",
+                                        titel: it.titel,
+                                        tekst: `${it.titel}\nVoorganger: ${data.voorganger || ''}`
+                                    });
+                                } else if (it.type === "Collecte") {
+                                    liturgieVolgorde.push({
+                                        type: "QR",
+                                        titel: "Collecte & Week-Tikkie",
+                                        tekst: "Scan met uw mobiel om bij te dragen."
+                                    });
+                                } else if (it.type === "Zegen") {
+                                    liturgieVolgorde.push({
+                                        type: "Leeg",
+                                        titel: "Zegenbede",
+                                        tekst: ""
+                                    });
+                                } else {
+                                    liturgieVolgorde.push({
+                                        type: "Vrije tekst",
+                                        titel: it.titel,
+                                        tekst: it.titel
+                                    });
+                                }
+                            }
+                        } else {
+                            liturgieVolgorde = data.slides.map(s => ({
+                                type: s.type || "Vrije tekst",
+                                titel: s.titel || "Onderdeel",
+                                tekst: Array.isArray(s.regels) ? s.regels.join('\n') : (s.tekst || "")
+                            }));
+                        }
+
                         if (data.datum) {
                             const dEl = document.getElementById('datumInput');
                             if (dEl) dEl.value = data.datum;
@@ -3953,9 +4016,18 @@ Retourneer UITSLUITEND een valide JSON object:
                             const vEl = document.getElementById('voorgangerInput');
                             if (vEl) vEl.value = data.voorganger;
                         }
+
                         window.tekenVolgorde();
-                        if (window.toonToast) {
-                            window.toonToast(`🎉 Liturgie van ${data.voorganger} succesvol ingeladen!`, "success");
+
+                        const ontbrekend = liturgieVolgorde.filter(it => it.type === "Zang" && (!it.tekst || it.tekst.trim().length < 10));
+                        if (ontbrekend.length > 0) {
+                            if (window.toonToast) {
+                                window.toonToast(`💡 Let op: ${ontbrekend.length} liederen (${ontbrekend.map(i=>i.basisTitel||i.titel).join(', ')}) hebben nog geen tekst. Sleep de PPTX van ${data.voorganger} in het archief of gebruik Liedbundels Online!`, "warning");
+                            }
+                        } else {
+                            if (window.toonToast) {
+                                window.toonToast(`🎉 Complete liturgie van ${data.voorganger} ingeladen inclusief alle Bijbelteksten en liederen!`, "success");
+                            }
                         }
                     }
                     return;
