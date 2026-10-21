@@ -1,63 +1,62 @@
-// Test-script voor de Bethelkerk Mail Worker
-// Simuleert een e-mail van ds. Mark Bot naar de Bethelkerk worker
 import worker from "./index.js";
 
-const testEmailTekst = `
-Liturgie ochtenddienst zondag 25 oktober 2026
-Bethelkerk Maassluis
-Voorganger: ds. Mark Bot
-
+const markBotEmail = `From: Mark Bot <markbot@gmail.com>
+Date: Wed, 2 Sep 2026 at 11:12
+Subject: Re: liturgie zondagochtend
+To: kosters en organisten CGK Maassluis <liturgie@cgkmaassluis.nl>
+...en de ppt! 🙈
+Op wo 2 sep 2026 om 11:07 schreef Mark Bot <markbot@gmail.com>:
+broer, zus,zie hieronder, + ppt in de bijlage,
+vriendelijke groet,
+Mark Bot
+Ochtend – voorbereiding Heilig Avondmaal
+welkom en mededelingen van de kerkenraad door de ouderling van dienst
+Zingen lied jongere: Simon: Psalm 23a: De Heer is mijn Herder: 1, 2 en 3
+Stil gebed
 Votum en groet
-Zingen: Psalm 84: 1 en 2
-Wetslezing
-Zingen: Weerklank 116: 1 en 3
+Zingen Ps 65:1,2
+Gods wil voor ons leven: 1 Thes. 4:1-12
+Zingen Lw 76:1,4
 Gebed
-Schriftlezing: Romeinen 8:31-39 (HSV)
-Zingen: DNP Psalm 23: 1, 2, 3
-Preek
-Zingen: Weerklank 446: 1, 2
-Dankgebed en voorbeden
-Collecte (Week-Tikkie)
-Slotlied: Psalm 134: 1, 2, 3
-Zegen
-`;
+Schriftlezing 1 Thes. 1:1-10
+Zingen Ps 73:7,8 DNP
+Verkondiging ‘Geloven in Thessalonica: door strijd tot overwinning. Deel 1’
+Zingen Lw 237
+Dankgebed
+Collecte
+Zingen Ps 116:3,4
+Zegen.`;
 
-async function runTest() {
-  console.log("=== TEST: BETHELKERK MAIL WORKER ===");
-
-  // Simuleer een Cloudflare Worker environment
-  const mockEnv = {
-    GEMEENTE_NAAM: "Bethelkerk Maassluis",
-    STANDAARD_KERK_ID: "bethel",
-    STANDAARD_VOORGANGER: "ds. Mark Bot"
-  };
-
+async function run() {
+  console.log("=== TEST MARK BOT REAL EMAIL ===");
   const req = new Request("https://kerkliturgie-email-bethelkerk.kerkapp.workers.dev/test", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       kerk_id: "bethel",
-      onderwerp: "Liturgie ochtenddienst 25 oktober - ds. Mark Bot",
-      liturgie: testEmailTekst
+      afzender: "Mark Bot <markbot@gmail.com>",
+      onderwerp: "liturgie zondagochtend",
+      liturgie: markBotEmail
     })
   });
 
-  const res = await worker.fetch(req, mockEnv);
-  const json = await res.json();
-
-  console.log("Status:", res.status);
-  console.log("Gemeente:", json.resultaat.gemeente);
-  console.log("Voorganger:", json.resultaat.voorganger);
-  console.log("Datum:", json.resultaat.datum);
-  console.log("Aantal items gevonden:", json.resultaat.itemsGevonden);
-  console.log("Aantal dia's gegenereerd:", json.resultaat.slides.length);
-  console.log("\nEerste dia (Welkom):", JSON.stringify(json.resultaat.slides[0], null, 2));
-  console.log("\nOverzicht van alle dia's:");
-  json.resultaat.slides.forEach((s, idx) => {
-    console.log(`  Dia ${idx + 1}: [${s.type}] ${s.titel || s.id}`);
+  const res = await worker.fetch(req, {
+    STANDAARD_KERK_ID: "bethel",
+    GEMEENTE_NAAM: "Bethelkerk Maassluis",
+    STANDAARD_VOORGANGER: "ds. Mark Bot"
   });
 
-  console.log("\n=== TEST SUCCESVOL AFGEROND ===");
+  const data = await res.json();
+  console.log("Status:", res.status);
+  console.log("Gemeente:", data.resultaat.gemeente);
+  console.log("Voorganger:", data.resultaat.voorganger);
+  console.log("Datum:", data.resultaat.datum);
+  console.log("Aantal items:", data.resultaat.itemsGevonden);
+  console.log("Aantal dia's:", data.resultaat.slides.length);
+  console.log("\nDia-overzicht:");
+  data.resultaat.slides.forEach((s, idx) => {
+    console.log(`  Dia ${idx + 1}: [${s.type}] ${s.titel}`);
+  });
 }
 
-runTest();
+run();

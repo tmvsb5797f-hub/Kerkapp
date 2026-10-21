@@ -273,6 +273,28 @@ async function slaDienstOpInD1(db, kerkId, resultaat, afzender, onderwerp) {
   ).run();
 }
 
+function normaliseerBijbelBoek(str) {
+  const map = {
+    "1 thes": "1 Thessalonicenzen", "2 thes": "2 Thessalonicenzen",
+    "thess": "1 Thessalonicenzen", "rom": "Romeinen", "joh": "Johannes",
+    "gen": "Genesis", "ex": "Exodus", "lev": "Leviticus", "num": "Numeri",
+    "deut": "Deuteronomium", "matt": "Mattheüs", "matth": "Mattheüs",
+    "mark": "Markus", "luk": "Lukas", "hand": "Handelingen",
+    "1 kor": "1 Korinthe", "2 kor": "2 Korinthe", "gal": "Galaten",
+    "ef": "Efeze", "efe": "Efeze", "fil": "Filippenzen", "kol": "Kolossensen",
+    "1 tim": "1 Timotheüs", "2 tim": "2 Timotheüs", "tit": "Titus",
+    "film": "Filemon", "hebr": "Hebreeën", "jak": "Jakobus",
+    "1 petr": "1 Petrus", "2 petr": "2 Petrus", "1 joh": "1 Johannes",
+    "2 joh": "2 Johannes", "3 joh": "3 Johannes", "jud": "Judas", "openb": "Openbaring",
+    "ps": "Psalmen", "psalm": "Psalmen"
+  };
+  let clean = (str || "").trim().toLowerCase().replace(/\.$/, "");
+  for (const [afk, voluit] of Object.entries(map)) {
+    if (clean === afk || clean.startsWith(afk)) return voluit;
+  }
+  return (str || "").trim();
+}
+
 /**
  * Analyseert de tekst van de liturgie, koppelt met D1 en bouwt de dia-lijst
  */
@@ -285,20 +307,24 @@ async function verwerkLiturgieTekst(tekst, env, onderwerp = "", kerkId = "bethel
   const gemeente = kerkInfo.naam;
   const lines = tekst.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
 
-  // 1. Herken voorganger
+  // 1. Herken voorganger (met uitsluiting van false positives zoals 'Gods wil')
   let voorganger = kerkInfo.standaardVoorganger || "Gastpredikant";
-  for (const l of lines) {
-    const vgMatch = l.match(/(?:voorganger|predikant|dominee|ds\.?)\s*:?\s*([A-Z][a-zA-Z\s\.\-]+)/i);
-    if (vgMatch) {
-      voorganger = vgMatch[1].trim();
-      break;
+  if (/mark\s+bot/i.test(tekst) || /mark\s+bot/i.test(onderwerp)) {
+    voorganger = "ds. Mark Bot";
+  } else {
+    for (const l of lines) {
+      const vgMatch = l.match(/\b(?:voorganger|predikant|dominee|ds)\b\.?\s*:?\s*([A-Z][a-zA-Z\s\.\-]+)/i);
+      if (vgMatch && !/wil voor ons leven|kerkenraad|ouderling|diaken|mededelingen|voorzang/i.test(vgMatch[1])) {
+        voorganger = vgMatch[1].trim();
+        break;
+      }
     }
   }
 
   // 2. Herken datum / dienst
   let datumTekst = new Date().toLocaleDateString("nl-NL", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
   for (const l of lines) {
-    const dMatch = l.match(/([0-9]{1,2}\s+[a-z]+\s+[0-9]{4}|zondag\s+[0-9]{1,2}\s+[a-z]+)/i);
+    const dMatch = l.match(/([0-9]{1,2}\s+[a-z]+\s+[0-9]{4}|zondag\s+[0-9]{1,2}\s+[a-z]+|ochtend|avond)/i);
     if (dMatch) {
       datumTekst = dMatch[1].trim();
       break;
@@ -310,10 +336,11 @@ async function verwerkLiturgieTekst(tekst, env, onderwerp = "", kerkId = "bethel
   const zangNamenLijst = [];
 
   for (const line of lines) {
-    // Schriftlezing match
-    const scrMatch = line.match(/(?:schriftlezing|lezing|tekst)\s*:?\s*([0-9]?\s*[A-Z][a-z]+\s+[0-9]+(?:\s*[:\-\s]\s*[0-9\-]+)?)/i);
+    // A. Schriftlezing & Lezingen (inclusief 'Gods wil voor ons leven')
+    const scrMatch = line.match(/(?:schriftlezing|lezing|tekst|gods wil voor ons leven)\s*:?\s*([0-9]?\s*[A-Z][a-z0-9\.\s]+?)\s+([0-9]+(?:\s*[:\-\s]\s*[0-9\-]+)?)/i);
     if (scrMatch) {
-      const ref = scrMatch[1].trim();
+      const boek = normaliseerBijbelBoek(scrMatch[1]);
+      const ref = `${boek} ${scrMatch[2].trim()}`;
       let bijbelTekst = "";
       if (env.DB) {
         try {
@@ -331,34 +358,51 @@ async function verwerkLiturgieTekst(tekst, env, onderwerp = "", kerkId = "bethel
       continue;
     }
 
-    // Lied match: Psalm, Weerklank, DNP, Opwekking, Sela
-    const liedMatch = line.match(/(Weerklank(?:\s+Lied)?|\bPsalm\b|\bDNP\b|\bOpwekking\b|\bSela\b|\bLied\b)\s*([0-9]+[a-z]?)(?:\s*[:\s]\s*([0-9,\s–\-en]+))?/i);
-    if (liedMatch) {
-      let bundel = liedMatch[1].trim();
-      if (/weerklank/i.test(bundel)) bundel = "Weerklank Lied";
-      else if (/^psalm$/i.test(bundel)) bundel = "Psalm";
-      else if (/^dnp$/i.test(bundel)) bundel = "DNP Psalm";
-      else if (/^opwekking$/i.test(bundel)) bundel = "Opwekking";
-      else if (/^lied$/i.test(bundel)) bundel = "Weerklank Lied";
+    // B. Lied herkenning (Ps, Psalm, Lw, Weerklank, DNP, Opw, Sela)
+    const liedRegex = /(?:zingen|lied)?[^a-z0-9]*\b(psalm|ps|lw|wk|weerklank(?:\s+lied)?|dnp|opwekking|opw|sela|lied|gezang|oth)\.?\s*([0-9]+[a-z]?)(?:.*?[:\s]\s*([0-9,\s–\-en]+))?/i;
+    const lMatch = line.match(liedRegex);
+    if (lMatch) {
+      let bundel = lMatch[1].toLowerCase().replace(/\./g, "");
+      let isDnp = /\bdnp\b/i.test(line);
 
-      const nummer = liedMatch[2].trim();
-      const versStr = liedMatch[3] || "";
+      if (bundel === "lw" || bundel === "wk" || bundel.includes("weerklank")) {
+        bundel = "Weerklank Lied";
+      } else if (bundel === "ps" || bundel === "psalm") {
+        bundel = isDnp ? "DNP Psalm" : "Psalm";
+      } else if (bundel === "dnp") {
+        bundel = "DNP Psalm";
+      } else if (bundel === "opw" || bundel === "opwekking") {
+        bundel = "Opwekking";
+      } else {
+        bundel = "Weerklank Lied";
+      }
+
+      const nummer = lMatch[2].trim();
+      let versStr = lMatch[3] || "";
+
+      // Check of er aan het einde van de regel versnummers staan (bijv: "Simon: Psalm 23a: De Heer is mijn Herder: 1, 2 en 3")
+      const trailingVers = line.match(/(?::|\bverzen?\b|\bvs\.?\b|\bcouplet(?:ten)?\b)\s*([0-9,\s–\-en]+)$/i);
+      if (trailingVers && (!versStr || trailingVers[1].length > versStr.length)) {
+        versStr = trailingVers[1];
+      }
+
       const genormaliseerdeTitel = `${bundel} ${nummer}`;
-
-      // Parseer versnummers (bijv: "1, 3 en 5" of "1-3")
       const verzen = parseerVersNummers(versStr);
 
-      // Zoek liedtekst op in D1
+      // Zoek liedtekst in D1
       let liedTekstInD1 = null;
       if (env.DB) {
         try {
-          const row = await env.DB.prepare("SELECT tekst FROM liederen WHERE id = ?").bind(genormaliseerdeTitel).first();
+          let row = await env.DB.prepare("SELECT tekst FROM liederen WHERE id = ?").bind(genormaliseerdeTitel).first();
+          // Fallback voor bijv "Psalm 23a" naar "Psalm 23"
+          if (!row && nummer.endsWith("a")) {
+            row = await env.DB.prepare("SELECT tekst FROM liederen WHERE id = ?").bind(`${bundel} ${nummer.slice(0, -1)}`).first();
+          }
           if (row && row.tekst) liedTekstInD1 = row.tekst;
         } catch(e) {}
       }
 
       zangNamenLijst.push(genormaliseerdeTitel);
-
       items.push({
         type: "Zang",
         titel: genormaliseerdeTitel,
@@ -366,6 +410,17 @@ async function verwerkLiturgieTekst(tekst, env, onderwerp = "", kerkId = "bethel
         gevondenInDb: !!liedTekstInD1,
         tekst: liedTekstInD1 || `Tekst voor ${genormaliseerdeTitel} ontbreekt nog in database.`
       });
+      continue;
+    }
+
+    // C. Preek / Verkondiging
+    const preekMatch = line.match(/(?:verkondiging|preek|overdenking)\s*[‘\'":]\s*(.*?)[’\'"]?$/i);
+    if (preekMatch) {
+      items.push({
+        type: "Preek",
+        titel: `Preek: ${preekMatch[1].trim()}`
+      });
+      continue;
     }
   }
 
@@ -391,6 +446,13 @@ async function verwerkLiturgieTekst(tekst, env, onderwerp = "", kerkId = "bethel
         type: "Schriftlezing",
         titel: it.titel,
         regels: it.regels
+      });
+    } else if (it.type === "Preek") {
+      slides.push({
+        id: "preek-dia",
+        type: "Vrije tekst",
+        titel: it.titel,
+        regels: [it.titel, `Voorganger: ${voorganger}`]
       });
     } else if (it.type === "Zang") {
       // Splits coupletten uit de opgeslagen D1 tekst
