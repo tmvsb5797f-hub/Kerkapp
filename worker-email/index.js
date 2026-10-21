@@ -18,7 +18,7 @@ const BEKENDE_KERKEN = {
   "bethel": {
     naam: "Bethelkerk Maassluis",
     standaardVoorganger: "ds. Mark Bot",
-    aliases: ["bethel", "bethelkerk", "maassluis"]
+    aliases: ["bethel", "bethelkerk", "maassluis", "bethelliturgie", "bethelliturgie@gmail.com"]
   },
   "maranatha": {
     naam: "Maranathakerk",

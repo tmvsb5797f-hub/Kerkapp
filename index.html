@@ -1167,7 +1167,7 @@
                             <strong class="text-xs font-bold text-[#1D1D1F] dark:text-white">Liturgie per E-mail</strong>
                             <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300/40">AUTO</span>
                         </div>
-                        <p id="infoEmailAdresLabel" class="text-[11px] text-gray-500 dark:text-gray-400 truncate">bethel@liturgie.kerkapp.nl</p>
+                        <p id="infoEmailAdresLabel" class="text-[11px] text-gray-500 dark:text-gray-400 truncate">bethelliturgie@gmail.com</p>
                     </div>
                 </div>
                 <button type="button" onclick="window.checkInkomendeLiturgieMail(true)" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all active:scale-95 shadow-xs flex-shrink-0 flex items-center gap-1" title="Controleer of de predikant een nieuwe liturgie heeft gemaild">
@@ -3899,7 +3899,11 @@ Retourneer UITSLUITEND een valide JSON object:
         const emailLabel = document.getElementById('infoEmailAdresLabel');
         if (emailLabel) {
             const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : ((naam || 'bethel').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20) || 'bethel');
-            emailLabel.textContent = `${slug}@liturgie.kerkapp.nl`;
+            if (slug === 'bethel') {
+                emailLabel.textContent = 'bethelliturgie@gmail.com';
+            } else {
+                emailLabel.textContent = `${slug}@liturgie.kerkapp.nl`;
+            }
         }
         if (typeof window.updateTikkieKnopUI === 'function') {
             window.updateTikkieKnopUI();

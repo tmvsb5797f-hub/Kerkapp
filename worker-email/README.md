@@ -10,7 +10,7 @@ De worker herkent automatisch voor wie de e-mail bedoeld is op basis van de `To:
 
 | E-mailadres | Herkende `kerk_id` | Bestemd voor |
 | :--- | :--- | :--- |
-| `bethel@liturgie.kerkapp.nl` | `bethel` | Bethelkerk Maassluis |
+| `bethelliturgie@gmail.com` / `bethel@liturgie.kerkapp.nl` | `bethel` | Bethelkerk Maassluis |
 | `maranatha@liturgie.kerkapp.nl` | `maranatha` | Maranathakerk |
 | `dorpskerk@liturgie.kerkapp.nl` | `dorpskerk` | Dorpskerk |
 | `liturgie+kruiskerk@kerkapp.nl` | `kruiskerk` | Kruiskerk (via plus-addressing) |
