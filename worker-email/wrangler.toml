@@ -1,0 +1,13 @@
+name = "kerkliturgie-email-ingest"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+# Bind dezelfde Cloudflare D1 database als kerkdata
+[[d1_databases]]
+binding = "DB"
+database_name = "kerkapp-data"
+database_id = "7d4914d6-d3fe-470f-b68d-cab870d5e500"
+
+[vars]
+GEMEENTE_NAAM = "Bethelkerk Maassluis"
+STANDAARD_PIN = "1234"

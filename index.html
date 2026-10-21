@@ -390,33 +390,89 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
-        
-        <!-- STAP 1: Liturgie Plakken -->
-        <div id="importStap1" class="p-4 md:p-6 flex flex-col gap-3 overflow-y-auto">
-            <p class="text-[13px] text-gray-500 dark:text-gray-400 font-medium">Plak hier de complete liturgie (bijv. vanuit Word of WhatsApp). De AI herkent automatisch liederen, psalmen, coupletten en schriftlezingen.</p>
-            <textarea id="importTekst" rows="8" class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-transparent rounded-2xl p-4 text-[13px] focus:bg-white focus:border-[#007AFF] focus:ring-4 focus:ring-[#007AFF]/15 focus:outline-none transition-all duration-200 ease-out resize-none font-sans" placeholder="Plak je liturgie hier (bijv: Zingen: Psalm 84: 1, 3 en 5; Schriftlezing: Romeinen 8:31-39; Slotlied: Weerklank 14:1-3)..."></textarea>
-            <button onclick="analyseerImport()" class="w-full py-3.5 mt-1 rounded-2xl text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 active:scale-98 transition-all shadow-md flex items-center justify-center gap-2">
-                <span>✨</span>
-                <span>Analyseer Liturgie</span>
+
+        <!-- Modus Tab Bar (Liturgie Plakken vs PowerPoint Archief Inlezen) -->
+        <div class="px-4 md:px-5 pt-2 pb-2 bg-gray-50/70 dark:bg-white/5 border-b border-gray-100 dark:border-white/10 flex items-center gap-1.5 flex-shrink-0">
+            <button id="importTabBtnLiturgie" type="button" onclick="wisselImportTab('liturgie')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all bg-white dark:bg-[#2C2C2E] text-[#1D1D1F] dark:text-white shadow-xs flex items-center gap-1.5">
+                <span>✨ Liturgie Plakken</span>
+            </button>
+            <button id="importTabBtnArchief" type="button" onclick="wisselImportTab('archief')" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white flex items-center gap-1.5">
+                <span>📂 PowerPoint &amp; Weerklank Archief</span>
+                <span class="text-[10px] px-1.5 py-0.2 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold">.pptx / .txt</span>
             </button>
         </div>
-        
-        <!-- STAP 2: Beoordelen, Inline Plakken & Coupletkeuze -->
-        <div id="importStap2" class="p-4 md:p-6 hidden flex-col gap-3 overflow-hidden flex-1">
-            <div class="flex items-center justify-between flex-shrink-0">
-                <button type="button" onclick="terugNaarImportStap1()" class="text-xs font-semibold text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1 active:scale-95">
-                    <span>←</span>
-                    <span>Pas tekst aan</span>
+
+        <!-- TAB 1: LITURGIE PLAKKEN & ANALYSE -->
+        <div id="importLiturgieContainer" class="flex flex-col flex-1 overflow-hidden">
+            <!-- STAP 1: Liturgie Plakken -->
+            <div id="importStap1" class="p-4 md:p-6 flex flex-col gap-3 overflow-y-auto">
+                <p class="text-[13px] text-gray-500 dark:text-gray-400 font-medium">Plak hier de complete liturgie (bijv. vanuit Word of WhatsApp). De AI herkent automatisch liederen, psalmen, coupletten en schriftlezingen.</p>
+                <textarea id="importTekst" rows="8" class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-transparent rounded-2xl p-4 text-[13px] focus:bg-white focus:border-[#007AFF] focus:ring-4 focus:ring-[#007AFF]/15 focus:outline-none transition-all duration-200 ease-out resize-none font-sans" placeholder="Plak je liturgie hier (bijv: Zingen: Psalm 84: 1, 3 en 5; Schriftlezing: Romeinen 8:31-39; Slotlied: Weerklank 14:1-3)..."></textarea>
+                <button onclick="analyseerImport()" class="w-full py-3.5 mt-1 rounded-2xl text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 active:scale-98 transition-all shadow-md flex items-center justify-center gap-2">
+                    <span>✨</span>
+                    <span>Analyseer Liturgie</span>
                 </button>
-                <span id="importTellerBadge" class="text-[11px] font-semibold text-gray-500 dark:text-gray-400"></span>
             </div>
-            <div id="importResultaten" class="overflow-y-auto max-h-[58vh] pr-1 flex flex-col gap-3 no-scrollbar">
-                <!-- Dynamisch gevuld met interactieve kaarten met inline plakken & couplet-chips -->
+            
+            <!-- STAP 2: Beoordelen, Inline Plakken & Coupletkeuze -->
+            <div id="importStap2" class="p-4 md:p-6 hidden flex-col gap-3 overflow-hidden flex-1">
+                <div class="flex items-center justify-between flex-shrink-0">
+                    <button type="button" onclick="terugNaarImportStap1()" class="text-xs font-semibold text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1 active:scale-95">
+                        <span>←</span>
+                        <span>Pas tekst aan</span>
+                    </button>
+                    <span id="importTellerBadge" class="text-[11px] font-semibold text-gray-500 dark:text-gray-400"></span>
+                </div>
+                <div id="importResultaten" class="overflow-y-auto max-h-[58vh] pr-1 flex flex-col gap-3 no-scrollbar">
+                    <!-- Dynamisch gevuld met interactieve kaarten met inline plakken & couplet-chips -->
+                </div>
+                <div class="pt-2 border-t border-gray-100 dark:border-white/10 flex flex-col gap-2 flex-shrink-0">
+                    <button onclick="voegImportToe()" class="w-full py-3.5 rounded-2xl text-sm font-semibold text-white bg-[#34C759] hover:bg-green-600 active:scale-98 transition-all shadow-md flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                        <span>Geselecteerde Items Toevoegen</span>
+                    </button>
+                </div>
             </div>
-            <div class="pt-2 border-t border-gray-100 dark:border-white/10 flex flex-col gap-2 flex-shrink-0">
-                <button onclick="voegImportToe()" class="w-full py-3.5 rounded-2xl text-sm font-semibold text-white bg-[#34C759] hover:bg-green-600 active:scale-98 transition-all shadow-md flex items-center justify-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
-                    <span>Geselecteerde Items Toevoegen</span>
+        </div>
+
+        <!-- TAB 2: POWERPOINT & WEERKLANK ARCHIEF EXTRACTOR -->
+        <div id="importArchiefContainer" class="hidden flex-col flex-1 overflow-hidden p-4 md:p-6 gap-3">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-purple-700 dark:text-purple-400">PowerPoint &amp; Weerklank Extractor</h4>
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400">
+                        Sleep oude kerk-PowerPoints (.pptx) of Liedbundels (.txt) erin om de database direct te vullen!
+                    </p>
+                </div>
+                <span id="archiefTellerBadge" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 hidden"></span>
+            </div>
+
+            <!-- Dropzone -->
+            <div id="archiefDropzone" onclick="document.getElementById('archiefFileInput').click()" ondragover="event.preventDefault(); this.classList.add('border-purple-500', 'bg-purple-50/50', 'dark:bg-purple-950/20')" ondragleave="this.classList.remove('border-purple-500', 'bg-purple-50/50', 'dark:bg-purple-950/20')" ondrop="event.preventDefault(); this.classList.remove('border-purple-500', 'bg-purple-50/50', 'dark:bg-purple-950/20'); verwerkArchiefBestanden(event.dataTransfer.files);" class="border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-purple-500 rounded-2xl p-5 text-center cursor-pointer transition-all bg-gray-50/60 dark:bg-white/[0.02] flex flex-col items-center justify-center gap-2">
+                <input type="file" id="archiefFileInput" multiple accept=".pptx,.txt" class="hidden" onchange="verwerkArchiefBestanden(this.files)" />
+                <div class="w-12 h-12 rounded-2xl bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 flex items-center justify-center text-2xl shadow-xs">
+                    📁
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-gray-800 dark:text-gray-200">
+                        Klik om te kiezen of sleep bestanden hierheen
+                    </p>
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                        Ondersteunt <strong>.pptx</strong> (oude kerkpresentaties) en <strong>.txt</strong> (Liedbundels Online exports)
+                    </p>
+                </div>
+            </div>
+
+            <!-- Lijst met ontdekte liederen -->
+            <div id="archiefResultaten" class="overflow-y-auto max-h-[45vh] flex flex-col gap-2 no-scrollbar">
+                <!-- Dynamisch gevuld -->
+            </div>
+
+            <!-- Actiebalk onderaan -->
+            <div id="archiefActiebalk" class="hidden pt-2 border-t border-gray-100 dark:border-white/10 flex flex-col gap-2">
+                <button type="button" id="archiefImporteerKnop" onclick="importeerArchiefNaarCloud()" class="w-full py-3 rounded-2xl text-xs md:text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 active:scale-98 transition-all shadow-md flex items-center justify-center gap-2">
+                    <span>💾</span>
+                    <span id="archiefImporteerKnopTekst">Sla Liederen op in Cloud Database (D1)</span>
                 </button>
             </div>
         </div>
@@ -9572,7 +9628,286 @@ Van harte Gods zegen toegewenst!`;
         document.getElementById('importStap1').classList.add('flex');
         document.getElementById('importStap2').classList.add('hidden');
         document.getElementById('importStap2').classList.remove('flex');
+        window.wisselImportTab('liturgie');
         document.getElementById('importModal').classList.remove('hidden');
+    };
+
+    window.wisselImportTab = function(tab) {
+        const btnLit = document.getElementById('importTabBtnLiturgie');
+        const btnArc = document.getElementById('importTabBtnArchief');
+        const cLit = document.getElementById('importLiturgieContainer');
+        const cArc = document.getElementById('importArchiefContainer');
+        const stapBadge = document.getElementById('importStapBadge');
+
+        const activeClass = 'px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all bg-white dark:bg-[#2C2C2E] text-[#1D1D1F] dark:text-white shadow-xs flex items-center gap-1.5';
+        const inactiveClass = 'px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white flex items-center gap-1.5';
+
+        if (tab === 'archief') {
+            if (btnLit) btnLit.className = inactiveClass;
+            if (btnArc) btnArc.className = activeClass;
+            if (cLit) cLit.classList.add('hidden');
+            if (cArc) { cArc.classList.remove('hidden'); cArc.classList.add('flex'); }
+            if (stapBadge) stapBadge.innerText = 'Archief Inlezen';
+        } else {
+            if (btnLit) btnLit.className = activeClass;
+            if (btnArc) btnArc.className = inactiveClass;
+            if (cLit) cLit.classList.remove('hidden');
+            if (cArc) { cArc.classList.add('hidden'); cArc.classList.remove('flex'); }
+            if (stapBadge) stapBadge.innerText = 'Stap 1: Plakken';
+        }
+    };
+
+    // --- POWERPOINT & WEERKLANK ARCHIEF EXTRACTOR ---
+    window.archiefOntdekteLiederen = [];
+
+    window.verwerkArchiefBestanden = async function(files) {
+        if (!files || !files.length) return;
+        const resEl = document.getElementById('archiefResultaten');
+        const actieBalk = document.getElementById('archiefActiebalk');
+        const tellerBadge = document.getElementById('archiefTellerBadge');
+
+        if (resEl) {
+            resEl.innerHTML = `
+                <div class="p-6 text-center text-xs text-gray-500 dark:text-gray-400 flex flex-col items-center gap-2">
+                    <span class="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></span>
+                    <span>Bezig met analyseren van ${files.length} bestand(en)...</span>
+                </div>
+            `;
+        }
+
+        const gevondenLiederen = new Map();
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const fileName = file.name;
+            const ext = fileName.toLowerCase().split('.').pop();
+
+            try {
+                if (ext === 'pptx') {
+                    if (typeof JSZip === 'undefined') {
+                        console.error("JSZip niet geladen");
+                        continue;
+                    }
+                    const zip = await JSZip.loadAsync(file);
+                    const slideFiles = Object.keys(zip.files).filter(k => k.startsWith('ppt/slides/slide') && k.endsWith('.xml'));
+                    slideFiles.sort((a, b) => {
+                        const numA = parseInt(a.replace(/[^0-9]/g, '') || '0', 10);
+                        const numB = parseInt(b.replace(/[^0-9]/g, '') || '0', 10);
+                        return numA - numB;
+                    });
+
+                    for (const sf of slideFiles) {
+                        const xml = await zip.files[sf].async('string');
+                        const paragraphs = [];
+                        const pRegex = /<a:p[\s>]([\s\S]*?)<\/a:p>/gi;
+                        let pMatch;
+                        while ((pMatch = pRegex.exec(xml)) !== null) {
+                            const tRegex = /<a:t[\s>]([\s\S]*?)<\/a:t>/gi;
+                            let tMatch;
+                            let pText = '';
+                            while ((tMatch = tRegex.exec(pMatch[1])) !== null) {
+                                pText += tMatch[1];
+                            }
+                            if (pText.trim()) paragraphs.push(pText.trim());
+                        }
+
+                        if (paragraphs.length < 2) continue;
+
+                        const mogelijkeTitel = paragraphs[0];
+                        const inhoudRegels = paragraphs.slice(1);
+
+                        // Match lied (Weerklank, Psalm, DNP, Opwekking, Sela, Lied)
+                        const liedMatch = mogelijkeTitel.match(/(Weerklank(?:\s+Lied)?|\bPsalm\b|\bDNP\b|\bOpwekking\b|\bSela\b|\bLied\b|\bGezang\b)\s*([0-9]+[a-z]?)(?:\s*[:\-\/]\s*([0-9]+))?/i);
+                        if (liedMatch) {
+                            let bundel = liedMatch[1].trim();
+                            if (/weerklank/i.test(bundel)) bundel = 'Weerklank Lied';
+                            else if (/^psalm$/i.test(bundel)) bundel = 'Psalm';
+                            else if (/^dnp$/i.test(bundel)) bundel = 'DNP Psalm';
+                            else if (/^opwekking$/i.test(bundel)) bundel = 'Opwekking';
+                            else if (/^lied$/i.test(bundel)) bundel = 'Weerklank Lied';
+
+                            const nummer = liedMatch[2].trim();
+                            const versInTitel = liedMatch[3] ? parseInt(liedMatch[3], 10) : null;
+                            const genormaliseerdeTitel = `${bundel} ${nummer}`;
+
+                            let versNr = versInTitel;
+                            let schoneRegels = [];
+
+                            for (const r of inhoudRegels) {
+                                const vStart = r.match(/^([0-9]+)\.?\s*(.*)$/);
+                                if (vStart && !versNr) {
+                                    versNr = parseInt(vStart[1], 10);
+                                    if (vStart[2]) schoneRegels.push(vStart[2]);
+                                } else if (vStart && versNr === parseInt(vStart[1], 10)) {
+                                    if (vStart[2]) schoneRegels.push(vStart[2]);
+                                } else {
+                                    schoneRegels.push(r);
+                                }
+                            }
+
+                            if (!versNr) versNr = 1;
+                            if (schoneRegels.length === 0) continue;
+
+                            if (!gevondenLiederen.has(genormaliseerdeTitel)) {
+                                gevondenLiederen.set(genormaliseerdeTitel, {
+                                    titel: genormaliseerdeTitel,
+                                    coupletten: new Map(),
+                                    bronnen: new Set()
+                                });
+                            }
+                            const entry = gevondenLiederen.get(genormaliseerdeTitel);
+                            entry.bronnen.add(fileName);
+                            entry.coupletten.set(versNr, schoneRegels.join('\n'));
+                        }
+                    }
+                } else if (ext === 'txt') {
+                    const text = await file.text();
+                    const lines = text.split(/\r?\n/);
+                    let huidigLied = null;
+                    let huidigVers = null;
+                    let versRegels = [];
+
+                    function slaOp() {
+                        if (huidigLied && huidigVers && versRegels.length) {
+                            const t = `Weerklank Lied ${huidigLied}`;
+                            if (!gevondenLiederen.has(t)) {
+                                gevondenLiederen.set(t, { titel: t, coupletten: new Map(), bronnen: new Set() });
+                            }
+                            gevondenLiederen.get(t).bronnen.add(fileName);
+                            gevondenLiederen.get(t).coupletten.set(huidigVers, versRegels.join('\n'));
+                        }
+                        versRegels = [];
+                    }
+
+                    for (const line of lines) {
+                        const l = line.trim();
+                        const tagMatch = l.match(/^(?:lied\s*)?([0-9]+)\s*[:\-\.]\s*([0-9]+)$/i);
+                        if (tagMatch) {
+                            slaOp();
+                            huidigLied = tagMatch[1];
+                            huidigVers = parseInt(tagMatch[2], 10);
+                        } else if (l) {
+                            versRegels.push(l);
+                        }
+                    }
+                    slaOp();
+                }
+            } catch (err) {
+                console.warn(`Fout bij verwerken bestand ${fileName}:`, err);
+            }
+        }
+
+        window.archiefOntdekteLiederen = Array.from(gevondenLiederen.values());
+        window.renderArchiefResultatenUI();
+    };
+
+    window.renderArchiefResultatenUI = function() {
+        const resEl = document.getElementById('archiefResultaten');
+        const actieBalk = document.getElementById('archiefActiebalk');
+        const tellerBadge = document.getElementById('archiefTellerBadge');
+        const knopTekst = document.getElementById('archiefImporteerKnopTekst');
+        if (!resEl) return;
+
+        const lijst = window.archiefOntdekteLiederen || [];
+        if (lijst.length === 0) {
+            resEl.innerHTML = `
+                <div class="p-6 text-center text-xs text-gray-500 dark:text-gray-400">
+                    Geen liederen of verzen gevonden in de geselecteerde bestanden. Controleer of het geldige PowerPoint-bestanden zijn.
+                </div>
+            `;
+            if (actieBalk) actieBalk.classList.add('hidden');
+            if (tellerBadge) tellerBadge.classList.add('hidden');
+            return;
+        }
+
+        if (tellerBadge) {
+            tellerBadge.innerText = `${lijst.length} liederen gevonden`;
+            tellerBadge.classList.remove('hidden');
+        }
+
+        const cloudDb = window.liederenDatabase || {};
+        let nieuweAantal = 0;
+
+        let html = '';
+        lijst.forEach((item, idx) => {
+            const alInCloud = !!cloudDb[item.titel];
+            if (!alInCloud) nieuweAantal++;
+
+            const verzenArray = Array.from(item.coupletten.keys()).sort((a,b) => a-b);
+            const eersteVers = item.coupletten.get(verzenArray[0]) || '';
+            const preview = eersteVers.split('\n').slice(0, 2).join(' / ');
+
+            html += `
+                <div class="bg-gray-50 dark:bg-white/[0.04] p-3 rounded-2xl border border-gray-100 dark:border-white/10 flex items-start justify-between gap-3 text-xs">
+                    <div class="flex flex-col gap-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="font-bold text-[#1D1D1F] dark:text-white">${escapeHtml(item.titel)}</span>
+                            ${alInCloud 
+                                ? `<span class="text-[10px] px-2 py-0.2 rounded-full font-semibold bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">Reeds in Cloud</span>`
+                                : `<span class="text-[10px] px-2 py-0.2 rounded-full font-bold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300/40">Nieuw</span>`
+                            }
+                            <span class="text-[10px] text-gray-400">Couplet ${verzenArray.join(', ')}</span>
+                        </div>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 italic truncate max-w-md">"${escapeHtml(preview)}..."</p>
+                    </div>
+                    <span class="text-[10px] text-gray-400 whitespace-nowrap">${item.bronnen.size} bestand(en)</span>
+                </div>
+            `;
+        });
+
+        resEl.innerHTML = html;
+        if (actieBalk) actieBalk.classList.remove('hidden');
+        if (knopTekst) {
+            knopTekst.textContent = nieuweAantal > 0 
+                ? `Sla ${nieuweAantal} Nieuwe Liederen op in Cloud (D1)`
+                : `Sla alle ${lijst.length} Liederen op in Cloud (D1)`;
+        }
+    };
+
+    window.importeerArchiefNaarCloud = async function() {
+        const lijst = window.archiefOntdekteLiederen || [];
+        if (!lijst.length) return;
+
+        const knop = document.getElementById('archiefImporteerKnop');
+        if (knop) {
+            knop.disabled = true;
+            knop.classList.add('opacity-70', 'cursor-wait');
+        }
+
+        let opgeslagen = 0;
+        const DATA_URL = "https://kerkdata.kerkapp.workers.dev";
+        const huidigeGem = window.getActieveGemeente ? window.getActieveGemeente() : "Bethelkerk Maassluis";
+
+        for (const item of lijst) {
+            const verzenArray = Array.from(item.coupletten.keys()).sort((a,b) => a-b);
+            const coupletBlokken = verzenArray.map(vNr => `${vNr}.\n${item.coupletten.get(vNr).trim()}`);
+            const schoneTekst = coupletBlokken.join('\n\n');
+
+            // Sla lokaal op in geheugen en cache
+            if (!window.liederenDatabase) window.liederenDatabase = {};
+            window.liederenDatabase[item.titel] = schoneTekst;
+
+            try {
+                await fetch(DATA_URL + "/liederen", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ id: item.titel, tekst: schoneTekst, toegevoegd_door: huidigeGem })
+                });
+                opgeslagen++;
+            } catch (e) {
+                console.warn("Fout bij opslaan lied:", item.titel, e);
+            }
+        }
+
+        try { localStorage.setItem('liederenCache', JSON.stringify(window.liederenDatabase)); } catch (e) {}
+
+        if (knop) {
+            knop.disabled = false;
+            knop.classList.remove('opacity-70', 'cursor-wait');
+        }
+
+        if (window.toonToast) window.toonToast(`${opgeslagen} liederen succesvol aan de Cloud Database toegevoegd! 🎉`, 'success');
+        window.renderArchiefResultatenUI();
     };
 
     window.terugNaarImportStap1 = function() {
