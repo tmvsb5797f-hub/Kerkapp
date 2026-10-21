@@ -3898,61 +3898,79 @@ Retourneer UITSLUITEND een valide JSON object:
 
     // --- SLIMME LITURGIE PER E-MAIL (MULTI-CHURCH INGESTION) ---
     window.checkInkomendeLiturgieMail = async function(isHandmatig = false) {
-        const EMAIL_INGEST_URL = "https://kerkliturgie-email-ingest.kerkapp.workers.dev";
+        const fallbackUrls = [
+            "https://kerkliturgie-email-bethelkerk.kerkapp.workers.dev",
+            "https://kerkliturgie-email-ingest.kerkapp.workers.dev"
+        ];
         const actieveGemeente = (typeof window.getActieveGemeente === 'function') ? window.getActieveGemeente() : (localStorage.getItem('actieveGemeente') || 'bethel');
-        const kerkSlug = actieveGemeente.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30) || 'bethel';
+        
+        let kerkSlug = 'bethel';
+        const raw = (actieveGemeente || '').toLowerCase();
+        if (raw.includes('bethel') || raw.includes('maassluis')) kerkSlug = 'bethel';
+        else if (raw.includes('maranatha')) kerkSlug = 'maranatha';
+        else if (raw.includes('dorp')) kerkSlug = 'dorpskerk';
+        else if (raw.includes('kruis')) kerkSlug = 'kruiskerk';
+        else kerkSlug = raw.replace(/[^a-z0-9]/g, '').slice(0, 20) || 'bethel';
 
-        try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 6000);
-            const res = await fetch(`${EMAIL_INGEST_URL}/dienst?kerk=${encodeURIComponent(kerkSlug)}`, {
-                signal: controller.signal
-            });
-            clearTimeout(timeoutId);
+        let gelukt = false;
+        let lastErr = null;
 
-            if (!res.ok) {
-                if (isHandmatig && window.toonToast) {
-                    window.toonToast(`Nog geen nieuwe e-mail liturgie klaar voor '${actieveGemeente}'.`, "info");
+        for (const baseUrl of fallbackUrls) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 6000);
+                const res = await fetch(`${baseUrl}/dienst?kerk=${encodeURIComponent(kerkSlug)}`, {
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+
+                if (!res.ok) {
+                    continue;
                 }
-                return;
-            }
 
-            const data = await res.json();
-            if (data && data.gevonden && data.slides && data.slides.length > 0) {
-                const bevestigd = confirm(
-                    `📬 Nieuwe liturgie per e-mail ontvangen!\n\n` +
-                    `Gemeente: ${data.gemeente_naam || actieveGemeente}\n` +
-                    `Voorganger: ${data.voorganger || 'Onbekend'}\n` +
-                    `Datum: ${data.datum || 'Komende zondag'}\n` +
-                    `Aantal dia's: ${data.slides.length}\n\n` +
-                    `Wil je deze liturgie direct inladen in de app?`
-                );
-                if (bevestigd) {
-                    liturgieVolgorde = data.slides.map(s => ({
-                        type: s.type || "Vrije tekst",
-                        titel: s.titel || "Onderdeel",
-                        tekst: Array.isArray(s.regels) ? s.regels.join('\n') : (s.tekst || "")
-                    }));
-                    if (data.datum) {
-                        const dEl = document.getElementById('datumInput');
-                        if (dEl) dEl.value = data.datum;
+                const data = await res.json();
+                if (data && data.gevonden && data.slides && data.slides.length > 0) {
+                    gelukt = true;
+                    const bevestigd = confirm(
+                        `📬 Nieuwe liturgie per e-mail ontvangen!\n\n` +
+                        `Gemeente: ${data.gemeente_naam || actieveGemeente}\n` +
+                        `Voorganger: ${data.voorganger || 'Onbekend'}\n` +
+                        `Datum: ${data.datum || 'Komende dienst'}\n` +
+                        `Aantal dia's: ${data.slides.length}\n\n` +
+                        `Wil je deze liturgie direct inladen in de app?`
+                    );
+                    if (bevestigd) {
+                        liturgieVolgorde = data.slides.map(s => ({
+                            type: s.type || "Vrije tekst",
+                            titel: s.titel || "Onderdeel",
+                            tekst: Array.isArray(s.regels) ? s.regels.join('\n') : (s.tekst || "")
+                        }));
+                        if (data.datum) {
+                            const dEl = document.getElementById('datumInput');
+                            if (dEl) dEl.value = data.datum;
+                        }
+                        if (data.voorganger) {
+                            const vEl = document.getElementById('voorgangerInput');
+                            if (vEl) vEl.value = data.voorganger;
+                        }
+                        window.tekenVolgorde();
+                        if (window.toonToast) {
+                            window.toonToast(`🎉 Liturgie van ${data.voorganger} succesvol ingeladen!`, "success");
+                        }
                     }
-                    if (data.voorganger) {
-                        const vEl = document.getElementById('voorgangerInput');
-                        if (vEl) vEl.value = data.voorganger;
-                    }
-                    window.tekenVolgorde();
-                    if (window.toonToast) {
-                        window.toonToast(`🎉 Liturgie van ${data.voorganger} succesvol ingeladen!`, "success");
-                    }
+                    return;
                 }
-            } else if (isHandmatig && window.toonToast) {
-                window.toonToast(`Geen nieuwe liturgie gevonden voor '${actieveGemeente}'.`, "info");
+            } catch (err) {
+                lastErr = err;
             }
-        } catch (err) {
-            console.warn("Email Ingest check overgeslagen of offline:", err);
-            if (isHandmatig && window.toonToast) {
-                window.toonToast("E-mail service tijdelijk offline.", "warning");
+        }
+
+        if (isHandmatig && window.toonToast) {
+            if (gelukt) return;
+            if (lastErr && /timeout|abort/i.test(lastErr.message)) {
+                window.toonToast("E-mail service time-out. Probeer het over een ogenblik opnieuw.", "warning");
+            } else {
+                window.toonToast(`Nog geen nieuwe liturgie per mail klaar voor '${actieveGemeente}'.`, "info");
             }
         }
     };
