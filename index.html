@@ -5401,6 +5401,9 @@ Bijbelliederen`;
         if (mode === 'dock' || mode === 'remote' || mode === 'klikker') {
             return base + '?mode=' + mode + '&pin=' + encodeURIComponent(pin);
         }
+        if (mode === 'lowerthird') {
+            return base + '?mode=stream&layout=lowerthird&bg=transparent';
+        }
         return base + '?mode=' + mode;
     }
 
@@ -5513,6 +5516,541 @@ Bijbelliederen`;
         }, 120);
     }
 
+    // --- DIRECTE OBS STUDIO WEBSOCKET V5 MANAGER ---
+    window.obsWs = {
+        socket: null,
+        connected: false,
+        connecting: false,
+        identified: false,
+        obsVersion: '',
+        config: {
+            host: localStorage.getItem('kerkapp_obs_ws_host') || '127.0.0.1',
+            port: parseInt(localStorage.getItem('kerkapp_obs_ws_port') || '4455', 10),
+            password: localStorage.getItem('kerkapp_obs_ws_password') || '',
+            autoConnect: localStorage.getItem('kerkapp_obs_ws_autoconnect') === 'true',
+            autoLowerThird: localStorage.getItem('kerkapp_obs_ws_autolowerthird') !== 'false'
+        },
+        scenes: [],
+        currentProgramScene: '',
+        streaming: false,
+        streamDuration: 0,
+        recording: false,
+        recordDuration: 0,
+        stats: {
+            bitrate: 0,
+            skippedFrames: 0,
+            totalFrames: 0
+        },
+        requests: new Map(),
+        reqCounter: 0,
+        reconnectTimer: null,
+
+        saveConfig(cfg) {
+            if (cfg.host !== undefined) { this.config.host = cfg.host; localStorage.setItem('kerkapp_obs_ws_host', cfg.host); }
+            if (cfg.port !== undefined) { this.config.port = cfg.port; localStorage.setItem('kerkapp_obs_ws_port', String(cfg.port)); }
+            if (cfg.password !== undefined) { this.config.password = cfg.password; localStorage.setItem('kerkapp_obs_ws_password', cfg.password); }
+            if (cfg.autoConnect !== undefined) { this.config.autoConnect = !!cfg.autoConnect; localStorage.setItem('kerkapp_obs_ws_autoconnect', cfg.autoConnect ? 'true' : 'false'); }
+            if (cfg.autoLowerThird !== undefined) { this.config.autoLowerThird = !!cfg.autoLowerThird; localStorage.setItem('kerkapp_obs_ws_autolowerthird', cfg.autoLowerThird ? 'true' : 'false'); }
+        },
+
+        async computeAuth(password, salt, challenge) {
+            const enc = new TextEncoder();
+            const passSalt = enc.encode(password + salt);
+            const hash1Buf = await crypto.subtle.digest('SHA-256', passSalt);
+            const hash1B64 = btoa(String.fromCharCode(...new Uint8Array(hash1Buf)));
+            const secretChallenge = enc.encode(hash1B64 + challenge);
+            const hash2Buf = await crypto.subtle.digest('SHA-256', secretChallenge);
+            return btoa(String.fromCharCode(...new Uint8Array(hash2Buf)));
+        },
+
+        connect() {
+            if (this.socket && (this.socket.readyState === WebSocket.CONNECTING || this.socket.readyState === WebSocket.OPEN)) {
+                return;
+            }
+            if (this.reconnectTimer) { clearTimeout(this.reconnectTimer); this.reconnectTimer = null; }
+
+            this.connecting = true;
+            this.updateUiStatus('connecting');
+
+            const host = (this.config.host || '127.0.0.1').trim();
+            const port = this.config.port || 4455;
+            const url = `ws://${host}:${port}`;
+
+            try {
+                this.socket = new WebSocket(url);
+            } catch (err) {
+                console.warn('[OBS WS] WebSocket creatie mislukt:', err);
+                this.handleClose(false);
+                return;
+            }
+
+            this.socket.onopen = () => {
+                console.log('[OBS WS] Verbonden met socket, wachten op Hello...');
+            };
+
+            this.socket.onmessage = async (evt) => {
+                try {
+                    const msg = JSON.parse(evt.data);
+                    await this.handleMessage(msg);
+                } catch (e) {
+                    console.error('[OBS WS] Fout bij verwerken OBS bericht:', e);
+                }
+            };
+
+            this.socket.onerror = (err) => {
+                console.warn('[OBS WS] Socket fout:', err);
+            };
+
+            this.socket.onclose = (evt) => {
+                this.handleClose(evt.wasClean);
+            };
+        },
+
+        disconnect() {
+            if (this.reconnectTimer) { clearTimeout(this.reconnectTimer); this.reconnectTimer = null; }
+            if (this.socket) {
+                try { this.socket.close(); } catch(e) {}
+                this.socket = null;
+            }
+            this.connected = false;
+            this.connecting = false;
+            this.identified = false;
+            this.updateUiStatus('disconnected');
+        },
+
+        handleClose(wasClean) {
+            this.connected = false;
+            this.connecting = false;
+            this.identified = false;
+            this.socket = null;
+            this.updateUiStatus('disconnected');
+
+            if (this.config.autoConnect) {
+                this.reconnectTimer = setTimeout(() => {
+                    if (this.config.autoConnect && !this.connected) {
+                        this.connect();
+                    }
+                }, 5000);
+            }
+        },
+
+        async handleMessage(msg) {
+            // op: 0 = Server Hello
+            if (msg.op === 0) {
+                const data = msg.d || {};
+                this.obsVersion = data.obsWebSocketVersion || '5.x';
+                let authResponse = undefined;
+
+                if (data.authentication) {
+                    const { salt, challenge } = data.authentication;
+                    const password = this.config.password || '';
+                    authResponse = await this.computeAuth(password, salt, challenge);
+                }
+
+                // Stuur Identify (op: 1) met event subscriptions:
+                // General (1) | Scenes (4) | Outputs (64) | SceneItems (128) = 197
+                const identifyPayload = {
+                    op: 1,
+                    d: {
+                        rpcVersion: 1,
+                        eventSubscriptions: 197
+                    }
+                };
+                if (authResponse) {
+                    identifyPayload.d.authentication = authResponse;
+                }
+                this.socket.send(JSON.stringify(identifyPayload));
+                return;
+            }
+
+            // op: 2 = Identified
+            if (msg.op === 2) {
+                this.connected = true;
+                this.connecting = false;
+                this.identified = true;
+                console.log('[OBS WS] Succesvol geauthenticeerd en verbonden met OBS Studio', this.obsVersion);
+                if (window.toonToast) window.toonToast(`Verbonden met OBS Studio (${this.obsVersion})`, 'success');
+                this.updateUiStatus('connected');
+                this.refreshStateFromObs();
+                return;
+            }
+
+            // op: 7 = RequestResponse
+            if (msg.op === 7) {
+                const { requestId, requestStatus, responseData } = msg.d || {};
+                if (requestId && this.requests.has(requestId)) {
+                    const { resolve, reject } = this.requests.get(requestId);
+                    this.requests.delete(requestId);
+                    if (requestStatus && requestStatus.result) {
+                        resolve(responseData);
+                    } else {
+                        reject(new Error(requestStatus ? requestStatus.comment : 'Onbekende OBS fout'));
+                    }
+                }
+                return;
+            }
+
+            // op: 5 = Event
+            if (msg.op === 5) {
+                const { eventType, eventData } = msg.d || {};
+                this.handleObsEvent(eventType, eventData);
+                return;
+            }
+        },
+
+        sendRequest(requestType, requestData = {}) {
+            return new Promise((resolve, reject) => {
+                if (!this.connected || !this.socket) {
+                    reject(new Error('Niet verbonden met OBS Studio'));
+                    return;
+                }
+                const requestId = 'req_' + (++this.reqCounter) + '_' + Date.now();
+                this.requests.set(requestId, { resolve, reject });
+                const payload = {
+                    op: 6,
+                    d: {
+                        requestType,
+                        requestId,
+                        requestData
+                    }
+                };
+                this.socket.send(JSON.stringify(payload));
+                setTimeout(() => {
+                    if (this.requests.has(requestId)) {
+                        this.requests.delete(requestId);
+                        reject(new Error(`OBS request ${requestType} time-out`));
+                    }
+                }, 8000);
+            });
+        },
+
+        async refreshStateFromObs() {
+            try {
+                // Get Scenes
+                const scenesData = await this.sendRequest('GetSceneList');
+                if (scenesData && scenesData.scenes) {
+                    this.scenes = scenesData.scenes.map(s => s.sceneName).reverse();
+                    this.currentProgramScene = scenesData.currentProgramSceneName || '';
+                }
+
+                // Get Stream Status
+                try {
+                    const streamData = await this.sendRequest('GetStreamStatus');
+                    if (streamData) {
+                        this.streaming = !!streamData.outputActive;
+                        this.streamDuration = streamData.outputDuration || 0;
+                        this.stats.skippedFrames = streamData.outputSkippedFrames || 0;
+                        this.stats.totalFrames = streamData.outputTotalFrames || 0;
+                        this.stats.bitrate = streamData.outputBytes ? Math.round((streamData.outputBytes * 8) / 1024) : 0;
+                    }
+                } catch(e) {}
+
+                // Get Record Status
+                try {
+                    const recordData = await this.sendRequest('GetRecordStatus');
+                    if (recordData) {
+                        this.recording = !!recordData.outputActive;
+                        this.recordDuration = recordData.outputDuration || 0;
+                    }
+                } catch(e) {}
+
+                this.updateUiFull();
+            } catch (e) {
+                console.warn('[OBS WS] Fout bij ophalen OBS status:', e);
+            }
+        },
+
+        handleObsEvent(eventType, eventData = {}) {
+            if (eventType === 'CurrentProgramSceneChanged') {
+                this.currentProgramScene = eventData.sceneName || '';
+                this.updateUiFull();
+            } else if (eventType === 'StreamStateChanged') {
+                this.streaming = !!eventData.outputActive;
+                this.updateUiFull();
+            } else if (eventType === 'RecordStateChanged') {
+                this.recording = !!eventData.outputActive;
+                this.updateUiFull();
+            } else if (eventType === 'SceneListChanged') {
+                this.refreshStateFromObs();
+            }
+        },
+
+        async switchScene(sceneName) {
+            if (!this.connected || !sceneName) return;
+            try {
+                await this.sendRequest('SetCurrentProgramScene', { sceneName });
+                this.currentProgramScene = sceneName;
+                this.updateUiFull();
+                if (window.toonToast) window.toonToast(`OBS Scène gewisseld: ${sceneName}`, 'info');
+            } catch (e) {
+                console.error('[OBS WS] Fout bij wisselen scène:', e);
+                if (window.toonToast) window.toonToast(`Kon niet wisselen naar scène ${sceneName}`, 'warning');
+            }
+        },
+
+        async toggleStream() {
+            if (!this.connected) return;
+            try {
+                const res = await this.sendRequest('ToggleStream');
+                this.streaming = res ? res.outputActive : !this.streaming;
+                this.updateUiFull();
+                if (window.toonToast) window.toonToast(this.streaming ? 'OBS Livestream gestart! 🔴' : 'OBS Livestream beëindigd', 'info');
+            } catch (e) {
+                console.error('[OBS WS] Toggle stream fout:', e);
+            }
+        },
+
+        async toggleRecord() {
+            if (!this.connected) return;
+            try {
+                const res = await this.sendRequest('ToggleRecord');
+                this.recording = res ? res.outputActive : !this.recording;
+                this.updateUiFull();
+                if (window.toonToast) window.toonToast(this.recording ? 'Lokale opname gestart ⏺️' : 'Lokale opname gestopt', 'info');
+            } catch (e) {
+                console.error('[OBS WS] Toggle record fout:', e);
+            }
+        },
+
+        async onSlideChange(state) {
+            if (!this.connected || !this.config.autoLowerThird) return;
+            if (!state || !state.slides || !state.slides.length) return;
+
+            const isBlackout = !!state.isBlackout;
+            const curSlide = state.slides[state.currentIndex];
+            const isBlank = isBlackout || !curSlide || curSlide.type === 'Leeg';
+
+            const lowerThirdScene = this.scenes.find(s => /lower\s*third|ondertitel/i.test(s));
+            const cameraScene = this.scenes.find(s => /camera|zonder tekst|preek/i.test(s));
+            const tekstScene = this.scenes.find(s => /met tekst|liturgie|beamer/i.test(s));
+
+            try {
+                if (isBlank) {
+                    if (cameraScene && this.currentProgramScene !== cameraScene) {
+                        await this.switchScene(cameraScene);
+                    }
+                } else {
+                    if (lowerThirdScene && this.currentProgramScene !== lowerThirdScene) {
+                        await this.switchScene(lowerThirdScene);
+                    } else if (tekstScene && !lowerThirdScene && this.currentProgramScene !== tekstScene) {
+                        await this.switchScene(tekstScene);
+                    }
+                }
+            } catch (e) {
+                // negeer indien scène niet bestaat
+            }
+        },
+
+        updateUiStatus(status) {
+            const badge = document.getElementById('obsWsStatusBadge');
+            const badgeTop = document.getElementById('obsWsStatusBadgeTop');
+            const connectBtn = document.getElementById('obsWsConnectBtn');
+            const connDetails = document.getElementById('obsWsConnectedDetails');
+
+            if (badge) {
+                if (status === 'connected') {
+                    badge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 border border-emerald-300/40 flex items-center gap-1.5';
+                    badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Verbonden (OBS ${escapeHtml(this.obsVersion || 'v5')})`;
+                } else if (status === 'connecting') {
+                    badge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 border border-amber-300/40 flex items-center gap-1.5';
+                    badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span> Verbinden...`;
+                } else {
+                    badge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-gray-800 text-gray-400 border border-gray-700 flex items-center gap-1.5';
+                    badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-gray-400"></span> Niet verbonden`;
+                }
+            }
+
+            if (badgeTop) {
+                if (status === 'connected') {
+                    badgeTop.className = 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse';
+                } else if (status === 'connecting') {
+                    badgeTop.className = 'w-2 h-2 rounded-full bg-amber-500 animate-ping';
+                } else {
+                    badgeTop.className = 'w-2 h-2 rounded-full bg-gray-400';
+                }
+            }
+
+            if (connectBtn) {
+                if (status === 'connected') {
+                    connectBtn.textContent = 'Verbinding Verbreken';
+                    connectBtn.className = 'px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-all active:scale-95 shadow-md';
+                } else if (status === 'connecting') {
+                    connectBtn.textContent = 'Bezig met verbinden...';
+                    connectBtn.className = 'px-4 py-2 rounded-xl bg-amber-600 text-white text-xs font-bold transition-all opacity-80 cursor-wait';
+                } else {
+                    connectBtn.textContent = 'Verbind met OBS Studio';
+                    connectBtn.className = 'px-4 py-2 rounded-xl bg-[#007AFF] hover:bg-blue-600 text-white text-xs font-bold transition-all active:scale-95 shadow-md';
+                }
+            }
+
+            if (connDetails) {
+                connDetails.classList.toggle('hidden', status !== 'connected');
+            }
+        },
+
+        updateUiFull() {
+            this.updateUiStatus(this.connected ? 'connected' : (this.connecting ? 'connecting' : 'disconnected'));
+
+            const select = document.getElementById('obsWsSceneSelect');
+            if (select) {
+                select.innerHTML = '';
+                if (this.scenes.length === 0) {
+                    const opt = document.createElement('option');
+                    opt.textContent = this.connected ? 'Geen scènes gevonden' : 'Verbind eerst met OBS...';
+                    select.appendChild(opt);
+                } else {
+                    this.scenes.forEach(s => {
+                        const opt = document.createElement('option');
+                        opt.value = s;
+                        opt.textContent = s;
+                        if (s === this.currentProgramScene) opt.selected = true;
+                        select.appendChild(opt);
+                    });
+                }
+            }
+
+            const streamBadge = document.getElementById('obsWsStreamStateBadge');
+            if (streamBadge) {
+                if (this.streaming) {
+                    streamBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 border border-red-300/40 flex items-center gap-1';
+                    streamBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span> LIVE`;
+                } else {
+                    streamBadge.className = 'text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400';
+                    streamBadge.textContent = 'OFFLINE';
+                }
+            }
+
+            const recBadge = document.getElementById('obsWsRecordStateBadge');
+            if (recBadge) {
+                if (this.recording) {
+                    recBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 border border-amber-300/40 flex items-center gap-1';
+                    recBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> OPNEMEN`;
+                } else {
+                    recBadge.className = 'text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400';
+                    recBadge.textContent = 'GESTOP';
+                }
+            }
+        }
+    };
+
+    window.obsWsVerbindToggle = function() {
+        if (window.obsWs.connected || window.obsWs.connecting) {
+            window.obsWs.disconnect();
+        } else {
+            const host = document.getElementById('obsWsHostInput')?.value.trim() || '127.0.0.1';
+            const port = parseInt(document.getElementById('obsWsPortInput')?.value.trim() || '4455', 10);
+            const pass = document.getElementById('obsWsPasswordInput')?.value || '';
+            const autoConn = !!document.getElementById('obsWsAutoConnectCheckbox')?.checked;
+            const autoL3 = !!document.getElementById('obsWsAutoLowerThirdCheckbox')?.checked;
+
+            window.obsWs.saveConfig({
+                host,
+                port,
+                password: pass,
+                autoConnect: autoConn,
+                autoLowerThird: autoL3
+            });
+            window.obsWs.connect();
+        }
+    };
+
+    window.obsWsWisselScene = function(sceneName) {
+        if (window.obsWs && window.obsWs.connected) {
+            window.obsWs.switchScene(sceneName);
+        }
+    };
+
+    window.obsWsToggleStream = function() {
+        if (window.obsWs && window.obsWs.connected) {
+            window.obsWs.toggleStream();
+        }
+    };
+
+    window.obsWsToggleRecord = function() {
+        if (window.obsWs && window.obsWs.connected) {
+            window.obsWs.toggleRecord();
+        }
+    };
+
+    window.downloadObsSceneCollection = function() {
+        const streamUrl = getObsUrl('stream');
+        const lowerThirdUrl = getObsUrl('lowerthird');
+
+        const sceneCollection = {
+            name: "Kerkapp Dienst Regie",
+            version: 2,
+            sources: [
+                {
+                    id: "browser_source",
+                    name: "Kerkapp Stream Tekst (1080p)",
+                    settings: {
+                        url: streamUrl,
+                        width: 1920,
+                        height: 1080,
+                        fps: 30,
+                        restart_on_active: true,
+                        shutdown: false
+                    }
+                },
+                {
+                    id: "browser_source",
+                    name: "Kerkapp Lower Third (Transparant)",
+                    settings: {
+                        url: lowerThirdUrl,
+                        width: 1920,
+                        height: 1080,
+                        fps: 30,
+                        restart_on_active: true,
+                        shutdown: false
+                    }
+                },
+                {
+                    id: "scene",
+                    name: "1. Liturgie - Volledig Scherm",
+                    settings: {
+                        items: [
+                            { name: "Kerkapp Stream Tekst (1080p)", visible: true, locked: true }
+                        ]
+                    }
+                },
+                {
+                    id: "scene",
+                    name: "2. Liturgie - Lower Third",
+                    settings: {
+                        items: [
+                            { name: "Kerkapp Lower Third (Transparant)", visible: true, locked: true }
+                        ]
+                    }
+                },
+                {
+                    id: "scene",
+                    name: "3. Camera - Zonder Tekst",
+                    settings: {
+                        items: []
+                    }
+                }
+            ],
+            scene_order: [
+                { name: "1. Liturgie - Volledig Scherm" },
+                { name: "2. Liturgie - Lower Third" },
+                { name: "3. Camera - Zonder Tekst" }
+            ],
+            current_scene: "1. Liturgie - Volledig Scherm",
+            current_program_scene: "1. Liturgie - Volledig Scherm"
+        };
+
+        const blob = new Blob([JSON.stringify(sceneCollection, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Kerkapp_OBS_SceneVerzameling.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        if (window.toonToast) window.toonToast("OBS Scèneverzameling gedownload! Importeer in OBS via Scèneverzameling ➔ Importeren", "success");
+    };
+
     function saveObsLiveState(state) {
         try {
             localStorage.setItem('kerkapp_obs_live_state', JSON.stringify(state));
@@ -5521,6 +6059,9 @@ Bijbelliederen`;
             try { _obsBroadcastChannel.postMessage({ type: 'UPDATE', state }); } catch(e) {}
         }
         syncObsToFirestore(state);
+        if (window.obsWs && window.obsWs.connected) {
+            try { window.obsWs.onSlideChange(state); } catch(e) {}
+        }
     }
 
     function autoSyncObsLiveLiturgie() {
@@ -5621,21 +6162,56 @@ Bijbelliederen`;
         saveObsLiveState(state);
         updateObsModalSimulator();
 
-        // Update URL inputs in modal tab 2
+        // Update URL inputs in modal tab 2 en tab 4
         const urlStream = getObsUrl('stream');
+        const urlLowerThird = getObsUrl('lowerthird');
         const urlDock = getObsUrl('dock');
         const urlRemote = getObsUrl('remote');
         const urlBeamer = getObsUrl('beamer');
         const inpStream = document.getElementById('obsUrlStreamInput');
+        const inpLowerThird = document.getElementById('obsUrlLowerThirdInput');
         const inpDock = document.getElementById('obsUrlDockInput');
         const inpRemote = document.getElementById('obsUrlRemoteInput');
         const inpBeamer = document.getElementById('obsUrlBeamerInput');
         const inpPin = document.getElementById('obsRegiePinInput');
         if (inpStream) inpStream.value = urlStream;
+        if (inpLowerThird) inpLowerThird.value = urlLowerThird;
         if (inpDock) inpDock.value = urlDock;
         if (inpRemote) inpRemote.value = urlRemote;
         if (inpBeamer) inpBeamer.value = urlBeamer;
         if (inpPin) inpPin.value = getRegiePin();
+
+        // Initialiseer OBS WebSocket formuliervelden
+        if (window.obsWs) {
+            const hInp = document.getElementById('obsWsHostInput');
+            const pInp = document.getElementById('obsWsPortInput');
+            const pwInp = document.getElementById('obsWsPasswordInput');
+            const acInp = document.getElementById('obsWsAutoConnectCheckbox');
+            const alInp = document.getElementById('obsWsAutoLowerThirdCheckbox');
+            if (hInp) hInp.value = window.obsWs.config.host || '127.0.0.1';
+            if (pInp) pInp.value = window.obsWs.config.port || 4455;
+            if (pwInp) pwInp.value = window.obsWs.config.password || '';
+            if (acInp) acInp.checked = !!window.obsWs.config.autoConnect;
+            if (alInp) alInp.checked = !!window.obsWs.config.autoLowerThird;
+            window.obsWs.updateUiFull();
+
+            if (window.obsWs.config.autoConnect && !window.obsWs.connected && !window.obsWs.connecting) {
+                try { window.obsWs.connect(); } catch(e) {}
+            }
+        }
+
+        // Genereer instant QR-codes voor de mobiele klikker
+        try {
+            if (typeof maakQRDataURL === 'function') {
+                const qrData = maakQRDataURL(urlRemote, 4, 2);
+                const qrImg1 = document.getElementById('obsRemoteQrImg');
+                const qrImg2 = document.getElementById('obsWsRemoteQrImg');
+                if (qrImg1) qrImg1.src = qrData;
+                if (qrImg2) qrImg2.src = qrData;
+            }
+        } catch(e) {
+            console.warn("QR generatie mislukt:", e);
+        }
 
         if (window.setObsModalTab) window.setObsModalTab('simulator');
         modal.classList.remove('hidden');
@@ -5643,9 +6219,11 @@ Bijbelliederen`;
 
     window.setObsModalTab = function(tab) {
         const btnSim = document.getElementById('obsTabBtnSim');
+        const btnWs = document.getElementById('obsTabBtnWs');
         const btnLinks = document.getElementById('obsTabBtnLinks');
         const btnUitleg = document.getElementById('obsTabBtnUitleg');
         const contentSim = document.getElementById('obsTabContentSim');
+        const contentWs = document.getElementById('obsTabContentWs');
         const contentLinks = document.getElementById('obsTabContentLinks');
         const contentUitleg = document.getElementById('obsTabContentUitleg');
 
@@ -5653,10 +6231,12 @@ Bijbelliederen`;
         const inactiveClass = 'px-4 py-1.5 rounded-xl text-xs font-semibold transition-all text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white flex items-center gap-1.5';
 
         if (btnSim) btnSim.className = (tab === 'simulator') ? activeClass : inactiveClass;
+        if (btnWs) btnWs.className = (tab === 'ws') ? activeClass : inactiveClass;
         if (btnLinks) btnLinks.className = (tab === 'links') ? activeClass : inactiveClass;
         if (btnUitleg) btnUitleg.className = (tab === 'uitleg') ? activeClass : inactiveClass;
 
         if (contentSim) contentSim.classList.toggle('hidden', tab !== 'simulator');
+        if (contentWs) contentWs.classList.toggle('hidden', tab !== 'ws');
         if (contentLinks) contentLinks.classList.toggle('hidden', tab !== 'links');
         if (contentUitleg) contentUitleg.classList.toggle('hidden', tab !== 'uitleg');
     };
@@ -5893,10 +6473,77 @@ Van harte Gods zegen toegewenst!`;
         `;
     }
 
-    function renderStreamHtmlSlide(slide, isMini = false) {
+    function renderStreamHtmlSlide(slide, isMini = false, isLowerThird = false) {
         if (!slide) return '';
-        if (slide.type === 'Welkom') return renderWelkomSlideHtml(slide, isMini, true);
         if (slide.type === 'Leeg') return '';
+
+        if (isLowerThird) {
+            if (slide.type === 'Foto') {
+                return `<div style="position:absolute;bottom:${isMini ? '8px' : '36px'};right:${isMini ? '8px' : '48px'};max-width:${isMini ? '120px' : '340px'};max-height:${isMini ? '70px' : '200px'};border-radius:14px;overflow:hidden;box-shadow:0 14px 35px rgba(0,0,0,0.6);border:1.5px solid rgba(255,255,255,0.25);"><img src="${slide.fotoUrl}" style="width:100%;height:100%;object-fit:cover;" /></div>`;
+            }
+            if (slide.type === 'QR') {
+                return renderQrSlideHtml(slide, isMini, true);
+            }
+            if (slide.type === 'Welkom') {
+                const gemeente = slide.gemeente || 'Welkom in de kerk';
+                const voorganger = slide.voorganger || '';
+                if (isMini) {
+                    return `
+                        <div style="position:absolute;bottom:6px;left:8px;right:8px;background:rgba(15,23,42,0.92);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.18);border-radius:8px;padding:6px 10px;box-shadow:0 4px 14px rgba(0,0,0,0.5);font-family:'Inter',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;color:#ffffff;display:flex;align-items:center;justify-content:space-between;">
+                            <div>
+                                <div style="font-size:7px;font-weight:700;color:#93c5fd;text-transform:uppercase;">Welkom in de eredienst</div>
+                                <div style="font-size:9.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(gemeente)}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+                return `
+                    <div style="position:absolute;bottom:38px;left:50px;right:50px;background:linear-gradient(135deg, rgba(15,23,42,0.92) 0%, rgba(30,41,59,0.88) 100%);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1.5px solid rgba(255,255,255,0.18);border-radius:22px;padding:20px 34px;box-shadow:0 24px 60px rgba(0,0,0,0.65);font-family:'Inter',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;color:#ffffff;display:flex;align-items:center;justify-content:space-between;gap:20px;transition:all 0.4s cubic-bezier(0.16, 1, 0.3, 1);">
+                        <div>
+                            <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(59,130,246,0.25);border:1px solid rgba(96,165,250,0.45);color:#93c5fd;font-size:12.5px;font-weight:700;padding:3px 12px;border-radius:9999px;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.04em;">
+                                <span>⛪</span>
+                                <span>Welkom in de eredienst</span>
+                            </div>
+                            <div style="font-size:clamp(22px, 2.4vw, 34px);font-weight:800;color:#ffffff;text-shadow:0 2px 8px rgba(0,0,0,0.7);">${escapeHtml(gemeente)}</div>
+                        </div>
+                        ${voorganger ? `<div style="text-align:right;flex-shrink:0;"><div style="font-size:12px;color:#94a3b8;font-weight:600;margin-bottom:2px;">Voorganger</div><div style="font-size:clamp(16px, 1.6vw, 24px);font-weight:700;color:#f1f5f9;">${escapeHtml(voorganger)}</div></div>` : ''}
+                    </div>
+                `;
+            }
+
+            const align = slide.align || 'left';
+            const isBold = !!slide.bold;
+            const tekst = (slide.regels || []).join('\n');
+            const titelTekst = slide.basisTitel || slide.titel || '';
+
+            if (isMini) {
+                return `
+                    <div style="position:absolute;bottom:6px;left:8px;right:8px;background:rgba(15,23,42,0.92);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.18);border-radius:8px;padding:6px 10px;box-shadow:0 4px 12px rgba(0,0,0,0.5);font-family:'Inter',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;color:#ffffff;">
+                        <div style="display:inline-block;background:rgba(59,130,246,0.3);border:1px solid rgba(96,165,250,0.5);color:#93c5fd;font-size:7.5px;font-weight:700;padding:1px 5px;border-radius:9999px;margin-bottom:3px;text-transform:uppercase;">
+                            ${escapeHtml(titelTekst)}
+                        </div>
+                        <div style="font-size:8px;line-height:1.2;font-weight:${isBold ? '700' : '400'};text-align:${align};white-space:pre-line;text-shadow:0 1px 3px rgba(0,0,0,0.9);">
+                            ${formatteerMarkdownVoorHtml(tekst)}
+                        </div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div style="position:absolute;bottom:38px;left:50px;right:50px;background:linear-gradient(135deg, rgba(15,23,42,0.92) 0%, rgba(30,41,59,0.88) 100%);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1.5px solid rgba(255,255,255,0.18);border-radius:24px;padding:22px 34px;box-shadow:0 24px 60px rgba(0,0,0,0.65), 0 0 1px rgba(255,255,255,0.2) inset;font-family:'Inter',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;color:#ffffff;transition:all 0.4s cubic-bezier(0.16, 1, 0.3, 1);">
+                    <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(59,130,246,0.25);border:1px solid rgba(96,165,250,0.45);color:#93c5fd;font-size:13.5px;font-weight:700;padding:4px 14px;border-radius:9999px;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.04em;text-shadow:0 1px 3px rgba(0,0,0,0.5);">
+                        <span>🎵</span>
+                        <span>${escapeHtml(titelTekst)}</span>
+                    </div>
+                    <div style="font-size:clamp(22px, 2.3vw, 36px);line-height:1.32;font-weight:${isBold ? '700' : '500'};text-align:${align};color:#ffffff;white-space:pre-line;text-shadow:0 2px 8px rgba(0,0,0,0.95), 0 0 4px rgba(0,0,0,0.8);">
+                        ${formatteerMarkdownVoorHtml(tekst)}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Normale full-screen stream weergave
+        if (slide.type === 'Welkom') return renderWelkomSlideHtml(slide, isMini, true);
         if (slide.type === 'Foto') return `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><img src="${slide.fotoUrl}" style="max-width:100%;max-height:100%;object-fit:contain;" /></div>`;
         if (slide.type === 'QR') return renderQrSlideHtml(slide, isMini, true);
 
@@ -5995,8 +6642,9 @@ Van harte Gods zegen toegewenst!`;
     function startStreamWeergave() {
         document.title = "📺 OBS Livestream Bron - Kerkapp";
         const urlParams = new URLSearchParams(location.search);
-        const isTransparent = urlParams.get('bg') === 'transparent';
-        const useTheme = urlParams.get('bg') === 'theme';
+        const isLowerThird = urlParams.get('layout') === 'lowerthird';
+        const isTransparent = urlParams.get('bg') === 'transparent' || isLowerThird;
+        const useTheme = urlParams.get('bg') === 'theme' && !isLowerThird;
 
         document.documentElement.style.cssText = "height:100%;width:100%;margin:0;padding:0;overflow:hidden;background:" + (isTransparent ? "transparent" : "#000000") + ";";
         document.body.style.cssText = "height:100%;width:100%;margin:0;padding:0;overflow:hidden;background:" + (isTransparent ? "transparent" : "#000000") + ";";
@@ -6021,7 +6669,7 @@ Van harte Gods zegen toegewenst!`;
                     bgContainer.style.backgroundImage = `url('${LIVESTREAM_BG}')`;
                     bgContainer.innerHTML = '';
                 }
-                inhoud.innerHTML = renderStreamHtmlSlide(fallback.slides[0], false);
+                inhoud.innerHTML = renderStreamHtmlSlide(fallback.slides[0], false, isLowerThird);
                 return;
             }
 
@@ -6042,7 +6690,7 @@ Van harte Gods zegen toegewenst!`;
             }
 
             const curSlide = state.slides[state.currentIndex] || state.slides[0];
-            inhoud.innerHTML = renderStreamHtmlSlide(curSlide, false);
+            inhoud.innerHTML = renderStreamHtmlSlide(curSlide, false, isLowerThird);
         }
 
         updateStream();
@@ -11801,14 +12449,18 @@ window.verstuurExportFeedback = async function() {
 
         <!-- Segmented Control Tab Bar -->
         <div class="px-5 md:px-6 pt-3 pb-3 bg-gray-50/70 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between flex-wrap gap-2 flex-shrink-0">
-            <div class="inline-flex p-1 bg-gray-200/80 dark:bg-gray-900/80 rounded-2xl">
+            <div class="inline-flex p-1 bg-gray-200/80 dark:bg-gray-900/80 rounded-2xl flex-wrap">
                 <button id="obsTabBtnSim" type="button" onclick="setObsModalTab('simulator')" class="px-4 py-1.5 rounded-xl text-xs font-bold transition-all bg-white dark:bg-gray-800 text-[#1D1D1F] dark:text-white shadow-sm flex items-center gap-1.5">
                     <span>🎮 Live Simulator</span>
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                 </button>
+                <button id="obsTabBtnWs" type="button" onclick="setObsModalTab('ws')" class="px-4 py-1.5 rounded-xl text-xs font-semibold transition-all text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white flex items-center gap-1.5">
+                    <span>🔌 OBS WebSocket v5</span>
+                    <span id="obsWsStatusBadgeTop" class="w-2 h-2 rounded-full bg-gray-400"></span>
+                </button>
                 <button id="obsTabBtnLinks" type="button" onclick="setObsModalTab('links')" class="px-4 py-1.5 rounded-xl text-xs font-semibold transition-all text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white flex items-center gap-1.5">
                     <span>📡 OBS & Beamer Links</span>
-                    <span class="text-[10px] px-1.5 py-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-full font-bold">4 Links & PIN</span>
+                    <span class="text-[10px] px-1.5 py-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-full font-bold">5 Links & PIN</span>
                 </button>
                 <button id="obsTabBtnUitleg" type="button" onclick="setObsModalTab('uitleg')" class="px-4 py-1.5 rounded-xl text-xs font-semibold transition-all text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white flex items-center gap-1.5">
                     <span>📖 Uitleg & Koppelen</span>
@@ -11882,16 +12534,199 @@ window.verstuurExportFeedback = async function() {
                         <span class="text-lg">📡</span>
                         <div class="text-xs">
                             <span class="font-bold text-blue-950 dark:text-blue-200">Klaar om te koppelen met OBS of Beamer?</span>
-                            <p class="text-[11px] text-blue-700 dark:text-blue-300">Open het links-tabblad voor browserbron-URL's en OBS dock-instellingen.</p>
+                            <p class="text-[11px] text-blue-700 dark:text-blue-300">Open het WebSocket v5 of links-tabblad voor directe aansturing en browserdocks.</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2 flex-shrink-0 flex-wrap sm:flex-nowrap">
-                        <button type="button" onclick="setObsModalTab('uitleg')" class="px-3 py-1.5 rounded-xl bg-purple-100 hover:bg-purple-200 dark:bg-purple-950/60 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 text-xs font-semibold border border-purple-200 dark:border-purple-800 transition-all active:scale-95 shadow-sm">
-                            📖 Uitleg &amp; Gids
+                        <button type="button" onclick="setObsModalTab('ws')" class="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all active:scale-95 shadow-sm">
+                            🔌 Directe OBS Koppeling ➔
                         </button>
-                        <button type="button" onclick="setObsModalTab('links')" class="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all active:scale-95 shadow-sm">
-                            Bekijk OBS Links ➔
+                        <button type="button" onclick="setObsModalTab('links')" class="px-3 py-1.5 rounded-xl bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-xs font-semibold transition-all active:scale-95 shadow-sm">
+                            Browser Links
                         </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: DIRECTE OBS WEBSOCKET V5 KOPPELING -->
+            <div id="obsTabContentWs" class="hidden flex flex-col gap-4">
+                <!-- Status & Verbinding Card -->
+                <div class="bg-gradient-to-br from-slate-900 via-gray-900 to-blue-950 text-white rounded-2xl p-5 border border-slate-800 shadow-md flex flex-col gap-4">
+                    <div class="flex items-center justify-between flex-wrap gap-2">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center text-xl flex-shrink-0">
+                                🔌
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h4 class="text-sm font-bold text-white">Directe OBS Studio WebSocket v5 Koppeling</h4>
+                                    <span id="obsWsStatusBadge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-gray-800 text-gray-400 border border-gray-700 flex items-center gap-1.5">
+                                        <span class="w-2 h-2 rounded-full bg-gray-400"></span> Niet verbonden
+                                    </span>
+                                </div>
+                                <p class="text-[11px] text-gray-400 mt-0.5">
+                                    Rechtstreekse tweewegverbinding met OBS Studio 28+ (poort 4455). Geen externe plug-ins of installatie nodig!
+                                </p>
+                            </div>
+                        </div>
+                        <button type="button" id="obsWsConnectBtn" onclick="obsWsVerbindToggle()" class="px-4 py-2 rounded-xl bg-[#007AFF] hover:bg-blue-600 text-white text-xs font-bold transition-all active:scale-95 shadow-md">
+                            Verbind met OBS Studio
+                        </button>
+                    </div>
+
+                    <!-- Verbindingsparameters Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 border-t border-gray-800">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-gray-300 mb-1">Host / IP-adres</label>
+                            <input type="text" id="obsWsHostInput" class="w-full px-3 py-2 text-xs font-mono rounded-xl bg-gray-800 border border-gray-700 text-white outline-none focus:ring-2 focus:ring-blue-500" value="127.0.0.1" placeholder="127.0.0.1" />
+                            <span class="text-[10px] text-gray-400 mt-0.5 block">127.0.0.1 voor dezelfde PC</span>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-gray-300 mb-1">Server Poort</label>
+                            <input type="number" id="obsWsPortInput" class="w-full px-3 py-2 text-xs font-mono rounded-xl bg-gray-800 border border-gray-700 text-white outline-none focus:ring-2 focus:ring-blue-500" value="4455" placeholder="4455" />
+                            <span class="text-[10px] text-gray-400 mt-0.5 block">Standaard: 4455</span>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-gray-300 mb-1">OBS Server Wachtwoord</label>
+                            <input type="password" id="obsWsPasswordInput" class="w-full px-3 py-2 text-xs font-mono rounded-xl bg-gray-800 border border-gray-700 text-white outline-none focus:ring-2 focus:ring-blue-500" placeholder="Optioneel wachtwoord" />
+                            <span class="text-[10px] text-gray-400 mt-0.5 block">Uit OBS serverinstellingen</span>
+                        </div>
+                    </div>
+
+                    <!-- Geavanceerde Schakelaars & Voorkeuren -->
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2 border-t border-gray-800 text-xs">
+                        <div class="flex items-center gap-4 flex-wrap">
+                            <label class="flex items-center gap-2 cursor-pointer select-none text-gray-300 hover:text-white">
+                                <input type="checkbox" id="obsWsAutoConnectCheckbox" class="rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500" onchange="window.obsWs.saveConfig({ autoConnect: this.checked })" />
+                                <span>Automatisch verbinden bij openen</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer select-none text-gray-300 hover:text-white">
+                                <input type="checkbox" id="obsWsAutoLowerThirdCheckbox" checked class="rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500" onchange="window.obsWs.saveConfig({ autoLowerThird: this.checked })" />
+                                <span>Automatisch scènes/lower-third schakelen bij dia-wissel</span>
+                            </label>
+                        </div>
+                        <a href="#obsWsHelp" onclick="document.getElementById('obsWsHelpBox').classList.toggle('hidden'); return false;" class="text-[11px] text-blue-400 hover:underline">
+                            Hulp bij instellen in OBS? ➔
+                        </a>
+                    </div>
+
+                    <!-- OBS WebSocket Instelhulp Box (inklapbaar) -->
+                    <div id="obsWsHelpBox" class="hidden p-3.5 rounded-xl bg-slate-800/90 border border-slate-700 text-xs text-slate-300 flex flex-col gap-2">
+                        <div class="font-bold text-white flex items-center gap-1.5">
+                            <span>🧭 Waar vind je deze gegevens in OBS Studio?</span>
+                        </div>
+                        <ol class="list-decimal list-inside space-y-1 text-[11px] text-slate-300 leading-relaxed">
+                            <li>Open OBS Studio op de uitzendcomputer.</li>
+                            <li>Ga in het topmenu naar <strong>Extra (Tools)</strong> ➔ <strong>WebSocket-serverinstellingen</strong>.</li>
+                            <li>Vink aan: <strong>'WebSocket-server inschakelen'</strong>. Serverpoort staat standaard op <strong>4455</strong>.</li>
+                            <li>Als authenticatie is ingeschakeld: klik op <strong>'Wachtwoord genereren'</strong> of kopieer het wachtwoord hierboven.</li>
+                            <li>Klik op <strong>OK</strong> en klik daarna hierboven op <strong>'Verbind met OBS Studio'</strong>!</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <!-- Live OBS Live Regie Paneel (wanneer verbonden of actief) -->
+                <div id="obsWsConnectedDetails" class="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                    <!-- 1. Scènekiezer -->
+                    <div class="bg-gray-50 dark:bg-gray-800/70 p-4 rounded-2xl border border-blue-200/60 dark:border-blue-900/50 flex flex-col justify-between gap-3 shadow-xs">
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-xs font-bold text-[#1D1D1F] dark:text-white flex items-center gap-1.5">
+                                    <span>🎬 Actieve OBS Scène</span>
+                                </span>
+                                <span class="text-[10px] text-blue-600 dark:text-blue-400 font-bold">Live Synchroon</span>
+                            </div>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 mb-2">
+                                Schakel direct tussen scènes in OBS Studio zónder alt-tab.
+                            </p>
+                            <select id="obsWsSceneSelect" onchange="obsWsWisselScene(this.value)" class="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Verbind eerst met OBS...</option>
+                            </select>
+                        </div>
+                        <div class="text-[10px] text-gray-400">
+                            Wisselt direct het actieve programma in OBS Studio.
+                        </div>
+                    </div>
+
+                    <!-- 2. Uitzending / Livestream Status -->
+                    <div class="bg-gray-50 dark:bg-gray-800/70 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 flex flex-col justify-between gap-3 shadow-xs">
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-xs font-bold text-[#1D1D1F] dark:text-white flex items-center gap-1.5">
+                                    <span>📡 Livestream</span>
+                                </span>
+                                <span id="obsWsStreamStateBadge" class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                                    OFFLINE
+                                </span>
+                            </div>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 mb-2">
+                                Start of stop de livestream direct vanuit de Kerkapp regie.
+                            </p>
+                        </div>
+                        <button type="button" onclick="obsWsToggleStream()" class="w-full py-2 px-3 rounded-xl bg-gray-900 hover:bg-black dark:bg-gray-700 dark:hover:bg-gray-600 text-white text-xs font-bold transition-all active:scale-95 shadow-sm text-center">
+                            🔴 Start / Stop Stream
+                        </button>
+                    </div>
+
+                    <!-- 3. Lokale Opname -->
+                    <div class="bg-gray-50 dark:bg-gray-800/70 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 flex flex-col justify-between gap-3 shadow-xs">
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-xs font-bold text-[#1D1D1F] dark:text-white flex items-center gap-1.5">
+                                    <span>⏺️ Video Opname</span>
+                                </span>
+                                <span id="obsWsRecordStateBadge" class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                                    GESTOP
+                                </span>
+                            </div>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 mb-2">
+                                Neem de kerkdienst lokaal op harde schijf op in hoge kwaliteit.
+                            </p>
+                        </div>
+                        <button type="button" onclick="obsWsToggleRecord()" class="w-full py-2 px-3 rounded-xl bg-gray-900 hover:bg-black dark:bg-gray-700 dark:hover:bg-gray-600 text-white text-xs font-bold transition-all active:scale-95 shadow-sm text-center">
+                            ⏺️ Start / Stop Opname
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Snelle Vrijwilligers Tools: 1-Klik OBS Import & QR Code -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                    <!-- 1-Klik OBS Scèneverzameling Download -->
+                    <div class="bg-gradient-to-br from-blue-50/80 via-white to-indigo-50/80 dark:from-blue-950/40 dark:via-gray-900 dark:to-indigo-950/40 p-4 rounded-2xl border border-blue-200 dark:border-blue-900/60 flex flex-col justify-between gap-3 shadow-xs">
+                        <div class="flex items-start gap-3">
+                            <span class="text-2xl flex-shrink-0">⚡</span>
+                            <div>
+                                <h5 class="text-xs font-bold text-gray-900 dark:text-white">1-Klik OBS Scèneverzameling (.json)</h5>
+                                <p class="text-[11px] text-gray-600 dark:text-gray-300 mt-0.5 leading-relaxed">
+                                    Geen gedoe met handmatig browserbronnen aanmaken of URL's intypen. Download de kant-en-klare scèneverzameling met 1080p stream overlay, Lower-Third en camera-scènes al 100% goed ingesteld.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 pt-1">
+                            <button type="button" onclick="downloadObsSceneCollection()" class="flex-1 py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all active:scale-95 shadow-sm flex items-center justify-center gap-1.5">
+                                <span>📥 Download OBS Scènes (.json)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Instant Telefoon Klikker QR Code -->
+                    <div class="bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/80 dark:from-emerald-950/40 dark:via-gray-900 dark:to-teal-950/40 p-4 rounded-2xl border border-emerald-200 dark:border-emerald-900/60 flex items-center justify-between gap-3 shadow-xs">
+                        <div class="flex flex-col gap-1">
+                            <div class="flex items-center gap-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                                <span>📱 Instant Klikker QR-Code</span>
+                            </div>
+                            <p class="text-[11px] text-gray-600 dark:text-gray-300 leading-snug">
+                                Scan met de camera van je telefoon. Direct verbonden met de beamer en livestream inclusief PIN!
+                            </p>
+                            <div class="pt-1">
+                                <button type="button" onclick="obsOpenVenster('remote')" class="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 hover:underline">
+                                    Open klikker in nieuw venster ↗
+                                </button>
+                            </div>
+                        </div>
+                        <div class="w-20 h-20 bg-white p-1 rounded-xl shadow-xs border border-emerald-200/60 flex-shrink-0 flex items-center justify-center">
+                            <img id="obsWsRemoteQrImg" src="" alt="Klikker QR" class="w-full h-full object-contain" />
+                        </div>
                     </div>
                 </div>
             </div>
@@ -11931,16 +12766,16 @@ window.verstuurExportFeedback = async function() {
                     </div>
                 </div>
 
-                <!-- Vier Testknoppen & URLs -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                    <!-- 1. Stream -->
+                <!-- Vijf Testknoppen & URLs -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+                    <!-- 1. Stream (Volledig Scherm) -->
                     <div class="bg-gray-50 dark:bg-gray-800/60 p-4 rounded-2xl border border-blue-200/70 dark:border-blue-900/50 flex flex-col justify-between gap-3 shadow-sm">
                         <div>
                             <div class="flex items-center gap-1.5 text-xs font-bold text-blue-700 dark:text-blue-400 mb-1">
                                 <span>📺 1. OBS Stream Bron</span>
                             </div>
                             <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed mb-2">
-                                Plak in OBS als Browser Source (1920x1080). 100% schone video-output zonder watermerken.
+                                Browser Source (1920x1080) met kerkachtergrond voor livestream.
                             </p>
                             <div class="flex items-center gap-1 bg-white dark:bg-gray-900 p-1.5 rounded-xl border border-gray-200 dark:border-gray-700">
                                 <input type="text" id="obsUrlStreamInput" readonly class="text-[10px] font-mono text-gray-600 dark:text-gray-300 bg-transparent flex-1 outline-none px-1 overflow-x-auto select-all" value="" />
@@ -11948,7 +12783,7 @@ window.verstuurExportFeedback = async function() {
                         </div>
                         <div class="flex flex-col gap-1.5 pt-1">
                             <button type="button" onclick="obsOpenVenster('stream')" class="w-full py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all active:scale-95 text-center shadow-sm">
-                                Open Stream Weergave ↗
+                                Open Stream ↗
                             </button>
                             <button type="button" onclick="obsKopieerUrl('stream')" class="w-full py-1.5 px-3 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-100 text-gray-700 dark:text-gray-200 text-[11px] font-semibold border border-gray-200 dark:border-gray-600 transition-all text-center">
                                 📋 Kopieer Link
@@ -11956,14 +12791,37 @@ window.verstuurExportFeedback = async function() {
                         </div>
                     </div>
 
-                    <!-- 2. Dock -->
+                    <!-- 2. Lower-Third Bron -->
+                    <div class="bg-gray-50 dark:bg-gray-800/60 p-4 rounded-2xl border border-cyan-200/70 dark:border-cyan-900/50 flex flex-col justify-between gap-3 shadow-sm">
+                        <div>
+                            <div class="flex items-center gap-1.5 text-xs font-bold text-cyan-700 dark:text-cyan-400 mb-1">
+                                <span>📺 2. OBS Lower-Third</span>
+                            </div>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed mb-2">
+                                Transparante broadcast-ondertitel onderaan over camerabeeld.
+                            </p>
+                            <div class="flex items-center gap-1 bg-white dark:bg-gray-900 p-1.5 rounded-xl border border-gray-200 dark:border-gray-700">
+                                <input type="text" id="obsUrlLowerThirdInput" readonly class="text-[10px] font-mono text-gray-600 dark:text-gray-300 bg-transparent flex-1 outline-none px-1 overflow-x-auto select-all" value="" />
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1.5 pt-1">
+                            <button type="button" onclick="obsOpenVenster('lowerthird')" class="w-full py-2 px-3 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-bold transition-all active:scale-95 text-center shadow-sm">
+                                Open Lower-Third ↗
+                            </button>
+                            <button type="button" onclick="obsKopieerUrl('lowerthird')" class="w-full py-1.5 px-3 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-100 text-gray-700 dark:text-gray-200 text-[11px] font-semibold border border-gray-200 dark:border-gray-600 transition-all text-center">
+                                📋 Kopieer Link
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 3. Dock -->
                     <div class="bg-gray-50 dark:bg-gray-800/60 p-4 rounded-2xl border border-purple-200/70 dark:border-purple-900/50 flex flex-col justify-between gap-3 shadow-sm">
                         <div>
                             <div class="flex items-center gap-1.5 text-xs font-bold text-purple-700 dark:text-purple-400 mb-1">
-                                <span>🎛️ 2. OBS Regie Dock</span>
+                                <span>🎛️ 3. OBS Regie Dock</span>
                             </div>
                             <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed mb-2">
-                                Plak in OBS via <em>Docks ➔ Browserdocks</em>. PIN is automatisch in de link inbegrepen.
+                                Plak in OBS via <em>Docks ➔ Browserdocks</em>. PIN is automatisch inbegrepen.
                             </p>
                             <div class="flex items-center gap-1 bg-white dark:bg-gray-900 p-1.5 rounded-xl border border-gray-200 dark:border-gray-700">
                                 <input type="text" id="obsUrlDockInput" readonly class="text-[10px] font-mono text-gray-600 dark:text-gray-300 bg-transparent flex-1 outline-none px-1 overflow-x-auto select-all" value="" />
@@ -11971,45 +12829,45 @@ window.verstuurExportFeedback = async function() {
                         </div>
                         <div class="flex flex-col gap-1.5 pt-1">
                             <button type="button" onclick="obsOpenVenster('dock')" class="w-full py-2 px-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all active:scale-95 text-center shadow-sm">
-                                Open Dock Paneel ↗
+                                Open Dock ↗
                             </button>
                             <button type="button" onclick="obsKopieerUrl('dock')" class="w-full py-1.5 px-3 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-100 text-gray-700 dark:text-gray-200 text-[11px] font-semibold border border-gray-200 dark:border-gray-600 transition-all text-center">
-                                📋 Kopieer Dock URL
+                                📋 Kopieer Dock Link
                             </button>
                         </div>
                     </div>
 
-                    <!-- 3. Mobiele Klikker -->
-                    <div class="bg-gray-50 dark:bg-gray-800/60 p-4 rounded-2xl border border-emerald-200/70 dark:border-emerald-900/50 flex flex-col justify-between gap-3 shadow-sm">
+                    <!-- 4. Mobiele Klikker -->
+                    <div class="bg-gray-50 dark:bg-gray-800/60 p-4 rounded-2xl border border-emerald-200/70 dark:border-emerald-900/50 flex flex-col justify-between gap-2 shadow-sm">
                         <div>
                             <div class="flex items-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 mb-1">
-                                <span>📱 3. Mobiele Klikker (Telefoon)</span>
+                                <span>📱 4. Mobiele Klikker</span>
                             </div>
-                            <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed mb-2">
-                                Draadloze afstandsbediening op iPhone of Android met grote touch-knoppen & trilfeedback!
-                            </p>
-                            <div class="flex items-center gap-1 bg-white dark:bg-gray-900 p-1.5 rounded-xl border border-gray-200 dark:border-gray-700">
+                            <div class="flex items-center justify-center my-1 bg-white p-1 rounded-xl border border-emerald-200 dark:border-emerald-800 shadow-2xs">
+                                <img id="obsRemoteQrImg" src="" alt="Klikker QR" class="w-14 h-14 object-contain" />
+                            </div>
+                            <div class="flex items-center gap-1 bg-white dark:bg-gray-900 p-1 rounded-xl border border-gray-200 dark:border-gray-700 mt-1">
                                 <input type="text" id="obsUrlRemoteInput" readonly class="text-[10px] font-mono text-gray-600 dark:text-gray-300 bg-transparent flex-1 outline-none px-1 overflow-x-auto select-all" value="" />
                             </div>
                         </div>
-                        <div class="flex flex-col gap-1.5 pt-1">
-                            <button type="button" onclick="obsOpenVenster('remote')" class="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all active:scale-95 text-center shadow-sm">
+                        <div class="flex flex-col gap-1 pt-1">
+                            <button type="button" onclick="obsOpenVenster('remote')" class="w-full py-1.5 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all active:scale-95 text-center shadow-sm">
                                 Open Klikker ↗
                             </button>
-                            <button type="button" onclick="obsKopieerUrl('remote')" class="w-full py-1.5 px-3 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-100 text-gray-700 dark:text-gray-200 text-[11px] font-semibold border border-gray-200 dark:border-gray-600 transition-all text-center">
-                                📋 Kopieer Telefoon Link
+                            <button type="button" onclick="obsKopieerUrl('remote')" class="w-full py-1 px-2.5 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-100 text-gray-700 dark:text-gray-200 text-[11px] font-semibold border border-gray-200 dark:border-gray-600 transition-all text-center">
+                                📋 Kopieer Link
                             </button>
                         </div>
                     </div>
 
-                    <!-- 4. Beamer -->
+                    <!-- 5. Beamer -->
                     <div class="bg-gray-50 dark:bg-gray-800/60 p-4 rounded-2xl border border-gray-200/60 dark:border-gray-700/60 flex flex-col justify-between gap-3 shadow-sm">
                         <div>
                             <div class="flex items-center gap-1.5 text-xs font-bold text-[#1D1D1F] dark:text-white mb-1">
-                                <span>📽️ 4. Beamer (Kerkzaal)</span>
+                                <span>📽️ 5. Beamer (Kerkzaal)</span>
                             </div>
                             <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed mb-2">
-                                Voor op scherm 2 in de kerkzaal. Schermvullend diepzwart met grote witte tekst.
+                                Voor scherm 2 in de zaal. Schermvullend diepzwart met grote witte tekst.
                             </p>
                             <div class="flex items-center gap-1 bg-white dark:bg-gray-900 p-1.5 rounded-xl border border-gray-200 dark:border-gray-700">
                                 <input type="text" id="obsUrlBeamerInput" readonly class="text-[10px] font-mono text-gray-600 dark:text-gray-300 bg-transparent flex-1 outline-none px-1 overflow-x-auto select-all" value="" />
@@ -12017,7 +12875,7 @@ window.verstuurExportFeedback = async function() {
                         </div>
                         <div class="flex flex-col gap-1.5 pt-1">
                             <button type="button" onclick="obsOpenVenster('beamer')" class="w-full py-2 px-3 rounded-xl bg-gray-900 hover:bg-black text-white text-xs font-bold transition-all active:scale-95 text-center shadow-sm">
-                                Open Beamer Scherm ↗
+                                Open Beamer ↗
                             </button>
                             <button type="button" onclick="obsKopieerUrl('beamer')" class="w-full py-1.5 px-3 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-100 text-gray-700 dark:text-gray-200 text-[11px] font-semibold border border-gray-200 dark:border-gray-600 transition-all text-center">
                                 📋 Kopieer Link
