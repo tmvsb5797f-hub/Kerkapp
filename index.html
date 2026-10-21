@@ -6596,7 +6596,7 @@ Bijbelliederen`;
                         width: 1920,
                         height: 1080,
                         fps: 30,
-                        restart_on_active: true,
+                        restart_on_active: false,
                         shutdown: false
                     }
                 },
@@ -6608,7 +6608,7 @@ Bijbelliederen`;
                         width: 1920,
                         height: 1080,
                         fps: 30,
-                        restart_on_active: true,
+                        restart_on_active: false,
                         shutdown: false
                     }
                 },
@@ -7237,20 +7237,39 @@ Van harte Gods zegen toegewenst!`;
             </div>
         `;
 
+        let lastBeamerRenderKey = null;
+
         function updateBeamer() {
             let state = getObsLiveState();
             const container = document.getElementById('beamerInhoud');
             if (!container) return;
+
             if (!state || !state.slides || !state.slides.length) {
                 const fallback = getFallbackLiveState();
-                container.innerHTML = renderBeamerHtmlSlide(fallback.slides[0], false);
+                if (lastBeamerRenderKey !== 'fallback_0') {
+                    lastBeamerRenderKey = 'fallback_0';
+                    container.innerHTML = renderBeamerHtmlSlide(fallback.slides[0], false);
+                }
                 return;
             }
             if (state.isBlackout) {
-                container.innerHTML = '';
+                if (lastBeamerRenderKey !== 'blackout') {
+                    lastBeamerRenderKey = 'blackout';
+                    container.innerHTML = '';
+                }
                 return;
             }
-            const curSlide = state.slides[state.currentIndex] || state.slides[0];
+
+            const curIdx = state.currentIndex || 0;
+            const curSlide = state.slides[curIdx] || state.slides[0];
+            const slideTitel = curSlide ? (curSlide.titel || '') : '';
+            const slideTekst = curSlide ? (curSlide.regels ? curSlide.regels.join('|') : (curSlide.tekst || '')) : '';
+            const currentKey = `${curIdx}_${slideTitel}_${slideTekst}`;
+
+            if (currentKey === lastBeamerRenderKey) {
+                return;
+            }
+            lastBeamerRenderKey = currentKey;
             container.innerHTML = renderBeamerHtmlSlide(curSlide, false);
         }
 
@@ -7325,6 +7344,8 @@ Van harte Gods zegen toegewenst!`;
             </div>
         `;
 
+        let lastStreamRenderKey = null;
+
         function updateStream() {
             let state = getObsLiveState();
             const bgContainer = document.getElementById('streamBgContainer');
@@ -7333,13 +7354,40 @@ Van harte Gods zegen toegewenst!`;
 
             if (!state || !state.slides || !state.slides.length) {
                 const fallback = getFallbackLiveState();
-                if (!isTransparent && bgContainer) {
-                    bgContainer.style.backgroundImage = `url('${LIVESTREAM_BG}')`;
-                    bgContainer.innerHTML = '';
+                const fallbackKey = 'fallback_0';
+                if (lastStreamRenderKey !== fallbackKey) {
+                    lastStreamRenderKey = fallbackKey;
+                    if (!isTransparent && bgContainer) {
+                        bgContainer.style.backgroundImage = `url('${LIVESTREAM_BG}')`;
+                        bgContainer.innerHTML = '';
+                    }
+                    inhoud.innerHTML = renderStreamHtmlSlide(fallback.slides[0], false, isLowerThird);
                 }
-                inhoud.innerHTML = renderStreamHtmlSlide(fallback.slides[0], false, isLowerThird);
                 return;
             }
+
+            if (state.isBlackout || state.isStreamBlackout) {
+                if (lastStreamRenderKey !== 'blackout') {
+                    lastStreamRenderKey = 'blackout';
+                    inhoud.innerHTML = '';
+                }
+                return;
+            }
+
+            const curIdx = state.currentIndex || 0;
+            const curSlide = state.slides[curIdx] || state.slides[0];
+            const slideTitel = curSlide ? (curSlide.titel || '') : '';
+            const slideTekst = curSlide ? (curSlide.regels ? curSlide.regels.join('|') : (curSlide.tekst || '')) : '';
+            const slideType = curSlide ? (curSlide.type || '') : '';
+            const slideFoto = curSlide ? (curSlide.fotoUrl || '') : '';
+            const thema = state.thema || 'standaard';
+
+            const currentKey = `${curIdx}_${slideType}_${slideTitel}_${slideTekst}_${slideFoto}_${thema}`;
+            if (currentKey === lastStreamRenderKey) {
+                // Inhoud is exact identiek: overschrijf de DOM NIET zodat CSS fade-in animaties niet knipperen!
+                return;
+            }
+            lastStreamRenderKey = currentKey;
 
             if (!isTransparent && bgContainer) {
                 if (useTheme) {
@@ -7352,12 +7400,6 @@ Van harte Gods zegen toegewenst!`;
                 }
             }
 
-            if (state.isBlackout || state.isStreamBlackout) {
-                inhoud.innerHTML = '';
-                return;
-            }
-
-            const curSlide = state.slides[state.currentIndex] || state.slides[0];
             inhoud.innerHTML = renderStreamHtmlSlide(curSlide, false, isLowerThird);
         }
 
