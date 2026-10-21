@@ -637,9 +637,9 @@
                 <div>
                     <h3 class="text-xs md:text-sm font-bold text-white flex items-center gap-2">
                         Liturgie Assistent Pro Uitleg
-                        <span class="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-400/30">Met Stem &amp; Geluid</span>
+                        <span class="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-400/30">Met Stem &amp; Geluid · 4:06</span>
                     </h3>
-                    <p class="text-[10px] text-gray-400 hidden sm:block">Compleet overzicht van alle functionaliteiten in 3 minuten</p>
+                    <p class="text-[10px] text-gray-400 hidden sm:block">Compleet overzicht van alle functionaliteiten in 4 minuten</p>
                 </div>
             </div>
             
@@ -698,7 +698,7 @@
                 <div class="relative flex-1 h-2 bg-white/15 rounded-full overflow-hidden cursor-pointer group" onclick="seekVideoModal(event)">
                     <div id="videoModalProgressBar" class="bg-gradient-to-r from-blue-500 to-[#007AFF] h-full w-0 rounded-full transition-all duration-75"></div>
                 </div>
-                <span class="text-[11px] font-mono text-gray-400 w-10">3:30</span>
+                <span id="videoModalTimeTotal" class="text-[11px] font-mono text-gray-400 w-10">4:06</span>
             </div>
 
             <!-- Knoppen & Instellingen -->
@@ -709,6 +709,10 @@
                     </button>
                     <button type="button" onclick="prevVideoModalChapter()" class="p-1.5 px-2 rounded-lg bg-white/5 hover:bg-white/15 text-gray-300 transition-all active:scale-95" title="Vorig hoofdstuk (Pijl links)">⏮</button>
                     <button type="button" onclick="nextVideoModalChapter()" class="p-1.5 px-2 rounded-lg bg-white/5 hover:bg-white/15 text-gray-300 transition-all active:scale-95" title="Volgend hoofdstuk (Pijl rechts)">⏭</button>
+                    <button type="button" id="videoModalMuteBtn" onclick="toggleVideoVoiceoverMute()" class="p-1.5 px-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95 text-[11px] flex items-center gap-1" title="Voice-over geluid dempen of aanzetten">
+                        <span id="videoModalMuteIcon">🔊</span>
+                        <span class="hidden sm:inline" id="videoModalMuteLabel">Stem</span>
+                    </button>
                     
                     <span id="videoModalSceneTitle" class="ml-1 text-[11px] font-semibold text-blue-300 bg-blue-500/15 border border-blue-400/20 px-2.5 py-1 rounded-lg truncate max-w-[200px] sm:max-w-none">
                         1. Introductie &amp; Overzicht
@@ -716,6 +720,14 @@
                 </div>
 
                 <div class="flex items-center gap-2 sm:gap-3">
+                    <div id="videoModalAudioNotice" class="hidden text-[10px] bg-amber-500/20 text-amber-300 border border-amber-400/30 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                        <span>⚠️ Audio niet geladen</span>
+                        <label class="underline cursor-pointer font-bold ml-1 text-white">
+                            Kies MP3
+                            <input type="file" accept="audio/*" class="sr-only" onchange="vmLaadCustomAudio(event)"/>
+                        </label>
+                    </div>
+
                     <button type="button" onclick="toggleVideoFullscreen()" id="videoModalFullscreenBtn" class="px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-gray-200 hover:text-white font-medium transition-all text-[11px] active:scale-95 flex items-center gap-1.5 shadow-xs" title="Volledig scherm (f)">
                         <span id="videoModalFullscreenIcon">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
@@ -1173,7 +1185,7 @@
                     <div class="min-w-0">
                         <div class="flex items-center gap-1.5">
                             <strong class="text-xs font-bold text-[#1D1D1F] dark:text-white">Video Uitleg</strong>
-                            <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-blue-100 dark:bg-blue-900/60 text-[#007AFF] dark:text-blue-300 border border-blue-300/40">3:30</span>
+                            <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-blue-100 dark:bg-blue-900/60 text-[#007AFF] dark:text-blue-300 border border-blue-300/40">4:06</span>
                         </div>
                         <p class="text-[11px] text-gray-500 dark:text-gray-400 truncate">Met stem &amp; sound effects</p>
                     </div>
@@ -1394,7 +1406,7 @@
         <div class="h-4 w-px bg-gray-200 dark:bg-gray-700/60 my-auto flex-shrink-0"></div>
 
         <!-- Video Uitleg Knop (Altijd terugkijken) -->
-        <button id="videoUitlegKnop" onclick="openVideoUitlegModal(true)" aria-label="Bekijk de video-uitleg met geluid" title="Bekijk de 3-minuten video-uitleg met gesproken toelichting" class="relative text-gray-700 dark:text-gray-200 hover:text-[#007AFF] dark:hover:text-[#007AFF] hover:bg-gray-100/80 dark:hover:bg-white/10 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs font-semibold flex items-center justify-center gap-1 active:scale-95 transition-all flex-shrink-0">
+        <button id="videoUitlegKnop" onclick="openVideoUitlegModal(true)" aria-label="Bekijk de video-uitleg met geluid" title="Bekijk de complete video-uitleg (4:06) met gesproken toelichting" class="relative text-gray-700 dark:text-gray-200 hover:text-[#007AFF] dark:hover:text-[#007AFF] hover:bg-gray-100/80 dark:hover:bg-white/10 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs font-semibold flex items-center justify-center gap-1 active:scale-95 transition-all flex-shrink-0">
             <span class="text-sm">🎬</span>
             <span class="hidden md:inline">Video Uitleg</span>
         </button>
@@ -9173,7 +9185,7 @@ Van harte Gods zegen toegewenst!`;
                                 <div>
                                     <label class="text-[10px] font-semibold text-gray-400 block mb-1">Voorganger</label>
                                     <div id="vmVoorgangerBox" class="bg-gray-800 border-2 border-transparent rounded-xl px-3 py-2 text-xs text-gray-400 flex items-center transition-all">
-                                        <span id="vmVoorgangerTxt">Bijv: dominee Mark Pot</span>
+                                        <span id="vmVoorgangerTxt">Bijv: dominee Mark Bot</span>
                                     </div>
                                 </div>
                             </div>
@@ -9221,7 +9233,7 @@ Van harte Gods zegen toegewenst!`;
                         if (dTxt) dTxt.innerText = "Zondag 18 januari 2026";
                         if (vBox) vBox.className = "bg-gray-800 border-2 border-blue-400 rounded-xl px-3 py-2 text-xs text-white flex items-center";
                         
-                        const full = "dominee Mark Pot";
+                        const full = "dominee Mark Bot";
                         const progress = Math.min(1, Math.max(0, (relTime - 7.5) / 4.0));
                         const chars = Math.floor(progress * full.length);
                         if (vTxt) vTxt.innerText = full.substring(0, chars);
@@ -9728,6 +9740,14 @@ Van harte Gods zegen toegewenst!`;
                 timeLbl.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
             }
 
+            const totalLbl = document.getElementById('videoModalTimeTotal');
+            if (totalLbl) {
+                const dur = (a && !isNaN(a.duration) && a.duration > 10) ? a.duration : TOTAL_AUDIO_SEC;
+                const tm = Math.floor(dur / 60);
+                const ts = Math.floor(dur % 60);
+                totalLbl.innerText = `${tm}:${ts < 10 ? '0' : ''}${ts}`;
+            }
+
             const newIdx = getVmSceneForTime(t);
             if (newIdx !== vmCurrentIdx) {
                 vmCurrentIdx = newIdx;
@@ -9920,8 +9940,57 @@ Van harte Gods zegen toegewenst!`;
             if (icon) icon.innerText = '⏸';
 
             const a = document.getElementById('videoModalAudio');
-            if (a) a.play().catch(() => {});
+            if (a) {
+                a.muted = false;
+                if (!a.volume || a.volume === 0) a.volume = 1.0;
+                if (a.ended || a.currentTime >= TOTAL_AUDIO_SEC - 0.2) {
+                    a.currentTime = 0;
+                    vmTriggeredSfx.clear();
+                }
+                const p = a.play();
+                if (p !== undefined) {
+                    p.catch(err => {
+                        console.warn("Audio play prevented:", err);
+                        if (overlay) {
+                            overlay.style.opacity = '1';
+                            overlay.style.pointerEvents = 'auto';
+                            const badge = overlay.querySelector('span');
+                            if (badge) badge.innerText = "🔇 Klik om geluid af te spelen";
+                        }
+                    });
+                }
+            }
             requestAnimationFrame(syncVmFrame);
+        };
+
+        window.toggleVideoVoiceoverMute = function() {
+            const a = document.getElementById('videoModalAudio');
+            if (!a) return;
+            a.muted = !a.muted;
+            if (!a.muted && a.volume === 0) a.volume = 1.0;
+            const icon = document.getElementById('videoModalMuteIcon');
+            const label = document.getElementById('videoModalMuteLabel');
+            if (icon) icon.innerText = a.muted ? "🔇" : "🔊";
+            if (label) label.innerText = a.muted ? "Gedempt" : "Stem";
+            if (window.toonToast) window.toonToast(a.muted ? "Voice-over gedempt" : "Voice-over aan", "info");
+        };
+
+        window.vmLaadCustomAudio = function(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+            const a = document.getElementById('videoModalAudio');
+            if (a) {
+                a.src = URL.createObjectURL(file);
+                a.muted = false;
+                a.volume = 1.0;
+                a.currentTime = 0;
+                vmTriggeredSfx.clear();
+                a.load();
+                const notice = document.getElementById('videoModalAudioNotice');
+                if (notice) notice.classList.add('hidden');
+                if (window.toonToast) window.toonToast("Audio succesvol geladen!", "success");
+                startVideoUitlegPlay();
+            }
         };
 
         window.pauseVideoUitleg = function() {
@@ -10019,6 +10088,26 @@ Van harte Gods zegen toegewenst!`;
                 prevVideoModalChapter();
             }
         });
+
+        // Zorg dat de audio correct initialiseert en eventuele laadfouten opvangt
+        setTimeout(() => {
+            const a = document.getElementById('videoModalAudio');
+            if (a) {
+                a.addEventListener('error', () => {
+                    console.warn("Fout bij laden van video voiceover:", a.error);
+                    const notice = document.getElementById('videoModalAudioNotice');
+                    if (notice) notice.classList.remove('hidden');
+                });
+                a.addEventListener('loadedmetadata', () => {
+                    const totalLbl = document.getElementById('videoModalTimeTotal');
+                    if (totalLbl && a.duration && !isNaN(a.duration) && a.duration > 10) {
+                        const tm = Math.floor(a.duration / 60);
+                        const ts = Math.floor(a.duration % 60);
+                        totalLbl.innerText = `${tm}:${ts < 10 ? '0' : ''}${ts}`;
+                    }
+                });
+            }
+        }, 150);
     })();
     
 
