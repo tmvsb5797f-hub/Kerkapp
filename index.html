@@ -811,7 +811,7 @@
                 </div>
                 <span class="text-gray-300 dark:text-gray-600 select-none">·</span>
                 <!-- 4. AI Capaciteit & Quota mini-meter -->
-                <div class="flex items-center gap-1.5" title="AI Capaciteit (reset per minuut)">
+                <div class="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity select-none" title="AI Capaciteit (klik voor info)" onclick="window.toonQuotaInfo ? window.toonQuotaInfo() : null">
                     <span class="text-[10px] text-gray-400">⚡</span>
                     <div class="w-10 bg-gray-100 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
                         <div id="quotaBar" class="bg-[#34C759] h-full transition-all duration-500 rounded-full" style="width: 100%"></div>
@@ -2923,6 +2923,7 @@ Retourneer UITSLUITEND een valide JSON object:
                 const model = (typeof gevondenModel !== 'undefined' && gevondenModel) ? gevondenModel : 'gemini-1.5-flash';
 
                 try {
+                    if (typeof consumeerAiQuota === 'function') consumeerAiQuota(2);
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), 12000);
 
@@ -4047,13 +4048,44 @@ Retourneer UITSLUITEND een valide JSON object:
     function updateQuotaUI() {
         const bar = document.getElementById('quotaBar');
         const text = document.getElementById('quotaPercentage');
-        const perc = (huidigeQuota / maxQuota) * 100;
+        const container = bar ? bar.parentElement?.parentElement : null;
+        if (!bar || !text) return;
+        const perc = Math.max(0, Math.min(100, Math.round((huidigeQuota / maxQuota) * 100)));
         bar.style.width = perc + "%";
-        text.innerText = Math.round(perc) + "%";
-        if (perc > 50) { bar.className = "bg-[#34C759] h-full transition-all duration-500 ease-out"; }
-        else if (perc > 20) { bar.className = "bg-[#FFCC00] h-full transition-all duration-500 ease-out"; }
-        else { bar.className = "bg-[#FF3B30] h-full transition-all duration-500 ease-out"; }
+        text.innerText = perc + "%";
+        if (perc > 60) {
+            bar.className = "bg-[#34C759] h-full transition-all duration-500 ease-out";
+            text.className = "text-[10px] font-mono text-gray-500 dark:text-gray-400 font-bold";
+        } else if (perc > 25) {
+            bar.className = "bg-[#FFCC00] h-full transition-all duration-500 ease-out";
+            text.className = "text-[10px] font-mono text-amber-500 font-bold";
+        } else {
+            bar.className = "bg-[#FF3B30] h-full transition-all duration-500 ease-out animate-pulse";
+            text.className = "text-[10px] font-mono text-red-500 font-bold";
+        }
+        if (container) {
+            container.title = `AI Capaciteit: ${huidigeQuota}/${maxQuota} verzoeken (laadt elke 4s op)`;
+        }
     }
+
+    function consumeerAiQuota(aantal = 1) {
+        huidigeQuota = Math.max(0, huidigeQuota - aantal);
+        updateQuotaUI();
+        const bar = document.getElementById('quotaBar');
+        if (bar) {
+            bar.classList.add('animate-pulse');
+            setTimeout(() => { if (bar) bar.classList.remove('animate-pulse'); }, 1200);
+        }
+    }
+    window.consumeerAiQuota = consumeerAiQuota;
+    window.updateQuotaUI = updateQuotaUI;
+
+    window.toonQuotaInfo = function() {
+        if (window.toonToast) {
+            window.toonToast(`⚡ AI Capaciteit: ${huidigeQuota} van de ${maxQuota} verzoeken over. Laadt automatisch elke 4 sec op met +1.`, 'info');
+        }
+    };
+
     setInterval(() => { if (huidigeQuota < maxQuota) { huidigeQuota++; updateQuotaUI(); } }, 4000);
 
     // --- BIJBEL API STATUS ---
@@ -5093,7 +5125,7 @@ Bijbelliederen`;
         `;
 
         try {
-            huidigeQuota--; updateQuotaUI();
+            consumeerAiQuota(1);
             
             // NIEUW: Striktere prompt voor de AI om echt ALLE verzen te eisen
             const aiPrompt = "Geef de VOLLEDIGE, letterlijke tekst (inclusief ALLE coupletten/verzen) van het christelijke lied: '" + titel + "'. Geef uitsluitend de liedtekst, geen introductie of verdere uitleg. Belangrijk: gebruik een DUBBELE witregel (enter) tussen elk couplet of vers zodat ik ze goed kan splitsen.";
@@ -10106,6 +10138,7 @@ Brontekst:
 ${tekst}
 """`;
 
+            if (typeof consumeerAiQuota === 'function') consumeerAiQuota(2);
             const response = await fetch(`${PROXY_URL}/v1beta/${gevondenModel}:generateContent`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -10489,6 +10522,7 @@ Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
         try {
             if (!gevondenModel) throw new Error("AI Model is nog niet verbonden.");
 
+            if (typeof consumeerAiQuota === 'function') consumeerAiQuota(1);
             const response = await fetch(`${PROXY_URL}/v1beta/${gevondenModel}:generateContent`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
