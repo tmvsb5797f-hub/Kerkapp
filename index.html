@@ -3953,6 +3953,29 @@ Retourneer UITSLUITEND een valide JSON object:
                                         }
                                     }
                                     const vNummers = it.verzen && it.verzen.length > 0 ? it.verzen : [];
+
+                                    // Filter ALTIJD op uitsluitend de geselecteerde coupletten
+                                    if (liedTekst && vNummers.length > 0) {
+                                        const blokken = liedTekst.split(/\n[ \t]*\n/).map(b => b.trim()).filter(Boolean);
+                                        if (blokken.length > 1) {
+                                            const gekozenBlokken = [];
+                                            for (const vNr of vNummers) {
+                                                const matchBlok = blokken.find(b => {
+                                                    const firstL = b.split('\n')[0].trim();
+                                                    return new RegExp(`^(?:vers|couplet|vs\\.?)?\\s*${vNr}\\b`, 'i').test(firstL);
+                                                });
+                                                if (matchBlok) {
+                                                    gekozenBlokken.push(matchBlok);
+                                                } else if (blokken[vNr - 1]) {
+                                                    gekozenBlokken.push(blokken[vNr - 1]);
+                                                }
+                                            }
+                                            if (gekozenBlokken.length > 0) {
+                                                liedTekst = gekozenBlokken.join('\n\n');
+                                            }
+                                        }
+                                    }
+
                                     const versAanduiding = vNummers.length > 0 ? `: ${vNummers.join(', ')}` : '';
                                     liturgieVolgorde.push({
                                         type: "Zang",
@@ -5469,47 +5492,98 @@ Bijbelliederen`;
         return { boek, hoofdstuk, verzenSet };
     }
 
+    const bijbelAfkortingen = {
+        "1 thes": "1 Thessalonicenzen", "2 thes": "2 Thessalonicenzen", "thess": "1 Thessalonicenzen", "thes": "1 Thessalonicenzen",
+        "rom": "Romeinen", "joh": "Johannes", "gen": "Genesis", "ex": "Exodus", "lev": "Leviticus", "num": "Numeri",
+        "deut": "Deuteronomium", "matt": "Mattheüs", "matth": "Mattheüs", "mark": "Markus", "luk": "Lukas", "hand": "Handelingen",
+        "1 kor": "1 Korinthe", "2 kor": "2 Korinthe", "gal": "Galaten", "ef": "Efeze", "efe": "Efeze", "fil": "Filippenzen",
+        "kol": "Kolossensen", "1 tim": "1 Timotheüs", "2 tim": "2 Timotheüs", "tit": "Titus", "film": "Filemon", "hebr": "Hebreeën",
+        "jak": "Jakobus", "1 petr": "1 Petrus", "2 petr": "2 Petrus", "1 joh": "1 Johannes", "2 joh": "2 Johannes", "3 joh": "3 Johannes",
+        "jud": "Judas", "openb": "Openbaring", "ps": "Psalmen", "psalm": "Psalmen"
+    };
+
     function boekNaarNummer(boekNaam) {
-        const idx = bijbelBoeken.findIndex(b => b.toLowerCase() === boekNaam.toLowerCase());
+        if (!boekNaam) return null;
+        let clean = boekNaam.trim().toLowerCase().replace(/\.+/g, "");
+        if (bijbelAfkortingen[clean]) clean = bijbelAfkortingen[clean].toLowerCase();
+        const idx = bijbelBoeken.findIndex(b => b.toLowerCase() === clean);
         if (idx >= 0) return idx + 1;
-        const partiel = bijbelBoeken.findIndex(b => b.toLowerCase().startsWith(boekNaam.toLowerCase()));
+        const partiel = bijbelBoeken.findIndex(b => b.toLowerCase().startsWith(clean));
         return partiel >= 0 ? partiel + 1 : null;
     }
 
     async function haalBijbelViaAPI(referentie) {
+        const schoneRef = referentie.replace(/\(HSV\)/gi, '').trim();
+
+        // 1. Eerst controleren in Cloudflare D1
+        try {
+            const r = await fetch(DATA_URL + "/bijbel_hsv?id=" + encodeURIComponent(schoneRef));
+            if (r.ok) {
+                const data = await r.json();
+                if (data && data.gevonden && data.tekst && data.tekst.length > 25 && !data.tekst.startsWith("Schriftlezing uit")) {
+                    return data.tekst;
+                }
+            }
+        } catch(e) {}
+
         const parsed = parseBijbelRef(referentie);
         if (!parsed) return null;
         const boekNr = boekNaarNummer(parsed.boek);
         if (!boekNr) return null;
 
+        // 2. Ophalen via Bolls Life API (HSV17)
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 7000);
         try {
             const res = await fetch(`https://bolls.life/get-chapter/HSV17/${boekNr}/${parsed.hoofdstuk}/`, { signal: controller.signal });
             clearTimeout(timeoutId);
-            if (!res.ok) return null;
+            if (!res.ok) throw new Error("bolls status " + res.status);
             const verzen = await res.json();
-            if (!Array.isArray(verzen) || verzen.length === 0) return null;
+            if (!Array.isArray(verzen) || verzen.length === 0) throw new Error("geen verzen");
 
-            // Geen versaanduiding? Dan het hele hoofdstuk. Anders alleen de gekozen verzen
-            // (ondersteunt losse verzen én komma-lijsten, bijv. "1, 4").
             const gefilterd = parsed.verzenSet
                 ? verzen.filter(v => parsed.verzenSet.has(v.verse))
                 : verzen;
             if (gefilterd.length === 0) return null;
-            return gefilterd.map(v => {
+            const resTxt = gefilterd.map(v => {
                 let t = v.text
                     .replace(/<[^>]*>/g, '')
-                    .replace(/[Ⓐ-ⓩ①-⑳⓪-⓿]/g, '')
-                    .replace(/[¹²³⁰-₟]/g, '')
-                    .replace(/[†‡§¶※⸮⁂⁋⁓]/g, '')
+                    .replace(/[Ⓐ-ⓩ①-⑳⓪-⓿¹²³⁰-₟†‡§¶※⸮⁂⁋⁓]/g, '')
                     .replace(/\[\d+\]/g, '')
                     .replace(/\s{2,}/g, ' ')
                     .trim();
                 return v.verse + ' ' + t;
             }).join('\n');
+
+            try {
+                fetch(DATA_URL + "/bijbel_hsv", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ id: schoneRef, tekst: resTxt })
+                }).catch(() => {});
+            } catch(e) {}
+
+            return resTxt;
         } catch(e) {
             clearTimeout(timeoutId);
+            // 3. Fallback: Gemini AI backup
+            try {
+                const resAi = await fetchGeminiWithFallback({
+                    contents: [{ role: "user", parts: [{ text: `Geef de letterlijke tekst van de Herziene Statenvertaling (HSV) voor ${referentie}. Nummer elk vers duidelijk (bijv. 1 ..., 2 ...). Geef ALLEEN de verzen, zonder toelichting.` }] }],
+                    generationConfig: { temperature: 0.1 }
+                });
+                const txt = resAi?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+                if (txt && txt.length > 25) {
+                    try {
+                        fetch(DATA_URL + "/bijbel_hsv", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ id: schoneRef, tekst: txt })
+                        }).catch(() => {});
+                    } catch(e) {}
+                    return txt;
+                }
+            } catch(err2) {}
             return null;
         }
     }

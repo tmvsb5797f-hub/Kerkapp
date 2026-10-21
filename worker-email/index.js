@@ -552,7 +552,14 @@ async function haalLiedTekstOp(db, bundel, nummer, versNummers, extraTitel) {
     } catch(e) {}
   }
 
-  // 3. Fallback: Gemini AI Proxy voor liedtekst (met geautoriseerde Origin)
+  // 3. Fallback: Gemini AI Proxy voor liedtekst (NOOIT voor Weerklank of DNP wegens auteursrecht & hallucinaties!)
+  const isBeschermd = /weerklank|dnp|op toonhoogte/i.test(bundel);
+  if (isBeschermd) {
+    // Weerklank en DNP hebben auteursrecht en AI verzint foutieve teksten.
+    // Laat de tekst leeg zodat de meegestuurde PowerPoint van de predikant of Liedbundel Online gebruikt wordt.
+    return null;
+  }
+
   try {
     const vStr = (versNummers && versNummers.length > 0) ? `couplet ${versNummers.join(', ')}` : "alle coupletten";
     const titelDetail = extraTitel ? ` (getiteld "${extraTitel}")` : "";
@@ -682,7 +689,12 @@ async function verwerkLiturgieTekst(tekst, env, onderwerp = "", kerkId = "bethel
       const genormaliseerdeTitel = `${bundel} ${nummer}`;
       const verzen = parseerVersNummers(versStr);
 
-      const liedTekst = await haalLiedTekstOp(env.DB, bundel, nummer, verzen, extraTitel);
+      let liedTekst = await haalLiedTekstOp(env.DB, bundel, nummer, verzen, extraTitel);
+
+      // Filter UITSLUITEND de gevraagde coupletten (zodat Ps 65:1,2 niet alle 5 verzen bevat!)
+      if (liedTekst && verzen && verzen.length > 0) {
+        liedTekst = filterAlleenGekozenVerzen(liedTekst, verzen);
+      }
 
       zangNamenLijst.push(genormaliseerdeTitel);
       items.push({
@@ -879,6 +891,20 @@ function splitsCoupletTekst(tekst) {
     teller++;
   }
   return result;
+}
+
+function filterAlleenGekozenVerzen(volledigeTekst, versNummers) {
+  if (!volledigeTekst || !versNummers || versNummers.length === 0) return volledigeTekst;
+  const verzenMap = splitsCoupletTekst(volledigeTekst);
+  if (!verzenMap || verzenMap.length === 0) return volledigeTekst;
+  const gekozen = [];
+  for (const vNr of versNummers) {
+    const versObj = verzenMap.find(v => v.nummer === vNr);
+    if (versObj && versObj.regels && versObj.regels.length > 0) {
+      gekozen.push(`${versObj.nummer}.\n${versObj.regels.join('\n')}`);
+    }
+  }
+  return gekozen.length > 0 ? gekozen.join('\n\n') : volledigeTekst;
 }
 
 function extractPlainText(raw) {
