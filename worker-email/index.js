@@ -780,11 +780,12 @@ async function verwerkLiturgieTekst(tekst, env, onderwerp = "", kerkId = "bethel
       slides.push({
         id: "collecte-dia",
         type: "QR",
-        titel: "Collecte & Week-Tikkie",
+        titel: `Collecte ${gemeente}`,
         subtitel: "Scan met uw mobiel om bij te dragen",
         regels: [
-          "Van harte aanbevolen voor de eredienst en de diaconie.",
-          "Of gebruik de QR-code die in beeld verschijnt."
+          `Collecte ${gemeente}`,
+          "Van harte aanbevolen voor de eredienst en diaconie.",
+          "Scan met uw camera of bankapp"
         ]
       });
     } else if (it.type === "Zegen") {
@@ -821,9 +822,13 @@ async function verwerkLiturgieTekst(tekst, env, onderwerp = "", kerkId = "bethel
     slides.push({
       id: "collecte-dia",
       type: "QR",
-      titel: "Collecte & Week-Tikkie",
+      titel: `Collecte ${gemeente}`,
       subtitel: "Scan met uw mobiel om bij te dragen",
-      regels: ["Van harte aanbevolen voor de eredienst en de diaconie."]
+      regels: [
+        `Collecte ${gemeente}`,
+        "Van harte aanbevolen voor de eredienst en diaconie.",
+        "Scan met uw camera of bankapp"
+      ]
     });
   }
   if (!items.some(i => i.type === "Zegen")) {

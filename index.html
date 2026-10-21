@@ -501,7 +501,7 @@
                     <h3 class="text-base font-bold text-[#1D1D1F] dark:text-white">
                         Collecte &amp; Week-Tikkie
                     </h3>
-                    <p class="text-[11px] text-gray-500 dark:text-gray-400">Automatisch gesynchroniseerd voor het hele beamerteam</p>
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400">Automatisch gesynchroniseerd voor <span id="tikkieModalGemeenteLabel" class="font-bold text-emerald-600 dark:text-emerald-400">Bethelkerk Maassluis</span></p>
                 </div>
             </div>
             <button type="button" onclick="window.sluitTikkieModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors" title="Sluiten">
@@ -3139,11 +3139,13 @@ Retourneer UITSLUITEND een valide JSON object:
     async function maakMeeleesLink() {
         const datum = document.getElementById('datumInput').value || '';
         const voorganger = document.getElementById('voorgangerInput').value || '';
+        const gemeente = (typeof window.getActieveGemeente === 'function') ? window.getActieveGemeente() : 'Bethelkerk Maassluis';
         const items = liturgieVolgorde
             .filter(it => it.type !== 'Foto' && it.type !== 'QR')
             .map(it => ({ type: it.type, titel: it.titel || '', tekst: it.type === 'Leeg' ? '' : (it.tekst || ''), align: it.align || 'left' }));
         const thema = window.getActiefMeeleesThema();
         const payload = {
+            gemeente: gemeente,
             datum: datum, 
             voorganger: voorganger, 
             items: items, 
@@ -3592,6 +3594,7 @@ Retourneer UITSLUITEND een valide JSON object:
                     `<div style="border-radius:0 0 26px 26px;overflow:hidden;box-shadow:0 8px 24px ${th.schaduw}">` + meeleesSceneSVG(themaId) + `</div>` +
                     `<div style="text-align:center;padding:18px 20px 4px">` +
                         `<div style="font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:${th.headerKleur}">Liturgie · ${escapeHtml(th.naam)}</div>` +
+                        (data.gemeente ? `<div style="font-size:12px;font-weight:700;color:${th.subKleur};margin-top:2px;letter-spacing:.02em">${escapeHtml(data.gemeente)}</div>` : '') +
                         (data.datum ? `<div style="font-size:21px;font-weight:800;color:${th.titelKleur};margin-top:2px">${escapeHtml(data.datum)}</div>` : '') +
                         (data.voorganger ? `<div style="font-size:13px;font-weight:500;color:${th.subKleur};margin-top:2px">${escapeHtml(data.voorganger)}</div>` : '') +
                     `</div>` +
@@ -3616,6 +3619,7 @@ Retourneer UITSLUITEND een valide JSON object:
         }
 
         const mockData = {
+            gemeente: (window.getActieveGemeente ? window.getActieveGemeente() : 'Bethelkerk Maassluis'),
             datum: datum,
             voorganger: voorganger,
             thema: thema,
@@ -3716,6 +3720,16 @@ Retourneer UITSLUITEND een valide JSON object:
 
     window.getActieveGemeente = function() {
         return localStorage.getItem('actieveGemeente') || STANDAARD_GEMEENTE;
+    };
+
+    window.getActieveGemeenteSlug = function() {
+        const gem = (typeof window.getActieveGemeente === 'function') ? window.getActieveGemeente() : (localStorage.getItem('actieveGemeente') || 'bethel');
+        const raw = (gem || '').toLowerCase();
+        if (raw.includes('bethel') || raw.includes('maassluis')) return 'bethel';
+        if (raw.includes('maranatha')) return 'maranatha';
+        if (raw.includes('dorp')) return 'dorpskerk';
+        if (raw.includes('kruis')) return 'kruiskerk';
+        return raw.replace(/[^a-z0-9]/g, '').slice(0, 20) || 'bethel';
     };
 
     window.laadBekendeGemeenten = function() {
@@ -3866,8 +3880,11 @@ Retourneer UITSLUITEND een valide JSON object:
         if (archiefLabel) archiefLabel.textContent = naam;
         const emailLabel = document.getElementById('infoEmailAdresLabel');
         if (emailLabel) {
-            const slug = (naam || 'bethel').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20) || 'bethel';
+            const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : ((naam || 'bethel').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20) || 'bethel');
             emailLabel.textContent = `${slug}@liturgie.kerkapp.nl`;
+        }
+        if (typeof window.updateTikkieKnopUI === 'function') {
+            window.updateTikkieKnopUI();
         }
     }
 
@@ -4468,18 +4485,21 @@ Retourneer UITSLUITEND een valide JSON object:
     window.fetchGeminiWithFallback = fetchGeminiWithFallback;
 
     async function laadCloudDatabase() {
+        const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : 'bethel';
         // 1. Verse lokale cache (max 12u oud)? Gebruik die en spaar een D1-lees uit.
         try {
             const tijd = parseInt(localStorage.getItem('liederenCacheTijd') || '0', 10);
             const cache = localStorage.getItem('liederenCache');
             if (cache && (Date.now() - tijd) < 12 * 3600 * 1000) {
                 window.liederenDatabase = JSON.parse(cache);
-                if (window.liederenDatabase && window.liederenDatabase['__week_tikkie__']) {
+                const cloudTikkieRaw = window.liederenDatabase[`__week_tikkie_${slug}__`] || (slug === 'bethel' ? window.liederenDatabase['__week_tikkie__'] : null);
+                if (cloudTikkieRaw) {
                     try {
-                        const cloudT = JSON.parse(window.liederenDatabase['__week_tikkie__']);
-                        const lcl = JSON.parse(localStorage.getItem('weekTikkieData') || 'null');
+                        const cloudT = JSON.parse(cloudTikkieRaw);
+                        const lcl = JSON.parse(localStorage.getItem(`weekTikkieData_${slug}`) || (slug === 'bethel' ? localStorage.getItem('weekTikkieData') : null) || 'null');
                         if (!lcl || (cloudT.bijgewerktOp && (!lcl.bijgewerktOp || cloudT.bijgewerktOp > lcl.bijgewerktOp))) {
-                            localStorage.setItem('weekTikkieData', JSON.stringify(cloudT));
+                            localStorage.setItem(`weekTikkieData_${slug}`, JSON.stringify(cloudT));
+                            if (slug === 'bethel') localStorage.setItem('weekTikkieData', JSON.stringify(cloudT));
                         }
                     } catch(e) {}
                 }
@@ -4499,12 +4519,14 @@ Retourneer UITSLUITEND een valide JSON object:
                 localStorage.setItem('liederenCache', JSON.stringify(map));
                 localStorage.setItem('liederenCacheTijd', String(Date.now()));
             } catch (e) { /* opslag vol: niet erg */ }
-            if (window.liederenDatabase && window.liederenDatabase['__week_tikkie__']) {
+            const cloudTikkieRaw = window.liederenDatabase[`__week_tikkie_${slug}__`] || (slug === 'bethel' ? window.liederenDatabase['__week_tikkie__'] : null);
+            if (cloudTikkieRaw) {
                 try {
-                    const cloudT = JSON.parse(window.liederenDatabase['__week_tikkie__']);
-                    const lcl = JSON.parse(localStorage.getItem('weekTikkieData') || 'null');
+                    const cloudT = JSON.parse(cloudTikkieRaw);
+                    const lcl = JSON.parse(localStorage.getItem(`weekTikkieData_${slug}`) || (slug === 'bethel' ? localStorage.getItem('weekTikkieData') : null) || 'null');
                     if (!lcl || (cloudT.bijgewerktOp && (!lcl.bijgewerktOp || cloudT.bijgewerktOp > lcl.bijgewerktOp))) {
-                        localStorage.setItem('weekTikkieData', JSON.stringify(cloudT));
+                        localStorage.setItem(`weekTikkieData_${slug}`, JSON.stringify(cloudT));
+                        if (slug === 'bethel') localStorage.setItem('weekTikkieData', JSON.stringify(cloudT));
                     }
                 } catch(e) {}
             }
@@ -5768,15 +5790,17 @@ Bijbelliederen`;
                     regels: []
                 });
             } else if (item.type === 'QR') {
+                const gem = (typeof window.getActieveGemeente === 'function') ? window.getActieveGemeente() : "Bethelkerk Maassluis";
+                const isBethel = gem.toLowerCase().includes('bethel') || gem.toLowerCase().includes('maassluis');
                 slides.push({
                     id: `item-${itemIdx}-qr`,
                     itemIndex: itemIdx,
                     type: 'QR',
-                    titel: item.titel || 'Collecte',
-                    qrData: item.tekst || 'https://cgkmaassluis.nl/geven',
+                    titel: item.titel || `Collecte ${gem}`,
+                    qrData: item.tekst || (isBethel ? 'https://cgkmaassluis.nl/geven' : ''),
                     regels: [
-                        'Collecte Bethelkerk Maassluis',
-                        'IBAN: NL69 ABNA 0501488154',
+                        `Collecte ${gem}`,
+                        ...(isBethel ? ['IBAN: NL69 ABNA 0501488154'] : []),
                         'Scan met uw camera of bankapp'
                     ]
                 });
@@ -5906,11 +5930,11 @@ Bijbelliederen`;
                 {
                     id: 'collecte-qr-fallback',
                     type: 'QR',
-                    titel: 'Collecte Bethelkerk Maassluis',
-                    qrData: 'https://cgkmaassluis.nl/geven',
+                    titel: `Collecte ${gemeente}`,
+                    qrData: (gemeente.toLowerCase().includes('bethel') || gemeente.toLowerCase().includes('maassluis')) ? 'https://cgkmaassluis.nl/geven' : '',
                     regels: [
-                        'Collecte Bethelkerk Maassluis',
-                        'IBAN: NL69 ABNA 0501488154',
+                        `Collecte ${gemeente}`,
+                        ...((gemeente.toLowerCase().includes('bethel') || gemeente.toLowerCase().includes('maassluis')) ? ['IBAN: NL69 ABNA 0501488154'] : []),
                         'Scan met uw camera of bankapp'
                     ]
                 }
@@ -11054,19 +11078,26 @@ Antwoord UITSLUITEND in valide JSON:
         return formatteerLokaleDatum(d);
     };
 
-    // Haal actieve week-tikkie op uit localStorage of cloud cache
+    // Haal actieve week-tikkie op uit localStorage of cloud cache (multi-kerk vriendelijk)
     window.getActieveWeekTikkie = function() {
         try {
-            const lcl = localStorage.getItem('weekTikkieData');
+            const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : 'bethel';
+            // 1. Lokale cache per gemeente (met fallback naar algemene sleutel bij bethel)
+            const lclSlug = localStorage.getItem(`weekTikkieData_${slug}`);
+            const lcl = lclSlug || (slug === 'bethel' ? localStorage.getItem('weekTikkieData') : null);
             if (lcl) {
                 const parsed = JSON.parse(lcl);
                 if (parsed && (parsed.url || parsed.qrData)) return parsed;
             }
-            if (window.liederenDatabase && window.liederenDatabase['__week_tikkie__']) {
-                const cloud = JSON.parse(window.liederenDatabase['__week_tikkie__']);
-                if (cloud && (cloud.url || cloud.qrData)) {
-                    localStorage.setItem('weekTikkieData', JSON.stringify(cloud));
-                    return cloud;
+            // 2. Cloud cache per gemeente (met fallback naar legacy __week_tikkie__ bij bethel)
+            if (window.liederenDatabase) {
+                const cloudRaw = window.liederenDatabase[`__week_tikkie_${slug}__`] || (slug === 'bethel' ? window.liederenDatabase['__week_tikkie__'] : null);
+                if (cloudRaw) {
+                    const cloud = JSON.parse(cloudRaw);
+                    if (cloud && (cloud.url || cloud.qrData)) {
+                        try { localStorage.setItem(`weekTikkieData_${slug}`, JSON.stringify(cloud)); } catch(e) {}
+                        return cloud;
+                    }
                 }
             }
         } catch(e) {}
@@ -11156,6 +11187,10 @@ Antwoord UITSLUITEND in valide JSON:
     window.openTikkieModal = function() {
         const modal = document.getElementById('tikkieModal');
         if (!modal) return;
+
+        const gem = (typeof window.getActieveGemeente === 'function') ? window.getActieveGemeente() : 'Bethelkerk Maassluis';
+        const lbl = document.getElementById('tikkieModalGemeenteLabel');
+        if (lbl) lbl.textContent = gem;
 
         const bestaand = window.getActieveWeekTikkie() || {};
         tijdelijkeModalTikkieData = {
@@ -11354,13 +11389,21 @@ Antwoord UITSLUITEND in valide JSON:
             bijgewerktOp: Date.now()
         };
 
+        const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : 'bethel';
+
         try {
-            localStorage.setItem('weekTikkieData', JSON.stringify(tikkieOpslag));
+            localStorage.setItem(`weekTikkieData_${slug}`, JSON.stringify(tikkieOpslag));
+            if (slug === 'bethel') {
+                localStorage.setItem('weekTikkieData', JSON.stringify(tikkieOpslag));
+            }
         } catch(e) {}
 
         try {
             if (typeof slaLiedOpInCloud === 'function') {
-                slaLiedOpInCloud('__week_tikkie__', JSON.stringify(tikkieOpslag));
+                slaLiedOpInCloud(`__week_tikkie_${slug}__`, JSON.stringify(tikkieOpslag));
+                if (slug === 'bethel') {
+                    slaLiedOpInCloud('__week_tikkie__', JSON.stringify(tikkieOpslag));
+                }
             }
         } catch(e) {
             console.warn("Cloud opslag week-tikkie mislukt:", e);
