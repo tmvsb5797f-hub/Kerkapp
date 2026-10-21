@@ -6580,6 +6580,27 @@ Bijbelliederen`;
         }
     };
 
+    window.obsWsHaalScreenshot = async function(sourceName = null, width = 480, height = 270) {
+        if (!window.obsWs || !window.obsWs.connected) return null;
+        const target = sourceName || window.obsWs.currentProgramScene;
+        if (!target) return null;
+        try {
+            const res = await window.obsWs.sendRequest('GetSourceScreenshot', {
+                sourceName: target,
+                imageFormat: 'jpeg',
+                imageWidth: width,
+                imageHeight: height,
+                imageCompressionQuality: 60
+            });
+            if (res && res.imageData) {
+                return res.imageData.startsWith('data:') ? res.imageData : `data:image/jpeg;base64,${res.imageData}`;
+            }
+        } catch(e) {
+            console.warn('[OBS WS] Screenshot ophalen mislukt voor', target, e);
+        }
+        return null;
+    };
+
     window.downloadObsSceneCollection = function() {
         const streamUrl = getObsUrl('stream');
         const lowerThirdUrl = getObsUrl('lowerthird');
@@ -6828,10 +6849,12 @@ Bijbelliederen`;
     window.setObsModalTab = function(tab) {
         const btnSim = document.getElementById('obsTabBtnSim');
         const btnWs = document.getElementById('obsTabBtnWs');
+        const btnCopilot = document.getElementById('obsTabBtnCopilot');
         const btnLinks = document.getElementById('obsTabBtnLinks');
         const btnUitleg = document.getElementById('obsTabBtnUitleg');
         const contentSim = document.getElementById('obsTabContentSim');
         const contentWs = document.getElementById('obsTabContentWs');
+        const contentCopilot = document.getElementById('obsTabContentCopilot');
         const contentLinks = document.getElementById('obsTabContentLinks');
         const contentUitleg = document.getElementById('obsTabContentUitleg');
 
@@ -6840,19 +6863,302 @@ Bijbelliederen`;
 
         if (btnSim) btnSim.className = (tab === 'simulator') ? activeClass : inactiveClass;
         if (btnWs) btnWs.className = (tab === 'ws') ? activeClass : inactiveClass;
+        if (btnCopilot) btnCopilot.className = (tab === 'copilot') ? activeClass : inactiveClass;
         if (btnLinks) btnLinks.className = (tab === 'links') ? activeClass : inactiveClass;
         if (btnUitleg) btnUitleg.className = (tab === 'uitleg') ? activeClass : inactiveClass;
 
         if (contentSim) contentSim.classList.toggle('hidden', tab !== 'simulator');
         if (contentWs) contentWs.classList.toggle('hidden', tab !== 'ws');
+        if (contentCopilot) contentCopilot.classList.toggle('hidden', tab !== 'copilot');
         if (contentLinks) contentLinks.classList.toggle('hidden', tab !== 'links');
         if (contentUitleg) contentUitleg.classList.toggle('hidden', tab !== 'uitleg');
+
+        if (tab === 'copilot' && typeof window.copilotOnTabOpen === 'function') {
+            window.copilotOnTabOpen();
+        }
     };
 
     window.sluitObsTestModal = function() {
         const modal = document.getElementById('obsTestModal');
         if (modal) modal.classList.add('hidden');
+        if (window.copilotState && window.copilotState.cameraInterval) {
+            clearInterval(window.copilotState.cameraInterval);
+            window.copilotState.cameraInterval = null;
+        }
     };
+
+    // --- CO-PILOT PROEFTUIN ENGINE (SPRAAKHERKENNING & OBS MULTIVIEW) ---
+    window.copilotState = {
+        speechActive: false,
+        recognition: null,
+        lastTranscript: '',
+        lastScore: 0,
+        isCooldown: false,
+        cooldownTimer: null,
+        cameraInterval: null,
+        autoRefreshCamera: true,
+        autoSwitchEnabled: true
+    };
+
+    window.copilotOnTabOpen = function() {
+        copilotUpdateUI();
+        copilotVerversCamera();
+        if (window.copilotState.autoRefreshCamera && !window.copilotState.cameraInterval) {
+            window.copilotState.cameraInterval = setInterval(() => {
+                const modal = document.getElementById('obsTestModal');
+                const copilotContent = document.getElementById('obsTabContentCopilot');
+                if (modal && !modal.classList.contains('hidden') && copilotContent && !copilotContent.classList.contains('hidden')) {
+                    copilotVerversCamera();
+                }
+            }, 2500);
+        }
+    };
+
+    window.copilotToggleSpeech = function() {
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRec) {
+            if (window.toonToast) window.toonToast("Spraakherkenning wordt niet ondersteund in deze browser. Gebruik Google Chrome.", "warning");
+            return;
+        }
+
+        if (window.copilotState.speechActive) {
+            copilotStopSpeech();
+        } else {
+            copilotStartSpeech();
+        }
+    };
+
+    function copilotStartSpeech() {
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRec) return;
+
+        try {
+            const rec = new SpeechRec();
+            rec.lang = 'nl-NL';
+            rec.continuous = true;
+            rec.interimResults = true;
+            rec.maxAlternatives = 1;
+
+            rec.onstart = () => {
+                window.copilotState.speechActive = true;
+                copilotUpdateUI();
+                if (window.toonToast) window.toonToast("🎙️ Co-pilot Spraakherkenning gestart! Spreek de Schriftlezing uit...", "success");
+            };
+
+            rec.onresult = (evt) => {
+                let interim = '';
+                for (let i = evt.resultIndex; i < evt.results.length; ++i) {
+                    interim += evt.results[i][0].transcript;
+                }
+                if (interim.trim()) {
+                    window.copilotState.lastTranscript = interim.trim();
+                    copilotVerwerkSpraakTekst(interim.trim());
+                }
+            };
+
+            rec.onerror = (err) => {
+                console.warn('[Co-pilot] Spraakfout:', err.error);
+                if (err.error === 'not-allowed') {
+                    if (window.toonToast) window.toonToast("Microfoontoegang geweigerd. Geef Chrome toestemming om de microfoon te gebruiken.", "error");
+                    copilotStopSpeech();
+                }
+            };
+
+            rec.onend = () => {
+                if (window.copilotState.speechActive) {
+                    try { rec.start(); } catch(e) {}
+                }
+            };
+
+            rec.start();
+            window.copilotState.recognition = rec;
+        } catch(e) {
+            console.error('[Co-pilot] Kon spraak niet starten:', e);
+            if (window.toonToast) window.toonToast("Kon microfoon niet openen: " + e.message, "error");
+        }
+    }
+
+    function copilotStopSpeech() {
+        window.copilotState.speechActive = false;
+        if (window.copilotState.recognition) {
+            try { window.copilotState.recognition.stop(); } catch(e) {}
+            window.copilotState.recognition = null;
+        }
+        copilotUpdateUI();
+        if (window.toonToast) window.toonToast("🎙️ Co-pilot Spraakherkenning gepauzeerd.", "info");
+    }
+
+    function copilotVerwerkSpraakTekst(gehoord) {
+        const state = getObsLiveState() || getFallbackLiveState();
+        if (!state || !state.slides || !state.slides.length) return;
+
+        const curSlide = state.slides[state.currentIndex] || state.slides[0];
+        const doellijn = (curSlide.regels ? curSlide.regels.join(' ') : (curSlide.tekst || curSlide.titel || '')).trim();
+
+        const clean = s => s.toLowerCase().replace(/[^a-z0-9\s]/g, " ").trim().split(/\s+/).filter(Boolean);
+        const targetWords = clean(doellijn);
+        const heardWords = clean(gehoord);
+
+        if (!targetWords.length || !heardWords.length) return;
+
+        // Focus op de laatste 8 woorden van het vers
+        const endWindow = targetWords.slice(Math.max(0, targetWords.length - 8));
+        const recentHeard = heardWords.slice(Math.max(0, heardWords.length - 8));
+
+        let matchedInEnd = 0;
+        for (const w of recentHeard) {
+            if (endWindow.includes(w)) matchedInEnd++;
+        }
+
+        const endScore = endWindow.length ? (matchedInEnd / endWindow.length) : 0;
+        
+        let totalMatched = 0;
+        for (const w of heardWords) {
+            if (targetWords.includes(w)) totalMatched++;
+        }
+        const generalScore = targetWords.length ? Math.min(1, totalMatched / targetWords.length) : 0;
+
+        const finalScore = Math.min(1, Math.max(endScore, generalScore * 0.75));
+        window.copilotState.lastScore = finalScore;
+
+        copilotUpdateSpraakVisuals(gehoord, doellijn, finalScore);
+
+        // Trigger: laatste woorden van het vers herkend of zeer hoge match
+        const isEndTrigger = (endScore >= 0.38 && matchedInEnd >= 2) || finalScore >= 0.85;
+
+        if (isEndTrigger && window.copilotState.autoSwitchEnabled && !window.copilotState.isCooldown) {
+            window.copilotState.isCooldown = true;
+            if (window.toonToast) {
+                window.toonToast(`🎙️ Co-pilot: einde vers herkend (${Math.round(finalScore * 100)}%) ➔ volgende dia!`, "success");
+            }
+            obsLiveVolgende();
+            
+            // 3.5s cooldown zodat hij niet doordendert naar volgende verzen
+            if (window.copilotState.cooldownTimer) clearTimeout(window.copilotState.cooldownTimer);
+            window.copilotState.cooldownTimer = setTimeout(() => {
+                window.copilotState.isCooldown = false;
+                window.copilotState.lastScore = 0;
+                copilotUpdateUI();
+            }, 3500);
+        }
+    }
+
+    function copilotUpdateSpraakVisuals(gehoord, doel, score) {
+        const gehoordEl = document.getElementById('copilotGehoordeWoorden');
+        const doelEl = document.getElementById('copilotDoelTekst');
+        const balkEl = document.getElementById('copilotScoreBalk');
+        const scoreBadge = document.getElementById('copilotScoreBadge');
+
+        if (gehoordEl) gehoordEl.textContent = `"${gehoord.slice(-140)}"`;
+        if (doelEl) doelEl.textContent = doel.slice(0, 160) + (doel.length > 160 ? '...' : '');
+        if (balkEl) {
+            const pct = Math.round(score * 100);
+            balkEl.style.width = `${pct}%`;
+            balkEl.className = `h-full rounded-full transition-all duration-300 ${pct > 60 ? 'bg-emerald-500' : (pct > 25 ? 'bg-blue-500' : 'bg-gray-500')}`;
+        }
+        if (scoreBadge) {
+            scoreBadge.textContent = `${Math.round(score * 100)}% Match`;
+        }
+    }
+
+    window.copilotSimuleerSpraak = function() {
+        const state = getObsLiveState() || getFallbackLiveState();
+        if (!state || !state.slides || !state.slides.length) return;
+        const curSlide = state.slides[state.currentIndex] || state.slides[0];
+        const doellijn = (curSlide.regels ? curSlide.regels.join(' ') : (curSlide.tekst || curSlide.titel || '')).trim();
+        const woorden = doellijn.split(/\s+/);
+        const eindeWoorden = woorden.slice(Math.max(0, woorden.length - 6)).join(' ');
+
+        if (window.toonToast) window.toonToast(`🧪 Simulatie: "${eindeWoorden}" wordt uitgesproken...`, 'info');
+        window.copilotState.lastTranscript = eindeWoorden;
+        copilotVerwerkSpraakTekst(eindeWoorden);
+    };
+
+    window.copilotVerversCamera = async function() {
+        const imgEl = document.getElementById('copilotLiveCameraImg');
+        const badgeEl = document.getElementById('copilotLiveCameraBadge');
+        const placeholderEl = document.getElementById('copilotLiveCameraPlaceholder');
+
+        if (!window.obsWs || !window.obsWs.connected) {
+            if (placeholderEl) placeholderEl.classList.remove('hidden');
+            if (imgEl) imgEl.classList.add('hidden');
+            if (badgeEl) {
+                badgeEl.textContent = 'OBS NIET VERBONDEN';
+                badgeEl.className = 'text-[9px] font-bold px-2 py-0.5 rounded-full bg-red-900/60 text-red-300 border border-red-700/50';
+            }
+            return;
+        }
+
+        const activeScene = window.obsWs.currentProgramScene;
+        try {
+            const dataUrl = await window.obsWsHaalScreenshot(activeScene, 480, 270);
+            if (dataUrl && imgEl) {
+                imgEl.src = dataUrl;
+                imgEl.classList.remove('hidden');
+                if (placeholderEl) placeholderEl.classList.add('hidden');
+                if (badgeEl) {
+                    badgeEl.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> LIVE: ${activeScene || 'OBS Programma'}`;
+                    badgeEl.className = 'text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-900/60 text-emerald-300 border border-emerald-700/50 flex items-center gap-1';
+                }
+            }
+        } catch(e) {
+            console.warn('[Co-pilot] Camera verversen mislukt:', e);
+        }
+
+        copilotRenderSceneKnoppen();
+    };
+
+    function copilotRenderSceneKnoppen() {
+        const container = document.getElementById('copilotSceneButtonsContainer');
+        if (!container) return;
+        if (!window.obsWs || !window.obsWs.connected || !window.obsWs.scenes.length) {
+            container.innerHTML = '<span class="text-[11px] text-gray-400 italic">Verbind met OBS WebSocket om scènes te bedienen</span>';
+            return;
+        }
+        container.innerHTML = '';
+        window.obsWs.scenes.forEach(s => {
+            const isActief = (s === window.obsWs.currentProgramScene);
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = `px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 ${isActief ? 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-400' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`;
+            btn.innerHTML = `<span>${isActief ? '🎬' : '📹'}</span><span class="truncate max-w-[120px]">${s}</span>`;
+            btn.onclick = async () => {
+                await window.obsWs.switchScene(s);
+                setTimeout(copilotVerversCamera, 150);
+            };
+            container.appendChild(btn);
+        });
+    }
+
+    function copilotUpdateUI() {
+        const btn = document.getElementById('copilotMicToggleBtn');
+        const badge = document.getElementById('copilotMicStatusBadge');
+        const wave = document.getElementById('copilotAudioWave');
+
+        if (btn) {
+            if (window.copilotState.speechActive) {
+                btn.innerHTML = '<span>⏹️</span><span>Stop Luisteren</span>';
+                btn.className = 'px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-all active:scale-95 shadow-md flex items-center gap-1.5';
+            } else {
+                btn.innerHTML = '<span>🎙️</span><span>Start Spraakherkenning</span>';
+                btn.className = 'px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-bold transition-all active:scale-95 shadow-md flex items-center gap-1.5';
+            }
+        }
+
+        if (badge) {
+            if (window.copilotState.speechActive) {
+                badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-900/60 text-emerald-300 border border-emerald-600/50 flex items-center gap-1 animate-pulse';
+                badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Luistert live (Nederlands)';
+            } else {
+                badge.className = 'text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-800 text-gray-400 border border-gray-700';
+                badge.textContent = 'Stand-by (Microfoon uit)';
+            }
+        }
+
+        if (wave) {
+            wave.classList.toggle('hidden', !window.copilotState.speechActive);
+        }
+    }
 
     window.obsLiveVolgende = function() {
         const state = getObsLiveState() || getFallbackLiveState();
@@ -13744,6 +14050,10 @@ window.verstuurExportFeedback = async function() {
                     <span>🔌 OBS WebSocket v5</span>
                     <span id="obsWsStatusBadgeTop" class="w-2 h-2 rounded-full bg-gray-400"></span>
                 </button>
+                <button id="obsTabBtnCopilot" type="button" onclick="setObsModalTab('copilot')" class="px-4 py-1.5 rounded-xl text-xs font-semibold transition-all text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white flex items-center gap-1.5">
+                    <span>🚀 Co-pilot (AI & Audio)</span>
+                    <span class="text-[9px] px-1.5 py-0.2 bg-purple-500/15 text-purple-600 dark:text-purple-400 rounded-full font-bold">NIEUW</span>
+                </button>
                 <button id="obsTabBtnLinks" type="button" onclick="setObsModalTab('links')" class="px-4 py-1.5 rounded-xl text-xs font-semibold transition-all text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white flex items-center gap-1.5">
                     <span>📡 OBS & Beamer Links</span>
                     <span class="text-[10px] px-1.5 py-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-full font-bold">5 Links & PIN</span>
@@ -14090,6 +14400,160 @@ window.verstuurExportFeedback = async function() {
                             <img id="obsWsRemoteQrImg" src="" alt="Klikker QR" class="w-full h-full object-contain" />
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- TAB: CO-PILOT PROEFTUIN (AI & AUDIO) -->
+            <div id="obsTabContentCopilot" class="hidden flex flex-col gap-5">
+                <!-- Hero Banner -->
+                <div class="bg-gradient-to-r from-purple-900/40 via-indigo-900/30 to-blue-900/40 border border-purple-500/30 rounded-2xl p-4 md:p-5 flex items-center justify-between flex-wrap gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 rounded-2xl bg-purple-500/20 text-purple-300 flex items-center justify-center text-2xl flex-shrink-0 shadow-inner">
+                            🚀
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h4 class="text-sm font-bold text-white">Kerkapp Co-pilot Proeftuin</h4>
+                                <span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-purple-500/30 text-purple-200 border border-purple-400/40 tracking-wider uppercase">EXPERIMENT</span>
+                            </div>
+                            <p class="text-xs text-purple-200/80 mt-0.5">
+                                Intelligente spraakherkenning voor Schriftlezingen &amp; live OBS-multiview in één Apple-achtige interface.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[11px] text-purple-300 font-semibold hidden sm:inline">100% Gratis via lokale browserkracht</span>
+                    </div>
+                </div>
+
+                <!-- 2-Grid: Spraak Co-pilot Links vs OBS Camerabeeld Rechts -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                    
+                    <!-- 1. SPRAAK CO-PILOT CARD -->
+                    <div class="bg-gray-50 dark:bg-gray-800/80 rounded-2xl p-4 md:p-5 border border-purple-200/60 dark:border-purple-900/50 flex flex-col justify-between gap-4 shadow-xs">
+                        <div class="flex flex-col gap-3">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-lg">🎙️</span>
+                                    <h5 class="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">Spraakherkenning (Schriftlezing)</h5>
+                                </div>
+                                <span id="copilotMicStatusBadge" class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-800 text-gray-400 border border-gray-700">
+                                    Stand-by (Microfoon uit)
+                                </span>
+                            </div>
+
+                            <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                                Luistert live mee met de voorganger of lezer. Zodra het einde van het actieve bijbelvers wordt herkend, springt de app <strong>automatisch naar de volgende dia</strong>.
+                            </p>
+
+                            <!-- Live Audio Visualizer Pulse -->
+                            <div id="copilotAudioWave" class="hidden p-2.5 rounded-xl bg-purple-950/30 border border-purple-500/30 flex items-center gap-2">
+                                <div class="flex items-center gap-1">
+                                    <span class="w-1.5 h-4 bg-purple-400 rounded-full animate-pulse"></span>
+                                    <span class="w-1.5 h-6 bg-indigo-400 rounded-full animate-bounce"></span>
+                                    <span class="w-1.5 h-3 bg-purple-300 rounded-full animate-pulse"></span>
+                                    <span class="w-1.5 h-5 bg-blue-400 rounded-full animate-bounce"></span>
+                                </div>
+                                <span class="text-[11px] font-mono text-purple-200">Microfoon luistert live in de zaal...</span>
+                            </div>
+
+                            <!-- Match Voortgangsbalk & Gehoorde Woorden -->
+                            <div class="p-3.5 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 flex flex-col gap-2.5 shadow-2xs">
+                                <div class="flex items-center justify-between text-[11px]">
+                                    <span class="font-bold text-gray-700 dark:text-gray-300">Match met actieve dia:</span>
+                                    <span id="copilotScoreBadge" class="font-mono font-bold text-blue-600 dark:text-blue-400">0% Match</span>
+                                </div>
+                                <div class="w-full h-2 rounded-full bg-gray-200 dark:bg-gray-800 overflow-hidden">
+                                    <div id="copilotScoreBalk" class="h-full rounded-full bg-blue-500 transition-all duration-300" style="width: 0%;"></div>
+                                </div>
+
+                                <div class="text-[11px] flex flex-col gap-1 pt-1 border-t border-gray-100 dark:border-gray-800">
+                                    <span class="text-[10px] uppercase font-bold text-gray-400">Laatst opgevangen tekst:</span>
+                                    <p id="copilotGehoordeWoorden" class="font-mono text-gray-900 dark:text-gray-200 text-xs italic bg-gray-50 dark:bg-gray-800/50 p-2 rounded-lg border border-gray-100 dark:border-gray-700/60 min-h-[38px] flex items-center">
+                                        "Klik op Start Spraakherkenning om mee te luisteren..."
+                                    </p>
+                                </div>
+
+                                <div class="text-[11px] flex flex-col gap-1">
+                                    <span class="text-[10px] uppercase font-bold text-gray-400">Doeltekst van actieve dia:</span>
+                                    <p id="copilotDoelTekst" class="text-gray-600 dark:text-gray-400 text-[11px] leading-snug line-clamp-2">
+                                        Selecteer een Schriftlezing in de liturgie om te starten.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <label class="flex items-center gap-2 cursor-pointer select-none text-xs text-gray-700 dark:text-gray-300">
+                                <input type="checkbox" checked onchange="window.copilotState.autoSwitchEnabled = this.checked" class="rounded border-gray-400 dark:border-gray-600 bg-white dark:bg-gray-800 text-purple-600 focus:ring-purple-500" />
+                                <span>Automatisch naar volgende dia schakelen bij herkenning</span>
+                            </label>
+                        </div>
+
+                        <!-- Actieknoppen -->
+                        <div class="flex items-center gap-2 flex-wrap pt-2 border-t border-gray-200/80 dark:border-gray-700">
+                            <button type="button" id="copilotMicToggleBtn" onclick="copilotToggleSpeech()" class="flex-1 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-bold transition-all active:scale-95 shadow-md flex items-center justify-center gap-1.5">
+                                <span>🎙️</span>
+                                <span>Start Spraakherkenning</span>
+                            </button>
+                            <button type="button" onclick="copilotSimuleerSpraak()" class="px-3 py-2 rounded-xl bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-xs font-semibold transition-all active:scale-95 shadow-2xs" title="Test de automatische wissel zonder microfoon">
+                                <span>🧪 Simuleer</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 2. LIVE OBS CAMERABEELD & MULTIVIEW CARD -->
+                    <div class="bg-gray-50 dark:bg-gray-800/80 rounded-2xl p-4 md:p-5 border border-blue-200/60 dark:border-blue-900/50 flex flex-col justify-between gap-4 shadow-xs">
+                        <div class="flex flex-col gap-3">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-lg">🎬</span>
+                                    <h5 class="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">Live OBS Camerabeeld (Multiview)</h5>
+                                </div>
+                                <span id="copilotLiveCameraBadge" class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-gray-800 text-gray-400 border border-gray-700">
+                                    OBS CHECKEN...
+                                </span>
+                            </div>
+
+                            <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                                Rechtstreeks beeld van wat OBS op dit moment uitzendt. Schakel met één klik tussen scènes zónder OBS te openen.
+                            </p>
+
+                            <!-- 16:9 Live Monitor Scherm -->
+                            <div class="aspect-video bg-black rounded-xl border border-gray-800 overflow-hidden relative shadow-md flex items-center justify-center group">
+                                <img id="copilotLiveCameraImg" src="" alt="OBS Live Camerabeeld" class="w-full h-full object-cover hidden" />
+                                
+                                <div id="copilotLiveCameraPlaceholder" class="p-6 text-center text-xs text-gray-400 flex flex-col items-center gap-2">
+                                    <span class="text-2xl">📡</span>
+                                    <span>Verbind eerst met OBS WebSocket in tab 2 om live camerabeelden te zien.</span>
+                                    <button type="button" onclick="setObsModalTab('ws')" class="mt-1 px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px]">
+                                        Naar WebSocket Instellingen ➔
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Scène Knoppen Strip -->
+                            <div class="flex flex-col gap-1.5 pt-1">
+                                <div class="flex items-center justify-between text-[11px] text-gray-500 font-semibold">
+                                    <span>🎬 Direct scènes schakelen in OBS:</span>
+                                    <button type="button" onclick="copilotVerversCamera()" class="text-blue-500 hover:underline flex items-center gap-1 text-[10px]">
+                                        <span>🔄 Ververs</span>
+                                    </button>
+                                </div>
+                                <div id="copilotSceneButtonsContainer" class="flex items-center gap-2 flex-wrap">
+                                    <span class="text-[11px] text-gray-400 italic">Verbind met OBS om scènes te zien...</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Voorkeuren / Timer Strip -->
+                        <div class="flex items-center justify-between pt-2 border-t border-gray-200/80 dark:border-gray-700 text-xs">
+                            <label class="flex items-center gap-2 cursor-pointer select-none text-gray-600 dark:text-gray-300 text-[11px]">
+                                <input type="checkbox" checked onchange="window.copilotState.autoRefreshCamera = this.checked" class="rounded border-gray-400 dark:border-gray-600 bg-white dark:bg-gray-800 text-blue-600 focus:ring-blue-500" />
+                                <span>Automatisch beeld vernieuwen (elke 2.5s)</span>
+                            </label>
+                            <span class="text-[10px] text-gray-400 font-mono">0 ms vertraging over LAN</span>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
