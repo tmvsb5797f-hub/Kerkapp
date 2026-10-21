@@ -6912,6 +6912,9 @@ Bijbelliederen`;
         cooldownTimer: null,
         switchPendingTimer: null,
         countdownInterval: null,
+        dienstDemoRunning: false,
+        dienstDemoTimer: null,
+        demoWordInterval: null,
         dwellDelaySecs: initialDwell,
         minPercentage: initialMinPct,
         cameraInterval: null,
@@ -6947,6 +6950,7 @@ Bijbelliederen`;
         if (typeof autoSyncObsLiveLiturgie === 'function') autoSyncObsLiveLiturgie();
         copilotVulDiaSelectie();
         copilotRenderDoeltekst();
+        copilotRenderDienstStrip();
         copilotUpdateUI();
         copilotVerversCamera();
 
@@ -6978,7 +6982,8 @@ Bijbelliederen`;
         if (window.copilotState.customTargetText) {
             return {
                 titel: window.copilotState.customTargetTitle || 'Geselecteerde Tekst',
-                tekst: window.copilotState.customTargetText
+                tekst: window.copilotState.customTargetText,
+                isVisual: false
             };
         }
 
@@ -6988,16 +6993,24 @@ Bijbelliederen`;
             const slideTekst = (curSlide.regels ? curSlide.regels.join(' ') : (curSlide.tekst || '')).trim();
             if (slideTekst.length > 5) {
                 return {
-                    titel: `${state.currentIndex + 1}. ${curSlide.basisTitel || curSlide.titel || 'Actieve Dia'}`,
-                    tekst: slideTekst
+                    titel: `${state.currentIndex + 1}. [${curSlide.type || 'Dia'}] ${curSlide.basisTitel || curSlide.titel || 'Actieve Dia'}`,
+                    tekst: slideTekst,
+                    isVisual: false
                 };
             }
+            return {
+                titel: `${state.currentIndex + 1}. [${curSlide.type || 'Visueel'}] ${curSlide.basisTitel || curSlide.titel || 'Visuele Dia'}`,
+                tekst: '',
+                isVisual: true,
+                visualType: curSlide.type || 'Visueel'
+            };
         }
 
         // Standaard inspirerende voorbeeld-tekst voor directe tests
         return {
             titel: 'Romeinen 8:31-32 (Voorbeeld Schriftlezing)',
-            tekst: 'Wat zullen wij dan van deze dingen zeggen? Als God voor ons is, wie zal tegen ons zijn? Hoe zal Hij, Die zelfs Zijn eigen Zoon niet gespaard heeft, ons met Hem ook niet alle dingen schenken?'
+            tekst: 'Wat zullen wij dan van deze dingen zeggen? Als God voor ons is, wie zal tegen ons zijn? Hoe zal Hij, Die zelfs Zijn eigen Zoon niet gespaard heeft, ons met Hem ook niet alle dingen schenken?',
+            isVisual: false
         };
     };
 
@@ -7008,6 +7021,29 @@ Bijbelliederen`;
         
         if (titelEl) titelEl.textContent = doelObj.titel;
         if (!doelEl) return null;
+
+        const balkEl = document.getElementById('copilotScoreBalk');
+        const scoreBadge = document.getElementById('copilotScoreBadge');
+
+        // Visuele dia (bijv. Welkom, Foto, Collecte QR, Blanco)
+        if (doelObj.isVisual) {
+            doelEl.innerHTML = `
+                <div class="p-3 text-center text-xs text-purple-200 bg-purple-950/40 rounded-xl border border-purple-500/20 flex flex-col items-center gap-1.5">
+                    <span class="text-xl">🎬</span>
+                    <span class="font-bold text-white">${escapeHtml(doelObj.titel)}</span>
+                    <span class="text-[11px] text-gray-400 max-w-sm">Visuele dia zonder gesproken meeleestekst. Schakel door met [Volgende Dia ➔] of via de klikker wanneer de dienst verdergaat.</span>
+                    <button type="button" onclick="obsLiveVolgende()" class="mt-1 px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] flex items-center gap-1 shadow-sm active:scale-95 transition-all">
+                        <span>Volgende Dia ➔</span>
+                    </button>
+                </div>
+            `;
+            if (balkEl) {
+                balkEl.style.width = '100%';
+                balkEl.className = 'h-full rounded-full transition-all duration-200 bg-blue-500';
+            }
+            if (scoreBadge) scoreBadge.textContent = 'Visuele dia';
+            return { percentage: 100, matchedCount: 0, total: 0 };
+        }
 
         if (!window.copilotState.slideHeardWords) {
             window.copilotState.slideHeardWords = new Set();
@@ -7037,8 +7073,6 @@ Bijbelliederen`;
         doelEl.innerHTML = html;
 
         const pct = rawWords.length ? Math.round((matchedCount / rawWords.length) * 100) : 0;
-        const balkEl = document.getElementById('copilotScoreBalk');
-        const scoreBadge = document.getElementById('copilotScoreBadge');
 
         if (balkEl) {
             balkEl.style.width = `${pct}%`;
@@ -7082,6 +7116,7 @@ Bijbelliederen`;
         } else {
             select.value = 'AUTO';
         }
+        copilotRenderDienstStrip();
     };
 
     window.copilotKiesDia = function(val) {
@@ -7106,6 +7141,7 @@ Bijbelliederen`;
             }
         }
         copilotRenderDoeltekst([]);
+        copilotRenderDienstStrip();
         const doelObj = copilotGetActieveDoeltekst();
         if (window.toonToast) window.toonToast(`Doeltekst ingesteld op: ${doelObj.titel}`, 'info');
     };
@@ -7421,17 +7457,206 @@ Bijbelliederen`;
         }, 4500);
 
         copilotRenderDoeltekst([]);
+        copilotRenderDienstStrip();
         copilotUpdateUI();
     };
 
     window.copilotSimuleerSpraak = function() {
         const doelObj = copilotGetActieveDoeltekst();
+        if (doelObj.isVisual || !doelObj.tekst || !doelObj.tekst.trim()) {
+            if (window.toonToast) window.toonToast("Visuele dia: schakelt direct door...", "info");
+            obsLiveVolgende();
+            return;
+        }
         const woorden = doelObj.tekst.split(/\s+/).filter(Boolean);
         const simuleerZin = woorden.join(' ');
 
         if (window.toonToast) window.toonToast(`🧪 Simulatie: "${simuleerZin.slice(0, 50)}..."`, 'info');
         window.copilotState.lastTranscript = simuleerZin;
         copilotVerwerkSpraakTekst(simuleerZin);
+    };
+
+    window.copilotRenderDienstStrip = function() {
+        const strip = document.getElementById('copilotDienstStrip');
+        const progressText = document.getElementById('copilotDienstProgressText');
+        if (!strip) return;
+
+        const state = getObsLiveState() || getFallbackLiveState();
+        if (!state || !state.slides || !state.slides.length) {
+            strip.innerHTML = '<span class="text-[11px] text-gray-400 italic">Geen dia\'s geladen in de liturgie</span>';
+            return;
+        }
+
+        const cur = state.currentIndex || 0;
+        const total = state.slides.length;
+        if (progressText) {
+            progressText.textContent = `Dia ${cur + 1} van ${total} (${Math.round(((cur + 1) / total) * 100)}%)`;
+        }
+
+        strip.innerHTML = '';
+        state.slides.forEach((s, idx) => {
+            const isActief = (idx === cur);
+            const isKlaar = (idx < cur);
+            const btn = document.createElement('button');
+            btn.type = 'button';
+
+            const typeLabel = s.type ? `[${s.type}] ` : '';
+            const titel = (s.basisTitel || s.titel || `Dia ${idx + 1}`).trim();
+
+            if (isActief) {
+                btn.className = 'px-2.5 py-1 rounded-lg text-[10px] font-bold bg-blue-600 text-white shadow-sm ring-2 ring-blue-400 flex items-center gap-1 flex-shrink-0 animate-pulse transition-all';
+                btn.innerHTML = `<span>▶</span><span>${idx + 1}. ${escapeHtml(typeLabel + titel).slice(0, 24)}</span>`;
+            } else if (isKlaar) {
+                btn.className = 'px-2 py-1 rounded-lg text-[10px] font-semibold bg-emerald-950/70 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-900/60 flex items-center gap-1 flex-shrink-0 transition-all';
+                btn.innerHTML = `<span>✓</span><span>${idx + 1}. ${escapeHtml(typeLabel + titel).slice(0, 18)}</span>`;
+            } else {
+                btn.className = 'px-2 py-1 rounded-lg text-[10px] font-medium bg-gray-900/80 text-gray-400 border border-gray-800 hover:text-white hover:bg-gray-800 flex items-center gap-1 flex-shrink-0 transition-all';
+                btn.innerHTML = `<span>${idx + 1}. ${escapeHtml(typeLabel + titel).slice(0, 18)}</span>`;
+            }
+
+            btn.onclick = () => {
+                state.currentIndex = idx;
+                state.isBlackout = false;
+                saveObsLiveState(state);
+                copilotRenderDienstStrip();
+            };
+
+            strip.appendChild(btn);
+
+            if (isActief) {
+                setTimeout(() => {
+                    try { btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }); } catch(e) {}
+                }, 50);
+            }
+        });
+    };
+
+    window.copilotToggleDienstDemo = function() {
+        if (window.copilotState.dienstDemoRunning) {
+            copilotStopDienstDemo();
+        } else {
+            copilotStartDienstDemo();
+        }
+    };
+
+    window.copilotStopDienstDemo = function() {
+        window.copilotState.dienstDemoRunning = false;
+        if (window.copilotState.dienstDemoTimer) {
+            clearTimeout(window.copilotState.dienstDemoTimer);
+            window.copilotState.dienstDemoTimer = null;
+        }
+        if (window.copilotState.demoWordInterval) {
+            clearInterval(window.copilotState.demoWordInterval);
+            window.copilotState.demoWordInterval = null;
+        }
+        const btn = document.getElementById('copilotDienstDemoBtn');
+        if (btn) {
+            btn.innerHTML = '<span>▶️</span><span>Test Hele Dienst (Auto-Walkthrough)</span>';
+            btn.className = 'w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-xs font-bold transition-all active:scale-95 shadow-md flex items-center justify-center gap-2';
+        }
+        if (window.toonToast) window.toonToast("Dienst-test gepauzeerd.", "info");
+        copilotUpdateUI();
+    };
+
+    window.copilotStartDienstDemo = function() {
+        if (typeof autoSyncObsLiveLiturgie === 'function') autoSyncObsLiveLiturgie();
+        const state = getObsLiveState() || getFallbackLiveState();
+        if (!state || !state.slides || !state.slides.length) {
+            if (window.toonToast) window.toonToast("Geen dia's gevonden om te testen.", "warning");
+            return;
+        }
+
+        window.copilotState.dienstDemoRunning = true;
+        const btn = document.getElementById('copilotDienstDemoBtn');
+        if (btn) {
+            btn.innerHTML = '<span>⏹️</span><span>Stop Hele Dienst Test</span>';
+            btn.className = 'w-full px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-all active:scale-95 shadow-md flex items-center justify-center gap-2';
+        }
+
+        if (window.toonToast) {
+            window.toonToast(`🎬 Start test van de hele dienst (${state.slides.length} dia's)...`, 'info');
+        }
+
+        // Als we al bij de laatste dia zijn, begin opnieuw bij dia 0
+        if (state.currentIndex >= state.slides.length - 1) {
+            state.currentIndex = 0;
+            state.isBlackout = false;
+            saveObsLiveState(state);
+        }
+
+        copilotVoerDienstDemoStapUit();
+    };
+
+    window.copilotVoerDienstDemoStapUit = function() {
+        if (!window.copilotState.dienstDemoRunning) return;
+
+        const state = getObsLiveState() || getFallbackLiveState();
+        if (!state || !state.slides || !state.slides.length) return;
+
+        const doelObj = copilotGetActieveDoeltekst();
+
+        // 1. Visuele dia (bijv. Welkom, Foto, Collecte QR, Blanco)
+        if (doelObj.isVisual || !doelObj.tekst || doelObj.tekst.trim().length === 0) {
+            window.copilotState.dienstDemoTimer = setTimeout(() => {
+                if (!window.copilotState.dienstDemoRunning) return;
+                const curState = getObsLiveState() || getFallbackLiveState();
+                if (curState && curState.currentIndex < curState.slides.length - 1) {
+                    obsLiveVolgende();
+                    window.copilotState.dienstDemoTimer = setTimeout(copilotVoerDienstDemoStapUit, 1200);
+                } else {
+                    copilotStopDienstDemo();
+                    if (window.toonToast) window.toonToast("🎉 Hele dienst test succesvol afgerond!", "success");
+                }
+            }, 2000);
+            return;
+        }
+
+        // 2. Tekst-dia (Zang / Schriftlezing)
+        const clean = s => s.toLowerCase().replace(/[^a-z0-9\s]/g, " ").trim().split(/\s+/).filter(Boolean);
+        const alleWoorden = clean(doelObj.tekst);
+        if (!alleWoorden.length) return;
+
+        let currentIndex = 0;
+        const targetPercent = (typeof window.copilotState.minPercentage === 'number') ? window.copilotState.minPercentage : 72;
+        const targetWordCount = Math.max(alleWoorden.length - 2, Math.ceil((targetPercent / 100) * alleWoorden.length));
+
+        if (window.copilotState.demoWordInterval) clearInterval(window.copilotState.demoWordInterval);
+        window.copilotState.demoWordInterval = setInterval(() => {
+            if (!window.copilotState.dienstDemoRunning) {
+                clearInterval(window.copilotState.demoWordInterval);
+                return;
+            }
+
+            const chunkCount = Math.min(3, targetWordCount - currentIndex);
+            const chunk = alleWoorden.slice(currentIndex, currentIndex + chunkCount);
+            currentIndex += chunkCount;
+
+            const spokenSentence = chunk.join(' ');
+            window.copilotState.lastTranscript = spokenSentence;
+            const gehoordEl = document.getElementById('copilotGehoordeWoorden');
+            if (gehoordEl) gehoordEl.textContent = `"${spokenSentence}"`;
+
+            copilotVerwerkSpraakTekst(spokenSentence);
+
+            if (currentIndex >= targetWordCount) {
+                clearInterval(window.copilotState.demoWordInterval);
+                window.copilotState.demoWordInterval = null;
+
+                const dwellSecs = (typeof window.copilotState.dwellDelaySecs === 'number') ? window.copilotState.dwellDelaySecs : 1.0;
+                const wachtTijd = Math.round(dwellSecs * 1000) + 1600;
+
+                window.copilotState.dienstDemoTimer = setTimeout(() => {
+                    if (!window.copilotState.dienstDemoRunning) return;
+                    const newState = getObsLiveState() || getFallbackLiveState();
+                    if (newState && newState.currentIndex < newState.slides.length - 1) {
+                        copilotVoerDienstDemoStapUit();
+                    } else {
+                        copilotStopDienstDemo();
+                        if (window.toonToast) window.toonToast("🎉 Hele dienst test succesvol afgerond! Alle dia's zijn doorlopen.", "success");
+                    }
+                }, wachtTijd);
+            }
+        }, 160);
     };
 
     window.copilotVerversCamera = async function() {
@@ -14856,6 +15081,22 @@ window.verstuurExportFeedback = async function() {
                                 </select>
                             </div>
 
+                            <!-- Live Dienst Draaiboek Strip (Overzicht van alle dia's) -->
+                            <div class="p-2.5 rounded-xl bg-purple-950/20 border border-purple-500/25 flex flex-col gap-1.5">
+                                <div class="flex items-center justify-between text-[11px]">
+                                    <span class="font-bold text-purple-900 dark:text-purple-300 flex items-center gap-1">
+                                        <span>📋</span>
+                                        <span>Dienst Draaiboek:</span>
+                                    </span>
+                                    <span id="copilotDienstProgressText" class="font-mono text-[10px] text-purple-600 dark:text-purple-300 font-bold">
+                                        Dia 1 van 1
+                                    </span>
+                                </div>
+                                <div id="copilotDienstStrip" class="flex items-center gap-1.5 overflow-x-auto py-1 scrollbar-thin select-none">
+                                    <!-- Badges voor alle dia's in de dienst -->
+                                </div>
+                            </div>
+
                             <!-- Instelbare Sliders: Wachttijd & Percentage -->
                             <div class="p-3 rounded-xl bg-purple-950/20 border border-purple-500/25 flex flex-col gap-3 shadow-2xs">
                                 <!-- Slider 1: Wachttijd / Pauze (0 - 3s) -->
@@ -14957,13 +15198,19 @@ window.verstuurExportFeedback = async function() {
                         </div>
 
                         <!-- Actieknoppen -->
-                        <div class="flex items-center gap-2 flex-wrap pt-2 border-t border-gray-200/80 dark:border-gray-700">
-                            <button type="button" id="copilotMicToggleBtn" onclick="copilotToggleSpeech()" class="flex-1 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-bold transition-all active:scale-95 shadow-md flex items-center justify-center gap-1.5">
-                                <span>🎙️</span>
-                                <span>Start Spraakherkenning</span>
-                            </button>
-                            <button type="button" onclick="copilotSimuleerSpraak()" class="px-3 py-2 rounded-xl bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-xs font-semibold transition-all active:scale-95 shadow-2xs" title="Test de automatische wissel zonder microfoon">
-                                <span>🧪 Simuleer</span>
+                        <div class="flex flex-col gap-2 pt-2 border-t border-gray-200/80 dark:border-gray-700">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <button type="button" id="copilotMicToggleBtn" onclick="copilotToggleSpeech()" class="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-bold transition-all active:scale-95 shadow-md flex items-center justify-center gap-1.5">
+                                    <span>🎙️</span>
+                                    <span>Start Spraakherkenning</span>
+                                </button>
+                                <button type="button" onclick="copilotSimuleerSpraak()" class="px-3.5 py-2.5 rounded-xl bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-xs font-semibold transition-all active:scale-95 shadow-2xs" title="Test de automatische wissel voor deze actieve dia">
+                                    <span>🧪 Simuleer Dia</span>
+                                </button>
+                            </div>
+                            <button type="button" id="copilotDienstDemoBtn" onclick="copilotToggleDienstDemo()" class="w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-xs font-bold transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                                <span>▶️</span>
+                                <span>Test Hele Dienst (Auto-Walkthrough)</span>
                             </button>
                         </div>
                     </div>
