@@ -818,6 +818,12 @@
                     </div>
                     <span id="quotaPercentage" class="text-[10px] font-mono text-gray-500 dark:text-gray-400 font-bold">100%</span>
                 </div>
+                <span class="text-gray-300 dark:text-gray-600 select-none">·</span>
+                <!-- 5. OBS & Beamer Live Status (Klikbaar) -->
+                <button type="button" onclick="openObsTestModal()" class="flex items-center gap-1.5 hover:text-purple-600 dark:hover:text-purple-400 transition-colors cursor-pointer active:scale-95" title="OBS Studio & Beamer Live Regie (klik om te openen)">
+                    <span id="obsHeaderDot" class="w-2 h-2 rounded-full bg-gray-400 flex-shrink-0 transition-colors"></span>
+                    <span id="obsHeaderLabel" class="font-medium text-[11px] whitespace-nowrap">🎥 OBS</span>
+                </button>
             </div>
         </div>
     </div>
@@ -5999,7 +6005,9 @@ Bijbelliederen`;
             port: parseInt(localStorage.getItem('kerkapp_obs_ws_port') || '4455', 10),
             password: localStorage.getItem('kerkapp_obs_ws_password') || '',
             autoConnect: localStorage.getItem('kerkapp_obs_ws_autoconnect') === 'true',
-            autoLowerThird: localStorage.getItem('kerkapp_obs_ws_autolowerthird') !== 'false'
+            autoLowerThird: localStorage.getItem('kerkapp_obs_ws_autolowerthird') !== 'false',
+            sceneText: localStorage.getItem('kerkapp_obs_ws_scene_text') || '',
+            sceneCamera: localStorage.getItem('kerkapp_obs_ws_scene_camera') || ''
         },
         scenes: [],
         currentProgramScene: '',
@@ -6022,6 +6030,8 @@ Bijbelliederen`;
             if (cfg.password !== undefined) { this.config.password = cfg.password; localStorage.setItem('kerkapp_obs_ws_password', cfg.password); }
             if (cfg.autoConnect !== undefined) { this.config.autoConnect = !!cfg.autoConnect; localStorage.setItem('kerkapp_obs_ws_autoconnect', cfg.autoConnect ? 'true' : 'false'); }
             if (cfg.autoLowerThird !== undefined) { this.config.autoLowerThird = !!cfg.autoLowerThird; localStorage.setItem('kerkapp_obs_ws_autolowerthird', cfg.autoLowerThird ? 'true' : 'false'); }
+            if (cfg.sceneText !== undefined) { this.config.sceneText = cfg.sceneText; localStorage.setItem('kerkapp_obs_ws_scene_text', cfg.sceneText); }
+            if (cfg.sceneCamera !== undefined) { this.config.sceneCamera = cfg.sceneCamera; localStorage.setItem('kerkapp_obs_ws_scene_camera', cfg.sceneCamera); }
         },
 
         async computeAuth(password, salt, challenge) {
@@ -6288,12 +6298,16 @@ Bijbelliederen`;
             if (!state || !state.slides || !state.slides.length) return;
 
             const isBlackout = !!state.isBlackout;
+            const isStreamBlackout = !!state.isStreamBlackout;
             const curSlide = state.slides[state.currentIndex];
-            const isBlank = isBlackout || !curSlide || curSlide.type === 'Leeg';
+            const isBlank = isBlackout || isStreamBlackout || !curSlide || curSlide.type === 'Leeg';
 
-            const lowerThirdScene = this.scenes.find(s => /lower\s*third|ondertitel/i.test(s));
-            const cameraScene = this.scenes.find(s => /camera|zonder tekst|preek/i.test(s));
-            const tekstScene = this.scenes.find(s => /met tekst|liturgie|beamer/i.test(s));
+            const configuredTextScene = this.config.sceneText && this.scenes.includes(this.config.sceneText) ? this.config.sceneText : null;
+            const configuredCamScene = this.config.sceneCamera && this.scenes.includes(this.config.sceneCamera) ? this.config.sceneCamera : null;
+
+            const lowerThirdScene = configuredTextScene || this.scenes.find(s => /lower\s*third|ondertitel/i.test(s));
+            const cameraScene = configuredCamScene || this.scenes.find(s => /camera|zonder tekst|preek/i.test(s));
+            const tekstScene = configuredTextScene || this.scenes.find(s => /met tekst|liturgie|beamer/i.test(s));
 
             try {
                 if (isBlank) {
@@ -6341,6 +6355,21 @@ Bijbelliederen`;
                 }
             }
 
+            const headerDot = document.getElementById('obsHeaderDot');
+            const headerLabel = document.getElementById('obsHeaderLabel');
+            if (headerDot && headerLabel) {
+                if (status === 'connected') {
+                    headerDot.className = 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0';
+                    headerLabel.textContent = this.streaming ? '🎥 OBS (Live)' : '🎥 OBS Actief';
+                } else if (status === 'connecting') {
+                    headerDot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-ping flex-shrink-0';
+                    headerLabel.textContent = '🎥 OBS...';
+                } else {
+                    headerDot.className = 'w-2 h-2 rounded-full bg-gray-400 flex-shrink-0';
+                    headerLabel.textContent = '🎥 OBS';
+                }
+            }
+
             if (connectBtn) {
                 if (status === 'connected') {
                     connectBtn.textContent = 'Verbinding Verbreken';
@@ -6378,6 +6407,39 @@ Bijbelliederen`;
                         select.appendChild(opt);
                     });
                 }
+            }
+
+            // Scène Mapping Dropdowns (Lied vs Camera)
+            const selText = document.getElementById('obsWsSceneTextSelect');
+            if (selText) {
+                selText.innerHTML = '';
+                const autoOpt = document.createElement('option');
+                autoOpt.value = '';
+                autoOpt.textContent = '🤖 Automatisch detecteren (Lower Third / Liturgie)';
+                selText.appendChild(autoOpt);
+                this.scenes.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s;
+                    opt.textContent = s;
+                    if (s === this.config.sceneText) opt.selected = true;
+                    selText.appendChild(opt);
+                });
+            }
+
+            const selCam = document.getElementById('obsWsSceneCameraSelect');
+            if (selCam) {
+                selCam.innerHTML = '';
+                const autoOpt = document.createElement('option');
+                autoOpt.value = '';
+                autoOpt.textContent = '🤖 Automatisch detecteren (Camera / Preek)';
+                selCam.appendChild(autoOpt);
+                this.scenes.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s;
+                    opt.textContent = s;
+                    if (s === this.config.sceneCamera) opt.selected = true;
+                    selCam.appendChild(opt);
+                });
             }
 
             const streamBadge = document.getElementById('obsWsStreamStateBadge');
@@ -6440,6 +6502,20 @@ Bijbelliederen`;
     window.obsWsToggleRecord = function() {
         if (window.obsWs && window.obsWs.connected) {
             window.obsWs.toggleRecord();
+        }
+    };
+
+    window.obsWsKiesSceneText = function(scene) {
+        if (window.obsWs) {
+            window.obsWs.saveConfig({ sceneText: scene });
+            if (window.toonToast) window.toonToast(scene ? `🎵 Lied-scène ingesteld op: ${scene}` : '🎵 Lied-scène staat op automatisch detecteren', 'info');
+        }
+    };
+
+    window.obsWsKiesSceneCamera = function(scene) {
+        if (window.obsWs) {
+            window.obsWs.saveConfig({ sceneCamera: scene });
+            if (window.toonToast) window.toonToast(scene ? `🎙️ Preek-scène ingesteld op: ${scene}` : '🎙️ Preek-scène staat op automatisch detecteren', 'info');
         }
     };
 
@@ -6747,6 +6823,17 @@ Bijbelliederen`;
         updateObsModalSimulator();
     };
 
+    window.obsLiveToggleStreamBlackout = function() {
+        const state = getObsLiveState() || getFallbackLiveState();
+        if (!state) return;
+        state.isStreamBlackout = !state.isStreamBlackout;
+        saveObsLiveState(state);
+        updateObsModalSimulator();
+        if (window.toonToast) {
+            window.toonToast(state.isStreamBlackout ? "📺 Stream-overlay verborgen (zaalbeamer blijft aan)" : "📺 Stream-overlay weer zichtbaar", "info");
+        }
+    };
+
     window.obsOpenVenster = function(mode) {
         const url = getObsUrl(mode);
         if (mode === 'dock') {
@@ -6819,10 +6906,21 @@ Van harte Gods zegen toegewenst!`;
         if (blackBtn) {
             if (state.isBlackout) {
                 blackBtn.className = 'px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-xs font-bold text-white transition-all active:scale-95 shadow-sm';
-                blackBtn.textContent = '🔴 Zwart Actief';
+                blackBtn.textContent = '🔴 Zaal Zwart';
             } else {
                 blackBtn.className = 'px-3 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-300 hover:text-white transition-all active:scale-95';
-                blackBtn.textContent = '⚫ Zwart Scherm (B)';
+                blackBtn.textContent = '⚫ Zaal Zwart';
+            }
+        }
+
+        const streamBlackBtn = document.getElementById('obsSimStreamBlackoutBtn');
+        if (streamBlackBtn) {
+            if (state.isStreamBlackout) {
+                streamBlackBtn.className = 'px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-xs font-bold text-white transition-all active:scale-95 shadow-sm';
+                streamBlackBtn.textContent = '📺 Stream Uit';
+            } else {
+                streamBlackBtn.className = 'px-3 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-300 hover:text-white transition-all active:scale-95';
+                streamBlackBtn.textContent = '📺 Stream Overlay';
             }
         }
 
@@ -6843,8 +6941,8 @@ Van harte Gods zegen toegewenst!`;
             streamBg.style.backgroundPosition = 'center';
         }
         if (streamEl) {
-            if (state.isBlackout) {
-                streamEl.innerHTML = '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.4);font-style:italic;font-size:11px;">Livestream op zwart</div>';
+            if (state.isBlackout || state.isStreamBlackout) {
+                streamEl.innerHTML = '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.4);font-style:italic;font-size:11px;">' + (state.isStreamBlackout ? 'Stream-overlay verborgen (zaalbeamer actief)' : 'Livestream op zwart') + '</div>';
             } else {
                 streamEl.innerHTML = renderStreamHtmlSlide(curSlide, true);
             }
@@ -6933,7 +7031,7 @@ Van harte Gods zegen toegewenst!`;
             : `position:absolute;left:${tLeft}%;top:${tTop}%;width:${tWidth}%;height:${tHeight}%;font-size:clamp(28px, ${(slide.fontSize || 38) * 0.115}vw, 76px);font-weight:${isBold ? '700' : '400'};line-height:1.28;text-align:${align};color:#ffffff;white-space:pre-line;`;
 
         return `
-            <div style="position:absolute;inset:0;background:#000000;overflow:hidden;user-select:none;font-family:'Inter',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;">
+            <div class="${isMini ? '' : 'kerkapp-beamer-anim'}" style="position:absolute;inset:0;background:#000000;overflow:hidden;user-select:none;font-family:'Inter',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;">
                 <div style="${titleStyle}">
                     ${escapeHtml(titelTekst)}
                 </div>
@@ -6950,7 +7048,7 @@ Van harte Gods zegen toegewenst!`;
 
         if (isLowerThird) {
             if (slide.type === 'Foto') {
-                return `<div style="position:absolute;bottom:${isMini ? '8px' : '36px'};right:${isMini ? '8px' : '48px'};max-width:${isMini ? '120px' : '340px'};max-height:${isMini ? '70px' : '200px'};border-radius:14px;overflow:hidden;box-shadow:0 14px 35px rgba(0,0,0,0.6);border:1.5px solid rgba(255,255,255,0.25);"><img src="${slide.fotoUrl}" style="width:100%;height:100%;object-fit:cover;" /></div>`;
+                return `<div class="${isMini ? '' : 'kerkapp-stream-anim'}" style="position:absolute;bottom:${isMini ? '8px' : '36px'};right:${isMini ? '8px' : '48px'};max-width:${isMini ? '120px' : '340px'};max-height:${isMini ? '70px' : '200px'};border-radius:14px;overflow:hidden;box-shadow:0 14px 35px rgba(0,0,0,0.6);border:1.5px solid rgba(255,255,255,0.25);"><img src="${slide.fotoUrl}" style="width:100%;height:100%;object-fit:cover;" /></div>`;
             }
             if (slide.type === 'QR') {
                 return renderQrSlideHtml(slide, isMini, true);
@@ -6969,7 +7067,7 @@ Van harte Gods zegen toegewenst!`;
                     `;
                 }
                 return `
-                    <div style="position:absolute;bottom:38px;left:50px;right:50px;background:linear-gradient(135deg, rgba(15,23,42,0.92) 0%, rgba(30,41,59,0.88) 100%);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1.5px solid rgba(255,255,255,0.18);border-radius:22px;padding:20px 34px;box-shadow:0 24px 60px rgba(0,0,0,0.65);font-family:'Inter',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;color:#ffffff;display:flex;align-items:center;justify-content:space-between;gap:20px;transition:all 0.4s cubic-bezier(0.16, 1, 0.3, 1);">
+                    <div class="kerkapp-stream-anim" style="position:absolute;bottom:38px;left:50px;right:50px;background:linear-gradient(135deg, rgba(15,23,42,0.92) 0%, rgba(30,41,59,0.88) 100%);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1.5px solid rgba(255,255,255,0.18);border-radius:22px;padding:20px 34px;box-shadow:0 24px 60px rgba(0,0,0,0.65);font-family:'Inter',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;color:#ffffff;display:flex;align-items:center;justify-content:space-between;gap:20px;transition:all 0.35s cubic-bezier(0.16, 1, 0.3, 1);">
                         <div>
                             <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(59,130,246,0.25);border:1px solid rgba(96,165,250,0.45);color:#93c5fd;font-size:12.5px;font-weight:700;padding:3px 12px;border-radius:9999px;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.04em;">
                                 <span>⛪</span>
@@ -7001,12 +7099,12 @@ Van harte Gods zegen toegewenst!`;
             }
 
             return `
-                <div style="position:absolute;bottom:38px;left:50px;right:50px;background:linear-gradient(135deg, rgba(15,23,42,0.92) 0%, rgba(30,41,59,0.88) 100%);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1.5px solid rgba(255,255,255,0.18);border-radius:24px;padding:22px 34px;box-shadow:0 24px 60px rgba(0,0,0,0.65), 0 0 1px rgba(255,255,255,0.2) inset;font-family:'Inter',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;color:#ffffff;transition:all 0.4s cubic-bezier(0.16, 1, 0.3, 1);">
+                <div class="kerkapp-stream-anim" style="position:absolute;bottom:38px;left:50px;right:50px;background:linear-gradient(135deg, rgba(15,23,42,0.92) 0%, rgba(30,41,59,0.88) 100%);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1.5px solid rgba(255,255,255,0.18);border-radius:24px;padding:22px 34px;box-shadow:0 24px 60px rgba(0,0,0,0.65), 0 0 1px rgba(255,255,255,0.2) inset;font-family:'Inter',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;color:#ffffff;transition:all 0.35s cubic-bezier(0.16, 1, 0.3, 1);">
                     <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(59,130,246,0.25);border:1px solid rgba(96,165,250,0.45);color:#93c5fd;font-size:13.5px;font-weight:700;padding:4px 14px;border-radius:9999px;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.04em;text-shadow:0 1px 3px rgba(0,0,0,0.5);">
                         <span>🎵</span>
                         <span>${escapeHtml(titelTekst)}</span>
                     </div>
-                    <div style="font-size:clamp(22px, 2.3vw, 36px);line-height:1.32;font-weight:${isBold ? '700' : '500'};text-align:${align};color:#ffffff;white-space:pre-line;text-shadow:0 2px 8px rgba(0,0,0,0.95), 0 0 4px rgba(0,0,0,0.8);">
+                    <div class="kerkapp-stream-text-anim" style="font-size:clamp(22px, 2.3vw, 36px);line-height:1.32;font-weight:${isBold ? '700' : '500'};text-align:${align};color:#ffffff;white-space:pre-line;text-shadow:0 2px 8px rgba(0,0,0,0.95), 0 0 4px rgba(0,0,0,0.8);">
                         ${formatteerMarkdownVoorHtml(tekst)}
                     </div>
                 </div>
@@ -7015,7 +7113,7 @@ Van harte Gods zegen toegewenst!`;
 
         // Normale full-screen stream weergave
         if (slide.type === 'Welkom') return renderWelkomSlideHtml(slide, isMini, true);
-        if (slide.type === 'Foto') return `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><img src="${slide.fotoUrl}" style="max-width:100%;max-height:100%;object-fit:contain;" /></div>`;
+        if (slide.type === 'Foto') return `<div class="${isMini ? '' : 'kerkapp-stream-anim'}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><img src="${slide.fotoUrl}" style="max-width:100%;max-height:100%;object-fit:contain;" /></div>`;
         if (slide.type === 'QR') return renderQrSlideHtml(slide, isMini, true);
 
         // Exacte coördinaten en uitlijning identiek aan Beamer, met broadcast schaduw en contrast
@@ -7039,11 +7137,11 @@ Van harte Gods zegen toegewenst!`;
             : `position:absolute;left:${tLeft}%;top:${tTop}%;width:${tWidth}%;height:${tHeight}%;font-size:clamp(28px, ${(slide.fontSize || 38) * 0.115}vw, 76px);font-weight:${isBold ? '700' : '400'};line-height:1.28;text-align:${align};color:#ffffff;white-space:pre-line;text-shadow:0 2px 10px rgba(0,0,0,0.95), 0 0 4px rgba(0,0,0,0.95);`;
 
         return `
-            <div style="position:absolute;inset:0;overflow:hidden;user-select:none;font-family:'Inter',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;">
+            <div class="${isMini ? '' : 'kerkapp-stream-anim'}" style="position:absolute;inset:0;overflow:hidden;user-select:none;font-family:'Inter',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;">
                 <div style="${titleStyle}">
                     ${escapeHtml(titelTekst)}
                 </div>
-                <div style="${textStyle}">
+                <div class="${isMini ? '' : 'kerkapp-stream-text-anim'}" style="${textStyle}">
                     ${formatteerMarkdownVoorHtml(tekst)}
                 </div>
             </div>
@@ -7056,6 +7154,22 @@ Van harte Gods zegen toegewenst!`;
         document.body.style.padding = '0';
         document.body.style.background = '#000000';
         document.body.style.overflow = 'hidden';
+
+        if (!document.getElementById('obsBeamerTransitions')) {
+            const style = document.createElement('style');
+            style.id = 'obsBeamerTransitions';
+            style.textContent = `
+                @keyframes kerkappBeamerFadeIn {
+                    0% { opacity: 0; }
+                    100% { opacity: 1; }
+                }
+                .kerkapp-beamer-anim {
+                    animation: kerkappBeamerFadeIn 0.26s ease-out both;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
         document.body.innerHTML = `
             <div id="beamerContainer" style="position:fixed;inset:0;background:#000000;color:#ffffff;overflow:hidden;font-family:'Inter',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;user-select:none;">
                 <div id="beamerInhoud" style="position:absolute;inset:0;width:100%;height:100%;"></div>
@@ -7120,6 +7234,28 @@ Van harte Gods zegen toegewenst!`;
         document.documentElement.style.cssText = "height:100%;width:100%;margin:0;padding:0;overflow:hidden;background:" + (isTransparent ? "transparent" : "#000000") + ";";
         document.body.style.cssText = "height:100%;width:100%;margin:0;padding:0;overflow:hidden;background:" + (isTransparent ? "transparent" : "#000000") + ";";
 
+        if (!document.getElementById('obsStreamTransitions')) {
+            const style = document.createElement('style');
+            style.id = 'obsStreamTransitions';
+            style.textContent = `
+                @keyframes kerkappStreamSlideIn {
+                    0% { opacity: 0; transform: translateY(18px); }
+                    100% { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes kerkappStreamTextIn {
+                    0% { opacity: 0; transform: translateY(8px); }
+                    100% { opacity: 1; transform: translateY(0); }
+                }
+                .kerkapp-stream-anim {
+                    animation: kerkappStreamSlideIn 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+                }
+                .kerkapp-stream-text-anim {
+                    animation: kerkappStreamTextIn 0.30s cubic-bezier(0.16, 1, 0.3, 1) both;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
         document.body.innerHTML = `
             <div id="streamBgContainer" style="position:fixed;inset:0;pointer-events:none;z-index:1;background-size:cover;background-position:center;${isTransparent ? 'background:transparent;' : ''}"></div>
             <div id="streamOverlay" style="position:fixed;inset:0;pointer-events:none;z-index:2;${isTransparent ? 'display:none;' : 'background:linear-gradient(90deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.48) 50%, rgba(0,0,0,0.1) 85%, rgba(0,0,0,0) 100%);'}"></div>
@@ -7155,7 +7291,7 @@ Van harte Gods zegen toegewenst!`;
                 }
             }
 
-            if (state.isBlackout) {
+            if (state.isBlackout || state.isStreamBlackout) {
                 inhoud.innerHTML = '';
                 return;
             }
@@ -7337,16 +7473,19 @@ Van harte Gods zegen toegewenst!`;
                     </div>
                 </div>
 
-                <!-- Hoofd Actieknoppen: Vorige, Volgende & Zwart -->
-                <div style="display:grid;grid-template-columns:1fr 1.6fr 0.9fr;gap:6px;flex-shrink:0;">
-                    <button type="button" onclick="obsLiveVorige()" style="background:#1e293b;color:#f8fafc;border:1px solid #334155;border-radius:10px;padding:9px 6px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:3px;transition:all 0.15s;">
-                        ◀ VORIGE
+                <!-- Hoofd Actieknoppen: Vorige, Volgende, Stream & Zaal Zwart -->
+                <div style="display:grid;grid-template-columns:1fr 1.5fr 0.9fr 0.9fr;gap:4px;flex-shrink:0;">
+                    <button type="button" onclick="obsLiveVorige()" style="background:#1e293b;color:#f8fafc;border:1px solid #334155;border-radius:10px;padding:9px 4px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:2px;transition:all 0.15s;">
+                        ◀ VOR
                     </button>
-                    <button type="button" onclick="obsLiveVolgende()" style="background:#007AFF;color:#ffffff;border:none;border-radius:10px;padding:9px 8px;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 3px 12px rgba(0,122,255,0.4);transition:all 0.15s;">
+                    <button type="button" onclick="obsLiveVolgende()" style="background:#007AFF;color:#ffffff;border:none;border-radius:10px;padding:9px 6px;font-size:13px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;box-shadow:0 3px 12px rgba(0,122,255,0.4);transition:all 0.15s;">
                         VOLGENDE ▶
                     </button>
-                    <button type="button" id="dockBlackoutBtn" onclick="obsLiveToggleBlackout()" style="background:#1e293b;color:#cbd5e1;border:1px solid #334155;border-radius:10px;padding:9px 4px;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;text-align:center;transition:all 0.15s;">
-                        ⚫ Zwart
+                    <button type="button" id="dockStreamBlackoutBtn" onclick="obsLiveToggleStreamBlackout()" title="Verberg alleen de lower-third op de livestream" style="background:#1e293b;color:#facc15;border:1px solid #334155;border-radius:10px;padding:9px 2px;font-size:10.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;text-align:center;transition:all 0.15s;">
+                        📺 Stream
+                    </button>
+                    <button type="button" id="dockBlackoutBtn" onclick="obsLiveToggleBlackout()" title="Zet zaalbeamer en stream beiden op zwart" style="background:#1e293b;color:#cbd5e1;border:1px solid #334155;border-radius:10px;padding:9px 2px;font-size:10.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;text-align:center;transition:all 0.15s;">
+                        ⚫ Zaal
                     </button>
                 </div>
 
@@ -7430,7 +7569,22 @@ Van harte Gods zegen toegewenst!`;
                     blackBtn.style.background = '#1e293b';
                     blackBtn.style.color = '#cbd5e1';
                     blackBtn.style.border = '1px solid #334155';
-                    blackBtn.textContent = '⚫ Zwart';
+                    blackBtn.textContent = '⚫ Zaal';
+                }
+            }
+
+            const streamBlackBtn = document.getElementById('dockStreamBlackoutBtn');
+            if (streamBlackBtn) {
+                if (state.isStreamBlackout) {
+                    streamBlackBtn.style.background = '#d97706';
+                    streamBlackBtn.style.color = '#ffffff';
+                    streamBlackBtn.style.border = '1px solid #f59e0b';
+                    streamBlackBtn.textContent = '⏸ Stream';
+                } else {
+                    streamBlackBtn.style.background = '#1e293b';
+                    streamBlackBtn.style.color = '#facc15';
+                    streamBlackBtn.style.border = '1px solid #334155';
+                    streamBlackBtn.textContent = '📺 Stream';
                 }
             }
 
@@ -7554,13 +7708,16 @@ Van harte Gods zegen toegewenst!`;
                         <span style="font-size:11px;font-weight:600;opacity:0.85;">Tik om volgende dia te tonen</span>
                     </button>
 
-                    <!-- Secundaire Rij: Vorige & Zwart -->
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;height:65px;">
-                        <button type="button" onclick="obsRemoteVorige()" style="background:#1e293b;color:#f8fafc;border:1px solid #334155;border-radius:16px;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;">
-                            ◀ VORIGE
+                    <!-- Secundaire Rij: Vorige, Stream Mute & Zaal Zwart -->
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;height:65px;">
+                        <button type="button" onclick="obsRemoteVorige()" style="background:#1e293b;color:#f8fafc;border:1px solid #334155;border-radius:16px;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:4px;cursor:pointer;">
+                            ◀ VOR
                         </button>
-                        <button type="button" id="remoteBlackoutBtn" onclick="obsRemoteToggleBlackout()" style="background:#1e293b;color:#cbd5e1;border:1px solid #334155;border-radius:16px;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:4px;cursor:pointer;">
-                            ⚫ Zwart
+                        <button type="button" id="remoteStreamBlackoutBtn" onclick="obsRemoteToggleStreamBlackout()" title="Alleen stream overlay uit" style="background:#1e293b;color:#facc15;border:1px solid #334155;border-radius:16px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;text-align:center;gap:3px;cursor:pointer;">
+                            📺 Stream
+                        </button>
+                        <button type="button" id="remoteBlackoutBtn" onclick="obsRemoteToggleBlackout()" title="Beamer + stream beiden zwart" style="background:#1e293b;color:#cbd5e1;border:1px solid #334155;border-radius:16px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;text-align:center;gap:3px;cursor:pointer;">
+                            ⚫ Zaal
                         </button>
                     </div>
                 </div>
@@ -7608,6 +7765,12 @@ Van harte Gods zegen toegewenst!`;
         window.obsRemoteToggleBlackout = function() {
             trillen();
             obsLiveToggleBlackout();
+            updateRemoteUI();
+        };
+
+        window.obsRemoteToggleStreamBlackout = function() {
+            trillen();
+            obsLiveToggleStreamBlackout();
             updateRemoteUI();
         };
 
@@ -7673,7 +7836,22 @@ Van harte Gods zegen toegewenst!`;
                     blackBtn.style.background = '#1e293b';
                     blackBtn.style.color = '#cbd5e1';
                     blackBtn.style.border = '1px solid #334155';
-                    blackBtn.textContent = '⚫ Zwart';
+                    blackBtn.textContent = '⚫ Zaal';
+                }
+            }
+
+            const streamBlackBtn = document.getElementById('remoteStreamBlackoutBtn');
+            if (streamBlackBtn) {
+                if (state.isStreamBlackout) {
+                    streamBlackBtn.style.background = '#d97706';
+                    streamBlackBtn.style.color = '#ffffff';
+                    streamBlackBtn.style.border = '1px solid #f59e0b';
+                    streamBlackBtn.textContent = '⏸ Stream';
+                } else {
+                    streamBlackBtn.style.background = '#1e293b';
+                    streamBlackBtn.style.color = '#facc15';
+                    streamBlackBtn.style.border = '1px solid #334155';
+                    streamBlackBtn.textContent = '📺 Stream';
                 }
             }
 
@@ -13324,15 +13502,18 @@ window.verstuurExportFeedback = async function() {
                             <span class="text-xs font-bold uppercase tracking-wider text-gray-300">Interactieve Simulator</span>
                             <span id="obsSimIndexLabel" class="text-xs text-blue-400 font-semibold ml-2">Dia 1 van ...</span>
                         </div>
-                        <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                        <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end flex-wrap">
                             <button type="button" onclick="obsLiveVorige()" class="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-white transition-all active:scale-95 flex items-center justify-center gap-1">
                                 ◀ Vorige
                             </button>
                             <button type="button" onclick="obsLiveVolgende()" class="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-[#007AFF] hover:bg-blue-600 text-xs font-bold text-white transition-all active:scale-95 shadow-md flex items-center justify-center gap-1">
                                 Volgende ▶
                             </button>
-                            <button type="button" id="obsSimBlackoutBtn" onclick="obsLiveToggleBlackout()" class="flex-1 sm:flex-initial px-3 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-300 hover:text-white transition-all active:scale-95 text-center">
-                                ⚫ Zwart (B)
+                            <button type="button" id="obsSimStreamBlackoutBtn" onclick="obsLiveToggleStreamBlackout()" class="flex-1 sm:flex-initial px-3 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-amber-300 hover:text-amber-200 transition-all active:scale-95 text-center" title="Verberg alleen de lower-third op de livestream (zaalbeamer blijft aan)">
+                                📺 Stream Overlay
+                            </button>
+                            <button type="button" id="obsSimBlackoutBtn" onclick="obsLiveToggleBlackout()" class="flex-1 sm:flex-initial px-3 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-300 hover:text-white transition-all active:scale-95 text-center" title="Zet beamer en livestream beiden op zwart (B)">
+                                ⚫ Zaal Zwart (B)
                             </button>
                         </div>
                     </div>
@@ -13527,6 +13708,48 @@ window.verstuurExportFeedback = async function() {
                         <button type="button" onclick="obsWsToggleRecord()" class="w-full py-2 px-3 rounded-xl bg-gray-900 hover:bg-black dark:bg-gray-700 dark:hover:bg-gray-600 text-white text-xs font-bold transition-all active:scale-95 shadow-sm text-center">
                             ⏺️ Start / Stop Opname
                         </button>
+                    </div>
+                </div>
+
+                <!-- Automatische Scène-Koppeling (Lied vs Preek) Card -->
+                <div class="bg-gradient-to-br from-purple-50/80 via-white to-indigo-50/80 dark:from-purple-950/30 dark:via-gray-900 dark:to-indigo-950/30 p-4 md:p-5 rounded-2xl border border-purple-200/80 dark:border-purple-900/60 flex flex-col gap-3 shadow-xs">
+                    <div class="flex items-center justify-between flex-wrap gap-2">
+                        <div class="flex items-center gap-2.5">
+                            <span class="text-xl">🎛️</span>
+                            <div>
+                                <h5 class="text-xs font-bold text-gray-900 dark:text-white">Automatische Scène-Koppeling (Auto-Switch)</h5>
+                                <p class="text-[11px] text-gray-600 dark:text-gray-400">Koppel jouw OBS-scènes direct aan Kerkapp. OBS schakelt dan vanzelf mee zodra er gezongen wordt!</p>
+                            </div>
+                        </div>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 border border-purple-300/40">
+                            Plug &amp; Play
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+                        <!-- Scène bij Lied / Schriftlezing -->
+                        <div class="bg-white/80 dark:bg-gray-800/80 p-3 rounded-xl border border-purple-100 dark:border-purple-800/40 flex flex-col gap-1.5 shadow-2xs">
+                            <label class="text-[11px] font-bold text-purple-900 dark:text-purple-300 flex items-center gap-1.5">
+                                <span>🎵</span>
+                                <span>Scène bij Lied of Schriftlezing (Lower Third)</span>
+                            </label>
+                            <p class="text-[10px] text-gray-500 dark:text-gray-400 leading-tight">Wordt geactiveerd zodra er een lied of bijbellezing in beeld staat.</p>
+                            <select id="obsWsSceneTextSelect" onchange="obsWsKiesSceneText(this.value)" class="w-full mt-1 px-3 py-2 text-xs font-semibold rounded-lg border border-purple-200 dark:border-purple-800 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500">
+                                <option value="">🤖 Automatisch detecteren (Lower Third / Liturgie)</option>
+                            </select>
+                        </div>
+
+                        <!-- Scène bij Preek / Stilte -->
+                        <div class="bg-white/80 dark:bg-gray-800/80 p-3 rounded-xl border border-purple-100 dark:border-purple-800/40 flex flex-col gap-1.5 shadow-2xs">
+                            <label class="text-[11px] font-bold text-indigo-900 dark:text-indigo-300 flex items-center gap-1.5">
+                                <span>🎙️</span>
+                                <span>Scène bij Preek of Stilte (Camera Zonder Tekst)</span>
+                            </label>
+                            <p class="text-[10px] text-gray-500 dark:text-gray-400 leading-tight">Wordt geactiveerd bij lege dia's, stil gebed of pauzemomenten.</p>
+                            <select id="obsWsSceneCameraSelect" onchange="obsWsKiesSceneCamera(this.value)" class="w-full mt-1 px-3 py-2 text-xs font-semibold rounded-lg border border-purple-200 dark:border-purple-800 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500">
+                                <option value="">🤖 Automatisch detecteren (Camera / Preek)</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
