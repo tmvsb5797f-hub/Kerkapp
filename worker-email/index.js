@@ -152,7 +152,7 @@ export default {
         const resultaat = await verwerkLiturgieTekst(tekst, env, onderwerp, kerkId);
 
         if (env.DB) {
-          await slaDienstOpInD1(env.DB, kerkId, resultaat, "api-test", onderwerp);
+          await slaDienstOpInD1(env.DB, kerkId, resultaat, body.afzender || "api-test", onderwerp);
         }
 
         return json({
