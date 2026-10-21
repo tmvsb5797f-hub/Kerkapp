@@ -957,21 +957,21 @@
 
         <section class="mt-4 mb-2">
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                <button onclick="openImportModal()" class="w-full bg-purple-100 text-purple-700 py-3 rounded-xl text-xs md:text-sm font-semibold flex items-center justify-center gap-2 hover:bg-purple-200 transition-all shadow-sm border border-purple-200 active:scale-95">
+                <button id="plakLiturgieKnop" onclick="openImportModal()" class="w-full bg-purple-100 text-purple-700 py-3 rounded-xl text-xs md:text-sm font-semibold flex items-center justify-center gap-2 hover:bg-purple-200 transition-all shadow-sm border border-purple-200 active:scale-95">
                     <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                     <span>Plak Liturgie</span>
                 </button>
-                <button onclick="document.getElementById('imageFile').click()" class="w-full bg-blue-100 text-blue-700 py-3 rounded-xl text-xs md:text-sm font-semibold flex items-center justify-center gap-2 hover:bg-blue-200 transition-all shadow-sm border border-blue-200 active:scale-95">
+                <button id="fotoDiaKnop" onclick="document.getElementById('imageFile').click()" class="w-full bg-blue-100 text-blue-700 py-3 rounded-xl text-xs md:text-sm font-semibold flex items-center justify-center gap-2 hover:bg-blue-200 transition-all shadow-sm border border-blue-200 active:scale-95">
                     <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                     <span>Foto Dia</span>
                 </button>
                 <input id="imageFile" type="file" class="hidden" accept="image/*" onchange="uploadFoto(event)"/>
-                <button onclick="voegLegeDiaToe()" class="w-full bg-gray-200 text-gray-700 py-3 rounded-xl text-xs md:text-sm font-semibold flex items-center justify-center gap-2 hover:bg-gray-300 transition-all shadow-sm border border-gray-300 active:scale-95">
+                <button id="legeDiaKnop" onclick="voegLegeDiaToe()" class="w-full bg-gray-200 text-gray-700 py-3 rounded-xl text-xs md:text-sm font-semibold flex items-center justify-center gap-2 hover:bg-gray-300 transition-all shadow-sm border border-gray-300 active:scale-95">
                     <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
                     <span>Lege Dia</span>
                 </button>
                 <div class="w-full flex items-center rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 shadow-xs overflow-hidden group">
-                    <button type="button" onclick="window.klikTikkieKnop()" class="flex-1 py-3 px-3 text-xs md:text-sm font-semibold text-emerald-900 dark:text-emerald-200 flex items-center justify-between gap-1.5 hover:bg-emerald-100/60 dark:hover:bg-emerald-900/40 transition-colors text-left active:scale-[0.99]" title="Voeg actieve week-Tikkie toe aan de liturgie">
+                    <button id="tikkieDiaKnop" type="button" onclick="window.klikTikkieKnop()" class="flex-1 py-3 px-3 text-xs md:text-sm font-semibold text-emerald-900 dark:text-emerald-200 flex items-center justify-between gap-1.5 hover:bg-emerald-100/60 dark:hover:bg-emerald-900/40 transition-colors text-left active:scale-[0.99]" title="Voeg actieve week-Tikkie toe aan de liturgie">
                         <div class="flex items-center gap-1.5 min-w-0">
                             <svg class="w-4 h-4 md:w-5 md:h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="3" height="3"></rect><line x1="21" y1="14" x2="21" y2="14.01"></line><line x1="21" y1="21" x2="21" y2="21.01"></line><line x1="14" y1="21" x2="14" y2="21.01"></line><line x1="17" y1="17" x2="21" y2="17"></line><line x1="17" y1="21" x2="17" y2="17"></line></svg>
                             <span class="font-bold truncate">Tikkie QR</span>
@@ -10493,10 +10493,11 @@ ${tekst}
     ];
 
     const CHAT_ACTIES = [
-        { actie: "importeren", id: "importModal", beschrijving: "De 'Plak Liturgie' knop opent een venster waar je een hele liturgie kunt plakken. De AI herkent automatisch liederen en bijbelteksten." },
-        { actie: "foto", id: "imageFile", beschrijving: "Met 'Foto Dia' kun je een afbeelding uploaden die als dia in de presentatie komt." },
-        { actie: "lege_dia", id: null, beschrijving: "Met 'Lege Dia' voeg je een zwarte pauze-dia toe (handig voor de preek of collecte)." },
-        { actie: "exporteren", id: null, beschrijving: "De grote blauwe 'Exporteer PowerPoint' knop rechtsonder maakt een kant-en-klare .pptx die je direct kunt openen." },
+        { actie: "importeren", id: "plakLiturgieKnop", beschrijving: "De 'Plak Liturgie' knop opent een venster waar je een hele liturgie kunt plakken. De AI herkent automatisch liederen en bijbelteksten." },
+        { actie: "foto", id: "fotoDiaKnop", beschrijving: "Met 'Foto Dia' kun je een afbeelding uploaden die als dia in de presentatie komt." },
+        { actie: "lege_dia", id: "legeDiaKnop", beschrijving: "Met 'Lege Dia' voeg je een zwarte pauze-dia toe (handig voor de preek of collecte)." },
+        { actie: "tikkie", id: "tikkieDiaKnop", beschrijving: "Met 'Tikkie QR' voeg je de actieve collecte QR-code dia toe." },
+        { actie: "exporteren", id: "exporteerKnop", beschrijving: "De grote blauwe 'Exporteer PowerPoint' knop rechtsonder maakt een kant-en-klare .pptx die je direct kunt openen." },
         { actie: "rondleiding", id: "rondleidingKnop", beschrijving: "Het vraagteken-knopje rechtsonder start een interactieve rondleiding die de hele app uitlegt." },
         { actie: "leegmaken", id: "volgordeLijst", beschrijving: "Klik op 'Leegmaken' rechtsboven de volgordelijst om alles te wissen en opnieuw te beginnen." }
     ];
@@ -10508,6 +10509,17 @@ ${tekst}
         const el = document.getElementById(elementId);
         if (!el) return;
 
+        // Als mobiele tabs actief zijn, schakel eerst naar de juiste tab
+        if (window.innerWidth < 768 && typeof window.schakelMobieleTab === 'function') {
+            if (['liedInput', 'bijbelInput', 'plakLiturgieKnop', 'fotoDiaKnop', 'legeDiaKnop', 'tikkieDiaKnop', 'datumInput', 'voorgangerInput'].includes(elementId)) {
+                window.schakelMobieleTab('invoer');
+            } else if (['volgordeLijst'].includes(elementId)) {
+                window.schakelMobieleTab('volgorde');
+            } else if (['previewVak', 'fontSizeSelect', 'linesSelect'].includes(elementId)) {
+                window.schakelMobieleTab('preview');
+            }
+        }
+
         if (highlightTimeout) clearTimeout(highlightTimeout);
         document.querySelectorAll('.chat-highlight').forEach(e => e.classList.remove('chat-highlight'));
 
@@ -10516,8 +10528,9 @@ ${tekst}
 
         highlightTimeout = setTimeout(() => {
             el.classList.remove('chat-highlight');
-        }, 4000);
+        }, 5000);
     }
+    window.highlightElement = highlightElement;
 
     window.toggleChat = function() {
         const chat = document.getElementById('chatWindow');
@@ -10567,7 +10580,7 @@ JOUW ROL & TOON:
 - Spreek de gebruiker vriendelijk, bemoedigend en helder aan in het Nederlands.
 - Geef praktische en beknopte antwoorden (maximaal 3 tot 5 zinnen of korte bullet points).
 - Gebruik **vetgedrukte tekst** voor knoppen, veldnamen of secties zodat de gebruiker direct ziet waar hij moet klikken.
-- Wijs waar van toepassing altijd het bijbehorende element aan via het "highlight" veld.
+- Wijs ALTIJD het bijbehorende element aan via het "highlight" veld.
 
 APP ONDERDELEN:
 ${onderdelenTekst}
@@ -10583,7 +10596,7 @@ BELANGRIJKSTE UITLEG OVER DE APP:
 2. **Bijbelteksten ophalen** (highlight: "bijbelInput"):
    - Typ een Bijbelverwijzing (bijv. "Johannes 3:16-18", "Psalm 121" of "Genesis 1:1-5") en druk op **Enter**.
    - De HSV-tekst wordt via AI automatisch opgehaald en netjes over dia's verdeeld.
-3. **Liturgie Importeren / Plakken** (highlight: "importModal"):
+3. **Liturgie Importeren / Plakken** (highlight: "plakLiturgieKnop"):
    - Klik op de knop **Plak Liturgie** om een complete liturgie (gekopieerd uit bijv. Word of e-mail) te plakken; liederen en lezingen worden automatisch herkend.
 4. **Volgorde & Dia's bewerken** (highlight: "volgordeLijst"):
    - Volgorde aanpassen: sleep items met de muis omhoog of omlaag.
@@ -10591,22 +10604,22 @@ BELANGRIJKSTE UITLEG OVER DE APP:
    - Verwijderen: klik op het **rode prullenbak-icoon**.
    - Klik op **Opslaan** om de liturgie te bewaren in het Archief.
 5. **Extra Dia's**:
-   - **Foto Dia** (highlight: "imageFile"): upload een afbeelding.
-   - **Tikkie QR**: upload een screenshot van een collecte QR-code.
-   - **Lege Dia**: voeg een zwarte pauzedia toe voor de preek of overdenking.
+   - **Foto Dia** (highlight: "fotoDiaKnop"): upload een afbeelding.
+   - **Tikkie QR** (highlight: "tikkieDiaKnop"): upload een screenshot van een collecte QR-code.
+   - **Lege Dia** (highlight: "legeDiaKnop"): voeg een zwarte pauzedia toe voor de preek of overdenking.
 6. **Instellingen**:
    - **Regels per dia** (highlight: "linesSelect"): kies bijv. "Per Vers" om automatisch op witregels te splitsen.
    - **Lettergrootte** (highlight: "fontSizeSelect"): standaard 40pt.
    - **Preview** (highlight: "previewVak"): toont direct hoe de actieve dia er op de beamer uitziet.
    - **Meelees-versie**: aan te zetten via het info-icoontje linksonder ("Over deze app").
 7. **Exporteren**:
-   - Klik op de grote blauwe knop **Exporteer PowerPoint** rechtsonder voor een kant-en-klaar breedbeeld .pptx bestand.
+   - Klik op de grote blauwe knop **Exporteer PowerPoint** (highlight: "exporteerKnop") rechtsonder voor een kant-en-klaar breedbeeld .pptx bestand.
 8. **Rondleiding** (highlight: "rondleidingKnop"):
    - Klik op het vraagteken-icoon rechtsonder voor een interactieve tour.
 
 UITVOERFORMAAT:
-Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
-{"antwoord": "je uitleg hier (gebruik gerust **vet** voor knopnamen)", "highlight": "element-id of null"}`;
+Antwoord UITSLUITEND in valide JSON:
+{"antwoord": "je uitleg hier (gebruik gerust **vet** voor knopnamen)", "highlight": "element-id"}`;
         }
 
         const userMessage = chatHistory.length === 0
@@ -10634,11 +10647,51 @@ Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
                 let highlightId = null;
 
                 try {
-                    const parsed = JSON.parse(rawText);
+                    let cleaned = rawText.trim();
+                    if (cleaned.startsWith('```json')) cleaned = cleaned.slice(7);
+                    else if (cleaned.startsWith('```')) cleaned = cleaned.slice(3);
+                    if (cleaned.endsWith('```')) cleaned = cleaned.slice(0, -3);
+                    cleaned = cleaned.trim();
+
+                    const parsed = JSON.parse(cleaned);
                     antwoord = parsed.antwoord || rawText;
                     highlightId = parsed.highlight || null;
                 } catch(e) {
                     antwoord = rawText;
+                }
+
+                // Intelligente Fallback als de AI highlightId vergeet of niet herkent:
+                if (!highlightId || !document.getElementById(highlightId)) {
+                    const full = (message + " " + antwoord).toLowerCase();
+                    if (full.includes("lied") || full.includes("psalm") || full.includes("weerklank") || full.includes("opwekking") || full.includes("gezang") || full.includes("zingen")) {
+                        highlightId = "liedInput";
+                    } else if (full.includes("bijbel") || full.includes("schriftlezing") || full.includes("hsv") || full.includes("evangelie")) {
+                        highlightId = "bijbelInput";
+                    } else if (full.includes("volgorde") || full.includes("slepen") || full.includes("verplaatsen") || full.includes("verwijderen") || full.includes("potlood") || full.includes("lijst")) {
+                        highlightId = "volgordeLijst";
+                    } else if (full.includes("plak") || full.includes("import") || full.includes("word") || full.includes("mail")) {
+                        highlightId = "plakLiturgieKnop";
+                    } else if (full.includes("export") || full.includes("powerpoint") || full.includes("pptx") || full.includes("download")) {
+                        highlightId = "exporteerKnop";
+                    } else if (full.includes("foto") || full.includes("afbeelding") || full.includes("plaatje")) {
+                        highlightId = "fotoDiaKnop";
+                    } else if (full.includes("lege dia") || full.includes("pauze") || full.includes("zwart")) {
+                        highlightId = "legeDiaKnop";
+                    } else if (full.includes("tikkie") || full.includes("collecte") || full.includes("qr")) {
+                        highlightId = "tikkieDiaKnop";
+                    } else if (full.includes("rondleiding") || full.includes("tour") || full.includes("uitleg") || full.includes("help") || full.includes("vraagteken")) {
+                        highlightId = "rondleidingKnop";
+                    } else if (full.includes("preview") || full.includes("beamer") || full.includes("scherm")) {
+                        highlightId = "previewVak";
+                    } else if (full.includes("lettergrootte") || full.includes("font") || full.includes("grootte")) {
+                        highlightId = "fontSizeSelect";
+                    } else if (full.includes("regel") || full.includes("vers")) {
+                        highlightId = "linesSelect";
+                    } else if (full.includes("datum")) {
+                        highlightId = "datumInput";
+                    } else if (full.includes("voorganger") || full.includes("dominee") || full.includes("spreker")) {
+                        highlightId = "voorgangerInput";
+                    }
                 }
 
                 let displayText = escapeHtml(antwoord);
@@ -10647,11 +10700,12 @@ Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
 
                 let highlightKnop = '';
                 if (highlightId && document.getElementById(highlightId)) {
-                    highlightKnop = `<button onclick="highlightElement('${highlightId}')" class="mt-2 text-[11px] font-semibold text-[#007AFF] bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                        Laat zien in de app
-                    </button>`;
-                    highlightElement(highlightId);
+                    highlightKnop = `
+                        <button type="button" onclick="window.highlightElement('${highlightId}')" class="mt-2.5 text-[11.5px] font-semibold text-[#007AFF] bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 active:scale-95 px-3 py-1.5 rounded-xl border border-blue-200/60 dark:border-blue-800/60 transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer w-fit">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            <span>Laat zien in de app</span>
+                        </button>`;
+                    window.highlightElement(highlightId);
                 }
 
                 chatMessages.innerHTML += `
