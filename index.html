@@ -2920,18 +2920,14 @@ Retourneer UITSLUITEND een valide JSON object:
             } else {
                 // Voor unieke/creatieve thema's sturen we de Master Prompt naar Gemini AI
                 const proxy = (typeof PROXY_URL !== 'undefined') ? PROXY_URL : "https://gemini-proxy.kerkapp.workers.dev";
-                const model = (typeof gevondenModel !== 'undefined' && gevondenModel) ? gevondenModel : 'gemini-1.5-flash';
+                const model = (typeof gevondenModel !== 'undefined' && gevondenModel) ? gevondenModel : 'models/gemini-flash-lite-latest';
 
                 try {
                     if (typeof consumeerAiQuota === 'function') consumeerAiQuota(2);
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 12000);
-
-                    const res = await fetch(`${proxy}/v1beta/${model}:generateContent`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        signal: controller.signal,
-                        body: JSON.stringify({
+                    const caller = (typeof fetchGeminiWithFallback === 'function') ? fetchGeminiWithFallback : window.fetchGeminiWithFallback;
+                    let resJson = null;
+                    if (caller) {
+                        resJson = await caller({
                             contents: [{
                                 role: 'user',
                                 parts: [{ text: master.masterPrompt }]
@@ -2940,12 +2936,9 @@ Retourneer UITSLUITEND een valide JSON object:
                                 responseMimeType: "application/json",
                                 temperature: 0.2
                             }
-                        })
-                    });
-                    clearTimeout(timeoutId);
-
-                    if (res.ok) {
-                        const resJson = await res.json();
+                        }, model);
+                    }
+                    if (resJson) {
                         const part = resJson.candidates && resJson.candidates[0] && resJson.candidates[0].content && resJson.candidates[0].content.parts && resJson.candidates[0].content.parts[0];
                         if (part && part.text) {
                             let clean = part.text.trim();
@@ -4027,7 +4020,7 @@ Retourneer UITSLUITEND een valide JSON object:
         window.liturgieVolgorde = liturgieVolgorde;
         window.getLiturgieVolgorde = () => liturgieVolgorde;
     }
-    let gevondenModel = "";
+    let gevondenModel = "models/gemini-flash-lite-latest";
     
     window.liederenDatabase = {};
     
@@ -4145,36 +4138,51 @@ Retourneer UITSLUITEND een valide JSON object:
     async function ontdekAI() {
         try {
             const res = await fetch(`${PROXY_URL}/v1beta/models`);
-            const data = await res.json();
-            const geldigeModellen = data.models ? data.models.filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent")) : [];
-            window.beschikbareAiModellen = geldigeModellen.map(m => m.name.replace(/^models\//, ''));
+            const raw = await res.text();
+            let data = null;
+            try { data = raw ? JSON.parse(raw) : null; } catch(e) {}
+            const geldigeModellen = (data && data.models) ? data.models.filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent")) : [];
+            window.beschikbareAiModellen = geldigeModellen.map(m => m.name);
 
-            let best = geldigeModellen.find(m => m.name.includes("flash") && m.name.includes("8b"))
-                    || geldigeModellen.find(m => m.name.includes("flash") && !m.name.includes("2.0"))
+            let best = geldigeModellen.find(m => m.name.includes("flash-lite-latest"))
+                    || geldigeModellen.find(m => m.name.includes("flash-latest"))
+                    || geldigeModellen.find(m => m.name.includes("3.1-flash-lite"))
+                    || geldigeModellen.find(m => m.name.includes("flash-lite"))
                     || geldigeModellen.find(m => m.name.includes("flash"))
                     || geldigeModellen[0];
 
             if(best) {
-                gevondenModel = best.name.replace(/^models\//, '');
+                gevondenModel = best.name.startsWith('models/') ? best.name : `models/${best.name}`;
+                setAiStatus('ok', 'AI Gereed');
+            } else {
+                gevondenModel = 'models/gemini-flash-lite-latest';
                 setAiStatus('ok', 'AI Gereed');
             }
         } catch (err) {
-            setAiStatus('err', 'AI Niet Beschikbaar');
+            gevondenModel = 'models/gemini-flash-lite-latest';
+            setAiStatus('ok', 'AI Gereed');
         }
     }
 
     async function fetchGeminiWithFallback(bodyPayload, preferredModel) {
+        function normModel(m) {
+            if (!m) return 'models/gemini-flash-lite-latest';
+            return m.startsWith('models/') ? m : `models/${m}`;
+        }
+
         const fallbacks = [
-            (preferredModel || gevondenModel || 'gemini-1.5-flash').replace(/^models\//, ''),
-            'gemini-1.5-flash-8b',
-            'gemini-2.0-flash',
-            'gemini-1.5-flash',
-            'gemini-1.5-pro'
+            normModel(preferredModel || gevondenModel),
+            'models/gemini-flash-lite-latest',
+            'models/gemini-flash-latest',
+            'models/gemini-3.1-flash-lite',
+            'models/gemini-3.8-flash',
+            'models/gemini-3.5-flash-lite',
+            'models/gemini-2.5-flash-lite'
         ];
         if (window.beschikbareAiModellen && Array.isArray(window.beschikbareAiModellen)) {
             window.beschikbareAiModellen.forEach(m => {
-                const clean = m.replace(/^models\//, '');
-                if (!fallbacks.includes(clean)) fallbacks.push(clean);
+                const norm = normModel(m);
+                if (!fallbacks.includes(norm)) fallbacks.push(norm);
             });
         }
         const uniekeModellen = [...new Set(fallbacks)].filter(Boolean);
@@ -4193,15 +4201,36 @@ Retourneer UITSLUITEND een valide JSON object:
                 });
                 clearTimeout(timeoutId);
 
-                const data = await response.json();
-                if (data.error) {
-                    const msg = data.error.message || '';
+                // Safari-veilig: eerst als tekst uitlezen om JSON parse crashes / "The string did not match the expected pattern" te vermijden
+                const rawText = await response.text();
+                let data = null;
+                if (rawText && rawText.trim()) {
+                    try {
+                        data = JSON.parse(rawText);
+                    } catch (pErr) {
+                        console.warn(`[AI] Response van ${mod} is geen geldige JSON:`, rawText.slice(0, 100));
+                    }
+                }
+
+                if (!response.ok || (data && data.error)) {
+                    const msg = (data && data.error && data.error.message) || (rawText && rawText.slice(0, 120)) || `HTTP ${response.status}`;
                     if (/high demand|spikes in demand|overloaded|temporarily unavailable|resourceexhausted/i.test(msg)) {
-                        console.warn(`[AI] Model ${mod} ervaart piekbelasting bij Google. Schakelt direct over naar alternatief model...`);
+                        console.warn(`[AI] Model ${mod} ervaart piekbelasting bij Google. Schakelt over naar alternatief model...`);
                         lastErr = new Error("Google AI servers ervaren momenteel een tijdelijke piekbelasting.");
                         continue;
                     }
+                    if (/not found|no longer available|not supported/i.test(msg)) {
+                        console.warn(`[AI] Model ${mod} niet beschikbaar (${msg}), probeert alternatief...`);
+                        lastErr = new Error(msg);
+                        continue;
+                    }
                     throw new Error(msg);
+                }
+
+                if (!data) {
+                    console.warn(`[AI] Lege response van model ${mod}`);
+                    lastErr = new Error("Lege reactie ontvangen van AI server.");
+                    continue;
                 }
 
                 if (gevondenModel !== mod) {
@@ -4214,6 +4243,9 @@ Retourneer UITSLUITEND een valide JSON object:
                 if (err.name === 'AbortError') {
                     console.warn(`[AI] Model ${mod} time-out na 12 seconden, probeert alternatief model...`);
                     lastErr = new Error("Het AI-verzoek duurde te lang (time-out).");
+                    continue;
+                }
+                if (/high demand|spikes in demand|overloaded/i.test(err.message)) {
                     continue;
                 }
             }
@@ -10636,6 +10668,9 @@ Antwoord UITSLUITEND in valide JSON zonder markdown codeblocks:
             }
         } catch (err) {
             ruimLaadIndicatorOp();
+            if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === "user") {
+                chatHistory.pop();
+            }
             let foutMelding = err.message || "Onbekende fout";
             if (/high demand|spikes in demand|overloaded/i.test(foutMelding)) {
                 foutMelding = "De Google AI-servers zijn momenteel erg druk. Probeer het over een klein momentje opnieuw.";
