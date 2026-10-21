@@ -417,6 +417,8 @@
     let isPlaying = false;
     let playbackSpeed = 1;
     let triggeredSfx = new Set();
+    let virtualTime = 0;
+    let lastPerfTime = 0;
     const audioEl = document.getElementById('mainAudio');
 
     // SFX Trigger helper: vuurt precies één keer af wanneer playback over tijd t gaat
@@ -1106,7 +1108,21 @@
     function syncVideoFrame() {
       if (!isPlaying) return;
 
-      const t = audioEl.currentTime;
+      const now = performance.now();
+      const delta = lastPerfTime ? (now - lastPerfTime) / 1000 : 0;
+      lastPerfTime = now;
+
+      let t = 0;
+      if (audioEl && !audioEl.paused && !audioEl.ended && !isNaN(audioEl.currentTime) && audioEl.currentTime > 0) {
+        t = audioEl.currentTime;
+        virtualTime = t;
+      } else {
+        virtualTime += delta;
+        t = virtualTime;
+        if (audioEl && audioEl.paused && !audioEl.ended && audioEl.readyState >= 2 && !audioEl.error) {
+          audioEl.play().catch(() => {});
+        }
+      }
 
       // Update scrubber & labels
       const prog = Math.min(100, Math.max(0, (t / TOTAL_AUDIO_SECONDS) * 100));
@@ -1148,7 +1164,7 @@
       }
 
       // Als audio klaar is
-      if (t >= TOTAL_AUDIO_SECONDS - 0.2 || audioEl.ended) {
+      if (t >= TOTAL_AUDIO_SECONDS - 0.2 || (audioEl && audioEl.ended)) {
         pauseVideo();
         return;
       }
@@ -1169,6 +1185,7 @@
     function playVideo() {
       getAudioCtx();
       isPlaying = true;
+      lastPerfTime = performance.now();
       document.getElementById('playOverlay').style.opacity = '0';
       document.getElementById('playOverlay').style.pointerEvents = 'none';
       document.getElementById('playIcon').innerText = "⏸";
@@ -1176,8 +1193,9 @@
       if (audioEl) {
         audioEl.muted = false;
         if (!audioEl.volume || audioEl.volume === 0) audioEl.volume = 1.0;
-        if (audioEl.ended || audioEl.currentTime >= TOTAL_AUDIO_SECONDS - 0.2) {
-          audioEl.currentTime = 0;
+        if (audioEl.ended || audioEl.currentTime >= TOTAL_AUDIO_SECONDS - 0.2 || virtualTime >= TOTAL_AUDIO_SECONDS - 0.2) {
+          try { audioEl.currentTime = 0; } catch(err) {}
+          virtualTime = 0;
           triggeredSfx.clear();
         }
         audioEl.play().catch(e => {
@@ -1190,21 +1208,20 @@
 
     function pauseVideo() {
       isPlaying = false;
+      lastPerfTime = 0;
       document.getElementById('playOverlay').style.opacity = '1';
       document.getElementById('playOverlay').style.pointerEvents = 'auto';
       document.getElementById('playIcon').innerText = "▶";
-      audioEl.pause();
+      if (audioEl) audioEl.pause();
     }
 
     function springNaarTijd(sec) {
-      audioEl.currentTime = sec;
+      virtualTime = sec;
+      lastPerfTime = performance.now();
+      if (audioEl) {
+        try { audioEl.currentTime = sec; } catch(err) {}
+      }
       triggeredSfx.clear();
-      // Verwijder reeds gepasseerde sfx om dubbele triggers te voorkomen
-      scenes.forEach(s => {
-        if (sec > s.start) {
-          // reeds gepasseerd
-        }
-      });
       syncVideoFrame();
       if (!isPlaying) {
         playVideo();

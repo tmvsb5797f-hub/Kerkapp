@@ -1,7 +1,7 @@
 // Service worker voor Liturgie Assistent Pro.
 // Doel: de app laadt en werkt ook op wankele kerk-wifi. HTML is network-first
 // (zodat updates direct binnenkomen), statische bestanden zijn cache-first.
-const CACHE = 'liturgie-v2';
+const CACHE = 'liturgie-v3';
 const APP_SHELL = [
   './',
   './index.html',
@@ -46,6 +46,13 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (DYNAMISCH.some((h) => url.hostname.includes(h))) return; // laat de browser dit afhandelen
+
+  // Audio en video streams (en requests met Range-headers) nooit via service-worker cache afhandelen.
+  // Browsers (met name Chrome en Safari op desktop) sturen Range-headers die 206 Partial Content opleveren.
+  // De Cache API ondersteunt geen status 206 en breekt anders de audio playback!
+  if (req.headers.has('range') || req.destination === 'audio' || req.destination === 'video' || url.pathname.endsWith('.mp3')) {
+    return;
+  }
 
   e.respondWith((async () => {
     // Navigatie/HTML: eerst netwerk (verse versie), val terug op cache bij offline.
