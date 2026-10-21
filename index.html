@@ -1137,6 +1137,27 @@
                     <span>➔</span>
                 </button>
             </div>
+
+            <!-- Slimme Liturgie per E-mail (Multi-Church Ingestion) -->
+            <div class="p-3.5 bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-emerald-500/10 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-emerald-950/40 rounded-2xl border border-emerald-200/80 dark:border-emerald-800/60 flex items-center justify-between gap-3 shadow-xs">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 flex items-center justify-center text-lg flex-shrink-0">
+                        📬
+                    </div>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-1.5">
+                            <strong class="text-xs font-bold text-[#1D1D1F] dark:text-white">Liturgie per E-mail</strong>
+                            <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300/40">AUTO</span>
+                        </div>
+                        <p id="infoEmailAdresLabel" class="text-[11px] text-gray-500 dark:text-gray-400 truncate">bethel@liturgie.kerkapp.nl</p>
+                    </div>
+                </div>
+                <button type="button" onclick="window.checkInkomendeLiturgieMail(true)" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all active:scale-95 shadow-xs flex-shrink-0 flex items-center gap-1" title="Controleer of de predikant een nieuwe liturgie heeft gemaild">
+                    <span>Haal op</span>
+                    <span>📥</span>
+                </button>
+            </div>
+
             <!-- Video Uitleg Card (3:30 met stem & sound effects) -->
             <div class="p-3.5 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-blue-500/10 dark:from-blue-950/40 dark:via-indigo-950/30 dark:to-blue-950/40 rounded-2xl border border-blue-200/80 dark:border-blue-800/60 flex items-center justify-between gap-3 shadow-xs">
                 <div class="flex items-center gap-2.5 min-w-0">
@@ -3843,9 +3864,27 @@ Retourneer UITSLUITEND een valide JSON object:
         if (infoLabel) infoLabel.textContent = naam;
         const archiefLabel = document.getElementById('archiefGemeenteNaam');
         if (archiefLabel) archiefLabel.textContent = naam;
+        const emailLabel = document.getElementById('infoEmailAdresLabel');
+        if (emailLabel) {
+            const slug = (naam || 'bethel').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20) || 'bethel';
+            emailLabel.textContent = `${slug}@liturgie.kerkapp.nl`;
+        }
     }
 
     function initGemeente() {
+        const urlParams = new URLSearchParams(location.search);
+        const urlKerk = urlParams.get('kerk') || urlParams.get('gemeente');
+        if (urlKerk) {
+            localStorage.setItem('actieveGemeente', urlKerk);
+            updateGemeenteUI(urlKerk);
+            setTimeout(() => {
+                if (typeof window.checkInkomendeLiturgieMail === 'function') {
+                    window.checkInkomendeLiturgieMail(false);
+                }
+            }, 1200);
+            return;
+        }
+
         const opgeslagen = localStorage.getItem('actieveGemeente');
         if (!opgeslagen) {
             updateGemeenteUI(STANDAARD_GEMEENTE);
@@ -3856,6 +3895,67 @@ Retourneer UITSLUITEND een valide JSON object:
             updateGemeenteUI(opgeslagen);
         }
     }
+
+    // --- SLIMME LITURGIE PER E-MAIL (MULTI-CHURCH INGESTION) ---
+    window.checkInkomendeLiturgieMail = async function(isHandmatig = false) {
+        const EMAIL_INGEST_URL = "https://kerkliturgie-email-ingest.kerkapp.workers.dev";
+        const actieveGemeente = (typeof window.getActieveGemeente === 'function') ? window.getActieveGemeente() : (localStorage.getItem('actieveGemeente') || 'bethel');
+        const kerkSlug = actieveGemeente.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30) || 'bethel';
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 6000);
+            const res = await fetch(`${EMAIL_INGEST_URL}/dienst?kerk=${encodeURIComponent(kerkSlug)}`, {
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            if (!res.ok) {
+                if (isHandmatig && window.toonToast) {
+                    window.toonToast(`Nog geen nieuwe e-mail liturgie klaar voor '${actieveGemeente}'.`, "info");
+                }
+                return;
+            }
+
+            const data = await res.json();
+            if (data && data.gevonden && data.slides && data.slides.length > 0) {
+                const bevestigd = confirm(
+                    `📬 Nieuwe liturgie per e-mail ontvangen!\n\n` +
+                    `Gemeente: ${data.gemeente_naam || actieveGemeente}\n` +
+                    `Voorganger: ${data.voorganger || 'Onbekend'}\n` +
+                    `Datum: ${data.datum || 'Komende zondag'}\n` +
+                    `Aantal dia's: ${data.slides.length}\n\n` +
+                    `Wil je deze liturgie direct inladen in de app?`
+                );
+                if (bevestigd) {
+                    liturgieVolgorde = data.slides.map(s => ({
+                        type: s.type || "Vrije tekst",
+                        titel: s.titel || "Onderdeel",
+                        tekst: Array.isArray(s.regels) ? s.regels.join('\n') : (s.tekst || "")
+                    }));
+                    if (data.datum) {
+                        const dEl = document.getElementById('datumInput');
+                        if (dEl) dEl.value = data.datum;
+                    }
+                    if (data.voorganger) {
+                        const vEl = document.getElementById('voorgangerInput');
+                        if (vEl) vEl.value = data.voorganger;
+                    }
+                    window.tekenVolgorde();
+                    if (window.toonToast) {
+                        window.toonToast(`🎉 Liturgie van ${data.voorganger} succesvol ingeladen!`, "success");
+                    }
+                }
+            } else if (isHandmatig && window.toonToast) {
+                window.toonToast(`Geen nieuwe liturgie gevonden voor '${actieveGemeente}'.`, "info");
+            }
+        } catch (err) {
+            console.warn("Email Ingest check overgeslagen of offline:", err);
+            if (isHandmatig && window.toonToast) {
+                window.toonToast("E-mail service tijdelijk offline.", "warning");
+            }
+        }
+    };
 
     let actiefArchiefDocId = null;
     try { actiefArchiefDocId = localStorage.getItem('actiefArchiefDocId') || null; } catch (e) {}

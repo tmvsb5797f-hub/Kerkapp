@@ -1,78 +1,292 @@
 /**
- * Cloudflare Email Ingestion Worker voor Kerkapp
+ * Cloudflare Email Ingestion Worker voor Kerkapp (Multi-Church Architecture)
  * 
- * Werking:
- * 1. Ontvangt e-mails van de predikant (via Cloudflare Email Routing).
- * 2. Analyseert automatisch de datum, voorganger, liederen en schriftlezingen.
- * 3. Haalt ontbrekende teksten op uit de Cloudflare D1 lied- en bijbeldatabase.
- * 4. Stelt de complete liturgie samen en synchroniseert deze naar de Cloud (OBS / Beamer).
- * 5. Kan ook via HTTP POST /test worden aangeroepen voor handmatig testen.
+ * Werking voor meerdere kerken:
+ * 1. Ontvangt e-mails van voorgangers via Cloudflare Email Routing.
+ * 2. Bepaalt automatisch voor welke kerk de e-mail is bestemd via:
+ *    - Het e-mailadres (bijv. "bethel@liturgie.nl" of "liturgie+maranatha@liturgie.nl")
+ *    - Of de afzender van de predikant (gekoppeld aan een kerk)
+ * 3. Analyseert de liturgie (datum, predikant, liederen, schriftlezingen).
+ * 4. Haalt ontbrekende liederen en bijbelteksten op uit de centrale Cloudflare D1 database.
+ * 5. Slaat de complete dienst op in D1 onder de specifieke kerk_id.
+ * 6. De beamer-pc en OBS in díe specifieke kerk halen hun dienst direct op via GET /dienst?kerk=<kerk_id>.
  */
 
+// Standaard configuratie per kerk (kan ook dynamisch worden uitgebreid in D1)
+const BEKENDE_KERKEN = {
+  "bethel": {
+    naam: "Bethelkerk Maassluis",
+    standaardVoorganger: "ds. Mark Bot",
+    aliases: ["bethel", "bethelkerk", "maassluis"]
+  },
+  "maranatha": {
+    naam: "Maranathakerk",
+    standaardVoorganger: "ds. J. de Vries",
+    aliases: ["maranatha", "maranathakerk"]
+  },
+  "dorpskerk": {
+    naam: "Dorpskerk",
+    standaardVoorganger: "ds. A. van der Berg",
+    aliases: ["dorpskerk", "hervormd"]
+  },
+  "kruiskerk": {
+    naam: "Kruiskerk",
+    standaardVoorganger: "ds. P. Bakker",
+    aliases: ["kruiskerk"]
+  }
+};
+
 export default {
-  // Cloudflare Email Routing handler
+  // 1. Cloudflare Email Routing Handler
   async email(message, env, ctx) {
     const rawEmail = await new Response(message.raw).text();
-    const afzender = message.from;
+    const afzender = message.from || "";
+    const ontvanger = message.to || "";
     const onderwerp = message.headers.get("subject") || "Geen onderwerp";
 
-    console.log(`[Email Ingest] E-mail ontvangen van ${afzender}: "${onderwerp}"`);
+    console.log(`[Email Ingest] Ontvangen voor: ${ontvanger} van: ${afzender} | Onderwerp: "${onderwerp}"`);
 
-    // Parse email body (plat tekst gedeelte)
+    // Bepaal de unieke kerk_id
+    const kerkId = bepaalKerkId(ontvanger, afzender, env);
+    console.log(`[Email Ingest] Gekoppeld aan kerk_id: "${kerkId}"`);
+
+    // Parse tekstinhoud uit de e-mail
     const bodyTekst = extractPlainText(rawEmail);
     if (!bodyTekst || bodyTekst.trim().length < 10) {
-      console.warn("[Email Ingest] E-mail bevatte geen bruikbare tekst.");
+      console.warn(`[Email Ingest] E-mail voor ${kerkId} bevatte geen bruikbare tekst.`);
       return;
     }
 
-    // Verwerk liturgie
-    const resultaat = await verwerkLiturgieTekst(bodyTekst, env, onderwerp);
-    console.log(`[Email Ingest] Liturgie verwerkt: ${resultaat.slides.length} dia's klaargezet.`);
+    // Verwerk liturgie en bouw dia's
+    const resultaat = await verwerkLiturgieTekst(bodyTekst, env, onderwerp, kerkId);
+
+    // Sla op in Cloudflare D1 onder deze specifieke kerk
+    if (env.DB) {
+      await slaDienstOpInD1(env.DB, kerkId, resultaat, afzender, onderwerp);
+      console.log(`[Email Ingest] Liturgie voor ${kerkId} succesvol opgeslagen in D1! (${resultaat.slides.length} dia's)`);
+    } else {
+      console.warn("[Email Ingest] Geen D1 database binding (env.DB) gevonden.");
+    }
   },
 
-  // HTTP Handler (om te testen via curl of browser)
+  // 2. HTTP Handler (voor beamer-pc, OBS en testen)
   async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    const pad = url.pathname.replace(/\/+$/, "");
+
+    // CORS headers voor toegang vanuit Kerkapp (GitHub Pages of localhost)
+    const corsHeaders = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, X-Kerk-ID",
+      "Access-Control-Max-Age": "86400"
+    };
+
     if (request.method === "OPTIONS") {
-      return new Response(null, {
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type",
-        }
-      });
+      return new Response(null, { headers: corsHeaders });
     }
 
-    if (request.method === "POST") {
+    // Endpoint: GET /dienst?kerk=bethel
+    // Haalt de actieve dienst op voor een specifieke kerk
+    if (request.method === "GET" && pad === "/dienst") {
+      const kerkId = normaliseerSlug(url.searchParams.get("kerk") || url.searchParams.get("gemeente") || "bethel");
+      if (!env.DB) {
+        return json({ error: "D1 database niet gekoppeld" }, 500, corsHeaders);
+      }
+
+      await initialiseerTabel(env.DB);
+      const row = await env.DB.prepare(
+        "SELECT kerk_id, gemeente_naam, voorganger, datum, onderwerp, slides_json, ontbrekende_liederen, bijgewerkt_op FROM actieve_diensten WHERE kerk_id = ?"
+      ).bind(kerkId).first();
+
+      if (!row) {
+        return json({ 
+          gevonden: false, 
+          kerk_id: kerkId, 
+          melding: `Geen actieve dienst gevonden voor kerk '${kerkId}'. Mail de liturgie naar ${kerkId}@liturgie.kerkapp.nl` 
+        }, 404, corsHeaders);
+      }
+
+      let slides = [];
+      try { slides = JSON.parse(row.slides_json); } catch(e) {}
+      let ontbrekend = [];
+      try { ontbrekend = JSON.parse(row.ontbrekende_liederen || "[]"); } catch(e) {}
+
+      return json({
+        gevonden: true,
+        kerk_id: row.kerk_id,
+        gemeente_naam: row.gemeente_naam,
+        voorganger: row.voorganger,
+        datum: row.datum,
+        onderwerp: row.onderwerp,
+        bijgewerkt_op: row.bijgewerkt_op,
+        ontbrekende_liederen: ontbrekend,
+        slides: slides
+      }, 200, corsHeaders);
+    }
+
+    // Endpoint: GET /kerken
+    // Toont alle geconfigureerde kerken
+    if (request.method === "GET" && pad === "/kerken") {
+      const lijst = Object.entries(BEKENDE_KERKEN).map(([id, info]) => ({
+        id,
+        naam: info.naam,
+        email_alias: `${id}@liturgie.kerkapp.nl`,
+        standaardVoorganger: info.standaardVoorganger
+      }));
+      return json({ kerken: lijst }, 200, corsHeaders);
+    }
+
+    // Endpoint: POST /test of POST /dienst (Handmatige invoer / test via UI of curl)
+    if (request.method === "POST" && (pad === "/test" || pad === "/dienst")) {
       try {
         const body = await request.json();
+        const kerkId = normaliseerSlug(body.kerk_id || body.kerk || "bethel");
         const tekst = body.liturgie || body.tekst || "";
-        const resultaat = await verwerkLiturgieTekst(tekst, env, body.onderwerp || "Test Dienst");
-        return new Response(JSON.stringify(resultaat, null, 2), {
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*"
-          }
-        });
+        const onderwerp = body.onderwerp || "Handmatig aangemaakte dienst";
+
+        if (!tekst.trim()) {
+          return json({ error: "Veld 'liturgie' ontbreekt of is leeg" }, 400, corsHeaders);
+        }
+
+        const resultaat = await verwerkLiturgieTekst(tekst, env, onderwerp, kerkId);
+
+        if (env.DB) {
+          await slaDienstOpInD1(env.DB, kerkId, resultaat, "api-test", onderwerp);
+        }
+
+        return json({
+          status: "ok",
+          kerk_id: kerkId,
+          resultaat: resultaat
+        }, 200, corsHeaders);
       } catch (err) {
-        return new Response(JSON.stringify({ error: err.message }), { status: 400 });
+        return json({ error: err.message }, 400, corsHeaders);
       }
     }
 
-    return new Response("Kerkapp Email Ingestion Worker is actief. Stuur een e-mail naar het geconfigureerde adres of doe een POST met JSON.", {
-      headers: { "Content-Type": "text/plain; charset=utf-8" }
-    });
+    // Status / Health Check
+    return new Response(
+      "Kerkapp Multi-Church Email Ingestion Worker is actief.\n" +
+      "- Stuur een e-mail naar <kerkId>@liturgie.kerkapp.nl\n" +
+      "- Of haal de dienst op via GET /dienst?kerk=<kerkId>\n" +
+      "- Bekijk beschikbare kerken via GET /kerken",
+      { headers: { "Content-Type": "text/plain; charset=utf-8", ...corsHeaders } }
+    );
   }
 };
 
 /**
+ * Bepaalt de unieke kerkId op basis van ontvanger (To) of afzender (From)
+ */
+function bepaalKerkId(ontvanger, afzender, env) {
+  const toClean = (ontvanger || "").toLowerCase();
+
+  // 1. Plus-addressing: bijv. liturgie+bethel@kerkapp.nl
+  const plusMatch = toClean.match(/\+([a-z0-9\-_]+)@/i);
+  if (plusMatch) return normaliseerSlug(plusMatch[1]);
+
+  // 2. Directe mailbox: bijv. bethel@liturgie.nl of maranatha@...
+  const mailboxMatch = toClean.match(/^([a-z0-9\-_]+)@/i);
+  if (mailboxMatch) {
+    const box = mailboxMatch[1];
+    if (box !== "liturgie" && box !== "info" && box !== "beamer") {
+      return normaliseerSlug(box);
+    }
+  }
+
+  // 3. Subdomein: bijv. liturgie@bethel.kerkapp.nl
+  const subMatch = toClean.match(/@([a-z0-9\-_]+)\.[a-z0-9\-_.]+/i);
+  if (subMatch && subMatch[1] !== "liturgie" && subMatch[1] !== "mail") {
+    return normaliseerSlug(subMatch[1]);
+  }
+
+  // 4. Match op bekende kerken via aliassen
+  for (const [id, data] of Object.entries(BEKENDE_KERKEN)) {
+    for (const alias of data.aliases) {
+      if (toClean.includes(alias)) return id;
+    }
+  }
+
+  // 5. Fallback naar environment var of bethel
+  return normaliseerSlug(env.STANDAARD_KERK_ID || "bethel");
+}
+
+function normaliseerSlug(str) {
+  return (str || "bethel")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\-_]/g, "")
+    .slice(0, 50) || "bethel";
+}
+
+/**
+ * Zorgt dat de D1 tabel voor actieve diensten bestaat
+ */
+async function initialiseerTabel(db) {
+  await db.prepare(`
+    CREATE TABLE IF NOT EXISTS actieve_diensten (
+      kerk_id TEXT PRIMARY KEY,
+      gemeente_naam TEXT,
+      voorganger TEXT,
+      datum TEXT,
+      onderwerp TEXT,
+      slides_json TEXT NOT NULL,
+      ontbrekende_liederen TEXT,
+      bron_afzender TEXT,
+      bijgewerkt_op DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+}
+
+/**
+ * Slaat de verwerkte liturgie op in D1 via een UPSERT
+ */
+async function slaDienstOpInD1(db, kerkId, resultaat, afzender, onderwerp) {
+  await initialiseerTabel(db);
+
+  const slidesJson = JSON.stringify(resultaat.slides);
+  const ontbrekendJson = JSON.stringify(resultaat.ontbrekendeLiederen || []);
+
+  await db.prepare(`
+    INSERT INTO actieve_diensten (
+      kerk_id, gemeente_naam, voorganger, datum, onderwerp, slides_json, ontbrekende_liederen, bron_afzender, bijgewerkt_op
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(kerk_id) DO UPDATE SET
+      gemeente_naam = excluded.gemeente_naam,
+      voorganger = excluded.voorganger,
+      datum = excluded.datum,
+      onderwerp = excluded.onderwerp,
+      slides_json = excluded.slides_json,
+      ontbrekende_liederen = excluded.ontbrekende_liederen,
+      bron_afzender = excluded.bron_afzender,
+      bijgewerkt_op = CURRENT_TIMESTAMP
+  `).bind(
+    kerkId,
+    resultaat.gemeente,
+    resultaat.voorganger,
+    resultaat.datum,
+    onderwerp,
+    slidesJson,
+    ontbrekendJson,
+    afzender
+  ).run();
+}
+
+/**
  * Analyseert de tekst van de liturgie, koppelt met D1 en bouwt de dia-lijst
  */
-async function verwerkLiturgieTekst(tekst, env, onderwerp = "") {
-  const gemeente = env.GEMEENTE_NAAM || "Bethelkerk Maassluis";
+async function verwerkLiturgieTekst(tekst, env, onderwerp = "", kerkId = "bethel") {
+  const kerkInfo = BEKENDE_KERKEN[kerkId] || {
+    naam: env.GEMEENTE_NAAM || "Kerkelijke Gemeente",
+    standaardVoorganger: "Gastpredikant"
+  };
+
+  const gemeente = kerkInfo.naam;
   const lines = tekst.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
 
   // 1. Herken voorganger
-  let voorganger = "ds. Mark Bot";
+  let voorganger = kerkInfo.standaardVoorganger || "Gastpredikant";
   for (const l of lines) {
     const vgMatch = l.match(/(?:voorganger|predikant|dominee|ds\.?)\s*:?\s*([A-Z][a-zA-Z\s\.\-]+)/i);
     if (vgMatch) {
@@ -100,7 +314,6 @@ async function verwerkLiturgieTekst(tekst, env, onderwerp = "") {
     const scrMatch = line.match(/(?:schriftlezing|lezing|tekst)\s*:?\s*([0-9]?\s*[A-Z][a-z]+\s+[0-9]+(?:\s*[:\-\s]\s*[0-9\-]+)?)/i);
     if (scrMatch) {
       const ref = scrMatch[1].trim();
-      // Zoek op in D1 bijbel tabel indien beschikbaar
       let bijbelTekst = "";
       if (env.DB) {
         try {
@@ -222,6 +435,7 @@ async function verwerkLiturgieTekst(tekst, env, onderwerp = "") {
 
   return {
     gemeente: gemeente,
+    kerkId: kerkId,
     voorganger: voorganger,
     datum: datumTekst,
     itemsGevonden: items.length,
@@ -272,7 +486,6 @@ function splitsCoupletTekst(tekst) {
 }
 
 function extractPlainText(raw) {
-  // Eenvoudige MIME parser: haal text/plain of body uit de raw mail
   if (!raw.includes("Content-Type: multipart/")) {
     const parts = raw.split(/\r?\n\r?\n/);
     return parts.slice(1).join("\n");
@@ -283,4 +496,14 @@ function extractPlainText(raw) {
   }
   const parts = raw.split(/\r?\n\r?\n/);
   return parts.slice(1).join("\n");
+}
+
+function json(data, status = 200, headers = {}) {
+  return new Response(JSON.stringify(data, null, 2), {
+    status: status,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      ...headers
+    }
+  });
 }
