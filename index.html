@@ -6062,6 +6062,9 @@ Bijbelliederen`;
             }
             if (this.reconnectTimer) { clearTimeout(this.reconnectTimer); this.reconnectTimer = null; }
 
+            const errBox = document.getElementById('obsWsErrorBox');
+            if (errBox) errBox.classList.add('hidden');
+
             this.connecting = true;
             this.updateUiStatus('connecting');
 
@@ -6095,7 +6098,7 @@ Bijbelliederen`;
             };
 
             this.socket.onclose = (evt) => {
-                this.handleClose(evt.wasClean);
+                this.handleClose(evt.wasClean, evt.code, evt.reason);
             };
         },
 
@@ -6111,14 +6114,43 @@ Bijbelliederen`;
             this.updateUiStatus('disconnected');
         },
 
-        handleClose(wasClean) {
+        handleClose(wasClean, code, reason) {
+            const wasConnecting = this.connecting;
             this.connected = false;
             this.connecting = false;
             this.identified = false;
             this.socket = null;
             this.updateUiStatus('disconnected');
 
-            if (this.config.autoConnect) {
+            if (wasConnecting && !wasClean) {
+                const curHost = this.config.host || '127.0.0.1';
+                const curPort = this.config.port || 4455;
+                let toastMsg = `Verbinding met OBS (${curHost}:${curPort}) mislukt.`;
+                let detailMsg = '';
+
+                if (code === 4009) {
+                    toastMsg = 'OBS Wachtwoord onjuist of ontbreekt!';
+                    detailMsg = 'OBS Studio heeft de verbinding geweigerd (code 4009): het serverwachtwoord is onjuist of authenticatie staat ingeschakeld in OBS.';
+                } else if (window.location.protocol === 'https:' && (curHost === '127.0.0.1' || curHost === 'localhost')) {
+                    detailMsg = 'Mogelijk geblokkeerd door browserbeveiliging (Mixed Content op HTTPS) of OBS Studio staat niet open met de WebSocket server actief op poort ' + curPort + '.';
+                } else {
+                    detailMsg = 'Geen verbinding mogelijk met ws://' + curHost + ':' + curPort + '. Controleer of OBS Studio aanstaat en de serverpoort ' + curPort + ' klopt.';
+                }
+
+                if (window.toonToast) {
+                    window.toonToast(toastMsg, 'error');
+                }
+                const errBox = document.getElementById('obsWsErrorBox');
+                if (errBox) {
+                    errBox.classList.remove('hidden');
+                    const targetEl = document.getElementById('obsWsErrorTargetUrl');
+                    if (targetEl) targetEl.textContent = `ws://${curHost}:${curPort}`;
+                    const detailEl = document.getElementById('obsWsErrorDetail');
+                    if (detailEl && detailMsg) detailEl.textContent = detailMsg;
+                }
+            }
+
+            if (this.config.autoConnect && wasClean) {
                 this.reconnectTimer = setTimeout(() => {
                     if (this.config.autoConnect && !this.connected) {
                         this.connect();
@@ -6161,6 +6193,8 @@ Bijbelliederen`;
                 this.connected = true;
                 this.connecting = false;
                 this.identified = true;
+                const errBox = document.getElementById('obsWsErrorBox');
+                if (errBox) errBox.classList.add('hidden');
                 console.log('[OBS WS] Succesvol geauthenticeerd en verbonden met OBS Studio', this.obsVersion);
                 if (window.toonToast) window.toonToast(`Verbonden met OBS Studio (${this.obsVersion})`, 'success');
                 this.updateUiStatus('connected');
@@ -6496,6 +6530,17 @@ Bijbelliederen`;
                 autoLowerThird: autoL3
             });
             window.obsWs.connect();
+        }
+    };
+
+    window.obsWsSwitchHost = function(newHost) {
+        const hInp = document.getElementById('obsWsHostInput');
+        if (hInp) {
+            hInp.value = newHost;
+        }
+        if (window.obsWs) {
+            window.obsWs.saveConfig({ host: newHost });
+            if (window.toonToast) window.toonToast(`Host aangepast naar ${newHost}. Klik op Verbinden.`, 'info');
         }
     };
 
@@ -13820,6 +13865,37 @@ window.verstuurExportFeedback = async function() {
                             <li>Als authenticatie is ingeschakeld: klik op <strong>'Wachtwoord genereren'</strong> of kopieer het wachtwoord hierboven.</li>
                             <li>Klik op <strong>OK</strong> en klik daarna hierboven op <strong>'Verbind met OBS Studio'</strong>!</li>
                         </ol>
+                    </div>
+
+                    <!-- OBS WebSocket Foutmelding & Diagnose Box (verschijnt bij verbindingsfout) -->
+                    <div id="obsWsErrorBox" class="hidden p-4 rounded-2xl bg-amber-950/40 border border-amber-600/40 text-xs text-amber-200 flex flex-col gap-3">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="flex items-center gap-2 font-bold text-amber-300">
+                                <span class="text-base">⚠️</span>
+                                <span>Kan niet verbinden met OBS (<span id="obsWsErrorTargetUrl" class="font-mono">ws://127.0.0.1:4455</span>)</span>
+                            </div>
+                            <button type="button" onclick="document.getElementById('obsWsErrorBox').classList.add('hidden')" class="text-amber-400 hover:text-white text-xs px-2 py-0.5 rounded-lg bg-amber-900/50">✕ Sluiten</button>
+                        </div>
+                        <p id="obsWsErrorDetail" class="text-[11px] text-amber-200/90 leading-relaxed">
+                            Er kon geen verbinding tot stand worden gebracht met de WebSocket server van OBS Studio.
+                        </p>
+                        <div class="bg-black/40 p-3 rounded-xl border border-amber-600/20 text-[11px] text-gray-300 space-y-2">
+                            <div class="font-bold text-amber-300">Veelvoorkomende oorzaken & oplossingen:</div>
+                            <ul class="list-disc list-inside space-y-1.5 text-slate-300">
+                                <li><strong>Staat OBS Studio open?</strong> Zorg dat OBS Studio is opgestart op deze computer.</li>
+                                <li><strong>WebSocket inschakelen in OBS:</strong> Open OBS ➔ menu <em>Extra (Tools)</em> ➔ <em>WebSocket-serverinstellingen</em> en vink <em>'WebSocket-server inschakelen'</em> aan (poort 4455).</li>
+                                <li><strong>Wachtwoord nodig?</strong> OBS 28+ genereert vaak automatisch een wachtwoord. Klik in OBS op <em>'Serverinformatie weergeven'</em>, kopieer het wachtwoord en plak het hierboven in het wachtwoordveld.</li>
+                                <li><strong>Browserbeveiliging (Mixed Content op HTTPS):</strong> Safari en sommige browsers blokkeren onversleutelde verbindingen vanaf HTTPS websites. Probeer:
+                                    <span class="inline-flex gap-2 ml-1 my-1">
+                                        <button type="button" onclick="obsWsSwitchHost('localhost')" class="px-2 py-0.5 rounded bg-blue-600/40 hover:bg-blue-600 text-blue-200 text-[10px] font-mono font-bold">Probeer 'localhost'</button>
+                                        <button type="button" onclick="obsWsSwitchHost('127.0.0.1')" class="px-2 py-0.5 rounded bg-blue-600/40 hover:bg-blue-600 text-blue-200 text-[10px] font-mono font-bold">Probeer '127.0.0.1'</button>
+                                    </span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="p-2.5 rounded-xl bg-blue-950/50 border border-blue-500/40 text-[11px] text-blue-200 leading-relaxed">
+                            💡 <strong>Geen WebSocket nodig voor live stream/liturgie!</strong> Om liederen, schriftlezingen en beamerschermen in OBS te projecteren, heb je <strong>geen WebSocket</strong> nodig. Kopieer eenvoudig de Browser Source link uit het eerste tabblad <em>'OBS Koppeling (Browser Source)'</em> en plak deze in OBS. Dat synchroniseert direct en 100% betrouwbaar via de cloud.
+                        </div>
                     </div>
                 </div>
 
