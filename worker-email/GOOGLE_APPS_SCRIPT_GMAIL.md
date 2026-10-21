@@ -13,7 +13,7 @@ Zodra ds. Mark Bot (of een scriba) een e-mail stuurt met de liturgie:
 ## 📋 Stappenplan (Duurt 2 minuten)
 
 ### Stap 1: Open Google Apps Script
-1. Log in op het Google-account van de kerk (of maak gratis `bethel.liturgie@gmail.com` aan).
+1. Log in op het Google-account van de kerk.
 2. Ga naar: **[https://script.google.com](https://script.google.com)**.
 3. Klik linksboven op de grote knop **"Nieuw project"** (New project).
 4. Geef het project linksboven een naam, bijv. `Bethelkerk Liturgie Sync`.
@@ -21,78 +21,22 @@ Zodra ds. Mark Bot (of een scriba) een e-mail stuurt met de liturgie:
 ---
 
 ### Stap 2: Plak de Code
-Verwijder eventuele bestaande tekst in de editor en plak de volgende code:
+Kopieer de inhoud uit [worker-email/gmail_sync_script.gs](file:///Users/sempons/Downloads/kerkapp%20v3/worker-email/gmail_sync_script.gs) en plak deze in de editor.
 
-```javascript
-/**
- * Google Apps Script voor Bethelkerk Maassluis
- * Stuurt inkomende liturgie-mails automatisch door naar Kerkapp Cloud
- */
-const WORKER_ENDPOINT = "https://kerkliturgie-email-bethelkerk.kerkapp.workers.dev/test";
-const KERK_ID = "bethel";
-const STUUR_BEVESTIGING = true; // Zet op false als je geen automatische reply naar de dominee wilt
-
-function verwerkInkomendeLiturgie() {
-  // Zoekt ongelezen mails met 'liturgie' in onderwerp of tekst
-  var threads = GmailApp.search('is:unread (subject:liturgie OR subject:dienst OR liturgie)', 0, 5);
-
-  for (var i = 0; i < threads.length; i++) {
-    var thread = threads[i];
-    var messages = thread.getMessages();
-    var lastMsg = messages[messages.length - 1];
-
-    var afzender = lastMsg.getFrom();
-    var onderwerp = lastMsg.getSubject();
-    var bodyTekst = lastMsg.getPlainBody();
-
-    if (!bodyTekst || bodyTekst.trim().length < 10) {
-      bodyTekst = lastMsg.getBody().replace(/<[^>]*>/g, "\n");
-    }
-
-    try {
-      var response = UrlFetchApp.fetch(WORKER_ENDPOINT, {
-        method: "post",
-        contentType: "application/json",
-        muteHttpExceptions: true,
-        payload: JSON.stringify({
-          kerk_id: KERK_ID,
-          afzender: afzender,
-          onderwerp: onderwerp,
-          liturgie: bodyTekst
-        })
-      });
-
-      if (response.getResponseCode() === 200) {
-        thread.markRead(); // Markeer als gelezen zodat hij niet dubbel gaat
-
-        if (STUUR_BEVESTIGING) {
-          try {
-            var data = JSON.parse(response.getContentText());
-            var slidesAantal = (data.resultaat && data.resultaat.slides) ? data.resultaat.slides.length : 0;
-            var voorganger = (data.resultaat && data.resultaat.voorganger) ? data.resultaat.voorganger : "Voorganger";
-
-            lastMsg.reply(
-              "Beste " + voorganger + ",\n\n" +
-              "Hartelijk dank! De liturgie voor \"" + onderwerp + "\" is zojuist automatisch ontvangen en verwerkt voor de beamer in de Bethelkerk Maassluis.\n\n" +
-              "Er zijn " + slidesAantal + " dia's (liederen, schriftlezing en collecte) klaargezet voor de dienst en OBS Studio.\n\n" +
-              "Met vriendelijke groet,\n" +
-              "Beamteam Bethelkerk Maassluis"
-            );
-          } catch(e) {}
-        }
-      }
-    } catch(err) {
-      console.error("Fout bij synchroniseren:", err);
-    }
-  }
-}
-```
-
-Druk op **Opslaan** (`Cmd + S` op Mac, of klik op het diskette-icoontje).
+Druk op **Opslaan** (`Cmd + S` op Mac).
 
 ---
 
-### Stap 3: Stel de automatische timer in (Trigger)
+### Stap 3: Test met 1 klik of de verbinding werkt
+1. Selecteer bovenin de editor bij de functies: **`testVerbinding`**.
+2. Klik op **`Uitvoeren`** (*Run*).
+3. Geef éénmalig toestemming (*Review Permissions* ➔ *Geavanceerd* ➔ *Ga naar Bethelkerk Liturgie Sync* ➔ *Toestaan*).
+4. Onderin zie je nu:  
+   `🎉 GEWELDIG! De verbinding tussen Google en de Bethelkerk Worker werkt perfect!`
+
+---
+
+### Stap 4: Stel de automatische timer in (Trigger)
 1. Klik in het linkermenu op het **Wekker/Klok-icoon** ("Triggers").
 2. Klik rechtsonder op de blauwe knop **"+ Trigger toevoegen"** (+ Add Trigger).
 3. Stel de velden als volgt in:
@@ -101,15 +45,12 @@ Druk op **Opslaan** (`Cmd + S` op Mac, of klik op het diskette-icoontje).
    * **Selecteer type tijdgestuurde trigger:** `Minutentimer` (Minutes timer)
    * **Selecteer minuteninterval:** `Elke minuut` (of `Elke 5 minuten`)
 4. Klik op **Opslaan**.
-5. Google zal éénmalig vragen om toestemming (*Review Permissions* ➔ Kies je account ➔ *Advanced* / *Geavanceerd* ➔ *Ga naar Bethelkerk Liturgie Sync* ➔ *Allow*).
 
 ---
 
-## 🎯 Klaar!
+## 💡 Belangrijke Tips bij het Testen met E-mail:
 
-Vanaf nu gebeurt alles 100% vanzelf:
-1. De predikant mailt de liturgie naar het Gmail-adres.
-2. Binnen 1 tot 5 minuten staat de dienst in de Cloud.
-3. Als de koster of beamist in de kerk de Kerkapp opent, verschijnt de melding:  
-   *"📬 Nieuwe liturgie per e-mail ontvangen van ds. Mark Bot. Wil je deze inladen?"*  
-   Klik op **OK** en de hele PowerPoint staat klaar voor de beamer en OBS!
+1. **Markeer je testmail als ONGELEZEN:**  
+   Als je zelf een testmail stuurt naar de Gmail en je hebt hem al even geopend in je inbox, is hij *gelezen*. Het script zoekt specifiek naar nieuwe ongelezen mails (`is:unread`). Klik in Gmail op het envelop-icoontje bij de mail om hem weer als **ongelezen** te markeren.
+2. **Bekijk de logs:**  
+   In Google Apps Script kun je links op **"Uitvoeringen"** (*Executions*) klikken om precies te zien wat het script gedaan heeft en wanneer.
