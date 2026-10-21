@@ -1,4 +1,4 @@
-name = "kerkliturgie-email-ingest"
+name = "kerkliturgie-email-bethelkerk"
 main = "index.js"
 compatibility_date = "2024-01-01"
 
@@ -9,5 +9,8 @@ database_name = "kerkapp-data"
 database_id = "7d4914d6-d3fe-470f-b68d-cab870d5e500"
 
 [vars]
+STANDAARD_KERK_ID = "bethel"
 GEMEENTE_NAAM = "Bethelkerk Maassluis"
+STANDAARD_VOORGANGER = "ds. Mark Bot"
+DEFAULT_EMAIL_ALIAS = "bethel@liturgie.kerkapp.nl"
 STANDAARD_PIN = "1234"
