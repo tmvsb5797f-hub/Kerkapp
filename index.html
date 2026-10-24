@@ -1129,274 +1129,309 @@
     </div>
 </div>
 
-<div id="infoModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/20 backdrop-blur-xl transition-opacity">
-    <div class="bg-white dark:bg-gray-900 rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] w-11/12 max-w-sm overflow-hidden flex flex-col transform transition-all modal-animate max-h-[90vh]">
-        <div class="p-5 border-b border-gray-100 flex justify-between items-center flex-shrink-0">
-            <h3 class="text-lg font-bold text-[#1D1D1F]">Over deze app</h3>
-            <button onclick="document.getElementById('infoModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 p-1">
+<div id="infoModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/20 backdrop-blur-xl transition-opacity p-2 sm:p-4">
+    <div class="bg-white dark:bg-gray-900 rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] w-full max-w-md overflow-hidden flex flex-col transform transition-all modal-animate max-h-[92vh]">
+        
+        <!-- Header -->
+        <div class="p-4 sm:p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center flex-shrink-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md">
+            <div>
+                <h3 class="text-base font-bold text-[#1D1D1F] dark:text-white">Info &amp; Instellingen</h3>
+                <p class="text-[11px] text-gray-500 dark:text-gray-400">Bethelkerk Maassluis · Beamer Systeem</p>
+            </div>
+            <button onclick="document.getElementById('infoModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" title="Sluiten">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
-        <div class="p-5 flex flex-col gap-4 overflow-y-auto">
-            <div class="flex items-center justify-between p-3.5 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
-                <div class="flex items-center gap-2.5 min-w-0 pr-2">
-                    <span class="text-xl flex-shrink-0">⛪</span>
-                    <div class="min-w-0">
-                        <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Mijn Gemeente</span>
-                        <span id="infoGemeenteNaam" class="text-sm font-bold text-[#1D1D1F] dark:text-white truncate block">Bethelkerk Maassluis</span>
-                    </div>
-                </div>
-                <button type="button" onclick="document.getElementById('infoModal').classList.add('hidden'); openGemeenteModal();" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-[#007AFF] bg-white dark:bg-gray-700 hover:bg-blue-50 border border-gray-200 dark:border-gray-600 transition-colors shadow-sm flex-shrink-0">
-                    Wijzigen
+
+        <!-- Segmented Tab Bar -->
+        <div class="px-4 pt-3 pb-2 bg-gray-50/80 dark:bg-gray-800/60 border-b border-gray-100 dark:border-white/10 flex-shrink-0">
+            <div class="flex p-1 bg-gray-200/70 dark:bg-gray-700/60 rounded-2xl gap-1">
+                <button type="button" onclick="window.wisselInfoTab('koppelingen')" id="infoTabBtn-koppelingen"
+                    class="flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition-all bg-white dark:bg-gray-800 text-[#007AFF] shadow-xs flex items-center justify-center gap-1.5">
+                    <span>⚡</span>
+                    <span>Koppelingen</span>
+                </button>
+                <button type="button" onclick="window.wisselInfoTab('beamer')" id="infoTabBtn-beamer"
+                    class="flex-1 py-1.5 px-2 rounded-xl text-xs font-semibold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all flex items-center justify-center gap-1.5">
+                    <span>⚙️</span>
+                    <span>Beamer</span>
+                </button>
+                <button type="button" onclick="window.wisselInfoTab('info')" id="infoTabBtn-info"
+                    class="flex-1 py-1.5 px-2 rounded-xl text-xs font-semibold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all flex items-center justify-center gap-1.5">
+                    <span>ℹ️</span>
+                    <span>Hulp &amp; Info</span>
                 </button>
             </div>
+        </div>
 
-            <!-- OBS & Beamer Live Regie (Achter de 'i') -->
-            <div class="p-3.5 bg-gradient-to-r from-purple-500/10 via-blue-500/10 to-indigo-500/10 dark:from-purple-950/40 dark:via-blue-950/30 dark:to-indigo-950/40 rounded-2xl border border-purple-200/80 dark:border-purple-800/60 flex items-center justify-between gap-3 shadow-xs">
-                <div class="flex items-center gap-2.5 min-w-0">
-                    <div class="w-9 h-9 rounded-xl bg-purple-500/15 text-purple-700 dark:text-purple-300 flex items-center justify-center text-lg flex-shrink-0">
-                        🎥
-                    </div>
-                    <div class="min-w-0">
-                        <div class="flex items-center gap-1.5">
-                            <strong class="text-xs font-bold text-[#1D1D1F] dark:text-white">OBS & Beamer Live</strong>
-                            <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300/40">TEST</span>
+        <!-- Scrollable Body with Tabs -->
+        <div class="p-4 sm:p-5 flex flex-col gap-3 overflow-y-auto min-h-[350px]">
+            
+            <!-- TAB 1: KOPPELINGEN (Mail, OBS, Inkomend) -->
+            <div id="infoTabContent-koppelingen" class="flex flex-col gap-3.5">
+                <!-- Stuur mij de Liturgie Card -->
+                <div class="p-3.5 bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-blue-500/10 dark:from-purple-950/40 dark:via-indigo-950/30 dark:to-blue-950/40 rounded-2xl border border-purple-200/80 dark:border-purple-800/60 flex flex-col gap-2.5 shadow-xs">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <div class="w-9 h-9 rounded-xl bg-purple-500/15 text-purple-700 dark:text-purple-300 flex items-center justify-center text-lg flex-shrink-0">
+                            📧
                         </div>
-                        <p class="text-[11px] text-gray-500 dark:text-gray-400 truncate">Beamer, livestream & klikker</p>
-                    </div>
-                </div>
-                <button type="button" onclick="document.getElementById('infoModal').classList.add('hidden'); openObsTestModal();" class="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all active:scale-95 shadow-xs flex-shrink-0 flex items-center gap-1">
-                    <span>Open</span>
-                    <span>➔</span>
-                </button>
-            </div>
-
-            <!-- Slimme Liturgie per E-mail (Multi-Church Ingestion) -->
-            <div class="p-3.5 bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-emerald-500/10 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-emerald-950/40 rounded-2xl border border-emerald-200/80 dark:border-emerald-800/60 flex items-center justify-between gap-3 shadow-xs">
-                <div class="flex items-center gap-2.5 min-w-0">
-                    <div class="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 flex items-center justify-center text-lg flex-shrink-0">
-                        📬
-                    </div>
-                    <div class="min-w-0">
-                        <div class="flex items-center gap-1.5">
-                            <strong class="text-xs font-bold text-[#1D1D1F] dark:text-white">Liturgie per E-mail</strong>
-                            <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300/40">AUTO</span>
+                        <div class="min-w-0 flex-grow">
+                            <div class="flex items-center gap-1.5">
+                                <strong class="text-xs font-bold text-[#1D1D1F] dark:text-white">Stuur mij de liturgie</strong>
+                                <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300/40">GMAIL</span>
+                            </div>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400">Verzend presentatie (.pptx) &amp; overzicht direct naar je mailbox</p>
                         </div>
-                        <p id="infoEmailAdresLabel" class="text-[11px] text-gray-500 dark:text-gray-400 truncate">bethelliturgie@gmail.com</p>
                     </div>
-                </div>
-                <button type="button" onclick="window.checkInkomendeLiturgieMail(true)" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all active:scale-95 shadow-xs flex-shrink-0 flex items-center gap-1" title="Controleer of de predikant een nieuwe liturgie heeft gemaild">
-                    <span>Haal op</span>
-                    <span>📥</span>
-                </button>
-            </div>
 
-            <!-- Stuur mij de Liturgie Card (Zelf e-mailadres instellen) -->
-            <div class="p-3.5 bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-blue-500/10 dark:from-purple-950/40 dark:via-indigo-950/30 dark:to-blue-950/40 rounded-2xl border border-purple-200/80 dark:border-purple-800/60 flex flex-col gap-2.5 shadow-xs">
-                <div class="flex items-center gap-2.5 min-w-0">
-                    <div class="w-9 h-9 rounded-xl bg-purple-500/15 text-purple-700 dark:text-purple-300 flex items-center justify-center text-lg flex-shrink-0">
-                        📧
-                    </div>
-                    <div class="min-w-0">
-                        <div class="flex items-center gap-1.5">
-                            <strong class="text-xs font-bold text-[#1D1D1F] dark:text-white">Stuur mij de liturgie</strong>
-                            <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-purple-100 dark:bg-purple-900/60 text-purple-800 dark:text-purple-300 border border-purple-300/40">PPTX &amp; Mail</span>
+                    <div class="flex flex-col sm:flex-row gap-2 pt-0.5">
+                        <div class="relative flex-grow">
+                            <label for="liturgieMijnEmailInput" class="sr-only">E-mailadres ontvanger</label>
+                            <input type="email" id="liturgieMijnEmailInput" placeholder="sempjons@gmail.com" value="sempjons@gmail.com"
+                                class="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-xs text-[#1D1D1F] dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 transition-all font-medium"
+                                oninput="window.slaLiturgieEmailOp(this.value)"
+                                onkeypress="if(event.key === 'Enter') stuurLiturgieNaarMij()">
                         </div>
-                        <p class="text-[11px] text-gray-500 dark:text-gray-400">Verzend presentatie &amp; samenvatting naar jouw mailadres</p>
-                    </div>
-                </div>
-
-                <!-- E-mail invoerveld en verzendknop -->
-                <div class="flex flex-col sm:flex-row gap-2 pt-0.5">
-                    <div class="relative flex-grow">
-                        <label for="liturgieMijnEmailInput" class="sr-only">E-mailadres ontvanger</label>
-                        <input type="email" id="liturgieMijnEmailInput" placeholder="sempjons@gmail.com" value="sempjons@gmail.com"
-                            class="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-xs text-[#1D1D1F] dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 transition-all"
-                            oninput="window.slaLiturgieEmailOp(this.value)"
-                            onkeypress="if(event.key === 'Enter') stuurLiturgieNaarMij()">
-                    </div>
-                    <button type="button" id="stuurLiturgieModalKnop" onclick="stuurLiturgieNaarMij()"
-                        class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold transition-all active:scale-95 shadow-sm flex items-center justify-center gap-1.5 flex-shrink-0"
-                        title="Genereer de PowerPoint en mail deze via Google Apps Script (Gmail) naar het ingevulde e-mailadres">
-                        <span>📤</span>
-                        <span>Stuur liturgie</span>
-                    </button>
-                </div>
-
-                <p class="text-[10px] text-gray-400 dark:text-gray-500 leading-tight">
-                    🔒 Geen spam: verzendt uitsluitend mét PowerPoint (.pptx) via jouw eigen Gmail wanneer je zelf op de knop klikt.
-                </p>
-            </div>
-
-            <!-- Video Uitleg Card (3:30 met stem & sound effects) -->
-            <div class="p-3.5 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-blue-500/10 dark:from-blue-950/40 dark:via-indigo-950/30 dark:to-blue-950/40 rounded-2xl border border-blue-200/80 dark:border-blue-800/60 flex items-center justify-between gap-3 shadow-xs">
-                <div class="flex items-center gap-2.5 min-w-0">
-                    <div class="w-9 h-9 rounded-xl bg-blue-500/15 text-[#007AFF] flex items-center justify-center text-lg flex-shrink-0">
-                        🎬
-                    </div>
-                    <div class="min-w-0">
-                        <div class="flex items-center gap-1.5">
-                            <strong class="text-xs font-bold text-[#1D1D1F] dark:text-white">Video Uitleg</strong>
-                            <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-blue-100 dark:bg-blue-900/60 text-[#007AFF] dark:text-blue-300 border border-blue-300/40">4:06</span>
-                        </div>
-                        <p class="text-[11px] text-gray-500 dark:text-gray-400 truncate">Met stem &amp; sound effects</p>
-                    </div>
-                </div>
-                <button type="button" onclick="document.getElementById('infoModal').classList.add('hidden'); openVideoUitlegModal(true);" class="px-3 py-1.5 rounded-xl bg-[#007AFF] hover:bg-blue-600 text-white text-xs font-bold transition-all active:scale-95 shadow-xs flex-shrink-0 flex items-center gap-1">
-                    <span>Kijk</span>
-                    <span>▶</span>
-                </button>
-            </div>
-
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
-                    <span class="text-sm font-medium text-[#1D1D1F]">Donkere modus</span>
-                </div>
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode()" class="sr-only peer">
-                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#007AFF]"></div>
-                </label>
-            </div>
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2 pr-2">
-                    <svg class="w-5 h-5 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                    <div>
-                        <span class="text-sm font-medium text-[#1D1D1F] block">Welkomstdia aanpassen</span>
-                        <span class="text-[10px] text-gray-400 leading-tight block">Bewerk titel en liednummers vóór PowerPoint-export</span>
-                    </div>
-                </div>
-                <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                    <input type="checkbox" id="welkomstdiaToggle" onchange="toggleWelkomstdiaAanpassen()" class="sr-only peer">
-                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#007AFF]"></div>
-                </label>
-            </div>
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2 pr-2">
-                    <svg class="w-5 h-5 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
-                    <div>
-                        <span class="text-sm font-medium text-[#1D1D1F] block">Meelees-versie</span>
-                        <span class="text-[10px] text-gray-400 leading-tight block">QR-dia zodat de gemeente meeleest op de telefoon</span>
-                    </div>
-                </div>
-                <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                    <input type="checkbox" id="meeleesToggle" onchange="toggleMeelees()" class="sr-only peer">
-                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#34C759]"></div>
-                </label>
-            </div>
-            <!-- BANNER SELECTIE VOOR TELEFOON WEERGAVE (MEELEES) -->
-            <div id="meeleesThemaWrapper" class="hidden bg-gray-50 dark:bg-gray-800 rounded-2xl p-3.5 border border-gray-100 dark:border-gray-700 flex flex-col gap-2.5">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <span class="text-xs font-bold text-[#1D1D1F] dark:text-white block">Banner Telefoon-weergave</span>
-                        <span class="text-[10px] text-gray-400 leading-tight block">Kies een banner voor feestdagen</span>
-                    </div>
-                    <button type="button" onclick="testMeeleesPagina()" class="px-2.5 py-1 rounded-xl text-[11px] font-semibold text-[#007AFF] bg-white dark:bg-gray-700 hover:bg-blue-50 border border-gray-200 dark:border-gray-600 transition-colors shadow-xs flex items-center gap-1 active:scale-95" title="Bekijk hoe gemeenteleden dit op hun mobiel zien">
-                        <span>📱 Test</span>
-                    </button>
-                </div>
-                <!-- Mini Live Preview van de gekozen banner -->
-                <div id="meeleesMiniPreview" class="w-full rounded-xl overflow-hidden shadow-xs border border-black/[0.06] bg-gray-100 cursor-pointer" onclick="testMeeleesPagina()" title="Klik voor schermvullende preview">
-                    <!-- SVG banner preview komt hier -->
-                </div>
-                <!-- Knoppen rooster voor de feestdagen / thema's -->
-                <div class="grid grid-cols-3 gap-1.5" id="meeleesThemaKnoppen">
-                    <!-- Dynamisch gevuld door updateMeeleesThemaUI() -->
-                </div>
-                <!-- AI Aangepaste Banner Maker -->
-                <div class="mt-2 pt-2.5 border-t border-gray-200/80 dark:border-gray-700 flex flex-col gap-1.5">
-                    <label for="aiBannerPrompt" class="text-[11px] font-bold text-gray-700 dark:text-gray-200 flex items-center justify-between">
-                        <span>Eigen thema ontwerpen</span>
-                    </label>
-                    <div class="flex gap-1.5">
-                        <input id="aiBannerPrompt" type="text" placeholder="Bijv: Biddag, Belijdenis, Doopdienst..." class="flex-grow bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 text-xs text-[#1D1D1F] dark:text-white placeholder-gray-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-[#007AFF]/20 transition-all" onkeypress="if(event.key === 'Enter') genereerAiBanner()">
-                        <button id="aiBannerBtn" type="button" onclick="genereerAiBanner()" class="px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-[#007AFF] to-[#5856D6] hover:from-blue-600 hover:to-indigo-600 transition-all shadow-sm flex items-center gap-1.5 active:scale-95 flex-shrink-0" title="Genereer een unieke pastorale vectorbanner">
-                            <span id="aiBannerBtnSpinner" class="hidden">⏳</span>
-                            <span id="aiBannerBtnText">Genereer</span>
+                        <button type="button" id="stuurLiturgieModalKnop" onclick="stuurLiturgieNaarMij()"
+                            class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold transition-all active:scale-95 shadow-sm flex items-center justify-center gap-1.5 flex-shrink-0 cursor-pointer"
+                            title="Genereer de PowerPoint en mail deze via Google Apps Script (Gmail) naar het ingevulde e-mailadres">
+                            <span>📤</span>
+                            <span>Stuur liturgie</span>
                         </button>
                     </div>
-                    <!-- Snelle suggesties -->
-                    <div class="flex items-center gap-1 mt-1 flex-wrap">
-                        <span class="text-[9px] text-gray-400 uppercase font-bold mr-0.5">Suggesties:</span>
-                        <button type="button" onclick="gebruikAiBannerSuggestie('Biddag')" class="text-[10px] px-2 py-0.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] hover:border-[#007AFF] transition-all">Biddag</button>
-                        <button type="button" onclick="gebruikAiBannerSuggestie('Dankdag')" class="text-[10px] px-2 py-0.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] hover:border-[#007AFF] transition-all">Dankdag</button>
-                        <button type="button" onclick="gebruikAiBannerSuggestie('Belijdenis')" class="text-[10px] px-2 py-0.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] hover:border-[#007AFF] transition-all">Belijdenis</button>
-                        <button type="button" onclick="gebruikAiBannerSuggestie('Doopdienst')" class="text-[10px] px-2 py-0.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] hover:border-[#007AFF] transition-all">Doop</button>
-                        <button type="button" onclick="gebruikAiBannerSuggestie('Avondmaal')" class="text-[10px] px-2 py-0.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] hover:border-[#007AFF] transition-all">Avondmaal</button>
-                        <button type="button" onclick="gebruikAiBannerSuggestie('Huwelijksdienst')" class="text-[10px] px-2 py-0.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] hover:border-[#007AFF] transition-all">Huwelijk</button>
-                        <button type="button" onclick="gebruikAiBannerSuggestie('Oud en Nieuw')" class="text-[10px] px-2 py-0.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] hover:border-[#007AFF] transition-all">Oud & Nieuw</button>
+
+                    <p class="text-[10px] text-gray-400 dark:text-gray-500 leading-tight">
+                        🔒 Geen spam: verzendt uitsluitend mét PowerPoint (.pptx) via jouw eigen Gmail wanneer je zelf op de knop klikt.
+                    </p>
+                </div>
+
+                <!-- OBS & Beamer Live Regie Card -->
+                <div class="p-3.5 bg-gradient-to-r from-purple-500/10 via-blue-500/10 to-indigo-500/10 dark:from-purple-950/40 dark:via-blue-950/30 dark:to-indigo-950/40 rounded-2xl border border-purple-200/80 dark:border-purple-800/60 flex items-center justify-between gap-3 shadow-xs">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <div class="w-9 h-9 rounded-xl bg-purple-500/15 text-purple-700 dark:text-purple-300 flex items-center justify-center text-lg flex-shrink-0">
+                            🎥
+                        </div>
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-1.5">
+                                <strong class="text-xs font-bold text-[#1D1D1F] dark:text-white">OBS &amp; Beamer Live</strong>
+                                <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300/40">TEST</span>
+                            </div>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 truncate">Beamer, livestream &amp; klikker bediening</p>
+                        </div>
                     </div>
-                </div>
-            </div>
-            <div class="bg-gray-50 rounded-2xl p-4 flex flex-col gap-2">
-                <div class="flex items-center gap-2 text-xs text-gray-500">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    <span id="laatsteUpdate">Laatste update: <strong class="text-gray-700">laden...</strong></span>
-                </div>
-                <div class="flex items-center gap-2 text-xs text-gray-500">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
-                    <span>Versie <strong class="text-gray-700">3.1</strong> · 11 okt 2026</span>
-                </div>
-                <div class="flex items-center gap-2 text-xs text-gray-500">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                    <span id="bezoekTeller"><strong class="text-gray-700">laden...</strong></span>
-                </div>
-                <button id="grafiekKnop" onclick="toggleBezoekGrafiek()" class="w-full mt-1 py-2 rounded-xl text-[11px] font-semibold text-[#007AFF] bg-blue-50 hover:bg-blue-100 transition-colors flex items-center justify-center gap-1.5">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-                    Bekijk bezoekersstatistieken
-                </button>
-                <div id="grafiekContainer" class="hidden mt-1 bg-white rounded-xl border border-gray-100 p-3 shadow-sm">
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Bezoekers (laatste 14 dagen)</span>
-                        <span id="grafiekTotaal" class="text-[10px] font-semibold text-[#007AFF]"></span>
-                    </div>
-                    <canvas id="bezoekCanvas" width="320" height="140" style="width:100%;height:auto;display:block"></canvas>
-                    <p id="grafiekLeeg" class="hidden text-center text-[11px] text-gray-400 py-4">Nog geen data beschikbaar. Kom morgen terug!</p>
-                </div>
-                
-                <div class="flex gap-2 w-full mt-1">
-                    <button onclick="window.forceerCloudRefresh()" class="flex-1 py-2 rounded-xl text-[11px] font-semibold text-[#007AFF] bg-blue-50 hover:bg-blue-100 transition-colors flex items-center justify-center gap-1.5">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                        Liederen vernieuwen
+                    <button type="button" onclick="document.getElementById('infoModal').classList.add('hidden'); openObsTestModal();" class="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all active:scale-95 shadow-xs flex-shrink-0 flex items-center gap-1 cursor-pointer">
+                        <span>Open</span>
+                        <span>➔</span>
                     </button>
-                    <a href="import_tool.html" target="_blank" class="flex-1 py-2 rounded-xl text-[11px] font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 transition-colors flex items-center justify-center gap-1.5">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                        Bulk Importer
-                    </a>
                 </div>
-            </div>
-            <div class="text-center">
-                <p class="text-sm font-semibold text-[#1D1D1F]">Gemaakt door Sem</p>
-                <p class="text-xs text-gray-400 mt-0.5">met hulp van AI</p>
-            </div>
-            
-            <div class="bg-amber-50 border border-amber-100 rounded-2xl p-4">
-                <h4 class="text-[11px] font-bold text-amber-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> 
-                    Binnenkort verwacht
-                </h4>
-                <ul class="text-[12px] text-amber-800 space-y-1.5 font-medium ml-1">
-                    <li class="flex items-start gap-2"><span class="text-amber-400">•</span> Recente liederen sneller terugvinden</li>
-                    <li class="flex items-start gap-2"><span class="text-amber-400">•</span> Verbeterde AI thema-suggesties</li>
-                </ul>
+
+                <!-- Slimme Liturgie per E-mail (Multi-Church Ingestion) -->
+                <div class="p-3.5 bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-emerald-500/10 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-emerald-950/40 rounded-2xl border border-emerald-200/80 dark:border-emerald-800/60 flex items-center justify-between gap-3 shadow-xs">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <div class="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 flex items-center justify-center text-lg flex-shrink-0">
+                            📬
+                        </div>
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-1.5">
+                                <strong class="text-xs font-bold text-[#1D1D1F] dark:text-white">Liturgie per E-mail</strong>
+                                <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300/40">AUTO</span>
+                            </div>
+                            <p id="infoEmailAdresLabel" class="text-[11px] text-gray-500 dark:text-gray-400 truncate">bethelliturgie@gmail.com</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="window.checkInkomendeLiturgieMail(true)" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all active:scale-95 shadow-xs flex-shrink-0 flex items-center gap-1 cursor-pointer" title="Controleer of de predikant een nieuwe liturgie heeft gemaild">
+                        <span>Haal op</span>
+                        <span>📥</span>
+                    </button>
+                </div>
             </div>
 
-            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-4 text-center">
-                <p class="text-sm text-[#007AFF] font-medium italic">"Techniek in dienst van de eredienst"</p>
-            </div>
-            <div class="border-t border-gray-100 pt-4">
-                <div class="flex items-center gap-2 mb-2">
-                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-                    <span class="text-sm font-semibold text-[#1D1D1F]">Idee of bug melden?</span>
+            <!-- TAB 2: BEAMER & WEERGAVE (Gemeente, Toggles, Meelees) -->
+            <div id="infoTabContent-beamer" class="hidden flex flex-col gap-3.5">
+                <!-- Gemeente Selector -->
+                <div class="flex items-center justify-between p-3.5 bg-gray-50 dark:bg-gray-800/60 rounded-2xl border border-gray-200/70 dark:border-gray-700">
+                    <div class="flex items-center gap-2.5 min-w-0 pr-2">
+                        <span class="text-xl flex-shrink-0">⛪</span>
+                        <div class="min-w-0">
+                            <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Mijn Gemeente</span>
+                            <span id="infoGemeenteNaam" class="text-sm font-bold text-[#1D1D1F] dark:text-white truncate block">Bethelkerk Maassluis</span>
+                        </div>
+                    </div>
+                    <button type="button" onclick="document.getElementById('infoModal').classList.add('hidden'); openGemeenteModal();" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-[#007AFF] bg-white dark:bg-gray-700 hover:bg-blue-50 border border-gray-200 dark:border-gray-600 transition-colors shadow-sm flex-shrink-0 cursor-pointer">
+                        Wijzigen
+                    </button>
                 </div>
-                <p class="text-xs text-gray-400 mb-2">Laat het weten - je bericht komt direct bij Sem terecht.</p>
-                <textarea id="feedbackInput" rows="3" placeholder="Typ hier je idee of het probleem..." class="w-full bg-[#F5F5F7] border border-transparent rounded-xl py-2.5 px-3 text-sm placeholder-gray-400 apple-input transition-all resize-none"></textarea>
-                <div class="flex gap-2 mt-2">
-                    <button id="feedbackKnop" onclick="verstuurFeedback()" class="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#007AFF] hover:bg-blue-600 transition-colors shadow-sm disabled:opacity-50">Versturen</button>
-                    <button id="feedbackZienKnop" onclick="toonFeedbackLijst()" class="flex-1 py-2.5 rounded-xl text-sm font-semibold text-[#007AFF] bg-blue-50 hover:bg-blue-100 transition-colors">Feedback zien</button>
+
+                <!-- Weergave & Beamer Schakelaars -->
+                <div class="bg-gray-50 dark:bg-gray-800/60 rounded-2xl p-3.5 border border-gray-200/70 dark:border-gray-700 flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                            <span class="text-xs font-medium text-[#1D1D1F] dark:text-white">Donkere modus</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode()" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#007AFF]"></div>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2 border-t border-gray-200/60 dark:border-gray-700/60">
+                        <div class="flex items-center gap-2 pr-2">
+                            <svg class="w-5 h-5 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                            <div>
+                                <span class="text-xs font-medium text-[#1D1D1F] dark:text-white block">Welkomstdia aanpassen</span>
+                                <span class="text-[10px] text-gray-400 leading-tight block">Bewerk titel en liednummers vóór PowerPoint-export</span>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                            <input type="checkbox" id="welkomstdiaToggle" onchange="toggleWelkomstdiaAanpassen()" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#007AFF]"></div>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2 border-t border-gray-200/60 dark:border-gray-700/60">
+                        <div class="flex items-center gap-2 pr-2">
+                            <svg class="w-5 h-5 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+                            <div>
+                                <span class="text-xs font-medium text-[#1D1D1F] dark:text-white block">Meelees-versie</span>
+                                <span class="text-[10px] text-gray-400 leading-tight block">QR-dia zodat de gemeente meeleest op de telefoon</span>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                            <input type="checkbox" id="meeleesToggle" onchange="toggleMeelees()" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#34C759]"></div>
+                        </label>
+                    </div>
                 </div>
-                <div id="feedbackLijst" class="mt-3 hidden flex-col gap-2 max-h-52 overflow-y-auto"></div>
+
+                <!-- BANNER SELECTIE VOOR TELEFOON WEERGAVE (MEELEES) -->
+                <div id="meeleesThemaWrapper" class="hidden bg-gray-50 dark:bg-gray-800/60 rounded-2xl p-3.5 border border-gray-200/70 dark:border-gray-700 flex flex-col gap-2.5">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-bold text-[#1D1D1F] dark:text-white block">Banner Telefoon-weergave</span>
+                            <span class="text-[10px] text-gray-400 leading-tight block">Kies een banner voor feestdagen</span>
+                        </div>
+                        <button type="button" onclick="testMeeleesPagina()" class="px-2.5 py-1 rounded-xl text-[11px] font-semibold text-[#007AFF] bg-white dark:bg-gray-700 hover:bg-blue-50 border border-gray-200 dark:border-gray-600 transition-colors shadow-xs flex items-center gap-1 active:scale-95" title="Bekijk hoe gemeenteleden dit op hun mobiel zien">
+                            <span>📱 Test</span>
+                        </button>
+                    </div>
+                    <!-- Mini Live Preview van de gekozen banner -->
+                    <div id="meeleesMiniPreview" class="w-full rounded-xl overflow-hidden shadow-xs border border-black/[0.06] bg-gray-100 cursor-pointer" onclick="testMeeleesPagina()" title="Klik voor schermvullende preview">
+                        <!-- SVG banner preview komt hier -->
+                    </div>
+                    <!-- Knoppen rooster voor de feestdagen / thema's -->
+                    <div class="grid grid-cols-3 gap-1.5" id="meeleesThemaKnoppen">
+                        <!-- Dynamisch gevuld door updateMeeleesThemaUI() -->
+                    </div>
+                    <!-- AI Aangepaste Banner Maker -->
+                    <div class="mt-2 pt-2.5 border-t border-gray-200/80 dark:border-gray-700 flex flex-col gap-1.5">
+                        <label for="aiBannerPrompt" class="text-[11px] font-bold text-gray-700 dark:text-gray-200 flex items-center justify-between">
+                            <span>Eigen thema ontwerpen</span>
+                        </label>
+                        <div class="flex gap-1.5">
+                            <input id="aiBannerPrompt" type="text" placeholder="Bijv: Biddag, Belijdenis, Doopdienst..." class="flex-grow bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 text-xs text-[#1D1D1F] dark:text-white placeholder-gray-400 outline-none focus:border-[#007AFF] focus:ring-2 focus:ring-[#007AFF]/20 transition-all" onkeypress="if(event.key === 'Enter') genereerAiBanner()">
+                            <button id="aiBannerBtn" type="button" onclick="genereerAiBanner()" class="px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-[#007AFF] to-[#5856D6] hover:from-blue-600 hover:to-indigo-600 transition-all shadow-sm flex items-center gap-1.5 active:scale-95 flex-shrink-0" title="Genereer een unieke pastorale vectorbanner">
+                                <span id="aiBannerBtnSpinner" class="hidden">⏳</span>
+                                <span id="aiBannerBtnText">Genereer</span>
+                            </button>
+                        </div>
+                        <!-- Snelle suggesties -->
+                        <div class="flex items-center gap-1 mt-1 flex-wrap">
+                            <span class="text-[9px] text-gray-400 uppercase font-bold mr-0.5">Suggesties:</span>
+                            <button type="button" onclick="gebruikAiBannerSuggestie('Biddag')" class="text-[10px] px-2 py-0.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] hover:border-[#007AFF] transition-all">Biddag</button>
+                            <button type="button" onclick="gebruikAiBannerSuggestie('Dankdag')" class="text-[10px] px-2 py-0.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] hover:border-[#007AFF] transition-all">Dankdag</button>
+                            <button type="button" onclick="gebruikAiBannerSuggestie('Belijdenis')" class="text-[10px] px-2 py-0.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] hover:border-[#007AFF] transition-all">Belijdenis</button>
+                            <button type="button" onclick="gebruikAiBannerSuggestie('Doopdienst')" class="text-[10px] px-2 py-0.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] hover:border-[#007AFF] transition-all">Doop</button>
+                            <button type="button" onclick="gebruikAiBannerSuggestie('Avondmaal')" class="text-[10px] px-2 py-0.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] hover:border-[#007AFF] transition-all">Avondmaal</button>
+                            <button type="button" onclick="gebruikAiBannerSuggestie('Huwelijksdienst')" class="text-[10px] px-2 py-0.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] hover:border-[#007AFF] transition-all">Huwelijk</button>
+                            <button type="button" onclick="gebruikAiBannerSuggestie('Oud en Nieuw')" class="text-[10px] px-2 py-0.5 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] hover:border-[#007AFF] transition-all">Oud & Nieuw</button>
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            <!-- TAB 3: HULP & INFO (Video, Systeem, Tools, Feedback) -->
+            <div id="infoTabContent-info" class="hidden flex flex-col gap-3.5">
+                <!-- Video Uitleg Card -->
+                <div class="p-3.5 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-blue-500/10 dark:from-blue-950/40 dark:via-indigo-950/30 dark:to-blue-950/40 rounded-2xl border border-blue-200/80 dark:border-blue-800/60 flex items-center justify-between gap-3 shadow-xs">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <div class="w-9 h-9 rounded-xl bg-blue-500/15 text-[#007AFF] flex items-center justify-center text-lg flex-shrink-0">
+                            🎬
+                        </div>
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-1.5">
+                                <strong class="text-xs font-bold text-[#1D1D1F] dark:text-white">Video Uitleg</strong>
+                                <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-blue-100 dark:bg-blue-900/60 text-[#007AFF] dark:text-blue-300 border border-blue-300/40">4:06</span>
+                            </div>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 truncate">Met stem &amp; sound effects</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="document.getElementById('infoModal').classList.add('hidden'); openVideoUitlegModal(true);" class="px-3.5 py-1.5 rounded-xl bg-[#007AFF] hover:bg-blue-600 text-white text-xs font-bold transition-all active:scale-95 shadow-xs flex-shrink-0 flex items-center gap-1 cursor-pointer">
+                        <span>Kijk</span>
+                        <span>▶</span>
+                    </button>
+                </div>
+
+                <!-- Systeeminfo & Statistieken -->
+                <div class="bg-gray-50 dark:bg-gray-800/60 rounded-2xl p-3.5 flex flex-col gap-2 border border-gray-200/70 dark:border-gray-700">
+                    <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                        <span>Laatste update:</span>
+                        <strong id="laatsteUpdate" class="text-gray-700 dark:text-gray-200 font-semibold">laden...</strong>
+                    </div>
+                    <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                        <span>Versie:</span>
+                        <span class="font-bold text-gray-700 dark:text-gray-200">3.1 · Bethelkerk Maassluis</span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                        <span>Bezoekers:</span>
+                        <span id="bezoekTeller"><strong class="text-gray-700 dark:text-gray-200">laden...</strong></span>
+                    </div>
+
+                    <button id="grafiekKnop" onclick="toggleBezoekGrafiek()" class="w-full mt-1 py-1.5 rounded-xl text-[11px] font-semibold text-[#007AFF] bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                        Bekijk bezoekersgrafiek
+                    </button>
+                    <div id="grafiekContainer" class="hidden mt-1 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-3 shadow-sm">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Bezoekers (laatste 14 dagen)</span>
+                            <span id="grafiekTotaal" class="text-[10px] font-semibold text-[#007AFF]"></span>
+                        </div>
+                        <canvas id="bezoekCanvas" width="320" height="140" style="width:100%;height:auto;display:block"></canvas>
+                        <p id="grafiekLeeg" class="hidden text-center text-[11px] text-gray-400 py-4">Nog geen data beschikbaar. Kom morgen terug!</p>
+                    </div>
+                    
+                    <div class="flex gap-2 w-full mt-1">
+                        <button onclick="window.forceerCloudRefresh()" class="flex-1 py-1.5 rounded-xl text-[11px] font-semibold text-[#007AFF] bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            Liederen vernieuwen
+                        </button>
+                        <a href="import_tool.html" target="_blank" class="flex-1 py-1.5 rounded-xl text-[11px] font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 transition-colors flex items-center justify-center gap-1.5 text-center">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                            Bulk Importer
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Idee of bug melden? (Feedback) -->
+                <div class="bg-gray-50 dark:bg-gray-800/60 rounded-2xl p-3.5 border border-gray-200/70 dark:border-gray-700 flex flex-col gap-2">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                        <span class="text-xs font-bold text-[#1D1D1F] dark:text-white">Idee of bug melden?</span>
+                    </div>
+                    <textarea id="feedbackInput" rows="2" placeholder="Typ hier je idee of opmerking..." class="w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl py-2 px-3 text-xs placeholder-gray-400 outline-none focus:border-[#007AFF] transition-all resize-none"></textarea>
+                    <div class="flex gap-2">
+                        <button id="feedbackKnop" onclick="verstuurFeedback()" class="flex-1 py-1.5 rounded-xl text-xs font-semibold text-white bg-[#007AFF] hover:bg-blue-600 transition-colors shadow-xs disabled:opacity-50 cursor-pointer">Versturen</button>
+                        <button id="feedbackZienKnop" onclick="toonFeedbackLijst()" class="flex-1 py-1.5 rounded-xl text-xs font-semibold text-[#007AFF] dark:text-blue-300 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-blue-50 transition-colors cursor-pointer">Inzien</button>
+                    </div>
+                    <div id="feedbackLijst" class="mt-2 hidden flex-col gap-1.5 max-h-40 overflow-y-auto"></div>
+                </div>
+
+                <div class="text-center pt-1">
+                    <p class="text-xs font-semibold text-[#1D1D1F] dark:text-white">Gemaakt door Sem</p>
+                    <p class="text-[10px] text-gray-400">met hulp van AI · "Techniek in dienst van de eredienst"</p>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
@@ -10110,6 +10145,25 @@ window.maakPowerPoint = async function(customOpties = null, forceExport = false)
         console.error("Export fout:", err);
         window.toonToast("Export fout: " + err, "error");
     }
+};
+
+window.wisselInfoTab = function(tabId) {
+    const tabs = ['koppelingen', 'beamer', 'info'];
+    tabs.forEach(t => {
+        const btn = document.getElementById('infoTabBtn-' + t);
+        const content = document.getElementById('infoTabContent-' + t);
+        if (t === tabId) {
+            if (btn) {
+                btn.className = "flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition-all bg-white dark:bg-gray-800 text-[#007AFF] shadow-xs flex items-center justify-center gap-1.5";
+            }
+            if (content) content.classList.remove('hidden');
+        } else {
+            if (btn) {
+                btn.className = "flex-1 py-1.5 px-2 rounded-xl text-xs font-semibold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all flex items-center justify-center gap-1.5";
+            }
+            if (content) content.classList.add('hidden');
+        }
+    });
 };
 
 const APPS_SCRIPT_MAIL_URL = "https://script.google.com/macros/s/AKfycbybKgYL79mkdzkW50dhZuufthBmZ6UWlh3f5kaAjJXjmHGUqCXOPGjvwU7am0y8K5NPGQ/exec";
