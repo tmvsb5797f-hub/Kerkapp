@@ -1191,6 +1191,42 @@
                 </button>
             </div>
 
+            <!-- Stuur mij de Liturgie Card (Zelf e-mailadres instellen) -->
+            <div class="p-3.5 bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-blue-500/10 dark:from-purple-950/40 dark:via-indigo-950/30 dark:to-blue-950/40 rounded-2xl border border-purple-200/80 dark:border-purple-800/60 flex flex-col gap-2.5 shadow-xs">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-9 h-9 rounded-xl bg-purple-500/15 text-purple-700 dark:text-purple-300 flex items-center justify-center text-lg flex-shrink-0">
+                        📧
+                    </div>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-1.5">
+                            <strong class="text-xs font-bold text-[#1D1D1F] dark:text-white">Stuur mij de liturgie</strong>
+                            <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-purple-100 dark:bg-purple-900/60 text-purple-800 dark:text-purple-300 border border-purple-300/40">PPTX &amp; Mail</span>
+                        </div>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400">Verzend presentatie &amp; samenvatting naar jouw mailadres</p>
+                    </div>
+                </div>
+
+                <!-- E-mail invoerveld en verzendknop -->
+                <div class="flex flex-col sm:flex-row gap-2 pt-0.5">
+                    <div class="relative flex-grow">
+                        <label for="liturgieMijnEmailInput" class="sr-only">E-mailadres ontvanger</label>
+                        <input type="email" id="liturgieMijnEmailInput" placeholder="sempjons@gmail.com" value="sempjons@gmail.com"
+                            class="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-xs text-[#1D1D1F] dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 transition-all"
+                            oninput="window.slaLiturgieEmailOp(this.value)"
+                            onkeypress="if(event.key === 'Enter') stuurLiturgieNaarMij()">
+                    </div>
+                    <button type="button" id="stuurLiturgieModalKnop" onclick="stuurLiturgieNaarMij()"
+                        class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold transition-all active:scale-95 shadow-sm flex items-center justify-center gap-1.5 flex-shrink-0"
+                        title="Genereer de PowerPoint en mail deze naar het ingevulde e-mailadres">
+                        <span>📤</span>
+                        <span>Stuur liturgie</span>
+                    </button>
+                </div>
+                <p class="text-[10px] text-gray-400 dark:text-gray-500 leading-tight">
+                    🔒 Geen spam: verzendt uitsluitend wanneer je zelf op de knop klikt. Onthoudt je e-mailadres veilig op dit apparaat.
+                </p>
+            </div>
+
             <!-- Video Uitleg Card (3:30 met stem & sound effects) -->
             <div class="p-3.5 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-blue-500/10 dark:from-blue-950/40 dark:via-indigo-950/30 dark:to-blue-950/40 rounded-2xl border border-blue-200/80 dark:border-blue-800/60 flex items-center justify-between gap-3 shadow-xs">
                 <div class="flex items-center gap-2.5 min-w-0">
@@ -1451,13 +1487,6 @@
             <svg class="w-4 h-4 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
             <span>Exporteer</span>
             <span class="hidden sm:inline">PowerPoint</span>
-        </button>
-
-        <!-- 5. Mail Liturgie naar mij (Test) -->
-        <button id="stuurLiturgieMailKnop" onclick="stuurLiturgieNaarMij()" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-full shadow-[0_4px_16px_rgba(147,51,234,0.3)] active:scale-95 transition-all duration-200 flex items-center justify-center gap-1.5 border border-white/20 font-semibold text-xs sm:text-[13px] tracking-[-0.01em] flex-shrink-0 whitespace-nowrap" title="Genereer de PowerPoint en stuur deze met de tekst naar sempjons@gmail.com">
-            <span>📧</span>
-            <span class="hidden sm:inline">Mail naar mij</span>
-            <span class="sm:hidden">Mail</span>
         </button>
 
         <!-- Made by Sem handtekening (subtiel op desktop) -->
@@ -10082,18 +10111,50 @@ window.maakPowerPoint = async function(customOpties = null, forceExport = false)
     }
 };
 
+window.slaLiturgieEmailOp = function(email) {
+    if (!email) return;
+    const clean = email.trim();
+    localStorage.setItem('liturgieBestemmingEmail', clean);
+    const preflightLabel = document.getElementById('preflightMailBtnLabel');
+    if (preflightLabel) {
+        preflightLabel.textContent = `Mail naar ${clean}`;
+    }
+};
+
 window.stuurLiturgieNaarMij = async function() {
     if (!liturgieVolgorde || liturgieVolgorde.length === 0) {
         window.toonToast("Voeg eerst een item toe aan de liturgie om te mailen.", "warning");
         return;
     }
 
-    const knop = document.getElementById('stuurLiturgieMailKnop');
-    const origHtml = knop ? knop.innerHTML : '';
-    if (knop) {
-        knop.innerHTML = '<span>⏳</span><span>PowerPoint maken & mailen...</span>';
-        knop.disabled = true;
+    const emailInput = document.getElementById('liturgieMijnEmailInput');
+    let doelEmail = (emailInput ? emailInput.value.trim() : '') || localStorage.getItem('liturgieBestemmingEmail') || 'sempjons@gmail.com';
+    
+    // Basis e-mail validatie
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(doelEmail)) {
+        window.toonToast("Vul een geldig e-mailadres in.", "warning");
+        if (emailInput) {
+            emailInput.focus();
+            emailInput.classList.add('ring-2', 'ring-red-500');
+            setTimeout(() => emailInput.classList.remove('ring-2', 'ring-red-500'), 2500);
+        }
+        return;
     }
+
+    // Bewaar het adres voor volgende keren
+    localStorage.setItem('liturgieBestemmingEmail', doelEmail);
+
+    const knoppen = [
+        document.getElementById('stuurLiturgieModalKnop'),
+        document.getElementById('preflightMailBtn')
+    ].filter(Boolean);
+
+    const origHtmls = knoppen.map(k => k.innerHTML);
+    knoppen.forEach(k => {
+        k.innerHTML = '<span>⏳</span><span>PowerPoint maken &amp; mailen...</span>';
+        k.disabled = true;
+    });
 
     try {
         const datum = document.getElementById('datumInput')?.value?.trim() || "";
@@ -10137,13 +10198,14 @@ window.stuurLiturgieNaarMij = async function() {
 
         const bijbelLijst = liturgieVolgorde.filter(item => item.type === "Schriftlezing").map(item => item.titel.replace(" (HSV)", ""));
 
-        const emailBericht = `Beste Sem,
+        const emailBericht = `Beste beamerist / voorganger,
 
 Hierbij de complete liturgie en bijbehorende PowerPoint-presentatie voor de komende dienst:
 
 Gemeente: ${gemeente}
 Datum: ${datum || 'Zondag'}
 Voorganger: ${voorganger || 'Niet ingevuld'}
+Bestemming: ${doelEmail}
 
 Liederen:
 ${geformatteerdeLiederen.length > 0 ? geformatteerdeLiederen.map(l => `• ${l}`).join('\n') : '(Geen liederen)'}
@@ -10158,11 +10220,12 @@ De PowerPoint (.pptx) is als bijlage toegevoegd aan deze e-mail met het exacte B
 Met vriendelijke groet,
 Kerkapp Beamer Systeem`;
 
-        // 3. Verstuur naar sempjons@gmail.com via Web3Forms FormData met PowerPoint bijlage
+        // 3. Verstuur via Web3Forms FormData met PowerPoint bijlage
         const formData = new FormData();
         formData.append("access_key", "da56e2ee-c688-47b5-81fd-dbdb65d92201");
         formData.append("subject", `Liturgie PowerPoint: ${datum || 'Kerkdienst'} - ${voorganger || gemeente}`);
         formData.append("from_name", "Kerkapp Beamer");
+        formData.append("email", doelEmail);
         formData.append("message", emailBericht);
         formData.append("attachment", pptxBlob, bestandsnaam);
 
@@ -10172,7 +10235,7 @@ Kerkapp Beamer Systeem`;
         });
 
         if (res.ok) {
-            window.toonToast("📧 Liturgie & PowerPoint verzonden naar sempjons@gmail.com!", "success");
+            window.toonToast(`📧 Liturgie & PowerPoint verzonden naar ${doelEmail}!`, "success");
         } else {
             console.warn("Web3Forms melding niet geslaagd, start directe download fallback");
             pres.writeFile(bestandsnaam);
@@ -10182,12 +10245,21 @@ Kerkapp Beamer Systeem`;
         console.error("Fout bij sturen liturgie mail:", err);
         window.toonToast("Fout: " + err.message, "error");
     } finally {
-        if (knop) {
-            knop.innerHTML = origHtml;
-            knop.disabled = false;
-        }
+        knoppen.forEach((k, idx) => {
+            k.innerHTML = origHtmls[idx];
+            k.disabled = false;
+        });
     }
 };
+
+// Initialiseer opgeslagen e-mailadres bij laden
+document.addEventListener('DOMContentLoaded', () => {
+    const opgeslagenEmail = localStorage.getItem('liturgieBestemmingEmail') || 'sempjons@gmail.com';
+    const emailInput = document.getElementById('liturgieMijnEmailInput');
+    if (emailInput) emailInput.value = opgeslagenEmail;
+    const preflightLabel = document.getElementById('preflightMailBtnLabel');
+    if (preflightLabel) preflightLabel.textContent = `Mail naar ${opgeslagenEmail}`;
+});
 
 // --- FEEDBACK POPUP NA EXPORT ---
 let exportFeedbackGetoond = false;
@@ -11558,9 +11630,9 @@ window.verstuurExportFeedback = async function() {
                 ← Terug naar Liturgie
             </button>
             <div class="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto justify-end">
-                <button type="button" id="preflightMailBtn" onclick="sluitPreflightModal(); stuurLiturgieNaarMij();" class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold transition-all active:scale-95 shadow-md flex items-center justify-center gap-1.5" title="Genereer de PowerPoint en mail deze direct naar sempjons@gmail.com">
+                <button type="button" id="preflightMailBtn" onclick="sluitPreflightModal(); stuurLiturgieNaarMij();" class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold transition-all active:scale-95 shadow-md flex items-center justify-center gap-1.5" title="Genereer de PowerPoint en mail deze naar je ingestelde adres">
                     <span>📧</span>
-                    <span>Mail naar sempjons@gmail.com</span>
+                    <span id="preflightMailBtnLabel">Mail liturgie</span>
                 </button>
                 <button type="button" id="preflightExportBtn" onclick="exporteerNaPreflight()" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#007AFF] hover:bg-blue-600 text-white text-xs font-bold transition-all active:scale-95 shadow-md flex items-center justify-center gap-1.5">
                     <span>Exporteer PowerPoint</span>
@@ -11882,6 +11954,12 @@ window.verstuurExportFeedback = async function() {
                 pill.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-300/40";
                 pill.innerText = `${report.waarschuwingenAantal} TIPS`;
             }
+        }
+
+        const preflightLabel = document.getElementById('preflightMailBtnLabel');
+        if (preflightLabel) {
+            const saved = localStorage.getItem('liturgieBestemmingEmail') || 'sempjons@gmail.com';
+            preflightLabel.textContent = `Mail naar ${saved}`;
         }
 
         // 2. Banner Box
