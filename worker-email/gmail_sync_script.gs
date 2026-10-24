@@ -150,17 +150,28 @@ function testVerbinding() {
 }
 
 /**
- * OPTIONEEL: Web App endpoint om vanuit Kerkapp e-mails mét PowerPoint (.pptx bijlage)
+ * Web App endpoint om vanuit Kerkapp e-mails mét PowerPoint (.pptx bijlage)
  * te versturen via jouw eigen Gmail-account (100% gratis & betrouwbaar).
  */
+function doGet(e) {
+  return ContentService.createTextOutput(JSON.stringify({
+    status: "online",
+    service: "Bethelkerk Liturgie Apps Script Web App",
+    ontvanger: TEST_EMAIL_ONTVANGER
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
 function doPost(e) {
   try {
-    const data = JSON.parse(e.postData.contents);
+    const contents = (e && e.postData) ? e.postData.contents : "{}";
+    const data = JSON.parse(contents);
     const ontvanger = data.ontvanger || TEST_EMAIL_ONTVANGER;
     const onderwerp = data.onderwerp || "Liturgie PowerPoint Bethelkerk";
     const bericht = data.bericht || "";
     
-    let options = {};
+    let options = {
+      name: "Kerkapp Beamer Systeem"
+    };
     if (data.pptxBase64 && data.bestandsnaam) {
       const bytes = Utilities.base64Decode(data.pptxBase64);
       const blob = Utilities.newBlob(bytes, "application/vnd.openxmlformats-officedocument.presentationml.presentation", data.bestandsnaam);
@@ -168,10 +179,15 @@ function doPost(e) {
     }
     
     GmailApp.sendEmail(ontvanger, onderwerp, bericht, options);
-    return ContentService.createTextOutput(JSON.stringify({ success: true }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return ContentService.createTextOutput(JSON.stringify({ 
+      success: true, 
+      message: "E-mail met PowerPoint (.pptx) succesvol verzonden via Gmail!" 
+    })).setMimeType(ContentService.MimeType.JSON);
   } catch(err) {
-    return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
+    console.error("Fout in doPost:", err);
+    return ContentService.createTextOutput(JSON.stringify({ 
+      success: false, 
+      error: err.toString() 
+    })).setMimeType(ContentService.MimeType.JSON);
   }
 }
