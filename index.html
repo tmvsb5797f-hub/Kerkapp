@@ -1223,35 +1223,8 @@
                     </button>
                 </div>
 
-                <!-- Google Apps Script Koppeling voor Gmail met echte .pptx bijlage -->
-                <div class="mt-1 pt-2 border-t border-purple-200/60 dark:border-purple-800/40 flex flex-col gap-1.5">
-                    <div class="flex items-center justify-between">
-                        <label for="liturgieGasUrlInput" class="text-[11px] font-bold text-[#1D1D1F] dark:text-white flex items-center gap-1">
-                            <span>⚡ Google Apps Script Web App URL</span>
-                        </label>
-                        <button type="button" onclick="window.toggleGasInstructies()" class="text-[10px] text-purple-600 dark:text-purple-400 hover:underline font-semibold cursor-pointer">
-                            Hoe instellen?
-                        </button>
-                    </div>
-                    <input type="url" id="liturgieGasUrlInput" placeholder="https://script.google.com/macros/s/.../exec"
-                        class="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-1.5 text-[11px] text-[#1D1D1F] dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/30 font-mono transition-all"
-                        oninput="localStorage.setItem('googleAppsScriptMailUrl', this.value.trim())">
-                    
-                    <!-- Uitleg accordion -->
-                    <div id="gasInstructiesBox" class="hidden bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/60 rounded-xl p-2.5 text-[11px] text-gray-600 dark:text-gray-300 flex flex-col gap-1 leading-relaxed">
-                        <strong class="text-purple-900 dark:text-purple-200">Zo koppel je jouw Google Apps Script (duurt 1 minuut):</strong>
-                        <ol class="list-decimal pl-4 flex flex-col gap-1">
-                            <li>Open je project op <a href="https://script.google.com" target="_blank" class="text-purple-600 dark:text-purple-400 underline font-semibold">script.google.com</a></li>
-                            <li>Zorg dat de nieuwste code uit <code class="bg-purple-100 dark:bg-purple-900/60 px-1 py-0.2 rounded font-mono text-[10px]">worker-email/gmail_sync_script.gs</code> erin staat</li>
-                            <li>Klik rechtsboven op de blauwe knop <strong>Implementeren</strong> ➔ <strong>Nieuwe implementatie</strong></li>
-                            <li>Kies type: <strong>Web-app</strong> · Uitvoeren als: <strong>Mij</strong> · Wie heeft toegang: <strong>Iedereen</strong></li>
-                            <li>Klik op <strong>Implementeren</strong>, kopieer de <strong>Web-app-URL</strong> en plak hem hierboven!</li>
-                        </ol>
-                    </div>
-                </div>
-
                 <p class="text-[10px] text-gray-400 dark:text-gray-500 leading-tight">
-                    🔒 Geen spam: verzendt uitsluitend via jouw eigen Gmail wanneer je zelf op de knop klikt. Onthoudt instellingen veilig op dit apparaat.
+                    🔒 Geen spam: verzendt uitsluitend mét PowerPoint (.pptx) via jouw eigen Gmail wanneer je zelf op de knop klikt.
                 </p>
             </div>
 
@@ -10139,10 +10112,7 @@ window.maakPowerPoint = async function(customOpties = null, forceExport = false)
     }
 };
 
-window.toggleGasInstructies = function() {
-    const box = document.getElementById('gasInstructiesBox');
-    if (box) box.classList.toggle('hidden');
-};
+const APPS_SCRIPT_MAIL_URL = "https://script.google.com/macros/s/AKfycbybKgYL79mkdzkW50dhZuufthBmZ6UWlh3f5kaAjJXjmHGUqCXOPGjvwU7am0y8K5NPGQ/exec";
 
 window.slaLiturgieEmailOp = function(email) {
     if (!email) return;
@@ -10176,9 +10146,6 @@ window.stuurLiturgieNaarMij = async function() {
     }
 
     localStorage.setItem('liturgieBestemmingEmail', doelEmail);
-
-    const gasInput = document.getElementById('liturgieGasUrlInput');
-    let gasUrl = (gasInput ? gasInput.value.trim() : '') || localStorage.getItem('googleAppsScriptMailUrl') || '';
 
     const knoppen = [
         document.getElementById('stuurLiturgieModalKnop'),
@@ -10268,29 +10235,27 @@ Kerkapp Beamer Systeem`;
 
         let mailVerzonden = false;
 
-        // 4. Als Google Apps Script Web App URL is ingesteld: verstuur mét echte .pptx bijlage via Gmail!
-        if (gasUrl && gasUrl.includes('script.google.com')) {
-            try {
-                knoppen.forEach(k => {
-                    k.innerHTML = '<span>🚀</span><span>Verzenden via Gmail...</span>';
-                });
-                // Gebruik text/plain;charset=utf-8 om CORS preflight requests in Google Apps Script te omzeilen
-                await fetch(gasUrl, {
-                    method: "POST",
-                    headers: { "Content-Type": "text/plain;charset=utf-8" },
-                    body: JSON.stringify({
-                        ontvanger: doelEmail,
-                        onderwerp: `Liturgie PowerPoint: ${datum || 'Kerkdienst'} - ${voorganger || gemeente}`,
-                        bericht: emailBericht,
-                        bestandsnaam: bestandsnaam,
-                        pptxBase64: pptxBase64
-                    }),
-                    mode: "no-cors"
-                });
-                mailVerzonden = true;
-            } catch(gasErr) {
-                console.warn("Fout bij Apps Script aanroep:", gasErr);
-            }
+        // 4. Verstuur mét echte .pptx bijlage via Google Apps Script (Gmail)
+        try {
+            knoppen.forEach(k => {
+                k.innerHTML = '<span>🚀</span><span>Verzenden via Gmail...</span>';
+            });
+            // Gebruik text/plain;charset=utf-8 om CORS preflight requests in Google Apps Script te omzeilen
+            await fetch(APPS_SCRIPT_MAIL_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({
+                    ontvanger: doelEmail,
+                    onderwerp: `Liturgie PowerPoint: ${datum || 'Kerkdienst'} - ${voorganger || gemeente}`,
+                    bericht: emailBericht,
+                    bestandsnaam: bestandsnaam,
+                    pptxBase64: pptxBase64
+                }),
+                mode: "no-cors"
+            });
+            mailVerzonden = true;
+        } catch(gasErr) {
+            console.warn("Fout bij Apps Script aanroep:", gasErr);
         }
 
         // 5. Download altijd direct de PowerPoint in het Bethelkerk-formaat naar de computer
@@ -10299,18 +10264,7 @@ Kerkapp Beamer Systeem`;
         if (mailVerzonden) {
             window.toonToast(`📧 Liturgie mét PowerPoint (.pptx) via Gmail verzonden naar ${doelEmail}!`, "success");
         } else {
-            // Open de instellingen als Apps Script URL nog ontbreekt
-            const infoModal = document.getElementById('infoModal');
-            if (infoModal) {
-                infoModal.classList.remove('hidden');
-                const box = document.getElementById('gasInstructiesBox');
-                if (box) box.classList.remove('hidden');
-                if (gasInput) {
-                    gasInput.focus();
-                    gasInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            }
-            window.toonToast("PowerPoint gedownload! Plak eenmalig je Apps Script URL om via Gmail te mailen.", "info");
+            window.toonToast("PowerPoint gedownload! (Mail kon tijdelijk niet bereikt worden)", "warning");
         }
     } catch(err) {
         console.error("Fout bij sturen liturgie mail:", err);
@@ -10328,10 +10282,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const opgeslagenEmail = localStorage.getItem('liturgieBestemmingEmail') || 'sempjons@gmail.com';
     const emailInput = document.getElementById('liturgieMijnEmailInput');
     if (emailInput) emailInput.value = opgeslagenEmail;
-
-    const opgeslagenGasUrl = localStorage.getItem('googleAppsScriptMailUrl') || '';
-    const gasInput = document.getElementById('liturgieGasUrlInput');
-    if (gasInput) gasInput.value = opgeslagenGasUrl;
 
     const preflightLabel = document.getElementById('preflightMailBtnLabel');
     if (preflightLabel) preflightLabel.textContent = `Mail naar ${opgeslagenEmail}`;
