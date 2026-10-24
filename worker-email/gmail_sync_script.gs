@@ -148,3 +148,30 @@ function testVerbinding() {
     console.log("⚠️ Let op: Worker gaf status " + response.getResponseCode());
   }
 }
+
+/**
+ * OPTIONEEL: Web App endpoint om vanuit Kerkapp e-mails mét PowerPoint (.pptx bijlage)
+ * te versturen via jouw eigen Gmail-account (100% gratis & betrouwbaar).
+ */
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const ontvanger = data.ontvanger || TEST_EMAIL_ONTVANGER;
+    const onderwerp = data.onderwerp || "Liturgie PowerPoint Bethelkerk";
+    const bericht = data.bericht || "";
+    
+    let options = {};
+    if (data.pptxBase64 && data.bestandsnaam) {
+      const bytes = Utilities.base64Decode(data.pptxBase64);
+      const blob = Utilities.newBlob(bytes, "application/vnd.openxmlformats-officedocument.presentationml.presentation", data.bestandsnaam);
+      options.attachments = [blob];
+    }
+    
+    GmailApp.sendEmail(ontvanger, onderwerp, bericht, options);
+    return ContentService.createTextOutput(JSON.stringify({ success: true }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}

@@ -10220,26 +10220,40 @@ De PowerPoint (.pptx) is als bijlage toegevoegd aan deze e-mail met het exacte B
 Met vriendelijke groet,
 Kerkapp Beamer Systeem`;
 
-        // 3. Verstuur via Web3Forms FormData met PowerPoint bijlage
-        const formData = new FormData();
-        formData.append("access_key", "da56e2ee-c688-47b5-81fd-dbdb65d92201");
-        formData.append("subject", `Liturgie PowerPoint: ${datum || 'Kerkdienst'} - ${voorganger || gemeente}`);
-        formData.append("from_name", "Kerkapp Beamer");
-        formData.append("email", doelEmail);
-        formData.append("message", emailBericht);
-        formData.append("attachment", pptxBlob, bestandsnaam);
+        // 3. Verstuur de liturgie per e-mail via Web3Forms JSON (zonder binaire attachment zodat Web3Forms Free niet blokkeert)
+        let mailVerzonden = false;
+        try {
+            const res = await fetch("https://api.web3forms.com/submit", {
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/json", 
+                    "Accept": "application/json" 
+                },
+                body: JSON.stringify({
+                    access_key: "da56e2ee-c688-47b5-81fd-dbdb65d92201",
+                    subject: `Liturgie: ${datum || 'Kerkdienst'} - ${voorganger || gemeente}`,
+                    from_name: "Kerkapp Beamer Systeem",
+                    email: doelEmail,
+                    message: emailBericht
+                })
+            });
+            const data = await res.json().catch(() => null);
+            if (res.ok && (!data || data.success !== false)) {
+                mailVerzonden = true;
+            } else {
+                console.warn("Web3Forms melding:", data);
+            }
+        } catch(netErr) {
+            console.warn("Netwerkfout bij mailen:", netErr);
+        }
 
-        const res = await fetch("https://api.web3forms.com/submit", {
-            method: "POST",
-            body: formData
-        });
+        // 4. Download altijd direct de PowerPoint in het Bethelkerk-formaat naar de computer
+        await pres.writeFile(bestandsnaam);
 
-        if (res.ok) {
-            window.toonToast(`📧 Liturgie & PowerPoint verzonden naar ${doelEmail}!`, "success");
+        if (mailVerzonden) {
+            window.toonToast(`📧 Liturgie gemaild naar ${doelEmail} & PowerPoint gedownload!`, "success");
         } else {
-            console.warn("Web3Forms melding niet geslaagd, start directe download fallback");
-            pres.writeFile(bestandsnaam);
-            window.toonToast("Mail kon niet verzonden worden, PowerPoint direct gedownload.", "warning");
+            window.toonToast("PowerPoint gedownload! (Mail kon tijdelijk niet verzonden worden)", "warning");
         }
     } catch(err) {
         console.error("Fout bij sturen liturgie mail:", err);
