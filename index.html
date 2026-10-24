@@ -1453,6 +1453,13 @@
             <span class="hidden sm:inline">PowerPoint</span>
         </button>
 
+        <!-- 5. Mail Liturgie naar mij (Test) -->
+        <button id="stuurLiturgieMailKnop" onclick="stuurLiturgieNaarMij()" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-full shadow-[0_4px_16px_rgba(147,51,234,0.3)] active:scale-95 transition-all duration-200 flex items-center justify-center gap-1.5 border border-white/20 font-semibold text-xs sm:text-[13px] tracking-[-0.01em] flex-shrink-0 whitespace-nowrap" title="Genereer de PowerPoint en stuur deze met de tekst naar sempjons@gmail.com">
+            <span>📧</span>
+            <span class="hidden sm:inline">Mail naar mij</span>
+            <span class="sm:hidden">Mail</span>
+        </button>
+
         <!-- Made by Sem handtekening (subtiel op desktop) -->
         <span class="text-[10px] text-[#86868B] font-bold tracking-widest uppercase opacity-60 hidden xl:inline px-1 select-none">Made by Sem</span>
     </div>
@@ -9852,24 +9859,7 @@ function bouwPptxTextRuns(regelsArr, fontSize, fontFace, basisBold) {
     return runs;
 }
 
-window.maakPowerPoint = async function(customOpties = null, forceExport = false) {
-    if (liturgieVolgorde.length === 0) { window.toonToast("Voeg eerst een item toe aan de volgorde.", "error"); return; }
-    
-    // Automatische Pre-Flight Zero-Defect Kwaliteitscontrole vóór export
-    if (!forceExport && window.voerPreflightControleUit) {
-        const report = window.voerPreflightControleUit();
-        if (report.heeftFouten) {
-            window.openPreflightModal(report);
-            return;
-        }
-    }
-
-    // Interceptie: als er geen customOpties zijn meegegeven én customizer ingeschakeld is, toon modal
-    if (!customOpties && welkomstdiaAanpassenAan()) {
-        openWelkomstdiaModal();
-        return;
-    }
-
+window.bouwPowerPointPresentatie = async function(customOpties = null) {
     // --- 1. ICONEN DEFINIËREN ---
     const base64Voorganger = PPT_BASE64_VOORGANGER;
     const base64Muziek = PPT_BASE64_MUZIEK;
@@ -9879,8 +9869,8 @@ window.maakPowerPoint = async function(customOpties = null, forceExport = false)
     let pres = new PptxGenJS();
     pres.layout = 'LAYOUT_16x9';
 
-    const fSize = Math.min(40, Math.max(30, parseInt(document.getElementById('fontSizeSelect').value) || 40));
-    const splitMethod = document.getElementById('linesSelect').value;
+    const fSize = Math.min(40, Math.max(30, parseInt(document.getElementById('fontSizeSelect')?.value) || 40));
+    const splitMethod = document.getElementById('linesSelect')?.value || "vers";
     const pptFont = getFont();
     const pptBg = isLivestream() ? { data: LIVESTREAM_BG } : { color: "000000" };
 
@@ -9888,8 +9878,8 @@ window.maakPowerPoint = async function(customOpties = null, forceExport = false)
     let welcomeSlide = pres.addSlide();
     welcomeSlide.background = pptBg;
 
-    const datum = document.getElementById('datumInput').value || "";
-    const voorganger = document.getElementById('voorgangerInput').value || "";
+    const datum = document.getElementById('datumInput')?.value || "";
+    const voorganger = document.getElementById('voorgangerInput')?.value || "";
 
     const isCustom = customOpties && !customOpties.gebruikStandaard;
     const titelTekst = isCustom ? (customOpties.titel || "") : "Welkom";
@@ -9923,26 +9913,20 @@ window.maakPowerPoint = async function(customOpties = null, forceExport = false)
             zangLijst = customOpties.zangLijst;
         }
     } else {
-        // Groepeer liederen: als hetzelfde lied meerdere keren voorkomt (bijv. aparte items
-        // per vers OF via de vers-kiezer met basisTitel), samenvoegen tot één regel met versnummers.
+        // Groepeer liederen: samenvoegen tot één regel met compacte versnummers
         const gegroepeerd = [];
-        const gezieneBasisTitels = new Map(); // basisTitel -> index in gegroepeerd
+        const gezieneBasisTitels = new Map();
 
         liturgieVolgorde.filter(item => item.type === "Zang").forEach(item => {
-            // Bepaal de basisnaam (zonder " - vers X, Y" suffix)
             const basisNaam = item.basisTitel || item.titel.replace(/\s+vers\s*[\d,\s]+$/i, '').trim();
-            
-            // Extraheer versnummers uit de titel als ze er in staan
             const versMatch = item.titel.match(/vers\s*([\d,\s]+)$/i);
             const versNummers = versMatch ? versMatch[1].split(/[,\s]+/).map(n => n.trim()).filter(Boolean) : null;
 
             if (gezieneBasisTitels.has(basisNaam)) {
-                // Voeg versnummers samen met het bestaande item
                 const bestaand = gegroepeerd[gezieneBasisTitels.get(basisNaam)];
                 if (versNummers && bestaand.versNummers) {
                     bestaand.versNummers = bestaand.versNummers.concat(versNummers);
                 } else {
-                    // Één van beiden heeft geen versnummers → laat beide tonen
                     bestaand.versNummers = null;
                 }
             } else {
@@ -9990,7 +9974,6 @@ window.maakPowerPoint = async function(customOpties = null, forceExport = false)
             toonDeelModal(meeleesUrl);
         } catch (e) {
             console.error("Meelees-QR maken mislukt:", e);
-            window.toonToast("Meelees-QR maken mislukt.", "error");
         }
     }
 
@@ -10019,7 +10002,6 @@ window.maakPowerPoint = async function(customOpties = null, forceExport = false)
             return;
         }
 
-        // WAARSCHUWING BIJ LEEG ITEM
         if (!item.tekst || item.tekst.trim() === "") {
             let slide = pres.addSlide();
             slide.background = pptBg;
@@ -10033,7 +10015,6 @@ window.maakPowerPoint = async function(customOpties = null, forceExport = false)
         const tw = item.tekstW ?? TEKST_DEF_W;
         const th = item.tekstH ?? TEKST_DEF_H;
         const subSlides = berekenSubSlidesVoorItem(item);
-
         const isTekstBold = (item.bold !== undefined) ? item.bold : (window.isBold ? window.isBold() : false);
 
         subSlides.forEach((sub, subIdx) => {
@@ -10066,17 +10047,146 @@ window.maakPowerPoint = async function(customOpties = null, forceExport = false)
         });
     });
 
-    // --- 5. EXPORT ---
-    pres.writeFile("Liturgie_Presentatie.pptx")
-        .then(fileName => {
-            window.toonToast("PowerPoint gereed & gearchiveerd!", "success");
-            if (typeof window.slaLiturgieOp === 'function') {
-                window.slaLiturgieOp(true);
+    return pres;
+};
+
+window.maakPowerPoint = async function(customOpties = null, forceExport = false) {
+    if (liturgieVolgorde.length === 0) { window.toonToast("Voeg eerst een item toe aan de volgorde.", "error"); return; }
+    
+    // Automatische Pre-Flight Zero-Defect Kwaliteitscontrole vóór export
+    if (!forceExport && window.voerPreflightControleUit) {
+        const report = window.voerPreflightControleUit();
+        if (report.heeftFouten) {
+            window.openPreflightModal(report);
+            return;
+        }
+    }
+
+    // Interceptie: als er geen customOpties zijn meegegeven én customizer ingeschakeld is, toon modal
+    if (!customOpties && welkomstdiaAanpassenAan()) {
+        openWelkomstdiaModal();
+        return;
+    }
+
+    try {
+        const pres = await window.bouwPowerPointPresentatie(customOpties);
+        await pres.writeFile("Liturgie_Presentatie.pptx");
+        window.toonToast("PowerPoint gereed & gearchiveerd!", "success");
+        if (typeof window.slaLiturgieOp === 'function') {
+            window.slaLiturgieOp(true);
+        }
+        setTimeout(() => { toonExportFeedback(); }, 1200);
+    } catch(err) {
+        console.error("Export fout:", err);
+        window.toonToast("Export fout: " + err, "error");
+    }
+};
+
+window.stuurLiturgieNaarMij = async function() {
+    if (!liturgieVolgorde || liturgieVolgorde.length === 0) {
+        window.toonToast("Voeg eerst een item toe aan de liturgie om te mailen.", "warning");
+        return;
+    }
+
+    const knop = document.getElementById('stuurLiturgieMailKnop');
+    const origHtml = knop ? knop.innerHTML : '';
+    if (knop) {
+        knop.innerHTML = '<span>⏳</span><span>PowerPoint maken & mailen...</span>';
+        knop.disabled = true;
+    }
+
+    try {
+        const datum = document.getElementById('datumInput')?.value?.trim() || "";
+        const voorganger = document.getElementById('voorgangerInput')?.value?.trim() || "";
+        const gemeente = (window.getActieveGemeente ? window.getActieveGemeente() : "Bethelkerk Maassluis");
+
+        // 1. Bouw de PowerPoint in het exacte Bethelkerk-formaat
+        const pres = await window.bouwPowerPointPresentatie();
+        const pptxBlob = await pres.write({ outputType: 'blob' });
+
+        const bestandsnaam = `Liturgie_${datum ? datum.replace(/[^a-zA-Z0-9\-_]/g, '_') : 'Dienst'}.pptx`;
+
+        // 2. Groepeer liederen voor het e-mail overzicht
+        const gegroepeerd = [];
+        const gezieneBasisTitels = new Map();
+        liturgieVolgorde.filter(item => item.type === "Zang").forEach(item => {
+            const basisNaam = item.basisTitel || item.titel.replace(/\s+vers\s*[\d,\s]+$/i, '').trim();
+            const versMatch = item.titel.match(/vers\s*([\d,\s]+)$/i);
+            const versNummers = versMatch ? versMatch[1].split(/[,\s]+/).map(n => n.trim()).filter(Boolean) : null;
+            if (gezieneBasisTitels.has(basisNaam)) {
+                const bestaand = gegroepeerd[gezieneBasisTitels.get(basisNaam)];
+                if (versNummers && bestaand.versNummers) bestaand.versNummers = bestaand.versNummers.concat(versNummers);
+            } else {
+                gezieneBasisTitels.set(basisNaam, gegroepeerd.length);
+                gegroepeerd.push({ basisNaam, versNummers: versNummers ? [...versNummers] : null });
             }
-            // Toon feedback-popup na succesvolle export (max 1x per sessie)
-            setTimeout(() => { toonExportFeedback(); }, 1200);
-        })
-        .catch(err => { window.toonToast("Export fout: " + err, "error"); });
+        });
+        const geformatteerdeLiederen = gegroepeerd.map(g => {
+            let t = g.basisNaam.split(' - ')[0].trim();
+            const afk = t.replace(/Weerklank Lied/i, "Lw")
+                         .replace(/Weerklank Psalm/i, "Pw")
+                         .replace(/Op Toonhoogte/i, "OTH")
+                         .replace(/DNP Psalm/i, "Ps DNP")
+                         .replace(/Psalm/i, "Ps")
+                         .replace(/Opwekking/i, "Opw").trim();
+            if (g.versNummers && g.versNummers.length > 0) {
+                return `${afk} vers ${g.versNummers.join(', ')}`;
+            }
+            return afk;
+        });
+
+        const bijbelLijst = liturgieVolgorde.filter(item => item.type === "Schriftlezing").map(item => item.titel.replace(" (HSV)", ""));
+
+        const emailBericht = `Beste Sem,
+
+Hierbij de complete liturgie en bijbehorende PowerPoint-presentatie voor de komende dienst:
+
+Gemeente: ${gemeente}
+Datum: ${datum || 'Zondag'}
+Voorganger: ${voorganger || 'Niet ingevuld'}
+
+Liederen:
+${geformatteerdeLiederen.length > 0 ? geformatteerdeLiederen.map(l => `• ${l}`).join('\n') : '(Geen liederen)'}
+
+Schriftlezing:
+${bijbelLijst.length > 0 ? bijbelLijst.map(b => `• ${b}`).join('\n') : '(Geen schriftlezing)'}
+
+Aantal onderdelen in liturgie: ${liturgieVolgorde.length}
+
+De PowerPoint (.pptx) is als bijlage toegevoegd aan deze e-mail met het exacte Bethelkerk-formaat (Welkomstdia met iconen, liederen per vers verdeeld, HSV lezing en collecte QR).
+
+Met vriendelijke groet,
+Kerkapp Beamer Systeem`;
+
+        // 3. Verstuur naar sempjons@gmail.com via Web3Forms FormData met PowerPoint bijlage
+        const formData = new FormData();
+        formData.append("access_key", "da56e2ee-c688-47b5-81fd-dbdb65d92201");
+        formData.append("subject", `Liturgie PowerPoint: ${datum || 'Kerkdienst'} - ${voorganger || gemeente}`);
+        formData.append("from_name", "Kerkapp Beamer");
+        formData.append("message", emailBericht);
+        formData.append("attachment", pptxBlob, bestandsnaam);
+
+        const res = await fetch("https://api.web3forms.com/submit", {
+            method: "POST",
+            body: formData
+        });
+
+        if (res.ok) {
+            window.toonToast("📧 Liturgie & PowerPoint verzonden naar sempjons@gmail.com!", "success");
+        } else {
+            console.warn("Web3Forms melding niet geslaagd, start directe download fallback");
+            pres.writeFile(bestandsnaam);
+            window.toonToast("Mail kon niet verzonden worden, PowerPoint direct gedownload.", "warning");
+        }
+    } catch(err) {
+        console.error("Fout bij sturen liturgie mail:", err);
+        window.toonToast("Fout: " + err.message, "error");
+    } finally {
+        if (knop) {
+            knop.innerHTML = origHtml;
+            knop.disabled = false;
+        }
+    }
 };
 
 // --- FEEDBACK POPUP NA EXPORT ---
@@ -11447,7 +11557,11 @@ window.verstuurExportFeedback = async function() {
             <button type="button" onclick="sluitPreflightModal()" class="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-white dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs font-semibold transition-all active:scale-95 text-center">
                 ← Terug naar Liturgie
             </button>
-            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <div class="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto justify-end">
+                <button type="button" id="preflightMailBtn" onclick="sluitPreflightModal(); stuurLiturgieNaarMij();" class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold transition-all active:scale-95 shadow-md flex items-center justify-center gap-1.5" title="Genereer de PowerPoint en mail deze direct naar sempjons@gmail.com">
+                    <span>📧</span>
+                    <span>Mail naar sempjons@gmail.com</span>
+                </button>
                 <button type="button" id="preflightExportBtn" onclick="exporteerNaPreflight()" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#007AFF] hover:bg-blue-600 text-white text-xs font-bold transition-all active:scale-95 shadow-md flex items-center justify-center gap-1.5">
                     <span>Exporteer PowerPoint</span>
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>

@@ -10,7 +10,10 @@
 
 const WORKER_URL = "https://kerkliturgie-email-bethelkerk.kerkapp.workers.dev/test";
 const KERK_ID = "bethel";
-const STUUR_BEVESTIGING = true; // Stuur automatische reply naar de voorganger
+
+// VEILIGE TESTMODUS: Stuur e-mails UITSLUITEND naar Sem (nooit replyen naar de voorganger zolang het in testfase is!)
+const TEST_MODUS_ALLEEN_NAAR_MIJ = true;
+const TEST_EMAIL_ONTVANGER = "sempjons@gmail.com";
 
 /**
  * HOOFDFUNCTIE: Wordt elke 1 of 5 minuten automatisch aangeroepen door de trigger
@@ -77,22 +80,36 @@ function verwerkInkomendeLiturgie() {
         console.log("✅ SUCCES: Liturgie succesvol klaargezet in Cloudflare D1!");
         thread.markRead(); // Markeer als gelezen zodat hij niet opnieuw wordt gestuurd
 
-        // Stuur automatische ontvangstbevestiging terug
-        if (STUUR_BEVESTIGING) {
+        // Stuur test-bevestiging UITSLUITEND naar Sem
+        if (TEST_MODUS_ALLEEN_NAAR_MIJ && TEST_EMAIL_ONTVANGER) {
           try {
             const data = JSON.parse(responseTekst);
             const aantal = (data.resultaat && data.resultaat.slides) ? data.resultaat.slides.length : 0;
             const voorganger = (data.resultaat && data.resultaat.voorganger) ? data.resultaat.voorganger : "Voorganger";
+            const datum = (data.resultaat && data.resultaat.datum) ? data.resultaat.datum : "";
 
-            lastMsg.reply(
-              `Beste ${voorganger},\n\n` +
-              `Hartelijk dank! De liturgie voor "${onderwerp}" is zojuist automatisch ontvangen en verwerkt door het Kerkapp systeem van de Bethelkerk Maassluis.\n\n` +
-              `Er zijn ${aantal} dia's klaargezet voor de beamer en de livestream in OBS Studio.\n\n` +
-              `Met vriendelijke groet,\n` +
-              `Beamteam Bethelkerk Maassluis`
-            );
-            console.log(`Ontvangstbevestiging gestuurd naar ${afzender}`);
-          } catch(e) {}
+            let samenvatting = `Beste Sem,\n\nEr is zojuist een inkomende liturgie-mail binnengekomen en verwerkt door het Bethelkerk systeem!\n\n` +
+              `Status: TESTMODUS (Alleen naar jou verzonden ter verificatie)\n` +
+              `Afzender dominee/scriba: ${afzender}\n` +
+              `Onderwerp: ${onderwerp}\n` +
+              `Herkende voorganger: ${voorganger}\n` +
+              `Datum: ${datum}\n` +
+              `Aantal gegenereerde dia's: ${aantal}\n\n`;
+
+            if (data.resultaat && data.resultaat.items && data.resultaat.items.length > 0) {
+              samenvatting += `Liederen & Onderdelen:\n`;
+              data.resultaat.items.forEach((it, idx) => {
+                samenvatting += `${idx + 1}. [${it.type}] ${it.titel}\n`;
+              });
+            }
+
+            samenvatting += `\nMet vriendelijke groet,\nKerkapp Test Sync`;
+
+            GmailApp.sendEmail(TEST_EMAIL_ONTVANGER, `[TEST LITURGIE] ${onderwerp} (${voorganger})`, samenvatting);
+            console.log(`✅ Test-bevestiging UITSLUITEND gestuurd naar ${TEST_EMAIL_ONTVANGER}`);
+          } catch(e) {
+            console.warn("Fout bij versturen test-bevestiging naar Sem:", e);
+          }
         }
       } else {
         console.error(`❌ Fout van worker (${statusCode}): ${responseTekst}`);
