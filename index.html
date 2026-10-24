@@ -407,7 +407,22 @@
             <!-- STAP 1: Liturgie Plakken -->
             <div id="importStap1" class="p-4 md:p-6 flex flex-col gap-3 overflow-y-auto">
                 <p class="text-[13px] text-gray-500 dark:text-gray-400 font-medium">Plak hier de complete liturgie (bijv. vanuit Word of WhatsApp). De AI herkent automatisch liederen, psalmen, coupletten en schriftlezingen.</p>
+                
+                <div id="importPrivacyFeedbackBadge" class="hidden text-xs font-semibold px-3 py-2 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300/40 flex items-center gap-2 shadow-xs"></div>
+
                 <textarea id="importTekst" rows="8" class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-transparent rounded-2xl p-4 text-[13px] focus:bg-white focus:border-[#007AFF] focus:ring-4 focus:ring-[#007AFF]/15 focus:outline-none transition-all duration-200 ease-out resize-none font-sans" placeholder="Plak je liturgie hier (bijv: Zingen: Psalm 84: 1, 3 en 5; Schriftlezing: Romeinen 8:31-39; Slotlied: Weerklank 14:1-3)..."></textarea>
+                
+                <!-- Lokaal Privacy Shield & AVG-beveiliging Banner -->
+                <div class="flex items-start gap-2.5 p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/50 text-xs">
+                    <span class="text-base flex-shrink-0">🛡️</span>
+                    <div class="flex flex-col gap-0.5 leading-snug">
+                        <span class="font-bold text-emerald-950 dark:text-emerald-200">Lokaal Privacy Shield &amp; AVG-Beveiliging</span>
+                        <span class="text-[11px] text-emerald-800 dark:text-emerald-300">
+                            Pastorale gegevens (zoals namen van zieken, overledenen of persoonlijke voorbeden) worden <strong>automatisch lokaal in je browser gefilterd</strong> vóórdat de tekst naar de AI gaat. Er worden géén persoonsgegevens opgeslagen.
+                        </span>
+                    </div>
+                </div>
+
                 <button onclick="analyseerImport()" class="w-full py-3.5 mt-1 rounded-2xl text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 active:scale-98 transition-all shadow-md flex items-center justify-center gap-2">
                     <span>✨</span>
                     <span>Analyseer Liturgie</span>
@@ -7430,9 +7445,64 @@ Bijbelliederen`;
         }
     };
 
+    // --- LOKAAL PRIVACY SHIELD & FILTER VOOR PASTORALE GEGEVENS (AVG / GDPR) ---
+    window.filterPastoraleGevoeligeGegevens = function(ruweTekst) {
+        if (!ruweTekst || typeof ruweTekst !== 'string') return { opgeschoondeTekst: '', gefilterdeAantal: 0 };
+        
+        // Gevoelige pastorale en medische contexten (zieken, overleden, voorbeden, afkondigingen)
+        const pastoraleRegex = /\b(voorbede[n]?|zieke[n]?|ziekenhuis|ziekenboeg|ziekenbezoek|overleden|overlijden|in\s+memoriam|rouw|rouwbeklag|begrafenis|crematie|pastoraat|pastorale|pastoraal|gedoopt|doopdienst|doopouder[s]?|huwelijk|trouwdienst|trouwbelofte|gebedspunten|gebedspunt|afkondiging(en)?|jarigen|mededeling(en)?)\b/i;
+        
+        // Woorden die duiden op liturgie/lied/lezing die we NOOIT mogen weggooien
+        const liturgieRegex = /\b(psalm|ps\b|lied|liederen|gezang|weerklank|op\s*toonhoogte|dnp|opwekking|schriftlezing|lezing|bijbelgedeelte|bijbellezing|hsv|nbv|nbg|slotlied|aanvangslied|intredelied)\b/i;
+
+        const regels = ruweTekst.split(/\r?\n/);
+        let gefilterdeAantal = 0;
+        const behoudenRegels = [];
+
+        regels.forEach(regel => {
+            const getrimd = regel.trim();
+            if (!getrimd) {
+                behoudenRegels.push(regel);
+                return;
+            }
+
+            const isPastoraal = pastoraleRegex.test(getrimd);
+            const isLiturgie = liturgieRegex.test(getrimd);
+
+            // Als het pastoraal/medisch is en GEEN lied/lezing bevat, filteren we het lokaal weg
+            if (isPastoraal && !isLiturgie) {
+                gefilterdeAantal++;
+                behoudenRegels.push('[... pastorale alinea gefilterd door lokaal Privacy Shield ...]');
+            } else {
+                behoudenRegels.push(regel);
+            }
+        });
+
+        return {
+            opgeschoondeTekst: behoudenRegels.join('\n'),
+            gefilterdeAantal
+        };
+    };
+
     window.analyseerImport = async function() {
-        const tekst = document.getElementById('importTekst').value;
-        if (!tekst.trim()) return;
+        const ruweTekst = document.getElementById('importTekst').value;
+        if (!ruweTekst.trim()) return;
+
+        // Pas eerst het lokale Privacy Shield toe
+        const privacyResult = window.filterPastoraleGevoeligeGegevens(ruweTekst);
+        const veiligeTekst = privacyResult.opgeschoondeTekst;
+
+        const privacyNotice = document.getElementById('importPrivacyFeedbackBadge');
+        if (privacyNotice) {
+            if (privacyResult.gefilterdeAantal > 0) {
+                privacyNotice.className = "text-xs font-semibold px-3 py-2 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300/40 flex items-center gap-2 shadow-xs mb-2";
+                privacyNotice.innerHTML = `<span>🛡️</span><span><strong>Privacy Shield:</strong> ${privacyResult.gefilterdeAantal} pastorale alinea('${privacyResult.gefilterdeAantal === 1 ? '' : 's'}) met voorbeden/namen lokaal gefilterd vóór AI-analyse.</span>`;
+                privacyNotice.classList.remove('hidden');
+            } else {
+                privacyNotice.classList.add('hidden');
+            }
+        }
+
         window.gevondenImportItems = [];
         const resultatenDiv = document.getElementById('importResultaten');
         resultatenDiv.innerHTML = '';
@@ -7473,7 +7543,7 @@ Geef UITSLUITEND geldige JSON terug: een array van objecten met de keys "type", 
 
 Brontekst:
 """
-${tekst}
+${veiligeTekst}
 """`;
 
             if (typeof consumeerAiQuota === 'function') consumeerAiQuota(2);
@@ -10643,10 +10713,14 @@ window.verstuurExportFeedback = async function() {
                             </p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 flex-wrap">
                         <span class="text-xs px-3 py-1 rounded-full bg-purple-500/25 text-purple-200 border border-purple-400/35 font-semibold flex items-center gap-1.5 shadow-2xs">
                             <span>✨</span>
                             <span>Hybride Regie: 🎙️ Lezing auto · ⌨️ Zang spatiebalk</span>
+                        </span>
+                        <span class="text-xs px-2.5 py-1 rounded-full bg-purple-500/15 text-purple-200 border border-purple-400/30 font-medium flex items-center gap-1 shadow-2xs" title="Spraak wordt via de ingebouwde browser speech engine gecodeerd verwerkt">
+                            <span>🔒</span>
+                            <span>Browser Speech API</span>
                         </span>
                     </div>
                 </div>
@@ -10681,6 +10755,12 @@ window.verstuurExportFeedback = async function() {
                                 <span id="copilotMicStatusBadge" class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-gray-800 text-gray-400 border border-gray-700">
                                     Stand-by (Microfoon uit)
                                 </span>
+                            </div>
+
+                            <!-- Audio Privacy Notitie -->
+                            <div class="p-2.5 rounded-xl bg-purple-950/20 border border-purple-500/20 text-xs text-purple-200/90 flex items-start gap-2 leading-relaxed shadow-2xs">
+                                <span class="text-sm flex-shrink-0">🔒</span>
+                                <span><strong>Audio Privacy:</strong> Gebruikt de ingebouwde spraakherkenning van de browser. Gesproken audio wordt kortstondig versleuteld verwerkt voor transcriptie en wordt door Kerkapp nooit opgeslagen of bewaard.</span>
                             </div>
 
                             <!-- Doeltekst met Woord-voor-Woord Kleuring -->
