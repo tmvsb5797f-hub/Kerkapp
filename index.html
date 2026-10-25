@@ -4339,7 +4339,8 @@ Retourneer UITSLUITEND een valide JSON object:
                 const d = doc.data();
                 // Backwards compatibility: documenten zonder 'gemeente' horen bij Bethelkerk Maassluis
                 const docGem = d.gemeente || STANDAARD_GEMEENTE;
-                if (docGem.toLowerCase().trim() === huidigeGem.toLowerCase().trim()) {
+                const isWaste = (!d.datum || d.datum === 'Zonder datum') && !d.voorganger && (!d.items || d.items.length === 0);
+                if (!isWaste && docGem.toLowerCase().trim() === huidigeGem.toLowerCase().trim()) {
                     gefilterd.push({ doc, d });
                 }
             });
