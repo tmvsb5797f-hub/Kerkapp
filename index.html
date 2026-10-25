@@ -1120,13 +1120,7 @@
         </section>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-stretch">
             <section>
-                <div class="flex items-center justify-between mb-2 md:mb-3 ml-2 mr-1">
-                    <h2 class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider">1. Liederen &amp; Psalmen</h2>
-                    <button type="button" onclick="window.openLiederenBeheerModal()" class="text-[11px] font-semibold text-[#007AFF] hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1.5 transition-all active:scale-95 px-2.5 py-1 rounded-xl bg-blue-50/80 hover:bg-blue-100/80 dark:bg-blue-950/40 dark:hover:bg-blue-900/60 border border-blue-200/60 dark:border-blue-800/40 cursor-pointer" title="Bekijk, doorzoek, bewerk of verwijder alle liederen in de database">
-                        <svg class="w-3.5 h-3.5 text-[#007AFF] dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                        <span>📚 Alle Liederen Beheren</span>
-                    </button>
-                </div>
+                <h2 class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider mb-2 md:mb-3 ml-2">1. Liederen &amp; Psalmen</h2>
                 <div class="bg-white p-4 md:p-6 rounded-[20px] md:rounded-[24px] shadow-[0_4px_24px_rgba(0,0,0,0.04)] relative">
                     <div class="relative">
                         <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -1262,29 +1256,83 @@
 
 <div id="meeleesOverlay" class="hidden fixed inset-0 z-[300] overflow-y-auto" style="background:#fff3e0"></div>
 
-<div id="deelModal" class="fixed inset-0 z-[110] hidden flex items-center justify-center bg-black/20 backdrop-blur-xl transition-opacity">
-    <div class="bg-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] w-11/12 max-w-sm overflow-hidden flex flex-col transform transition-all modal-animate">
-        <div class="p-5 border-b border-gray-100 flex justify-between items-center">
-            <h3 class="text-lg font-bold text-[#1D1D1F]">Meelees-versie delen</h3>
-            <button onclick="document.getElementById('deelModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 p-1">
+<div id="deelModal" class="fixed inset-0 z-[110] hidden flex items-center justify-center bg-black/40 backdrop-blur-xl transition-opacity p-2 sm:p-4" onclick="if(event.target === this) window.sluitDeelModal()">
+    <div class="bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.05] dark:ring-white/10 w-full max-w-md overflow-hidden flex flex-col transform transition-all modal-animate max-h-[92vh]">
+        <!-- Header -->
+        <div class="p-4 sm:p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center flex-shrink-0 bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-md">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-2xl bg-blue-500/10 dark:bg-blue-500/20 text-[#007AFF] flex items-center justify-center font-bold text-base shadow-xs">
+                    📱
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-[#1D1D1F] dark:text-white">Meelees-versie QR</h3>
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400">Gemeenteleden lezen live mee op hun telefoon</p>
+                </div>
+            </div>
+            <button onclick="window.sluitDeelModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors" title="Sluiten">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
-        <div class="p-5 flex flex-col items-center gap-4">
-            <p class="text-xs text-gray-400 text-center">Gemeenteleden scannen deze QR of openen de link om op hun telefoon mee te lezen. De QR staat ook op een dia in de PowerPoint.</p>
-            <div id="deelQR" class="w-44 h-44 flex items-center justify-center"></div>
-            <div class="w-full flex items-center gap-2 bg-[#F5F5F7] rounded-xl px-3 py-2">
-                <input id="deelLink" type="text" readonly class="flex-grow bg-transparent text-[12px] text-gray-600 outline-none"/>
-                <button onclick="kopieerDeelLink()" class="text-[11px] font-semibold text-white bg-[#007AFF] hover:bg-blue-600 px-3 py-1.5 rounded-lg flex-shrink-0">Kopieer</button>
-            </div>
-            <div class="w-full flex items-center justify-between text-xs pt-1 border-t border-gray-100">
-                <span class="text-gray-500 font-medium flex items-center gap-1.5">
-                    <span>Banner:</span>
-                    <strong id="deelModalThemaLabel" class="text-gray-800">🌿 Standaard</strong>
-                </span>
-                <button type="button" onclick="testMeeleesPagina()" class="text-[#007AFF] font-semibold hover:underline flex items-center gap-1" title="Bekijk hoe gemeenteleden dit op hun telefoon zien">
-                    <span>📱 Bekijk mobiel</span>
+
+        <!-- Segmented Tab control -->
+        <div class="px-4 pt-3 pb-2 bg-gray-50/80 dark:bg-gray-800/60 border-b border-gray-100 dark:border-white/10 flex-shrink-0">
+            <div class="grid grid-cols-2 p-1 bg-gray-200/70 dark:bg-gray-700/60 rounded-2xl gap-1 text-xs">
+                <button type="button" id="meeleesTabBtnHuidig" onclick="window.wisselMeeleesTab('huidig')" class="py-1.5 px-3 rounded-xl font-bold bg-white dark:bg-[#2C2C2E] text-[#007AFF] dark:text-blue-400 shadow-xs transition-all flex items-center justify-center gap-1.5 active:scale-95">
+                    <span>📱</span>
+                    <span>Huidige QR</span>
                 </button>
+                <button type="button" id="meeleesTabBtnGeschiedenis" onclick="window.wisselMeeleesTab('geschiedenis')" class="py-1.5 px-3 rounded-xl font-semibold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all flex items-center justify-center gap-1.5 active:scale-95">
+                    <span>📜</span>
+                    <span>QR Geschiedenis</span>
+                    <span id="meeleesGeschiedenisBadge" class="hidden text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-blue-100 text-[#007AFF] dark:bg-blue-950/60 dark:text-blue-300">0</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Scrollable Content -->
+        <div class="p-4 sm:p-5 flex flex-col gap-3.5 overflow-y-auto">
+            <!-- TAB 1: HUIDIGE QR -->
+            <div id="meeleesPaneelHuidig" class="flex flex-col items-center gap-3">
+                <p class="text-xs text-gray-500 dark:text-gray-400 text-center leading-snug">Gemeenteleden scannen deze QR-code met hun camera of openen de link om live op hun mobiel mee te lezen tijdens de dienst.</p>
+                
+                <div class="p-3 bg-white rounded-2xl shadow-sm border border-gray-200 dark:border-white/20">
+                    <div id="deelQR" class="w-48 h-48 flex items-center justify-center"></div>
+                </div>
+
+                <div class="w-full flex items-center gap-2 bg-[#F5F5F7] dark:bg-[#2C2C2E] rounded-xl px-3 py-2 border border-gray-200 dark:border-white/10">
+                    <input id="deelLink" type="text" readonly class="flex-grow bg-transparent text-[11px] text-gray-700 dark:text-gray-200 font-mono outline-none"/>
+                    <button type="button" onclick="window.kopieerDeelLink()" class="text-[11px] font-semibold text-white bg-[#007AFF] hover:bg-blue-600 px-3 py-1.5 rounded-lg flex-shrink-0 transition-all active:scale-95 shadow-xs">Kopieer</button>
+                </div>
+
+                <div class="w-full flex items-center justify-between text-xs pt-2 border-t border-gray-100 dark:border-white/10">
+                    <span class="text-gray-500 dark:text-gray-400 font-medium flex items-center gap-1.5">
+                        <span>Banner:</span>
+                        <strong id="deelModalThemaLabel" class="text-gray-800 dark:text-gray-200 font-bold">🌿 Standaard</strong>
+                    </span>
+                    <button type="button" onclick="testMeeleesPagina()" class="text-[#007AFF] dark:text-blue-400 font-semibold hover:underline flex items-center gap-1 active:scale-95 transition-all" title="Bekijk hoe gemeenteleden dit op hun telefoon zien">
+                        <span>📱 Bekijk mobiel</span>
+                    </button>
+                </div>
+
+                <div class="w-full flex gap-2 pt-1">
+                    <button type="button" onclick="window.genereerVersMeeleesLink()" class="flex-1 py-2 px-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-[#007AFF] dark:text-blue-300 text-xs font-semibold transition-all border border-blue-200 dark:border-blue-800/40 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        <span>Vernieuw QR voor dienst</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 2: QR GESCHIEDENIS -->
+            <div id="meeleesPaneelGeschiedenis" class="hidden flex flex-col gap-2.5">
+                <div class="flex items-center justify-between px-1">
+                    <span class="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Eerder gegenereerde meelees-links</span>
+                    <button type="button" onclick="window.wisMeeleesGeschiedenis()" id="meeleesWisGeschiedenisKnop" class="text-[10px] font-semibold text-red-500 hover:text-red-700 dark:text-red-400 hover:underline transition-colors hidden">
+                        Geschiedenis wissen
+                    </button>
+                </div>
+                <div id="meeleesGeschiedenisLijst" class="flex flex-col gap-2 max-h-72 overflow-y-auto pr-1">
+                    <!-- Gevuld via renderMeeleesGeschiedenisUI() -->
+                </div>
             </div>
         </div>
     </div>
@@ -1357,18 +1405,24 @@
                         </label>
                     </div>
 
-                    <div class="flex items-center justify-between pt-2 border-t border-gray-200/60 dark:border-gray-700/60">
-                        <div class="flex items-center gap-2 pr-2">
-                            <svg class="w-5 h-5 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
-                            <div>
-                                <span class="text-xs font-medium text-[#1D1D1F] dark:text-white block">Meelees-versie</span>
-                                <span class="text-[10px] text-gray-400 leading-tight block">QR-dia zodat de gemeente meeleest op de telefoon</span>
+                    <div class="pt-2 border-t border-gray-200/60 dark:border-gray-700/60 flex flex-col gap-2">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2 pr-2">
+                                <svg class="w-5 h-5 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+                                <div>
+                                    <span class="text-xs font-medium text-[#1D1D1F] dark:text-white block">Meelees-versie</span>
+                                    <span class="text-[10px] text-gray-400 leading-tight block">QR-dia zodat de gemeente meeleest op de telefoon</span>
+                                </div>
                             </div>
+                            <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                                <input type="checkbox" id="meeleesToggle" onchange="toggleMeelees()" class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#34C759]"></div>
+                            </label>
                         </div>
-                        <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                            <input type="checkbox" id="meeleesToggle" onchange="toggleMeelees()" class="sr-only peer">
-                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#34C759]"></div>
-                        </label>
+                        <button type="button" onclick="document.getElementById('infoModal').classList.add('hidden'); window.openMeeleesModal();" class="w-full py-1.5 px-3 rounded-xl bg-white dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-[#007AFF] dark:text-blue-300 text-[11px] font-semibold transition-all border border-gray-200 dark:border-gray-600 flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer shadow-xs">
+                            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="3" height="3"></rect><line x1="21" y1="14" x2="21" y2="14.01"></line><line x1="21" y1="21" x2="21" y2="21.01"></line><line x1="14" y1="21" x2="14" y2="21.01"></line></svg>
+                            <span>Bekijk Meelees QR &amp; Geschiedenis</span>
+                        </button>
                     </div>
                 </div>
 
@@ -1548,8 +1602,8 @@
                     </div>
                     
                     <button type="button" onclick="document.getElementById('infoModal').classList.add('hidden'); window.openLiederenBeheerModal();" class="w-full mt-1 py-2 px-3 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all flex items-center justify-center gap-2 shadow-xs active:scale-95 cursor-pointer">
-                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477-4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-                        <span>📚 Alle Liederen Beheren &amp; Inzien</span>
+                        <svg class="w-4 h-4 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477-4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                        <span class="truncate">Liederen Beheer &amp; Bibliotheek</span>
                     </button>
 
                     <div class="flex gap-2 w-full mt-1">
@@ -3413,26 +3467,280 @@ Retourneer UITSLUITEND een valide JSON object:
             payload.customThema = MEELEES_THEMAS.custom;
         }
         const ref = await db.collection("meelees").add(payload);
-        return getAppBaseUrl() + '?meelees=' + ref.id;
+        const meeleesUrl = getAppBaseUrl() + '?meelees=' + ref.id;
+        try {
+            window.voegMeeleesToeAanGeschiedenis({
+                id: ref.id,
+                url: meeleesUrl,
+                datum: datum || 'Dienst zonder datum',
+                voorganger: voorganger || '',
+                thema: thema || 'standaard',
+                itemsCount: items.length,
+                aangemaaktOp: Date.now()
+            });
+        } catch(e) {}
+        return meeleesUrl;
     }
 
     window.kopieerDeelLink = function() {
         const inp = document.getElementById('deelLink');
+        if (!inp) return;
         inp.select();
         try { navigator.clipboard.writeText(inp.value); } catch (e) { document.execCommand('copy'); }
         window.toonToast("Link gekopieerd!", "success");
     };
 
-    function toonDeelModal(url) {
-        document.getElementById('deelLink').value = url;
+    function toonDeelModal(url, entry = null) {
+        if (!url) return;
+        const linkInp = document.getElementById('deelLink');
+        if (linkInp) linkInp.value = url;
         const qrVak = document.getElementById('deelQR');
-        qrVak.innerHTML = '<img src="' + maakQRDataURL(url, 6, 4) + '" class="w-full h-full object-contain" alt="QR"/>';
-        const thId = window.getActiefMeeleesThema();
+        if (qrVak && typeof maakQRDataURL === 'function') {
+            qrVak.innerHTML = '<img src="' + maakQRDataURL(url, 6, 4) + '" class="w-full h-full object-contain" alt="QR"/>';
+        }
+        const thId = (entry && entry.thema) || window.getActiefMeeleesThema();
         const th = MEELEES_THEMAS[thId] || MEELEES_THEMAS.standaard;
         const lbl = document.getElementById('deelModalThemaLabel');
         if (lbl) lbl.textContent = `${th.icoon} ${th.naam}`;
-        document.getElementById('deelModal').classList.remove('hidden');
+        window.wisselMeeleesTab('huidig');
+        window.renderMeeleesGeschiedenisUI();
+        document.getElementById('deelModal')?.classList.remove('hidden');
     }
+    window.toonDeelModal = toonDeelModal;
+
+    window.sluitDeelModal = function() {
+        document.getElementById('deelModal')?.classList.add('hidden');
+    };
+
+    window.openMeeleesModal = async function(tab = 'huidig') {
+        const linkInp = document.getElementById('deelLink');
+        let url = linkInp ? linkInp.value : '';
+        if (!url) {
+            const gesch = window.getMeeleesGeschiedenis();
+            if (gesch.length > 0) {
+                url = gesch[0].url;
+                toonDeelModal(url, gesch[0]);
+            } else if (typeof liturgieVolgorde !== 'undefined' && liturgieVolgorde.length > 0) {
+                await window.genereerVersMeeleesLink();
+                return;
+            }
+        }
+        if (url) {
+            toonDeelModal(url);
+        } else {
+            document.getElementById('deelModal')?.classList.remove('hidden');
+        }
+        window.wisselMeeleesTab(tab);
+        window.renderMeeleesGeschiedenisUI();
+    };
+
+    window.genereerVersMeeleesLink = async function() {
+        try {
+            window.toonToast("Meelees-link genereren...", "info");
+            const url = await maakMeeleesLink();
+            toonDeelModal(url);
+            window.toonToast("✅ Nieuwe Meelees QR gegenereerd!", "success");
+        } catch(e) {
+            console.error("Meelees genereren mislukt:", e);
+            window.toonToast("Kon meelees-link niet genereren", "error");
+        }
+    };
+
+    window.wisselMeeleesTab = function(tab) {
+        const btnHuidig = document.getElementById('meeleesTabBtnHuidig');
+        const btnGesch = document.getElementById('meeleesTabBtnGeschiedenis');
+        const paneelHuidig = document.getElementById('meeleesPaneelHuidig');
+        const paneelGesch = document.getElementById('meeleesPaneelGeschiedenis');
+
+        if (tab === 'huidig') {
+            btnHuidig?.classList.add('bg-white', 'dark:bg-[#2C2C2E]', 'shadow-xs', 'text-[#007AFF]', 'dark:text-blue-400', 'font-bold');
+            btnHuidig?.classList.remove('text-gray-600', 'dark:text-gray-300', 'font-semibold');
+            btnGesch?.classList.remove('bg-white', 'dark:bg-[#2C2C2E]', 'shadow-xs', 'text-[#007AFF]', 'dark:text-blue-400', 'font-bold');
+            btnGesch?.classList.add('text-gray-600', 'dark:text-gray-300', 'font-semibold');
+            paneelHuidig?.classList.remove('hidden');
+            paneelGesch?.classList.add('hidden');
+        } else {
+            btnGesch?.classList.add('bg-white', 'dark:bg-[#2C2C2E]', 'shadow-xs', 'text-[#007AFF]', 'dark:text-blue-400', 'font-bold');
+            btnGesch?.classList.remove('text-gray-600', 'dark:text-gray-300', 'font-semibold');
+            btnHuidig?.classList.remove('bg-white', 'dark:bg-[#2C2C2E]', 'shadow-xs', 'text-[#007AFF]', 'dark:text-blue-400', 'font-bold');
+            btnHuidig?.classList.add('text-gray-600', 'dark:text-gray-300', 'font-semibold');
+            paneelHuidig?.classList.add('hidden');
+            paneelGesch?.classList.remove('hidden');
+            window.renderMeeleesGeschiedenisUI();
+        }
+    };
+
+    window.getMeeleesGeschiedenis = function() {
+        const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : 'bethel';
+        let list = [];
+        try {
+            const raw = localStorage.getItem(`meeleesGeschiedenis_${slug}`) || (slug === 'bethel' ? localStorage.getItem('meeleesGeschiedenis') : null);
+            if (raw) list = JSON.parse(raw);
+        } catch(e) {}
+
+        if (window.liederenDatabase) {
+            const cloudRaw = window.liederenDatabase[`__meelees_geschiedenis_${slug}__`] || (slug === 'bethel' ? window.liederenDatabase['__meelees_geschiedenis__'] : null);
+            if (cloudRaw) {
+                try {
+                    const cloudList = JSON.parse(cloudRaw);
+                    if (Array.isArray(cloudList) && cloudList.length > list.length) {
+                        list = cloudList;
+                        try {
+                            localStorage.setItem(`meeleesGeschiedenis_${slug}`, JSON.stringify(list));
+                            if (slug === 'bethel') localStorage.setItem('meeleesGeschiedenis', JSON.stringify(list));
+                        } catch(e) {}
+                    }
+                } catch(e) {}
+            }
+        }
+        return Array.isArray(list) ? list : [];
+    };
+
+    window.voegMeeleesToeAanGeschiedenis = function(entry) {
+        if (!entry || !entry.url) return;
+        const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : 'bethel';
+        let list = window.getMeeleesGeschiedenis();
+        list = list.filter(item => item.url !== entry.url && item.id !== entry.id);
+        list.unshift(entry);
+        list = list.slice(0, 25);
+        try {
+            localStorage.setItem(`meeleesGeschiedenis_${slug}`, JSON.stringify(list));
+            if (slug === 'bethel') localStorage.setItem('meeleesGeschiedenis', JSON.stringify(list));
+            if (typeof slaLiedOpInCloud === 'function') {
+                slaLiedOpInCloud(`__meelees_geschiedenis_${slug}__`, JSON.stringify(list));
+                if (slug === 'bethel') slaLiedOpInCloud('__meelees_geschiedenis__', JSON.stringify(list));
+            }
+        } catch(e) {}
+    };
+
+    window.renderMeeleesGeschiedenisUI = function() {
+        const container = document.getElementById('meeleesGeschiedenisLijst');
+        const badge = document.getElementById('meeleesGeschiedenisBadge');
+        const wisKnop = document.getElementById('meeleesWisGeschiedenisKnop');
+        if (!container) return;
+
+        const gesch = window.getMeeleesGeschiedenis();
+        if (badge) {
+            badge.textContent = gesch.length;
+            if (gesch.length > 0) badge.classList.remove('hidden');
+            else badge.classList.add('hidden');
+        }
+        if (wisKnop) {
+            if (gesch.length > 0) wisKnop.classList.remove('hidden');
+            else wisKnop.classList.add('hidden');
+        }
+
+        if (!gesch || gesch.length === 0) {
+            container.innerHTML = `
+                <div class="p-6 text-center flex flex-col items-center justify-center gap-2 bg-gray-50 dark:bg-white/5 rounded-2xl border border-dashed border-gray-200 dark:border-white/10">
+                    <span class="text-2xl">📱</span>
+                    <span class="text-xs font-bold text-gray-700 dark:text-gray-300">Nog geen meelees-links gegenereerd</span>
+                    <p class="text-[11px] text-gray-400 max-w-xs">Wanneer je PowerPoint exporteert of op 'Vernieuw QR voor dienst' klikt, wordt de meelees-QR hier automatisch bewaard.</p>
+                </div>
+            `;
+            return;
+        }
+
+        const huidigeUrl = (document.getElementById('deelLink')?.value || '').trim();
+        let html = '';
+
+        gesch.forEach((item, index) => {
+            const isActief = huidigeUrl && (huidigeUrl === item.url);
+            const th = MEELEES_THEMAS[item.thema] || MEELEES_THEMAS.standaard || { icoon: '🌿', naam: 'Standaard' };
+            const qrSrc = (typeof maakQRDataURL === 'function' && item.url) ? maakQRDataURL(item.url, 4, 1) : '';
+            const tijdStr = item.aangemaaktOp ? new Date(item.aangemaaktOp).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' }) + ' ' + new Date(item.aangemaaktOp).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }) : '';
+
+            html += `
+                <div class="p-3 rounded-2xl bg-white dark:bg-[#2C2C2E] border ${isActief ? 'border-[#007AFF] ring-2 ring-blue-500/20' : 'border-gray-200/80 dark:border-white/10'} shadow-xs flex items-center justify-between gap-3 transition-all hover:border-blue-300">
+                    <div class="flex items-center gap-3 min-w-0 flex-1">
+                        <div class="w-14 h-14 bg-white p-1 rounded-xl shadow-xs border border-gray-100 flex-shrink-0 flex items-center justify-center overflow-hidden cursor-pointer" onclick="window.activeerMeeleesUitGeschiedenis(${index})" title="Klik om QR groot te tonen">
+                            ${qrSrc ? `<img src="${qrSrc}" alt="QR" class="w-full h-full object-contain"/>` : `<span class="text-xs text-gray-400">QR</span>`}
+                        </div>
+                        <div class="flex flex-col min-w-0 flex-1">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <span class="text-xs font-bold text-[#1D1D1F] dark:text-white truncate">${escapeHtml(item.datum || 'Dienst zonder datum')}</span>
+                                <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-blue-50 dark:bg-blue-950/60 text-[#007AFF] dark:text-blue-300 border border-blue-200 dark:border-blue-800/40">${th.icoon} ${th.naam}</span>
+                            </div>
+                            <span class="text-[11px] text-gray-500 dark:text-gray-400 truncate mt-0.5">${escapeHtml(item.voorganger || 'Geen voorganger ingevuld')} · ${item.itemsCount || 0} dia's</span>
+                            <div class="flex items-center gap-2 text-[10px] text-gray-400 mt-0.5">
+                                ${tijdStr ? `<span>Gemaakt: ${tijdStr}</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                        <button type="button" onclick="window.activeerMeeleesUitGeschiedenis(${index})" class="px-2.5 py-1.5 rounded-xl text-xs font-bold ${isActief ? 'bg-[#007AFF] text-white' : 'bg-blue-50 dark:bg-blue-950/40 text-[#007AFF] dark:text-blue-300 hover:bg-blue-100'} transition-all active:scale-95 shadow-xs flex items-center gap-1">
+                            ${isActief ? '✓ Actief' : 'Toon'}
+                        </button>
+                        <button type="button" onclick="window.kopieerMeeleesUrlUitGeschiedenis('${escapeHtml(item.url)}')" class="p-1.5 rounded-xl text-gray-400 hover:text-[#007AFF] hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors" title="Kopieer link">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                        </button>
+                        <a href="${item.url}" target="_blank" class="p-1.5 rounded-xl text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors" title="Open in browser">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                        </a>
+                        <button type="button" onclick="window.verwijderMeeleesUitGeschiedenis(${index}, event)" class="p-1.5 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors" title="Verwijder uit geschiedenis">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    };
+
+    window.activeerMeeleesUitGeschiedenis = function(index) {
+        const gesch = window.getMeeleesGeschiedenis();
+        const item = gesch[index];
+        if (!item) return;
+        toonDeelModal(item.url, item);
+        window.toonToast("✅ QR-code geladen uit geschiedenis!", "success");
+    };
+
+    window.kopieerMeeleesUrlUitGeschiedenis = function(url) {
+        if (!url) return;
+        try { navigator.clipboard.writeText(url); } catch (e) {
+            const ta = document.createElement('textarea');
+            ta.value = url;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+        }
+        window.toonToast("Meelees-link gekopieerd!", "success");
+    };
+
+    window.verwijderMeeleesUitGeschiedenis = function(index, ev) {
+        if (ev) ev.stopPropagation();
+        const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : 'bethel';
+        let gesch = window.getMeeleesGeschiedenis();
+        gesch.splice(index, 1);
+        try {
+            localStorage.setItem(`meeleesGeschiedenis_${slug}`, JSON.stringify(gesch));
+            if (slug === 'bethel') localStorage.setItem('meeleesGeschiedenis', JSON.stringify(gesch));
+            if (typeof slaLiedOpInCloud === 'function') {
+                slaLiedOpInCloud(`__meelees_geschiedenis_${slug}__`, JSON.stringify(gesch));
+                if (slug === 'bethel') slaLiedOpInCloud('__meelees_geschiedenis__', JSON.stringify(gesch));
+            }
+        } catch(e) {}
+        window.renderMeeleesGeschiedenisUI();
+        window.toonToast("Item verwijderd uit geschiedenis", "info");
+    };
+
+    window.wisMeeleesGeschiedenis = function() {
+        if (!confirm("Weet je zeker dat je alle opgeslagen meelees-links wilt wissen?")) return;
+        const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : 'bethel';
+        try {
+            localStorage.removeItem(`meeleesGeschiedenis_${slug}`);
+            if (slug === 'bethel') localStorage.removeItem('meeleesGeschiedenis');
+            if (typeof slaLiedOpInCloud === 'function') {
+                slaLiedOpInCloud(`__meelees_geschiedenis_${slug}__`, JSON.stringify([]));
+                if (slug === 'bethel') slaLiedOpInCloud('__meelees_geschiedenis__', JSON.stringify([]));
+            }
+        } catch(e) {}
+        window.renderMeeleesGeschiedenisUI();
+        window.toonToast("Meelees geschiedenis gewist", "info");
+    };
 
     // Thema-specifieke kerkelijke SVG-scènes (Pasen, Kerst, Hemelvaart, Pinksteren, Lijdenstijd, Standaard).
     function meeleesSceneSVG(thema = 'standaard') {
@@ -4893,6 +5201,16 @@ Retourneer UITSLUITEND een valide JSON object:
                         }
                     } catch(e) {}
                 }
+                const cloudMeeleesGeschRaw = window.liederenDatabase[`__meelees_geschiedenis_${slug}__`] || (slug === 'bethel' ? window.liederenDatabase['__meelees_geschiedenis__'] : null);
+                if (cloudMeeleesGeschRaw) {
+                    try {
+                        const cloudM = JSON.parse(cloudMeeleesGeschRaw);
+                        if (Array.isArray(cloudM) && cloudM.length > 0) {
+                            localStorage.setItem(`meeleesGeschiedenis_${slug}`, JSON.stringify(cloudM));
+                            if (slug === 'bethel') localStorage.setItem('meeleesGeschiedenis', JSON.stringify(cloudM));
+                        }
+                    } catch(e) {}
+                }
                 if (typeof window.updateTikkieKnopUI === 'function') window.updateTikkieKnopUI();
                 setCloudStatus('ok', 'Cloud Actief');
                 return;
@@ -4927,6 +5245,16 @@ Retourneer UITSLUITEND een valide JSON object:
                     if (Array.isArray(cloudG) && cloudG.length > 0) {
                         localStorage.setItem(`tikkieGeschiedenis_${slug}`, JSON.stringify(cloudG));
                         if (slug === 'bethel') localStorage.setItem('tikkieGeschiedenis', JSON.stringify(cloudG));
+                    }
+                } catch(e) {}
+            }
+            const cloudMeeleesGeschRaw = window.liederenDatabase[`__meelees_geschiedenis_${slug}__`] || (slug === 'bethel' ? window.liederenDatabase['__meelees_geschiedenis__'] : null);
+            if (cloudMeeleesGeschRaw) {
+                try {
+                    const cloudM = JSON.parse(cloudMeeleesGeschRaw);
+                    if (Array.isArray(cloudM) && cloudM.length > 0) {
+                        localStorage.setItem(`meeleesGeschiedenis_${slug}`, JSON.stringify(cloudM));
+                        if (slug === 'bethel') localStorage.setItem('meeleesGeschiedenis', JSON.stringify(cloudM));
                     }
                 } catch(e) {}
             }
@@ -10717,7 +11045,7 @@ window.addEventListener('keydown', (e) => {
         if (checkModal('controleModal', window.sluitModal)) return;
         if (checkModal('importModal', window.sluitImportModal)) return;
         if (checkModal('archiefModal')) return;
-        if (checkModal('deelModal')) return;
+        if (checkModal('deelModal', window.sluitDeelModal)) return;
         if (checkModal('infoModal')) return;
         if (checkModal('gemeenteModal')) return;
         if (checkModal('exportFeedbackModal', window.sluitExportFeedback)) return;
