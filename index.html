@@ -3955,8 +3955,8 @@ Retourneer UITSLUITEND een valide JSON object:
             localStorage.setItem(`meeleesGeschiedenis_${slug}`, JSON.stringify(list));
             if (slug === 'bethel') localStorage.setItem('meeleesGeschiedenis', JSON.stringify(list));
             if (typeof slaLiedOpInCloud === 'function') {
-                slaLiedOpInCloud(`__meelees_geschiedenis_${slug}__`, JSON.stringify(list));
-                if (slug === 'bethel') slaLiedOpInCloud('__meelees_geschiedenis__', JSON.stringify(list));
+                slaLiedOpInCloud(`__meelees_geschiedenis_${slug}__`, JSON.stringify(list), true);
+                if (slug === 'bethel') slaLiedOpInCloud('__meelees_geschiedenis__', JSON.stringify(list), true);
             }
         } catch(e) {}
     };
@@ -4079,8 +4079,8 @@ Retourneer UITSLUITEND een valide JSON object:
             localStorage.setItem(`meeleesGeschiedenis_${slug}`, JSON.stringify(gesch));
             if (slug === 'bethel') localStorage.setItem('meeleesGeschiedenis', JSON.stringify(gesch));
             if (typeof slaLiedOpInCloud === 'function') {
-                slaLiedOpInCloud(`__meelees_geschiedenis_${slug}__`, JSON.stringify(gesch));
-                if (slug === 'bethel') slaLiedOpInCloud('__meelees_geschiedenis__', JSON.stringify(gesch));
+                slaLiedOpInCloud(`__meelees_geschiedenis_${slug}__`, JSON.stringify(gesch), true);
+                if (slug === 'bethel') slaLiedOpInCloud('__meelees_geschiedenis__', JSON.stringify(gesch), true);
             }
         } catch(e) {}
         window.renderMeeleesGeschiedenisUI();
@@ -4094,8 +4094,8 @@ Retourneer UITSLUITEND een valide JSON object:
             localStorage.removeItem(`meeleesGeschiedenis_${slug}`);
             if (slug === 'bethel') localStorage.removeItem('meeleesGeschiedenis');
             if (typeof slaLiedOpInCloud === 'function') {
-                slaLiedOpInCloud(`__meelees_geschiedenis_${slug}__`, JSON.stringify([]));
-                if (slug === 'bethel') slaLiedOpInCloud('__meelees_geschiedenis__', JSON.stringify([]));
+                slaLiedOpInCloud(`__meelees_geschiedenis_${slug}__`, JSON.stringify([]), true);
+                if (slug === 'bethel') slaLiedOpInCloud('__meelees_geschiedenis__', JSON.stringify([]), true);
             }
         } catch(e) {}
         window.renderMeeleesGeschiedenisUI();
@@ -6320,12 +6320,16 @@ Bijbelliederen`;
         });
     }
 
-  async function slaLiedOpInCloud(titel, tekst) {
+  async function slaLiedOpInCloud(titel, tekst, stil = false) {
         // Zorg dat opmaaktekens (** of <b>) nooit in de database terechtkomen; database blijft schone platte tekst
         const schoneTekst = (tekst || "").replace(/\*\*/g, '').replace(/<\/?b>/gi, '').trim();
         window.liederenDatabase[titel] = schoneTekst;
         // Lokale cache meteen bijwerken zodat het nieuwe lied direct beschikbaar is.
         try { localStorage.setItem('liederenCache', JSON.stringify(window.liederenDatabase)); } catch (e) {}
+        
+        // Interne systeemsleutels (zoals __meelees_geschiedenis...__ en __week_tikkie...__) mogen NOOIT een toast-melding triggeren!
+        const isSysteemSleutel = typeof titel === 'string' && (titel.startsWith('__') || titel.startsWith('_'));
+        
         try {
             const huidigeGem = window.getActieveGemeente ? window.getActieveGemeente() : "Bethelkerk Maassluis";
             const res = await fetch(DATA_URL + "/liederen", {
@@ -6334,10 +6338,14 @@ Bijbelliederen`;
                 body: JSON.stringify({ id: titel, tekst: schoneTekst, toegevoegd_door: huidigeGem })
             });
             if (!res.ok) throw new Error("status " + res.status);
-            window.toonToast(`'${titel}' succesvol opgeslagen in de database!`, "success");
+            if (!stil && !isSysteemSleutel) {
+                window.toonToast(`'${titel}' succesvol opgeslagen in de database!`, "success");
+            }
         } catch(error) {
             console.error("Fout bij opslaan Lied:", error);
-            window.toonToast("Fout bij opslaan in de database.", "error");
+            if (!stil && !isSysteemSleutel) {
+                window.toonToast("Fout bij opslaan in de database.", "error");
+            }
         }
     }
 
@@ -9815,9 +9823,9 @@ Antwoord UITSLUITEND in valide JSON:
 
         try {
             if (typeof slaLiedOpInCloud === 'function') {
-                slaLiedOpInCloud(`__week_tikkie_${slug}__`, JSON.stringify(tikkieOpslag));
+                slaLiedOpInCloud(`__week_tikkie_${slug}__`, JSON.stringify(tikkieOpslag), true);
                 if (slug === 'bethel') {
-                    slaLiedOpInCloud('__week_tikkie__', JSON.stringify(tikkieOpslag));
+                    slaLiedOpInCloud('__week_tikkie__', JSON.stringify(tikkieOpslag), true);
                 }
             }
         } catch(e) {
@@ -9845,8 +9853,8 @@ Antwoord UITSLUITEND in valide JSON:
             localStorage.setItem(`tikkieGeschiedenis_${slug}`, JSON.stringify(gesch));
             if (slug === 'bethel') localStorage.setItem('tikkieGeschiedenis', JSON.stringify(gesch));
             if (typeof slaLiedOpInCloud === 'function') {
-                slaLiedOpInCloud(`__tikkie_geschiedenis_${slug}__`, JSON.stringify(gesch));
-                if (slug === 'bethel') slaLiedOpInCloud('__tikkie_geschiedenis__', JSON.stringify(gesch));
+                slaLiedOpInCloud(`__tikkie_geschiedenis_${slug}__`, JSON.stringify(gesch), true);
+                if (slug === 'bethel') slaLiedOpInCloud('__tikkie_geschiedenis__', JSON.stringify(gesch), true);
             }
         } catch(e) {
             console.warn("Tikkie geschiedenis opslag mislukt:", e);
@@ -10035,8 +10043,8 @@ Antwoord UITSLUITEND in valide JSON:
             localStorage.setItem(`tikkieGeschiedenis_${slug}`, JSON.stringify(gesch));
             if (slug === 'bethel') localStorage.setItem('tikkieGeschiedenis', JSON.stringify(gesch));
             if (typeof slaLiedOpInCloud === 'function') {
-                slaLiedOpInCloud(`__tikkie_geschiedenis_${slug}__`, JSON.stringify(gesch));
-                if (slug === 'bethel') slaLiedOpInCloud('__tikkie_geschiedenis__', JSON.stringify(gesch));
+                slaLiedOpInCloud(`__tikkie_geschiedenis_${slug}__`, JSON.stringify(gesch), true);
+                if (slug === 'bethel') slaLiedOpInCloud('__tikkie_geschiedenis__', JSON.stringify(gesch), true);
             }
         } catch(e) {}
         window.renderTikkieGeschiedenisUI();
@@ -10050,8 +10058,8 @@ Antwoord UITSLUITEND in valide JSON:
             localStorage.removeItem(`tikkieGeschiedenis_${slug}`);
             if (slug === 'bethel') localStorage.removeItem('tikkieGeschiedenis');
             if (typeof slaLiedOpInCloud === 'function') {
-                slaLiedOpInCloud(`__tikkie_geschiedenis_${slug}__`, JSON.stringify([]));
-                if (slug === 'bethel') slaLiedOpInCloud('__tikkie_geschiedenis__', JSON.stringify([]));
+                slaLiedOpInCloud(`__tikkie_geschiedenis_${slug}__`, JSON.stringify([]), true);
+                if (slug === 'bethel') slaLiedOpInCloud('__tikkie_geschiedenis__', JSON.stringify([]), true);
             }
         } catch(e) {}
         window.renderTikkieGeschiedenisUI();
