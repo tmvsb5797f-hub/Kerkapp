@@ -327,6 +327,7 @@ async function slaDienstOpInD1(db, kerkId, resultaat, afzender, onderwerp) {
 
 function normaliseerBijbelBoek(str) {
   const map = {
+    "1 sam": "1 Samuël", "2 sam": "2 Samuël", "1 samuel": "1 Samuël", "2 samuel": "2 Samuël", "samuel": "1 Samuël",
     "1 thes": "1 Thessalonicenzen", "2 thes": "2 Thessalonicenzen",
     "thess": "1 Thessalonicenzen", "thes": "1 Thessalonicenzen", "rom": "Romeinen", "joh": "Johannes",
     "gen": "Genesis", "ex": "Exodus", "lev": "Leviticus", "num": "Numeri",
@@ -347,24 +348,29 @@ function normaliseerBijbelBoek(str) {
   return (str || "").trim();
 }
 
+function stripDiacritics(s) {
+  return (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
 function ontleedBijbelReferentie(refStr) {
   const m = refStr.match(/^([0-9]?\s*[A-Za-z\s\.]+?)\s+([0-9]+)(?:\s*[:\.]\s*([0-9\s,\-–—en]+))?/i);
   if (!m) return null;
   const rawBoek = m[1].replace(/\./g, "").trim();
   const hst = parseInt(m[2], 10);
-  const versStr = m[3] || "";
+  const versStr = (m[3] || "").replace(/[,;]+$/, "").trim();
   const voluitBoek = normaliseerBijbelBoek(rawBoek);
 
-  const boekIdx = BIJBEL_BOEKEN.findIndex(b => b.toLowerCase() === voluitBoek.toLowerCase());
+  const boekIdx = BIJBEL_BOEKEN.findIndex(b => stripDiacritics(b) === stripDiacritics(voluitBoek));
   const boekNr = boekIdx >= 0 ? boekIdx + 1 : null;
 
   const verzen = parseerVersNummers(versStr);
+  const netteVersStr = versStr ? versStr.replace(/\s+/g, ' ').trim() : '';
   return {
     voluitBoek,
     boekNr,
     hoofdstuk: hst,
     verzen: verzen.length > 0 ? verzen : null,
-    standaardTitel: `${voluitBoek} ${hst}${versStr ? ':' + versStr.replace(/\s+/g, '') : ''}`
+    standaardTitel: `${voluitBoek} ${hst}${netteVersStr ? ': ' + netteVersStr : ''}`
   };
 }
 
@@ -458,48 +464,35 @@ async function haalBijbelTekst(refStr, parsed, env) {
 }
 
 /**
- * Verdeelt een langere Schriftlezing in nette dia-blokken (2-4 verzen per dia)
+ * Verdeelt een langere Schriftlezing in nette dia-blokken (conform Kerkapp standaard)
  */
 function splitsBijbelInDiaRegels(volledigeTekst, refTitel) {
   if (!volledigeTekst) return [];
   const lines = volledigeTekst.split("\n").map(l => l.trim()).filter(Boolean);
   if (!lines.length) return [];
 
-  const slides = [];
-  let currentChunk = [];
-  let currentLen = 0;
-  let startVers = null;
-  let endVers = null;
-
-  for (let i = 0; i < lines.length; i++) {
-    const l = lines[i];
-    const vMatch = l.match(/^([0-9]+)\b/);
-    const vNr = vMatch ? parseInt(vMatch[1], 10) : (i + 1);
-
-    if (startVers === null) startVers = vNr;
-    endVers = vNr;
-
-    currentChunk.push(l);
-    currentLen += l.length;
-
-    const isLaatste = i === lines.length - 1;
-    if (isLaatste || currentChunk.length >= 4 || (currentChunk.length >= 2 && currentLen > 240)) {
-      const versAanduiding = (startVers === endVers) ? `${startVers}` : `${startVers}-${endVers}`;
-      const baseBoekEnHst = refTitel.replace(/:.*$/, "").trim();
-      slides.push({
-        id: `lezing-${refTitel}-${startVers}`,
-        type: "Schriftlezing",
-        titel: `${baseBoekEnHst} : ${versAanduiding}`,
-        basisTitel: refTitel,
-        regels: [...currentChunk]
-      });
-      currentChunk = [];
-      currentLen = 0;
-      startVers = null;
+  const MAX_CHAR = 180;
+  let bron = lines;
+  let tot = bron.reduce((s, r) => s + r.length, 0);
+  let nd = Math.max(1, Math.ceil(tot / MAX_CHAR));
+  let doel = tot / nd;
+  let blokken = [], hb = [], hc = 0;
+  bron.forEach(r => {
+    if (hb.length > 0 && hc + r.length > doel * 1.15 && blokken.length < nd - 1) {
+      blokken.push(hb); hb = []; hc = 0;
     }
-  }
+    hb.push(r); hc += r.length;
+  });
+  if (hb.length) blokken.push(hb);
 
-  return slides;
+  const schoneTitel = refTitel.includes("(HSV)") ? refTitel : `${refTitel} (HSV)`;
+  return blokken.map((chunk, idx) => ({
+    id: `lezing-${refTitel}-${idx + 1}`,
+    type: "Schriftlezing",
+    titel: `${schoneTitel} (${idx + 1}/${blokken.length})`,
+    basisTitel: schoneTitel,
+    regels: chunk
+  }));
 }
 
 /**
@@ -605,17 +598,43 @@ async function verwerkLiturgieTekst(tekst, env, onderwerp = "", kerkId = "bethel
   const gemeente = kerkInfo.naam;
   const lines = tekst.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
 
-  // 1. Herken voorganger
-  let voorganger = kerkInfo.standaardVoorganger || "Gastpredikant";
-  if (/mark\s+bot/i.test(tekst) || /mark\s+bot/i.test(onderwerp)) {
-    voorganger = "ds. Mark Bot";
-  } else {
-    for (const l of lines) {
-      const vgMatch = l.match(/\b(?:voorganger|predikant|dominee|ds)\b\.?\s*:?\s*([A-Z][a-zA-Z\s\.\-]+)/i);
-      if (vgMatch && !/wil voor ons leven|kerkenraad|ouderling|diaken|mededelingen|voorzang/i.test(vgMatch[1])) {
-        voorganger = vgMatch[1].trim();
+  // 1. Herken voorganger / preeklezing
+  let voorganger = "";
+  for (const l of lines) {
+    const plMatch = l.match(/\b(?:preeklezing|preeklezer|leesdienst)\b\.?\s*:?\s*([A-Za-z\s\.\-]+)/i);
+    if (plMatch) {
+      const naam = plMatch[1].trim().replace(/^van\s+/i, "");
+      if (naam.length > 2) {
+        voorganger = `Preeklezing: ${naam}`;
         break;
       }
+    }
+    const vgMatch = l.match(/\b(?:voorganger|predikant|dominee|ds)\b\.?\s*:?\s*([A-Za-z\s\.\-]+)/i);
+    if (vgMatch && !/wil voor ons leven|kerkenraad|ouderling|diaken|mededelingen|voorzang/i.test(vgMatch[1])) {
+      const raw = vgMatch[1].trim();
+      if (raw.length > 2) {
+        voorganger = /^(?:ds|dominee)\b/i.test(raw) ? raw : `ds. ${raw}`;
+        break;
+      }
+    }
+  }
+
+  // Als nog niet herkend in de tekst, kijk naar de afzender naam (bijv. "Frank Egas <frank@...>")
+  if (!voorganger && afzender) {
+    const afzMatch = afzender.match(/^"?([^"<@]+)"?\s*</);
+    if (afzMatch) {
+      const afzNaam = afzMatch[1].trim();
+      if (afzNaam && !/scriba|koster|liturgie|beamer|kerk|no-reply/i.test(afzNaam)) {
+        voorganger = `Preeklezing: ${afzNaam}`;
+      }
+    }
+  }
+
+  if (!voorganger) {
+    if (/mark\s+bot/i.test(tekst) || /mark\s+bot/i.test(onderwerp)) {
+      voorganger = "ds. Mark Bot";
+    } else {
+      voorganger = kerkInfo.standaardVoorganger || "Gastpredikant";
     }
   }
 
@@ -634,33 +653,46 @@ async function verwerkLiturgieTekst(tekst, env, onderwerp = "", kerkId = "bethel
   const zangNamenLijst = [];
 
   for (const line of lines) {
-    // A. Schriftlezing & Lezingen
-    const scrMatch = line.match(/(?:schriftlezing|lezing|tekst|gods wil voor ons leven)\s*:?\s*([0-9]?\s*[A-Z][a-z0-9\.\s]+?)\s+([0-9]+(?:\s*[:\-\s\.]\s*[0-9\-–—en,]+)?)/i);
-    if (scrMatch) {
-      const rawRef = `${scrMatch[1]} ${scrMatch[2]}`.trim();
-      const parsedRef = ontleedBijbelReferentie(rawRef);
-      const refTitel = parsedRef ? parsedRef.standaardTitel : rawRef;
-
-      const bijbelTekst = await haalBijbelTekst(rawRef, parsedRef, env);
-
-      items.push({
-        type: "Schriftlezing",
-        titel: refTitel,
-        tekst: bijbelTekst || `Schriftlezing uit ${refTitel}`,
-        gevondenInDb: !!bijbelTekst,
-        verzen: parsedRef?.verzen || []
-      });
+    // Sla mondelinge gebeden en voorganger-regels over (GEEN dia's en niet in items!)
+    if (/^(?:stil\s+gebed|votum|gebed|dankgebed)\b/i.test(line) || /:\s*gebed\b/i.test(line)) {
+      continue;
+    }
+    if (/^(?:preeklezing|preeklezer|leesdienst)\b/i.test(line)) {
       continue;
     }
 
-    // B. Lied herkenning
-    const liedRegex = /(?:zingen|lied)?[^a-z0-9]*\b(psalm|ps|lw|wk|weerklank(?:\s+lied)?|dnp|opwekking|opw|sela|lied|gezang|oth)\.?\s*([0-9]+[a-z]?)(?:.*?[:\s]\s*([0-9,\s–\-—en]+))?/i;
+    // A. Schriftlezing & Lezingen (ondersteunt meerdere referenties op 1 regel, bijv. "1 Samuel 18:1-9, Johannes 3:22-30" of met & / en)
+    if (/(?<!preek)\b(?:schriftlezing|bijbellezing|lezing|tekst|gods wil voor ons leven)\b\s*:?/i.test(line)) {
+      const cleanLine = line.replace(/^(?:schriftlezing|bijbellezing|lezing|tekst|gods wil voor ons leven)\s*:?\s*/i, '').trim();
+      const refDelen = cleanLine.split(/(?:,|\s*&\s*|\s+en\s+|;)\s*(?=[0-9]?\s*[A-Z][a-z])/).map(p => p.trim().replace(/[,;]+$/, '')).filter(Boolean);
+
+      for (const rawRef of (refDelen.length > 0 ? refDelen : [cleanLine])) {
+        const parsedRef = ontleedBijbelReferentie(rawRef);
+        const refTitel = parsedRef ? parsedRef.standaardTitel : rawRef;
+
+        const bijbelTekst = await haalBijbelTekst(rawRef, parsedRef, env);
+
+        items.push({
+          type: "Schriftlezing",
+          titel: refTitel,
+          tekst: bijbelTekst || `Schriftlezing uit ${refTitel}`,
+          gevondenInDb: !!bijbelTekst,
+          verzen: parsedRef?.verzen || []
+        });
+      }
+      continue;
+    }
+
+    // B. Lied herkenning (inclusief pw, lw, wk, ps, en voorzang/slotlied voorvoegsels)
+    const liedRegex = /(?:voorzang|slotlied|aanvangslied|zingen|lied)?[^a-z0-9]*\b(psalm|ps|lw|wk|pw|weerklank(?:\s+lied|\s+psalm)?|dnp|opwekking|opw|sela|lied|gezang|oth)\.?\s*([0-9]+[a-z]?)(?:.*?[:\s]\s*([0-9,\s–\-—en]+))?/i;
     const lMatch = line.match(liedRegex);
     if (lMatch) {
       let bundel = lMatch[1].toLowerCase().replace(/\./g, "");
       let isDnp = /\bdnp\b/i.test(line);
 
-      if (bundel === "lw" || bundel === "wk" || bundel.includes("weerklank")) {
+      if (bundel === "pw") {
+        bundel = "Weerklank Psalm";
+      } else if (bundel === "lw" || bundel === "wk" || bundel.includes("weerklank")) {
         bundel = "Weerklank Lied";
       } else if (bundel === "ps" || bundel === "psalm") {
         bundel = isDnp ? "DNP Psalm" : "Psalm";
@@ -718,26 +750,22 @@ async function verwerkLiturgieTekst(tekst, env, onderwerp = "", kerkId = "bethel
       continue;
     }
 
-    // D. Liturgische orde
-    if (/stil gebed/i.test(line)) {
-      items.push({ type: "Liturgisch", titel: "Stil gebed" });
-    } else if (/votum\s+en\s+groet/i.test(line)) {
-      items.push({ type: "Liturgisch", titel: "Votum en groet" });
-    } else if (/dankgebed/i.test(line)) {
-      items.push({ type: "Liturgisch", titel: "Dankgebed" });
-    } else if (/gebed/i.test(line)) {
-      items.push({ type: "Liturgisch", titel: line });
-    } else if (/collecte/i.test(line)) {
-      items.push({ type: "Collecte", titel: "Collecte & Week-Tikkie" });
+    // D. Collecte en Zegen (collecte max 1x toevoegen)
+    if (/collecte/i.test(line)) {
+      if (!items.some(it => it.type === "Collecte")) {
+        items.push({ type: "Collecte", titel: "Collecte & Week-Tikkie" });
+      }
     } else if (/zegen/i.test(line)) {
-      items.push({ type: "Zegen", titel: "Zegenbede" });
+      if (!items.some(it => it.type === "Zegen")) {
+        items.push({ type: "Zegen", titel: "Zegenbede" });
+      }
     }
   }
 
   // 4. Construeer complete dia-lijst voor beamer en OBS
   const slides = [];
 
-  // Welkomstdia
+  // Welkomstdia (dia 1)
   slides.push({
     id: "welkom-dia",
     type: "Welkom",
@@ -747,6 +775,28 @@ async function verwerkLiturgieTekst(tekst, env, onderwerp = "", kerkId = "bethel
     voorganger: voorganger,
     zangLijst: zangNamenLijst
   });
+
+  // Meelees-dia (dia 2 - conform Bethelkerk & Kerkapp standaard)
+  slides.push({
+    id: "meelees-dia",
+    type: "Meelees",
+    titel: "Leest u mee op uw telefoon",
+    subtitel: "Scant u de QR-code met uw telefooncamera"
+  });
+
+  // Zoek actieve week-tikkie QR in D1 database
+  let weekTikkieUrl = "";
+  let weekTikkieQrData = "";
+  if (env.DB) {
+    try {
+      const row = await env.DB.prepare("SELECT tekst FROM liederen WHERE id = '__week_tikkie_bethel__' OR id = '__week_tikkie__'").first();
+      if (row && row.tekst) {
+        const parsedT = JSON.parse(row.tekst);
+        weekTikkieUrl = parsedT.url || "";
+        weekTikkieQrData = parsedT.qrData || "";
+      }
+    } catch(e) {}
+  }
 
   // Dia's per item
   for (const it of items) {
@@ -769,25 +819,22 @@ async function verwerkLiturgieTekst(tekst, env, onderwerp = "", kerkId = "bethel
         titel: it.titel,
         regels: [it.titel, `Voorganger: ${voorganger}`]
       });
-    } else if (it.type === "Liturgisch") {
-      slides.push({
-        id: `lit-${it.titel.replace(/\s+/g, '-').toLowerCase()}`,
-        type: "Vrije tekst",
-        titel: it.titel,
-        regels: [it.titel]
-      });
     } else if (it.type === "Collecte") {
-      slides.push({
-        id: "collecte-dia",
-        type: "QR",
-        titel: `Collecte ${gemeente}`,
-        subtitel: "Scan met uw mobiel om bij te dragen",
-        regels: [
-          `Collecte ${gemeente}`,
-          "Van harte aanbevolen voor de eredienst en diaconie.",
-          "Scan met uw camera of bankapp"
-        ]
-      });
+      if (!slides.some(s => s.type === "QR" || s.id === "collecte-dia")) {
+        slides.push({
+          id: "collecte-dia",
+          type: "QR",
+          titel: "Collecte & Week-Tikkie",
+          subtitel: "Scan met uw mobiel om bij te dragen",
+          qrUrl: weekTikkieUrl,
+          qrData: weekTikkieQrData,
+          regels: [
+            "Collecte & Week-Tikkie",
+            "Van harte aanbevolen voor de eredienst en diaconie.",
+            "Scan met uw camera of bankapp"
+          ]
+        });
+      }
     } else if (it.type === "Zegen") {
       slides.push({
         id: "slot-dia",
@@ -804,7 +851,7 @@ async function verwerkLiturgieTekst(tekst, env, onderwerp = "", kerkId = "bethel
         const versObj = verzenMap.find(v => v.nummer === vNr);
         const regels = versObj 
           ? versObj.regels 
-          : [`(Tekst voor couplet ${vNr} ontbreekt - sleep de PPTX van ds. Mark Bot in Kerkapp of gebruik Liedbundels Online)`];
+          : [`(Tekst voor couplet ${vNr} ontbreekt - sleep de PPTX van de predikant in Kerkapp of gebruik Liedbundels Online)`];
         slides.push({
           id: `zang-${it.titel}-${vNr}`,
           type: "Zang",
@@ -818,20 +865,22 @@ async function verwerkLiturgieTekst(tekst, env, onderwerp = "", kerkId = "bethel
   }
 
   // Zorg voor minstens collecte en zegen als die niet in items stonden
-  if (!items.some(i => i.type === "Collecte")) {
+  if (!slides.some(s => s.type === "QR" || s.id === "collecte-dia")) {
     slides.push({
       id: "collecte-dia",
       type: "QR",
-      titel: `Collecte ${gemeente}`,
+      titel: "Collecte & Week-Tikkie",
       subtitel: "Scan met uw mobiel om bij te dragen",
+      qrUrl: weekTikkieUrl,
+      qrData: weekTikkieQrData,
       regels: [
-        `Collecte ${gemeente}`,
+        "Collecte & Week-Tikkie",
         "Van harte aanbevolen voor de eredienst en diaconie.",
         "Scan met uw camera of bankapp"
       ]
     });
   }
-  if (!items.some(i => i.type === "Zegen")) {
+  if (!slides.some(s => s.type === "Leeg" || s.id === "slot-dia")) {
     slides.push({
       id: "slot-dia",
       type: "Leeg",

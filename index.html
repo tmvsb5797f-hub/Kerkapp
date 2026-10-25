@@ -4116,10 +4116,20 @@ Retourneer UITSLUITEND een valide JSON object:
                                         tekst: `${it.titel}\nVoorganger: ${data.voorganger || ''}`
                                     });
                                 } else if (it.type === "Collecte") {
+                                    let tikkieData = null;
+                                    try {
+                                        const rawT = localStorage.getItem(`weekTikkieData_${kerkSlug}`) || localStorage.getItem('weekTikkieData');
+                                        if (rawT) tikkieData = JSON.parse(rawT);
+                                    } catch(e) {}
+                                    if (!tikkieData && window.liederenDatabase && window.liederenDatabase['__week_tikkie_bethel__']) {
+                                        try { tikkieData = JSON.parse(window.liederenDatabase['__week_tikkie_bethel__']); } catch(e) {}
+                                    }
                                     liturgieVolgorde.push({
                                         type: "QR",
                                         titel: "Collecte & Week-Tikkie",
-                                        tekst: "Scan met uw mobiel om bij te dragen."
+                                        tekst: tikkieData?.qrData || (tikkieData?.url ? (typeof maakQRDataURL === 'function' ? maakQRDataURL(tikkieData.url, 8, 2) : tikkieData.url) : "Scan met uw mobiel om bij te dragen."),
+                                        qrUrl: tikkieData?.url || '',
+                                        geldigTot: tikkieData?.geldigTot || ''
                                     });
                                 } else if (it.type === "Zegen") {
                                     liturgieVolgorde.push({
@@ -4128,6 +4138,10 @@ Retourneer UITSLUITEND een valide JSON object:
                                         tekst: ""
                                     });
                                 } else {
+                                    // Sla mondelinge gebeden, stil gebed en dankgebed over (worden nooit als dia getoond!)
+                                    if (/gebed|votum/i.test(it.titel)) {
+                                        continue;
+                                    }
                                     liturgieVolgorde.push({
                                         type: "Vrije tekst",
                                         titel: it.titel,
@@ -4136,11 +4150,13 @@ Retourneer UITSLUITEND een valide JSON object:
                                 }
                             }
                         } else {
-                            liturgieVolgorde = data.slides.map(s => ({
-                                type: s.type || "Vrije tekst",
-                                titel: s.titel || "Onderdeel",
-                                tekst: Array.isArray(s.regels) ? s.regels.join('\n') : (s.tekst || "")
-                            }));
+                            liturgieVolgorde = data.slides
+                                .filter(s => !/gebed|votum/i.test(s.titel || ""))
+                                .map(s => ({
+                                    type: s.type || "Vrije tekst",
+                                    titel: s.titel || "Onderdeel",
+                                    tekst: Array.isArray(s.regels) ? s.regels.join('\n') : (s.tekst || "")
+                                }));
                         }
 
                         if (data.datum) {
