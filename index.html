@@ -1254,7 +1254,7 @@
     </div>
 </div>
 
-<div id="meeleesOverlay" class="hidden fixed inset-0 z-[300] overflow-y-auto" style="background:#fff3e0"></div>
+<div id="meeleesOverlay" class="hidden fixed inset-0 z-[300] overflow-y-auto"></div>
 
 <div id="deelModal" class="fixed inset-0 z-[110] hidden flex items-center justify-center bg-black/40 backdrop-blur-xl transition-opacity p-2 sm:p-4" onclick="if(event.target === this) window.sluitDeelModal()">
     <div class="bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.05] dark:ring-white/10 w-full max-w-md overflow-hidden flex flex-col transform transition-all modal-animate max-h-[92vh]">
@@ -2320,6 +2320,7 @@
             icoon: '🌿',
             beschrijving: 'Warme heuvel met kruis en bloemen',
             bg: 'linear-gradient(180deg,#ffd9a0 0%,#ffe4b8 22%,#fff3e0 100%)',
+            metaKleur: '#ffd9a0',
             headerKleur: '#c07f33',
             titelKleur: '#4a3320',
             subKleur: '#8a6a45',
@@ -2336,6 +2337,7 @@
             icoon: '🌸',
             beschrijving: 'Zonsopgang, open graf en lelies',
             bg: 'linear-gradient(180deg,#ffe1c2 0%,#fff2d6 24%,#fbf9f4 100%)',
+            metaKleur: '#ffe1c2',
             headerKleur: '#d97706',
             titelKleur: '#451a03',
             subKleur: '#78350f',
@@ -2352,6 +2354,7 @@
             icoon: '☁️',
             beschrijving: 'Hemelsblauwe wolken, stralen en duif',
             bg: 'linear-gradient(180deg,#bae6fd 0%,#e0f2fe 26%,#f8fafc 100%)',
+            metaKleur: '#bae6fd',
             headerKleur: '#0284c7',
             titelKleur: '#0c4a6e',
             subKleur: '#0369a1',
@@ -2368,6 +2371,7 @@
             icoon: '🔥',
             beschrijving: 'Vlammen van de Geest en duif',
             bg: 'linear-gradient(180deg,#fed7aa 0%,#ffedd5 24%,#fff7ed 100%)',
+            metaKleur: '#fed7aa',
             headerKleur: '#ea580c',
             titelKleur: '#7c2d12',
             subKleur: '#9a3412',
@@ -2384,6 +2388,7 @@
             icoon: '⭐',
             beschrijving: 'Sterrenhemel, ster van Bethlehem en stal',
             bg: 'linear-gradient(180deg,#0f172a 0%,#1e293b 35%,#0f172a 100%)',
+            metaKleur: '#0f172a',
             headerKleur: '#facc15',
             titelKleur: '#f8fafc',
             subKleur: '#cbd5e1',
@@ -2400,6 +2405,7 @@
             icoon: '✝️',
             beschrijving: 'Drie kruisen op Golgotha bij avondgloed',
             bg: 'linear-gradient(180deg,#e9d5ff 0%,#f5d0fe 24%,#faf5ff 100%)',
+            metaKleur: '#e9d5ff',
             headerKleur: '#7e22ce',
             titelKleur: '#3b0764',
             subKleur: '#581c87',
@@ -3476,9 +3482,29 @@ Retourneer UITSLUITEND een valide JSON object:
         const voorganger = (document.getElementById('voorgangerInput')?.value || '').trim();
         const gemeente = (typeof window.getActieveGemeente === 'function') ? window.getActieveGemeente() : 'Bethelkerk Maassluis';
         const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : 'bethel';
+        const actieveTikkie = (typeof window.getActieveWeekTikkie === 'function') ? window.getActieveWeekTikkie() : null;
         const items = liturgieVolgorde
-            .filter(it => it.type !== 'Foto' && it.type !== 'QR')
-            .map(it => ({ type: it.type, titel: it.titel || '', tekst: it.type === 'Leeg' ? '' : (it.tekst || ''), align: it.align || 'left' }));
+            .filter(it => it.type !== 'Foto')
+            .map(it => {
+                if (it.type === 'QR') {
+                    const url = it.qrUrl || actieveTikkie?.url || '';
+                    const omschrijving = it.omschrijving || (it.titel ? it.titel.replace(/^Collecte\s*\(?|\)?$/gi, '').trim() : '') || actieveTikkie?.omschrijving || 'Kerk';
+                    return {
+                        type: 'Collecte',
+                        titel: it.titel || (omschrijving ? `Collecte (${omschrijving})` : 'Collecte (kerk)'),
+                        tekst: it.tekst || actieveTikkie?.qrData || '',
+                        qrUrl: url,
+                        omschrijving: omschrijving,
+                        align: 'center'
+                    };
+                }
+                return {
+                    type: it.type,
+                    titel: it.titel || '',
+                    tekst: it.type === 'Leeg' ? '' : (it.tekst || ''),
+                    align: it.align || 'left'
+                };
+            });
         const thema = window.getActiefMeeleesThema();
         const payload = {
             gemeente: gemeente,
@@ -3488,6 +3514,14 @@ Retourneer UITSLUITEND een valide JSON object:
             thema: thema,
             bijgewerktOp: firebase.firestore.FieldValue.serverTimestamp()
         };
+        if (actieveTikkie && (actieveTikkie.url || actieveTikkie.qrData)) {
+            payload.collecte = {
+                url: actieveTikkie.url || '',
+                qrData: actieveTikkie.qrData || '',
+                omschrijving: actieveTikkie.omschrijving || 'Kerk',
+                geldigTot: actieveTikkie.geldigTot || ''
+            };
+        }
         if (thema === 'custom' && MEELEES_THEMAS.custom) {
             payload.customThema = MEELEES_THEMAS.custom;
         }
@@ -4306,14 +4340,14 @@ Retourneer UITSLUITEND een valide JSON object:
             if (el.id !== 'meeleesOverlay' && el.id !== 'meeleesLiveUpdatePill') el.style.display = 'none';
         });
         overlay.style.display = 'block';
-        overlay.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f6b56b;color:#6b3f18;font-weight:600;font-family:Inter,sans-serif">Liturgie laden…</div>';
+        overlay.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#1e293b;color:#f8fafc;font-weight:600;font-family:Inter,sans-serif">Liturgie laden…</div>';
         try {
             await authKlaar;
             let eersteKeer = true;
             // Realtime listener via onSnapshot: wijzigingen in de liturgie komen live binnen zonder herladen!
             db.collection("meelees").doc(id).onSnapshot(function(doc) {
                 if (!doc.exists) {
-                    overlay.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f6b56b;color:#6b3f18;font-weight:600;text-align:center;padding:24px;font-family:Inter,sans-serif">Deze liturgie is niet (meer) beschikbaar.</div>';
+                    overlay.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#1e293b;color:#f8fafc;font-weight:600;text-align:center;padding:24px;font-family:Inter,sans-serif">Deze liturgie is niet (meer) beschikbaar.</div>';
                     return;
                 }
                 const scrollPos = overlay.scrollTop || window.scrollY || 0;
@@ -4333,7 +4367,7 @@ Retourneer UITSLUITEND een valide JSON object:
             });
         } catch (e) {
             console.error("Meelees laden mislukt:", e);
-            overlay.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f6b56b;color:#6b3f18;font-weight:600;text-align:center;padding:24px;font-family:Inter,sans-serif">Kon de liturgie niet laden. Controleer je internetverbinding.</div>';
+            overlay.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#1e293b;color:#f8fafc;font-weight:600;text-align:center;padding:24px;font-family:Inter,sans-serif">Kon de liturgie niet laden. Controleer je internetverbinding.</div>';
         }
     }
 
@@ -4343,14 +4377,85 @@ Retourneer UITSLUITEND een valide JSON object:
         }
         const themaId = (data.thema || window.getActiefMeeleesThema()).toLowerCase();
         const th = MEELEES_THEMAS[themaId] || MEELEES_THEMAS.standaard;
+        const metaKleur = th.metaKleur || (th.bg && th.bg.match(/#[a-fA-F0-9]{6}/)?.[0]) || '#ffd9a0';
 
-        const typeLabel = { 'Zang': '♪ Zang', 'Schriftlezing': '📖 Schriftlezing', 'Leeg': '' };
+        // Synchroniseer HTML, body en overlay styling zodat status bar en bottom bar op iOS direct meekleuren
+        overlay.style.background = th.bg;
+        overlay.style.backgroundColor = metaKleur;
+        document.documentElement.style.background = th.bg;
+        document.documentElement.style.backgroundColor = metaKleur;
+        document.body.style.background = th.bg;
+        document.body.style.backgroundColor = metaKleur;
+
+        // Update meta tags voor iOS Safari en Android Chrome statusbars
+        let metaTheme = document.querySelector('meta[name="theme-color"]');
+        if (!metaTheme) {
+            metaTheme = document.createElement('meta');
+            metaTheme.name = 'theme-color';
+            document.head.appendChild(metaTheme);
+        }
+        metaTheme.setAttribute('content', metaKleur);
+
+        let metaStatusBar = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+        if (!metaStatusBar) {
+            metaStatusBar = document.createElement('meta');
+            metaStatusBar.name = 'apple-mobile-web-app-status-bar-style';
+            document.head.appendChild(metaStatusBar);
+        }
+        metaStatusBar.setAttribute('content', (themaId === 'kerst') ? 'black-translucent' : 'default');
+
+        const typeLabel = { 'Zang': '♪ Zang', 'Schriftlezing': '📖 Schriftlezing', 'Collecte': '🪙 Collecte', 'QR': '🪙 Collecte', 'Leeg': '' };
         let kaarten = '';
+        let heeftCollecteInItems = false;
+
         (data.items || []).forEach(it => {
             if (it.type === 'Leeg') { 
                 kaarten += `<div style="height:1px;background:${th.divider};margin:10px 40px"></div>`; 
                 return; 
             }
+            if (it.type === 'Collecte' || it.type === 'QR') {
+                heeftCollecteInItems = true;
+                const doelTekst = it.omschrijving || (it.titel ? it.titel.replace(/^Collecte\s*\(?|\)?$/gi, '').trim() : '');
+                const tikkieUrl = it.qrUrl || data.collecte?.url || '';
+                const qrAfbeelding = it.tekst && (it.tekst.startsWith('data:image') || it.tekst.startsWith('http')) ? it.tekst : (data.collecte?.qrData || '');
+                const gemeenteNaam = data.gemeente || 'Bethelkerk Maassluis';
+
+                kaarten += `
+                <div style="background:${th.kaartBg};border-radius:22px;padding:20px;margin:16px 0;box-shadow:0 6px 20px ${th.schaduw};backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid ${th.divider}">
+                    <div style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${th.headerKleur};margin-bottom:4px;display:flex;align-items:center;gap:4px">
+                        <span>🪙</span> <span>Collecte</span>
+                    </div>
+                    <div style="font-size:18px;font-weight:700;color:${th.kaartTitel};line-height:1.3">
+                        Collecte voor ${escapeHtml(gemeenteNaam)}
+                    </div>
+                    ${doelTekst ? `<div style="font-size:13px;font-weight:600;color:${th.subKleur};margin-top:4px">Doel: ${escapeHtml(doelTekst)}</div>` : ''}
+
+                    ${tikkieUrl ? `
+                    <div style="margin-top:14px">
+                        <a href="${escapeHtml(tikkieUrl)}" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:#34C759;color:#ffffff;font-weight:700;font-size:15px;padding:13px 18px;border-radius:14px;text-decoration:none;box-shadow:0 4px 14px rgba(52,199,89,0.35);text-align:center;-webkit-tap-highlight-color:transparent">
+                            <span>💳 Direct digitaal bijdragen via Tikkie</span>
+                            <svg style="width:16px;height:16px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                        </a>
+                        <div style="text-align:center;margin-top:7px;font-size:11px;color:${th.subKleur};opacity:0.9">
+                            Tik om direct in je bank- of Tikkie-app te openen
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    ${qrAfbeelding ? `
+                    <details style="margin-top:12px;text-align:center">
+                        <summary style="font-size:12px;font-weight:600;color:${th.headerKleur};cursor:pointer;outline:none;user-select:none;padding:4px 0">
+                            📷 Toon QR-code om te scannen
+                        </summary>
+                        <div style="padding:14px;background:#ffffff;border-radius:16px;display:inline-block;margin-top:8px;box-shadow:0 4px 16px rgba(0,0,0,0.12)">
+                            <img src="${qrAfbeelding}" alt="Collecte QR" style="width:160px;height:160px;object-fit:contain;display:block;margin:0 auto"/>
+                        </div>
+                    </details>
+                    ` : ''}
+                </div>`;
+                return;
+            }
+
             const label = typeLabel[it.type] || it.type || '';
             const tekst = (it.tekst || '').trim();
             kaarten += `<div style="background:${th.kaartBg};border-radius:20px;padding:16px 18px;margin:12px 0;box-shadow:0 4px 16px ${th.schaduw};backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)">` +
@@ -4360,8 +4465,49 @@ Retourneer UITSLUITEND een valide JSON object:
                 `</div>`;
         });
 
+        // Als er geen aparte collecte-kaart in items stond, maar er is wél een actieve week-tikkie:
+        if (!heeftCollecteInItems && data.collecte && (data.collecte.url || data.collecte.qrData)) {
+            const doelTekst = data.collecte.omschrijving || 'Kerk';
+            const tikkieUrl = data.collecte.url || '';
+            const qrAfbeelding = data.collecte.qrData || '';
+            const gemeenteNaam = data.gemeente || 'Bethelkerk Maassluis';
+            kaarten += `
+            <div style="background:${th.kaartBg};border-radius:22px;padding:20px;margin:16px 0;box-shadow:0 6px 20px ${th.schaduw};backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid ${th.divider}">
+                <div style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${th.headerKleur};margin-bottom:4px;display:flex;align-items:center;gap:4px">
+                    <span>🪙</span> <span>Collecte</span>
+                </div>
+                <div style="font-size:18px;font-weight:700;color:${th.kaartTitel};line-height:1.3">
+                    Collecte voor ${escapeHtml(gemeenteNaam)}
+                </div>
+                ${doelTekst ? `<div style="font-size:13px;font-weight:600;color:${th.subKleur};margin-top:4px">Doel: ${escapeHtml(doelTekst)}</div>` : ''}
+
+                ${tikkieUrl ? `
+                <div style="margin-top:14px">
+                    <a href="${escapeHtml(tikkieUrl)}" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:#34C759;color:#ffffff;font-weight:700;font-size:15px;padding:13px 18px;border-radius:14px;text-decoration:none;box-shadow:0 4px 14px rgba(52,199,89,0.35);text-align:center;-webkit-tap-highlight-color:transparent">
+                        <span>💳 Direct digitaal bijdragen via Tikkie</span>
+                        <svg style="width:16px;height:16px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                    <div style="text-align:center;margin-top:7px;font-size:11px;color:${th.subKleur};opacity:0.9">
+                        Tik om direct in je bank- of Tikkie-app te openen
+                    </div>
+                </div>
+                ` : ''}
+
+                ${qrAfbeelding ? `
+                <details style="margin-top:12px;text-align:center">
+                    <summary style="font-size:12px;font-weight:600;color:${th.headerKleur};cursor:pointer;outline:none;user-select:none;padding:4px 0">
+                        📷 Toon QR-code om te scannen
+                    </summary>
+                    <div style="padding:14px;background:#ffffff;border-radius:16px;display:inline-block;margin-top:8px;box-shadow:0 4px 16px rgba(0,0,0,0.12)">
+                        <img src="${qrAfbeelding}" alt="Collecte QR" style="width:160px;height:160px;object-fit:contain;display:block;margin:0 auto"/>
+                    </div>
+                </details>
+                ` : ''}
+            </div>`;
+        }
+
         overlay.innerHTML =
-            `<div style="min-height:100vh;background:${th.bg};font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;padding-bottom:30px">` +
+            `<div style="min-height:100vh;background:${th.bg};font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;padding-top:env(safe-area-inset-top, 0px);padding-bottom:max(36px, env(safe-area-inset-bottom, 24px));">` +
                 `<div style="max-width:460px;margin:0 auto">` +
                     `<div style="border-radius:0 0 26px 26px;overflow:hidden;box-shadow:0 8px 24px ${th.schaduw}">` + meeleesSceneSVG(themaId) + `</div>` +
                     `<div style="text-align:center;padding:18px 20px 4px">` +
@@ -4370,7 +4516,7 @@ Retourneer UITSLUITEND een valide JSON object:
                         (data.datum ? `<div style="font-size:21px;font-weight:800;color:${th.titelKleur};margin-top:2px">${escapeHtml(data.datum)}</div>` : '') +
                         (data.voorganger ? `<div style="font-size:13px;font-weight:500;color:${th.subKleur};margin-top:2px">${escapeHtml(data.voorganger)}</div>` : '') +
                     `</div>` +
-                    `<div style="padding:8px 16px 40px">${kaarten}</div>` +
+                    `<div style="padding:8px 16px 24px">${kaarten}</div>` +
                     `<div style="text-align:center;padding:0 20px 20px;font-size:11px;color:${th.voettekst}">Meelezen via Liturgie Assistent<br><span style="font-size:10px;opacity:0.85;margin-top:3px;display:block">Application made by Sem</span></div>` +
                 `</div>` +
             `</div>`;
@@ -4381,8 +4527,24 @@ Retourneer UITSLUITEND een valide JSON object:
         const thema = window.getActiefMeeleesThema();
         const datum = (document.getElementById('datumInput') && document.getElementById('datumInput').value) || 'Zondag 18 oktober 2026';
         const voorganger = (document.getElementById('voorgangerInput') && document.getElementById('voorgangerInput').value) || 'ds. Mark Bot';
+        const actieveTikkie = (typeof window.getActieveWeekTikkie === 'function') ? window.getActieveWeekTikkie() : null;
         
-        let items = liturgieVolgorde.filter(it => it.type !== 'Foto' && it.type !== 'QR');
+        let items = liturgieVolgorde.filter(it => it.type !== 'Foto').map(it => {
+            if (it.type === 'QR') {
+                const url = it.qrUrl || actieveTikkie?.url || '';
+                const omschrijving = it.omschrijving || (it.titel ? it.titel.replace(/^Collecte\s*\(?|\)?$/gi, '').trim() : '') || actieveTikkie?.omschrijving || 'Kerk';
+                return {
+                    type: 'Collecte',
+                    titel: it.titel || (omschrijving ? `Collecte (${omschrijving})` : 'Collecte (kerk)'),
+                    tekst: it.tekst || actieveTikkie?.qrData || '',
+                    qrUrl: url,
+                    omschrijving: omschrijving,
+                    align: 'center'
+                };
+            }
+            return it;
+        });
+
         if (items.length === 0) {
             items = [
                 { type: 'Zang', titel: 'Weerklank 121 : 1, 2', tekst: 'Ik hef mijn ogen naar de bergen:\nvanwaar zal mijn hulp komen?\nMijn hulp is van de HEERE,\nDie hemel en aarde gemaakt heeft.' },
@@ -4396,7 +4558,8 @@ Retourneer UITSLUITEND een valide JSON object:
             voorganger: voorganger,
             thema: thema,
             customThema: thema === 'custom' ? MEELEES_THEMAS.custom : null,
-            items: items
+            items: items,
+            collecte: actieveTikkie || { url: 'https://tikkie.me/pay/bethelkerk', omschrijving: 'Kerk & Eredienst', qrData: '' }
         };
 
         const overlay = document.getElementById('meeleesOverlay');
@@ -4419,6 +4582,12 @@ Retourneer UITSLUITEND een valide JSON object:
             overlay.style.display = 'none';
             document.body.style.overflow = '';
             document.documentElement.style.overflow = '';
+            document.documentElement.style.background = '';
+            document.documentElement.style.backgroundColor = '';
+            document.body.style.background = '';
+            document.body.style.backgroundColor = '';
+            const mt = document.querySelector('meta[name="theme-color"]');
+            if (mt) mt.setAttribute('content', '#007AFF');
             Array.from(document.body.children).forEach(function(el) {
                 if (el.id !== 'meeleesOverlay') el.style.display = '';
             });
@@ -4834,7 +5003,7 @@ Retourneer UITSLUITEND een valide JSON object:
                                     }
                                     liturgieVolgorde.push({
                                         type: "QR",
-                                        titel: "Collecte & Week-Tikkie",
+                                        titel: tikkieData?.omschrijving ? `Collecte (${tikkieData.omschrijving})` : "Collecte (kerk)",
                                         tekst: tikkieData?.qrData || (tikkieData?.url ? (typeof maakQRDataURL === 'function' ? maakQRDataURL(tikkieData.url, 8, 2) : tikkieData.url) : "Scan met uw mobiel om bij te dragen."),
                                         qrUrl: tikkieData?.url || '',
                                         geldigTot: tikkieData?.geldigTot || ''
@@ -9094,7 +9263,7 @@ Antwoord UITSLUITEND in valide JSON:
             window.openTikkieModal();
             return;
         }
-        const titel = tikkie.omschrijving ? `Collecte Tikkie (${tikkie.omschrijving})` : "Collecte Tikkie QR";
+        const titel = tikkie.omschrijving ? `Collecte (${tikkie.omschrijving})` : "Collecte (kerk)";
         liturgieVolgorde.push({ 
             type: "QR", 
             titel: titel, 
@@ -9287,16 +9456,16 @@ Antwoord UITSLUITEND in valide JSON:
                     console.warn("jsQR decode mislukt:", err);
                 }
 
+                const qrImg = extractQR(img);
+                tijdelijkeModalTikkieData.qrData = qrImg || e.target.result;
+
                 if (ontdekteUrl) {
                     tijdelijkeModalTikkieData.url = ontdekteUrl;
-                    tijdelijkeModalTikkieData.qrData = (typeof maakQRDataURL === 'function') ? maakQRDataURL(ontdekteUrl, 8, 2) : '';
                     const linkInp = document.getElementById('tikkieLinkInput');
                     if (linkInp) linkInp.value = ontdekteUrl;
-                    window.toonToast("Tikkie-link succesvol uit screenshot gelezen!", "success");
+                    window.toonToast("Echte Tikkie QR en betaallink succesvol verwerkt!", "success");
                 } else {
-                    const qrImg = extractQR(img);
-                    tijdelijkeModalTikkieData.qrData = qrImg;
-                    window.toonToast("QR screenshot verwerkt!", "info");
+                    window.toonToast("Tikkie QR screenshot verwerkt!", "info");
                 }
                 window.updateTikkieModalPreview();
             };
@@ -9393,7 +9562,7 @@ Antwoord UITSLUITEND in valide JSON:
         window.toonToast("✅ Week-Tikkie succesvol opgeslagen en gesynchroniseerd!", "success");
 
         if (directToevoegen) {
-            const titel = omschrijving ? `Collecte Tikkie (${omschrijving})` : "Collecte Tikkie QR";
+            const titel = omschrijving ? `Collecte (${omschrijving})` : "Collecte (kerk)";
             liturgieVolgorde.push({ 
                 type: "QR", 
                 titel: titel, 
@@ -10325,14 +10494,21 @@ Antwoord UITSLUITEND in valide JSON:
                 canvas2.style.backgroundColor = 'transparent';
             } else { canvas2.style.backgroundImage = 'none'; canvas2.style.backgroundColor = 'black'; }
 
+            const diaTitel = item.titel || "Collecte (kerk)";
             const qrSizeInch = item.qrSize || 3.5;
             const qrSizePct = (qrSizeInch / SLIDE_W * 100).toFixed(2);
             const qrX = item.tekstX ?? ((SLIDE_W - qrSizeInch) / 2);
-            const qrY = item.tekstY ?? ((SLIDE_H - qrSizeInch) / 2);
+            const qrY = item.tekstY ?? (((SLIDE_H - qrSizeInch) / 2) + 0.2);
             const qrLeftPct = (qrX / SLIDE_W * 100).toFixed(2);
             const qrTopPct = (qrY / SLIDE_H * 100).toFixed(2);
 
+            const titelLeftPct = ((item.tekstX ?? TEKST_DEF_X) / SLIDE_W * 100).toFixed(2);
+            const titelTopPct = (TITEL_Y / SLIDE_H * 100).toFixed(2);
+            const titelW = ((item.tekstW ?? TEKST_DEF_W) / SLIDE_W * 100).toFixed(2);
+            const fontFamily = (item.font || document.getElementById('fontSelect')?.value || 'Calibri') + ', sans-serif';
+
             preview.innerHTML = `
+                <div class="absolute font-bold text-white tracking-wide select-none" style="left:${titelLeftPct}%;top:${titelTopPct}%;width:${titelW}%;font-size:${18 * scale}px;font-family:${fontFamily}">${escapeHtml(diaTitel)}</div>
                 <div id="qrPreviewBox" class="absolute cursor-default" style="left:${qrLeftPct}%;top:${qrTopPct}%;width:${qrSizePct}%;border:1px dashed transparent;border-radius:6px">
                     <img src="${item.tekst}" class="w-full h-auto rounded-lg shadow-lg" style="pointer-events:none"/>
                 </div>`;
@@ -11456,9 +11632,22 @@ window.bouwPowerPointPresentatie = async function(customOpties = null) {
         if (item.type === "QR") {
             let slide = pres.addSlide();
             slide.background = pptBg;
+            const diaTitel = item.titel || "Collecte (kerk)";
+            slide.addText(diaTitel, { 
+                x: TEKST_DEF_X, 
+                y: TITEL_Y, 
+                w: TEKST_DEF_W, 
+                h: 0.4, 
+                color: "FFFFFF", 
+                fontSize: 18, 
+                bold: true, 
+                fontFace: pptFont, 
+                align: "left", 
+                valign: "top" 
+            });
             const qrS = item.qrSize || 3.5;
             const qrX = item.tekstX ?? ((SLIDE_W - qrS) / 2);
-            const qrY = item.tekstY ?? ((SLIDE_H - qrS) / 2);
+            const qrY = item.tekstY ?? (((SLIDE_H - qrS) / 2) + 0.2);
             slide.addImage({ data: item.tekst, x: qrX, y: qrY, w: qrS, h: qrS });
             return;
         }
