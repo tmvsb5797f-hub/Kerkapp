@@ -3607,6 +3607,8 @@ Retourneer UITSLUITEND een valide JSON object:
     };
 
     let _meeleesSyncTimer = null;
+    let _laatstGesynchroniseerdeMeeleesFingerprint = null;
+
     function autoSyncMeeleesLive(direct = false) {
         if (_meeleesSyncTimer) {
             clearTimeout(_meeleesSyncTimer);
@@ -3625,8 +3627,25 @@ Retourneer UITSLUITEND een valide JSON object:
             // Alleen live bijwerken als er al een actieve link gegenereerd is!
             if (!activeMeta || !activeMeta.id) return;
 
+            // Bereken inhoudelijke fingerprint om doelloze writes te voorkomen
+            const datum = (document.getElementById('datumInput')?.value || '').trim();
+            const voorganger = (document.getElementById('voorgangerInput')?.value || '').trim();
+            const thema = window.getActiefMeeleesThema();
+            const inhoudFingerprint = JSON.stringify({
+                datum,
+                voorganger,
+                thema,
+                items: (typeof liturgieVolgorde !== 'undefined') ? liturgieVolgorde.map(it => ({ type: it.type, titel: it.titel, tekst: it.tekst })) : []
+            });
+
+            if (_laatstGesynchroniseerdeMeeleesFingerprint === inhoudFingerprint) {
+                // Inhoud is exact hetzelfde, geen write nodig!
+                return;
+            }
+
             try {
                 await maakMeeleesLink(false);
+                _laatstGesynchroniseerdeMeeleesFingerprint = inhoudFingerprint;
                 console.log("Meelees-versie automatisch gesynchroniseerd met laatste wijzigingen.");
             } catch(err) {
                 console.warn("Automatische meelees sync mislukt:", err);
@@ -4343,20 +4362,40 @@ Retourneer UITSLUITEND een valide JSON object:
         overlay.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#1e293b;color:#f8fafc;font-weight:600;font-family:Inter,sans-serif">Liturgie laden…</div>';
         try {
             await authKlaar;
-            let eersteKeer = true;
+            let laatsteInhoudFingerprint = null;
+
             // Realtime listener via onSnapshot: wijzigingen in de liturgie komen live binnen zonder herladen!
             db.collection("meelees").doc(id).onSnapshot(function(doc) {
                 if (!doc.exists) {
                     overlay.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#1e293b;color:#f8fafc;font-weight:600;text-align:center;padding:24px;font-family:Inter,sans-serif">Deze liturgie is niet (meer) beschikbaar.</div>';
                     return;
                 }
+                const data = doc.data() || {};
+                // Bereken een inhoudelijke fingerprint (zonder bijgewerktOp timestamps of Firestore metadata)
+                const huidigeFingerprint = JSON.stringify({
+                    datum: data.datum || '',
+                    voorganger: data.voorganger || '',
+                    gemeente: data.gemeente || '',
+                    thema: data.thema || '',
+                    customThema: data.customThema || null,
+                    items: data.items || [],
+                    collecte: data.collecte || null
+                });
+
+                // Als de inhoud niet werkelijk gewijzigd is (bijv. Firestore metadata event of server timestamp ack), negeer!
+                if (huidigeFingerprint === laatsteInhoudFingerprint) {
+                    return;
+                }
+
+                const isEchteWijziging = (laatsteInhoudFingerprint !== null);
+                laatsteInhoudFingerprint = huidigeFingerprint;
+
                 const scrollPos = overlay.scrollTop || window.scrollY || 0;
-                renderMeelees(doc.data(), overlay);
-                if (!eersteKeer) {
+                renderMeelees(data, overlay);
+                if (isEchteWijziging) {
                     overlay.scrollTop = scrollPos;
                     toonMeeleesLiveUpdateBadge();
                 }
-                eersteKeer = false;
             }, function(err) {
                 console.error("Meelees realtime luisteren mislukt, val terug op eenmalige get:", err);
                 db.collection("meelees").doc(id).get().then(function(doc) {
