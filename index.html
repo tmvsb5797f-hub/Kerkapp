@@ -3571,21 +3571,21 @@ Retourneer UITSLUITEND een valide JSON object:
             ctx.strokeStyle = '#FFFFFF';
             ctx.stroke();
 
-            // 4. Tikkie typografie & branding onderaan
+            // 4. Collecte typografie & branding onderaan (ipv TIKKIE)
             ctx.textAlign = 'center';
             ctx.fillStyle = '#00A3E0';
-            ctx.font = '800 38px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-            ctx.fillText('tikkie', centerX, qrY + qrSize + 58);
+            ctx.font = '800 36px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+            ctx.fillText('Collecte', centerX, qrY + qrSize + 56);
 
             ctx.font = '600 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
             ctx.fillStyle = '#64748B';
-            ctx.fillText('Scan met je camera of Tikkie-app', centerX, qrY + qrSize + 86);
+            ctx.fillText('Scan met je camera of Tikkie-app', centerX, qrY + qrSize + 84);
 
             if (omschrijving && omschrijving.toLowerCase() !== 'kerk') {
                 ctx.font = '500 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
                 ctx.fillStyle = '#94A3B8';
                 const label = omschrijving.length > 36 ? omschrijving.slice(0, 34) + '…' : omschrijving;
-                ctx.fillText(label, centerX, qrY + qrSize + 108);
+                ctx.fillText(label, centerX, qrY + qrSize + 106);
             }
 
             return cv.toDataURL('image/png');
@@ -3615,7 +3615,7 @@ Retourneer UITSLUITEND een valide JSON object:
                         : (it.tekst || actieveTikkie?.qrData || '');
                     return {
                         type: 'Collecte',
-                        titel: it.titel || (omschrijving ? `Collecte (${omschrijving})` : 'Collecte (kerk)'),
+                        titel: 'Collecte',
                         tekst: qrKaart,
                         qrUrl: url,
                         omschrijving: omschrijving,
@@ -4701,7 +4701,7 @@ Retourneer UITSLUITEND een valide JSON object:
                 const omschrijving = it.omschrijving || (it.titel ? it.titel.replace(/^Collecte\s*\(?|\)?$/gi, '').trim() : '') || actieveTikkie?.omschrijving || 'Kerk';
                 return {
                     type: 'Collecte',
-                    titel: it.titel || (omschrijving ? `Collecte (${omschrijving})` : 'Collecte (kerk)'),
+                    titel: 'Collecte',
                     tekst: it.tekst || actieveTikkie?.qrData || '',
                     qrUrl: url,
                     omschrijving: omschrijving,
@@ -4829,31 +4829,27 @@ Retourneer UITSLUITEND een valide JSON object:
 
         // 1. Upgrade actieve week-Tikkie in localStorage indien nodig
         if (tikkie && tikkie.url && typeof maakTikkieQRDataURL === 'function') {
-            if (!tikkie.qrData || tikkie.qrData.startsWith('data:image/gif') || tikkie.qrData.length < 5000) {
-                tikkie.qrData = maakTikkieQRDataURL(tikkie.url, tikkie.omschrijving);
-                const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : 'bethel';
-                try {
-                    localStorage.setItem(`weekTikkieData_${slug}`, JSON.stringify(tikkie));
-                    if (slug === 'bethel') localStorage.setItem('weekTikkieData', JSON.stringify(tikkie));
-                } catch(e) {}
-            }
+            tikkie.qrData = maakTikkieQRDataURL(tikkie.url, tikkie.omschrijving);
+            const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : 'bethel';
+            try {
+                localStorage.setItem(`weekTikkieData_${slug}`, JSON.stringify(tikkie));
+                if (slug === 'bethel') localStorage.setItem('weekTikkieData', JSON.stringify(tikkie));
+            } catch(e) {}
         }
 
-        // 2. Upgrade items in liturgieVolgorde
+        // 2. Upgrade items in liturgieVolgorde naar officiële Collecte QR en 'Collecte' titel
         if (Array.isArray(liturgieVolgorde)) {
             liturgieVolgorde.forEach(item => {
                 if (item && item.type === 'QR') {
                     const doelUrl = item.qrUrl || tikkie?.url;
-                    const doelOms = item.omschrijving || (item.titel ? item.titel.replace(/^Collecte\s*\(?|\)?$/gi, '').trim() : '') || tikkie?.omschrijving || 'kerk';
+                    const doelOms = item.omschrijving || tikkie?.omschrijving || 'kerk';
                     if (doelUrl && typeof maakTikkieQRDataURL === 'function') {
-                        if (!item.tekst || item.tekst.startsWith('data:image/gif') || item.tekst.length < 5000) {
-                            item.tekst = maakTikkieQRDataURL(doelUrl, doelOms);
-                            if (!item.qrUrl) item.qrUrl = doelUrl;
-                            gewijzigd = true;
-                        }
+                        item.tekst = maakTikkieQRDataURL(doelUrl, doelOms);
+                        if (!item.qrUrl) item.qrUrl = doelUrl;
+                        gewijzigd = true;
                     }
-                    if (!item.titel || item.titel.toLowerCase() === 'qr code' || item.titel.toLowerCase() === 'qr-code') {
-                        item.titel = `Collecte (${doelOms})`;
+                    if (item.titel !== 'Collecte') {
+                        item.titel = 'Collecte';
                         gewijzigd = true;
                     }
                 }
@@ -5226,7 +5222,7 @@ Retourneer UITSLUITEND een valide JSON object:
                                         : (tikkieData?.qrData || (tikkieData?.url ? (typeof maakQRDataURL === 'function' ? maakQRDataURL(tikkieData.url, 8, 2) : tikkieData.url) : "Scan met uw mobiel om bij te dragen."));
                                     liturgieVolgorde.push({
                                         type: "QR",
-                                        titel: tikkieData?.omschrijving ? `Collecte (${tikkieData.omschrijving})` : "Collecte (kerk)",
+                                        titel: "Collecte",
                                         tekst: qrData,
                                         qrUrl: tikkieData?.url || '',
                                         omschrijving: tikkieData?.omschrijving || '',
@@ -9490,7 +9486,7 @@ Antwoord UITSLUITEND in valide JSON:
             window.openTikkieModal();
             return;
         }
-        const titel = tikkie.omschrijving ? `Collecte (${tikkie.omschrijving})` : "Collecte (kerk)";
+        const titel = "Collecte";
         liturgieVolgorde.push({ 
             type: "QR", 
             titel: titel, 
@@ -9802,12 +9798,13 @@ Antwoord UITSLUITEND in valide JSON:
         window.toonToast("✅ Week-Tikkie succesvol opgeslagen en gesynchroniseerd!", "success");
 
         if (directToevoegen) {
-            const titel = omschrijving ? `Collecte (${omschrijving})` : "Collecte (kerk)";
+            const titel = "Collecte";
             liturgieVolgorde.push({ 
                 type: "QR", 
                 titel: titel, 
                 tekst: tikkieOpslag.qrData, 
                 qrUrl: tikkieOpslag.url || '',
+                omschrijving: omschrijving || '',
                 geldigTot: tikkieOpslag.geldigTot,
                 qrSize: 3.5 
             });
@@ -10734,7 +10731,7 @@ Antwoord UITSLUITEND in valide JSON:
                 canvas2.style.backgroundColor = 'transparent';
             } else { canvas2.style.backgroundImage = 'none'; canvas2.style.backgroundColor = 'black'; }
 
-            const diaTitel = item.titel || "Collecte (kerk)";
+            const diaTitel = "Collecte";
             const qrSizeInch = item.qrSize || 3.5;
             const qrHInch = qrSizeInch * 1.185;
             const qrSizePct = (qrSizeInch / SLIDE_W * 100).toFixed(2);
@@ -10749,7 +10746,7 @@ Antwoord UITSLUITEND in valide JSON:
             const fontFamily = (item.font || document.getElementById('fontSelect')?.value || 'Calibri') + ', sans-serif';
 
             preview.innerHTML = `
-                <div class="absolute font-bold text-white tracking-wide select-none" style="left:${titelLeftPct}%;top:${titelTopPct}%;width:${titelW}%;font-size:${18 * scale}px;font-family:${fontFamily}">${escapeHtml(diaTitel)}</div>
+                <div class="absolute font-bold tracking-wide select-none pointer-events-none" style="left:${titelLeftPct}%;top:${titelTopPct}%;width:${titelW}%;font-size:${18 * scale}px;font-family:${fontFamily};color:#AAAAAA;opacity:0.75">${escapeHtml(diaTitel)}</div>
                 <div id="qrPreviewBox" class="absolute cursor-default" style="left:${qrLeftPct}%;top:${qrTopPct}%;width:${qrSizePct}%;border:1px dashed transparent;border-radius:6px">
                     <img src="${item.tekst}" class="w-full h-auto rounded-lg shadow-lg" style="pointer-events:none"/>
                 </div>`;
@@ -11873,13 +11870,13 @@ window.bouwPowerPointPresentatie = async function(customOpties = null) {
         if (item.type === "QR") {
             let slide = pres.addSlide();
             slide.background = pptBg;
-            const diaTitel = item.titel || "Collecte (kerk)";
+            const diaTitel = "Collecte";
             slide.addText(diaTitel, { 
                 x: TEKST_DEF_X, 
                 y: TITEL_Y, 
                 w: TEKST_DEF_W, 
                 h: 0.4, 
-                color: "FFFFFF", 
+                color: "AAAAAA", // Lichtgrijs exact zoals de liedtitels 
                 fontSize: 18, 
                 bold: true, 
                 fontFace: pptFont, 
