@@ -3475,6 +3475,127 @@ Retourneer UITSLUITEND een valide JSON object:
         return qr.createDataURL(cellSize || 6, margin || 4);
     }
 
+    // Genereert een authentieke, officiële Tikkie QR-code kaart (stijlvol afgerond wit kaartje,
+    // vrolijk Tikkie-blauw (#00A3E0) beeldmerk in het hart van de QR met error correction 'H',
+    // en officiële 'tikkie' typografie & subtitel onderaan).
+    function maakTikkieQRDataURL(url, omschrijving) {
+        if (!url) return '';
+        try {
+            const cv = document.createElement('canvas');
+            const W = 540, H = 640;
+            cv.width = W;
+            cv.height = H;
+            const ctx = cv.getContext('2d');
+            if (!ctx) return (typeof maakQRDataURL === 'function') ? maakQRDataURL(url, 8, 2) : '';
+
+            // 1. Zachte afgeronde witte Tikkie-kaart
+            const r = 32;
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.moveTo(r, 0);
+            ctx.lineTo(W - r, 0);
+            ctx.quadraticCurveTo(W, 0, W, r);
+            ctx.lineTo(W, H - r);
+            ctx.quadraticCurveTo(W, H, W - r, H);
+            ctx.lineTo(r, H);
+            ctx.quadraticCurveTo(0, H, 0, H - r);
+            ctx.lineTo(0, r);
+            ctx.quadraticCurveTo(0, 0, r, 0);
+            ctx.closePath();
+            ctx.fill();
+
+            // Elegante buitenrand
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#E2E8F0';
+            ctx.stroke();
+
+            // 2. Genereer QR met foutcorrectie 'H' (herstelt tot 30% occlusie, ideaal voor centraal logo)
+            const qr = qrcode(0, 'H');
+            qr.addData(url);
+            qr.make();
+            const modCount = qr.getModuleCount();
+
+            const qrSize = 390;
+            const qrX = Math.round((W - qrSize) / 2);
+            const qrY = 54;
+            const modSize = qrSize / modCount;
+
+            // QR modules in diep donkerblauw / Tikkie navy (#0C1D36)
+            ctx.fillStyle = '#0C1D36';
+            for (let row = 0; row < modCount; row++) {
+                for (let col = 0; col < modCount; col++) {
+                    if (qr.isDark(row, col)) {
+                        const mx = qrX + col * modSize;
+                        const my = qrY + row * modSize;
+                        ctx.fillRect(Math.round(mx), Math.round(my), Math.ceil(modSize), Math.ceil(modSize));
+                    }
+                }
+            }
+
+            // 3. Authentieke Tikkie Badge in het hart van de QR-code
+            const centerX = W / 2;
+            const centerY = qrY + qrSize / 2;
+            const badgeRadius = 40;
+
+            // Witte isolatiering rondom de badge zodat omliggende modules de scanbaarheid niet hinderen
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, badgeRadius + 8, 0, Math.PI * 2);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fill();
+
+            // Tikkie cyaan badge (#00A3E0)
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, badgeRadius, 0, Math.PI * 2);
+            ctx.fillStyle = '#00A3E0';
+            ctx.fill();
+
+            // Vrolijk Tikkie gezichtje
+            // Linkeroog (knipoog boogje)
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.arc(centerX - 12, centerY - 3, 7, Math.PI, 0, false);
+            ctx.stroke();
+
+            // Rechteroog (open oogje)
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(centerX + 12, centerY - 4, 3.8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Vrolijke glimlach
+            ctx.beginPath();
+            ctx.arc(centerX, centerY + 5, 14, 0.15 * Math.PI, 0.85 * Math.PI, false);
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.stroke();
+
+            // 4. Tikkie typografie & branding onderaan
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#00A3E0';
+            ctx.font = '800 38px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+            ctx.fillText('tikkie', centerX, qrY + qrSize + 58);
+
+            ctx.font = '600 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+            ctx.fillStyle = '#64748B';
+            ctx.fillText('Scan met je camera of Tikkie-app', centerX, qrY + qrSize + 86);
+
+            if (omschrijving && omschrijving.toLowerCase() !== 'kerk') {
+                ctx.font = '500 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+                ctx.fillStyle = '#94A3B8';
+                const label = omschrijving.length > 36 ? omschrijving.slice(0, 34) + '…' : omschrijving;
+                ctx.fillText(label, centerX, qrY + qrSize + 108);
+            }
+
+            return cv.toDataURL('image/png');
+        } catch (err) {
+            console.warn("Fout bij aanmaken Tikkie QR:", err);
+            return (typeof maakQRDataURL === 'function') ? maakQRDataURL(url, 8, 2) : '';
+        }
+    }
+    window.maakTikkieQRDataURL = maakTikkieQRDataURL;
+
     // Slaat een lichte (tekst-only) versie op en geeft de deelbare meelees-URL terug.
     // Hergebruikt het bestaande Firestore-document voor de actieve dienst, tenzij forceerNieuw = true.
     async function maakMeeleesLink(forceerNieuw = false) {
@@ -3489,10 +3610,13 @@ Retourneer UITSLUITEND een valide JSON object:
                 if (it.type === 'QR') {
                     const url = it.qrUrl || actieveTikkie?.url || '';
                     const omschrijving = it.omschrijving || (it.titel ? it.titel.replace(/^Collecte\s*\(?|\)?$/gi, '').trim() : '') || actieveTikkie?.omschrijving || 'Kerk';
+                    const qrKaart = (url && typeof maakTikkieQRDataURL === 'function')
+                        ? maakTikkieQRDataURL(url, omschrijving)
+                        : (it.tekst || actieveTikkie?.qrData || '');
                     return {
                         type: 'Collecte',
                         titel: it.titel || (omschrijving ? `Collecte (${omschrijving})` : 'Collecte (kerk)'),
-                        tekst: it.tekst || actieveTikkie?.qrData || '',
+                        tekst: qrKaart,
                         qrUrl: url,
                         omschrijving: omschrijving,
                         align: 'center'
@@ -3515,9 +3639,12 @@ Retourneer UITSLUITEND een valide JSON object:
             bijgewerktOp: firebase.firestore.FieldValue.serverTimestamp()
         };
         if (actieveTikkie && (actieveTikkie.url || actieveTikkie.qrData)) {
+            const qrCard = (actieveTikkie.url && typeof maakTikkieQRDataURL === 'function')
+                ? maakTikkieQRDataURL(actieveTikkie.url, actieveTikkie.omschrijving)
+                : (actieveTikkie.qrData || '');
             payload.collecte = {
                 url: actieveTikkie.url || '',
-                qrData: actieveTikkie.qrData || '',
+                qrData: qrCard,
                 omschrijving: actieveTikkie.omschrijving || 'Kerk',
                 geldigTot: actieveTikkie.geldigTot || ''
             };
@@ -4487,7 +4614,7 @@ Retourneer UITSLUITEND een valide JSON object:
                             📷 Toon QR-code om te scannen
                         </summary>
                         <div style="padding:14px;background:#ffffff;border-radius:16px;display:inline-block;margin-top:8px;box-shadow:0 4px 16px rgba(0,0,0,0.12)">
-                            <img src="${qrAfbeelding}" alt="Collecte QR" style="width:160px;height:160px;object-fit:contain;display:block;margin:0 auto"/>
+                            <img src="${qrAfbeelding}" alt="Collecte QR" style="width:180px;height:auto;max-height:230px;object-fit:contain;display:block;margin:0 auto;border-radius:12px"/>
                         </div>
                     </details>
                     ` : ''}
@@ -4538,7 +4665,7 @@ Retourneer UITSLUITEND een valide JSON object:
                         📷 Toon QR-code om te scannen
                     </summary>
                     <div style="padding:14px;background:#ffffff;border-radius:16px;display:inline-block;margin-top:8px;box-shadow:0 4px 16px rgba(0,0,0,0.12)">
-                        <img src="${qrAfbeelding}" alt="Collecte QR" style="width:160px;height:160px;object-fit:contain;display:block;margin:0 auto"/>
+                        <img src="${qrAfbeelding}" alt="Collecte QR" style="width:180px;height:auto;max-height:230px;object-fit:contain;display:block;margin:0 auto;border-radius:12px"/>
                     </div>
                 </details>
                 ` : ''}
@@ -4673,6 +4800,11 @@ Retourneer UITSLUITEND een valide JSON object:
                 }
             }
 
+            // Automatische upgrade van oude/saaie QR-codes naar de officiële Tikkie QR-kaart
+            if (typeof window.upgradeLiturgieQRCodes === 'function') {
+                window.upgradeLiturgieQRCodes();
+            }
+
             // Herstel ALTIJD voorganger en datum bij refresh!
             const dEl = document.getElementById('datumInput');
             const vEl = document.getElementById('voorgangerInput');
@@ -4688,6 +4820,55 @@ Retourneer UITSLUITEND een valide JSON object:
             console.warn("Kon opgeslagen liturgie niet herstellen:", e);
         }
     }
+
+    // Waarborgt dat alle bestaande en nieuw ingeladen QR-items automatisch
+    // worden voorzien van de officiële Tikkie QR-badge en correcte titel.
+    window.upgradeLiturgieQRCodes = function() {
+        const tikkie = (typeof window.getActieveWeekTikkie === 'function') ? window.getActieveWeekTikkie() : null;
+        let gewijzigd = false;
+
+        // 1. Upgrade actieve week-Tikkie in localStorage indien nodig
+        if (tikkie && tikkie.url && typeof maakTikkieQRDataURL === 'function') {
+            if (!tikkie.qrData || tikkie.qrData.startsWith('data:image/gif') || tikkie.qrData.length < 5000) {
+                tikkie.qrData = maakTikkieQRDataURL(tikkie.url, tikkie.omschrijving);
+                const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : 'bethel';
+                try {
+                    localStorage.setItem(`weekTikkieData_${slug}`, JSON.stringify(tikkie));
+                    if (slug === 'bethel') localStorage.setItem('weekTikkieData', JSON.stringify(tikkie));
+                } catch(e) {}
+            }
+        }
+
+        // 2. Upgrade items in liturgieVolgorde
+        if (Array.isArray(liturgieVolgorde)) {
+            liturgieVolgorde.forEach(item => {
+                if (item && item.type === 'QR') {
+                    const doelUrl = item.qrUrl || tikkie?.url;
+                    const doelOms = item.omschrijving || (item.titel ? item.titel.replace(/^Collecte\s*\(?|\)?$/gi, '').trim() : '') || tikkie?.omschrijving || 'kerk';
+                    if (doelUrl && typeof maakTikkieQRDataURL === 'function') {
+                        if (!item.tekst || item.tekst.startsWith('data:image/gif') || item.tekst.length < 5000) {
+                            item.tekst = maakTikkieQRDataURL(doelUrl, doelOms);
+                            if (!item.qrUrl) item.qrUrl = doelUrl;
+                            gewijzigd = true;
+                        }
+                    }
+                    if (!item.titel || item.titel.toLowerCase() === 'qr code' || item.titel.toLowerCase() === 'qr-code') {
+                        item.titel = `Collecte (${doelOms})`;
+                        gewijzigd = true;
+                    }
+                }
+            });
+        }
+
+        if (gewijzigd) {
+            bewaarLiturgie();
+            if (typeof window.tekenVolgorde === 'function') window.tekenVolgorde();
+            if (typeof renderSlidePreview === 'function' && typeof previewItemIdx !== 'undefined' && previewItemIdx >= 0) {
+                renderSlidePreview(previewItemIdx);
+            }
+        }
+    };
+    setTimeout(() => { if (typeof window.upgradeLiturgieQRCodes === 'function') window.upgradeLiturgieQRCodes(); }, 200);
 
     window.wisLiturgie = function() {
         if (liturgieVolgorde.length === 0) return;
@@ -5040,12 +5221,17 @@ Retourneer UITSLUITEND een valide JSON object:
                                     if (!tikkieData && window.liederenDatabase && window.liederenDatabase['__week_tikkie_bethel__']) {
                                         try { tikkieData = JSON.parse(window.liederenDatabase['__week_tikkie_bethel__']); } catch(e) {}
                                     }
+                                    const qrData = (tikkieData?.url && typeof maakTikkieQRDataURL === 'function')
+                                        ? maakTikkieQRDataURL(tikkieData.url, tikkieData.omschrijving)
+                                        : (tikkieData?.qrData || (tikkieData?.url ? (typeof maakQRDataURL === 'function' ? maakQRDataURL(tikkieData.url, 8, 2) : tikkieData.url) : "Scan met uw mobiel om bij te dragen."));
                                     liturgieVolgorde.push({
                                         type: "QR",
                                         titel: tikkieData?.omschrijving ? `Collecte (${tikkieData.omschrijving})` : "Collecte (kerk)",
-                                        tekst: tikkieData?.qrData || (tikkieData?.url ? (typeof maakQRDataURL === 'function' ? maakQRDataURL(tikkieData.url, 8, 2) : tikkieData.url) : "Scan met uw mobiel om bij te dragen."),
+                                        tekst: qrData,
                                         qrUrl: tikkieData?.url || '',
-                                        geldigTot: tikkieData?.geldigTot || ''
+                                        omschrijving: tikkieData?.omschrijving || '',
+                                        geldigTot: tikkieData?.geldigTot || '',
+                                        qrSize: 3.5
                                     });
                                 } else if (it.type === "Zegen") {
                                     // Zegenbede is een mondelinge zegen en krijgt geen beamerdia
@@ -9297,7 +9483,9 @@ Antwoord UITSLUITEND in valide JSON:
             window.openTikkieModal();
             return;
         }
-        const qrData = tikkie.qrData || (tikkie.url ? (typeof maakQRDataURL === 'function' ? maakQRDataURL(tikkie.url, 8, 2) : tikkie.url) : '');
+        const qrData = (tikkie.url && typeof maakTikkieQRDataURL === 'function')
+            ? maakTikkieQRDataURL(tikkie.url, tikkie.omschrijving)
+            : (tikkie.qrData || (tikkie.url ? (typeof maakQRDataURL === 'function' ? maakQRDataURL(tikkie.url, 8, 2) : tikkie.url) : ''));
         if (!qrData) {
             window.openTikkieModal();
             return;
@@ -9308,6 +9496,7 @@ Antwoord UITSLUITEND in valide JSON:
             titel: titel, 
             tekst: qrData, 
             qrUrl: tikkie.url || '',
+            omschrijving: tikkie.omschrijving || '',
             geldigTot: tikkie.geldigTot || '',
             qrSize: 3.5 
         });
@@ -9456,7 +9645,10 @@ Antwoord UITSLUITEND in valide JSON:
         if (!preVak || !preImg || !preUrl) return;
 
         let src = tijdelijkeModalTikkieData.qrData;
-        if (!src && tijdelijkeModalTikkieData.url && typeof maakQRDataURL === 'function') {
+        if (!src && tijdelijkeModalTikkieData.url && typeof maakTikkieQRDataURL === 'function') {
+            src = maakTikkieQRDataURL(tijdelijkeModalTikkieData.url, tijdelijkeModalTikkieData.omschrijving);
+            tijdelijkeModalTikkieData.qrData = src;
+        } else if (!src && tijdelijkeModalTikkieData.url && typeof maakQRDataURL === 'function') {
             src = maakQRDataURL(tijdelijkeModalTikkieData.url, 8, 2);
             tijdelijkeModalTikkieData.qrData = src;
         }
@@ -9495,15 +9687,17 @@ Antwoord UITSLUITEND in valide JSON:
                     console.warn("jsQR decode mislukt:", err);
                 }
 
-                const qrImg = extractQR(img);
-                tijdelijkeModalTikkieData.qrData = qrImg || e.target.result;
-
                 if (ontdekteUrl) {
                     tijdelijkeModalTikkieData.url = ontdekteUrl;
+                    tijdelijkeModalTikkieData.qrData = (typeof maakTikkieQRDataURL === 'function')
+                        ? maakTikkieQRDataURL(ontdekteUrl, tijdelijkeModalTikkieData.omschrijving)
+                        : (extractQR(img) || e.target.result);
                     const linkInp = document.getElementById('tikkieLinkInput');
                     if (linkInp) linkInp.value = ontdekteUrl;
                     window.toonToast("Echte Tikkie QR en betaallink succesvol verwerkt!", "success");
                 } else {
+                    // Behoud de originele screenshot zodat het een echte Tikkie-kaart blijft in plaats van een kale uitsnede
+                    tijdelijkeModalTikkieData.qrData = e.target.result;
                     window.toonToast("Tikkie QR screenshot verwerkt!", "info");
                 }
                 window.updateTikkieModalPreview();
@@ -9519,7 +9713,9 @@ Antwoord UITSLUITEND in valide JSON:
         if (!inp) return;
         const url = inp.value.trim();
         tijdelijkeModalTikkieData.url = url;
-        if (url && typeof maakQRDataURL === 'function') {
+        if (url && typeof maakTikkieQRDataURL === 'function') {
+            tijdelijkeModalTikkieData.qrData = maakTikkieQRDataURL(url, tijdelijkeModalTikkieData.omschrijving);
+        } else if (url && typeof maakQRDataURL === 'function') {
             tijdelijkeModalTikkieData.qrData = maakQRDataURL(url, 8, 2);
         } else if (!url) {
             tijdelijkeModalTikkieData.qrData = '';
@@ -9536,6 +9732,11 @@ Antwoord UITSLUITEND in valide JSON:
         if (!tijdelijkeModalTikkieData.qrData && !tijdelijkeModalTikkieData.url) {
             window.toonToast("Upload eerst een QR-screenshot of plak een Tikkie-link.", "error");
             return;
+        }
+
+        // Waarborg dat als er een URL is, qrData altijd de officiële Tikkie QR-kaart is
+        if (tijdelijkeModalTikkieData.url && (!tijdelijkeModalTikkieData.qrData || tijdelijkeModalTikkieData.qrData.startsWith('data:image/gif')) && typeof maakTikkieQRDataURL === 'function') {
+            tijdelijkeModalTikkieData.qrData = maakTikkieQRDataURL(tijdelijkeModalTikkieData.url, omschrijving);
         }
 
         const tikkieOpslag = {
@@ -10535,9 +10736,10 @@ Antwoord UITSLUITEND in valide JSON:
 
             const diaTitel = item.titel || "Collecte (kerk)";
             const qrSizeInch = item.qrSize || 3.5;
+            const qrHInch = qrSizeInch * 1.185;
             const qrSizePct = (qrSizeInch / SLIDE_W * 100).toFixed(2);
             const qrX = item.tekstX ?? ((SLIDE_W - qrSizeInch) / 2);
-            const qrY = item.tekstY ?? (((SLIDE_H - qrSizeInch) / 2) + 0.2);
+            const qrY = item.tekstY ?? (((SLIDE_H - qrHInch) / 2) + 0.3);
             const qrLeftPct = (qrX / SLIDE_W * 100).toFixed(2);
             const qrTopPct = (qrY / SLIDE_H * 100).toFixed(2);
 
@@ -11685,9 +11887,10 @@ window.bouwPowerPointPresentatie = async function(customOpties = null) {
                 valign: "top" 
             });
             const qrS = item.qrSize || 3.5;
+            const qrH = qrS * 1.185;
             const qrX = item.tekstX ?? ((SLIDE_W - qrS) / 2);
-            const qrY = item.tekstY ?? (((SLIDE_H - qrS) / 2) + 0.2);
-            slide.addImage({ data: item.tekst, x: qrX, y: qrY, w: qrS, h: qrS });
+            const qrY = item.tekstY ?? (((SLIDE_H - qrH) / 2) + 0.3);
+            slide.addImage({ data: item.tekst, x: qrX, y: qrY, w: qrS, h: qrH });
             return;
         }
 
