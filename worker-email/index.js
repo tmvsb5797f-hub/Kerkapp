@@ -653,8 +653,8 @@ async function verwerkLiturgieTekst(tekst, env, onderwerp = "", kerkId = "bethel
   const zangNamenLijst = [];
 
   for (const line of lines) {
-    // Sla mondelinge gebeden en voorganger-regels over (GEEN dia's en niet in items!)
-    if (/^(?:stil\s+gebed|votum|gebed|dankgebed)\b/i.test(line) || /:\s*gebed\b/i.test(line)) {
+    // Sla mondelinge handelingen over (Gebed, Votum, Zegen krijgen NOOIT een beamerdia!)
+    if (/^(?:stil\s+gebed|votum|gebed|dankgebed|zegen|zegenbede)\b/i.test(line) || /:\s*(?:gebed|zegen)\b/i.test(line)) {
       continue;
     }
     if (/^(?:preeklezing|preeklezer|leesdienst)\b/i.test(line)) {
@@ -750,14 +750,10 @@ async function verwerkLiturgieTekst(tekst, env, onderwerp = "", kerkId = "bethel
       continue;
     }
 
-    // D. Collecte en Zegen (collecte max 1x toevoegen)
+    // D. Collecte (collecte max 1x toevoegen)
     if (/collecte/i.test(line)) {
       if (!items.some(it => it.type === "Collecte")) {
         items.push({ type: "Collecte", titel: "Collecte & Week-Tikkie" });
-      }
-    } else if (/zegen/i.test(line)) {
-      if (!items.some(it => it.type === "Zegen")) {
-        items.push({ type: "Zegen", titel: "Zegenbede" });
       }
     }
   }
@@ -835,12 +831,6 @@ async function verwerkLiturgieTekst(tekst, env, onderwerp = "", kerkId = "bethel
           ]
         });
       }
-    } else if (it.type === "Zegen") {
-      slides.push({
-        id: "slot-dia",
-        type: "Leeg",
-        titel: "Zegenbede"
-      });
     } else if (it.type === "Zang") {
       const verzenMap = splitsCoupletTekst(it.tekst);
       const teZingenVerzen = (it.verzen && it.verzen.length > 0)
@@ -878,13 +868,6 @@ async function verwerkLiturgieTekst(tekst, env, onderwerp = "", kerkId = "bethel
         "Van harte aanbevolen voor de eredienst en diaconie.",
         "Scan met uw camera of bankapp"
       ]
-    });
-  }
-  if (!slides.some(s => s.type === "Leeg" || s.id === "slot-dia")) {
-    slides.push({
-      id: "slot-dia",
-      type: "Leeg",
-      titel: "Zegenbede"
     });
   }
 

@@ -4132,14 +4132,11 @@ Retourneer UITSLUITEND een valide JSON object:
                                         geldigTot: tikkieData?.geldigTot || ''
                                     });
                                 } else if (it.type === "Zegen") {
-                                    liturgieVolgorde.push({
-                                        type: "Leeg",
-                                        titel: "Zegenbede",
-                                        tekst: ""
-                                    });
+                                    // Zegenbede is een mondelinge zegen en krijgt geen beamerdia
+                                    continue;
                                 } else {
-                                    // Sla mondelinge gebeden, stil gebed en dankgebed over (worden nooit als dia getoond!)
-                                    if (/gebed|votum/i.test(it.titel)) {
+                                    // Sla mondelinge handelingen (gebeden, votum, etc.) over (worden nooit als dia getoond!)
+                                    if (/gebed|votum|zegen/i.test(it.titel)) {
                                         continue;
                                     }
                                     liturgieVolgorde.push({
@@ -4151,7 +4148,7 @@ Retourneer UITSLUITEND een valide JSON object:
                             }
                         } else {
                             liturgieVolgorde = data.slides
-                                .filter(s => !/gebed|votum/i.test(s.titel || ""))
+                                .filter(s => !/gebed|votum|zegen/i.test(s.titel || ""))
                                 .map(s => ({
                                     type: s.type || "Vrije tekst",
                                     titel: s.titel || "Onderdeel",
