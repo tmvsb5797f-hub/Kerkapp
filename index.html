@@ -34,6 +34,10 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
 
+<!-- MODULAIRE ONDERDELEN: IndexedDB & Verskiezer -->
+<script src="js/kerkdb.js"></script>
+<script src="js/vers-kiezer.js"></script>
+
 <style>
     html {
         overflow-x: hidden;
@@ -350,6 +354,20 @@
                     </button>
                 </div>
             </div>
+
+            <!-- SLIMME COUPLET- EN VERSKIEZER BALK (1.2) -->
+            <div id="versKiezerContainer" class="hidden mb-2.5 p-3 bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/50 rounded-2xl flex flex-col gap-2 shadow-xs transition-all">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-bold text-blue-900 dark:text-blue-300 flex items-center gap-1.5">
+                        <span>🎵</span> <span>Couplet / Vers selectie:</span>
+                    </span>
+                    <button type="button" onclick="window.toggleAlleVerzenInModal()" id="versKiezerToggleAllesBtn" class="text-[10px] font-bold text-[#007AFF] hover:underline cursor-pointer">Alles selecteren</button>
+                </div>
+                <div id="versKiezerKnoppen" class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto pt-0.5 pr-1">
+                    <!-- Dynamisch gevuld met interactieve pills [✓ Vers 1] [✓ Vers 2] -->
+                </div>
+            </div>
+
             <textarea id="handmatigeTekst" rows="6" class="w-full bg-[#F5F5F7] border border-transparent rounded-xl py-3 px-4 text-[14px] apple-input transition-all resize-none"></textarea>
             <p class="text-[10px] text-gray-400 uppercase font-bold mt-1">Tip: Gebruik een lege regel (enter) tussen verzen voor aparte dia's</p>
             <button id="opslaanKnop" onclick="slaHandmatigOp()" class="w-full py-3 mt-2 rounded-xl text-sm font-semibold text-white bg-[#34C759] hover:bg-green-600 transition-colors shadow-md">Opslaan in Cloud & Toevoegen</button>
@@ -1215,7 +1233,10 @@
         <!-- SECTIE 3: VOLGORDE -->
         <section id="sectieVolgordeContainer" class="mobile-tab-view">
             <div class="flex items-center justify-between mb-2 md:mb-3 ml-2 pr-1">
-                <h2 class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider">3. Volgorde</h2>
+                <h2 class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider flex items-center gap-2">
+                    <span>3. Volgorde</span>
+                    <span id="liturgieDiaTotaalBadge" class="hidden text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 text-[#007AFF] dark:text-blue-300 border border-blue-200/50 dark:border-blue-800/40 normal-case">0 dia's</span>
+                </h2>
                 <div class="flex items-center gap-3">
                     <span id="autoArchiefIndicator" class="text-[10px] text-gray-400 font-medium hidden sm:inline"></span>
                     <button onclick="slaLiturgieOp()" class="text-[11px] font-semibold text-[#007AFF] hover:text-blue-700 transition-colors flex items-center gap-1" title="Liturgie direct handmatig opslaan in archief">
@@ -4513,6 +4534,11 @@ Retourneer UITSLUITEND een valide JSON object:
     }
 
     function renderMeelees(data, overlay) {
+        window._huidigeMeeleesData = data;
+        window._huidigeMeeleesOverlay = overlay;
+        const meeleesZoom = parseInt(localStorage.getItem('meeleesZoom') || '100', 10);
+        const zoomFactor = meeleesZoom / 100;
+
         if (data && data.customThema && data.customThema.svg) {
             MEELEES_THEMAS.custom = data.customThema;
         }
@@ -4566,10 +4592,10 @@ Retourneer UITSLUITEND een valide JSON object:
                     <div style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${th.headerKleur};margin-bottom:4px;display:flex;align-items:center;gap:4px">
                         <span>🪙</span> <span>Collecte</span>
                     </div>
-                    <div style="font-size:18px;font-weight:700;color:${th.kaartTitel};line-height:1.3">
+                    <div style="font-size:${Math.round(18 * zoomFactor)}px;font-weight:700;color:${th.kaartTitel};line-height:1.3">
                         Collecte voor ${escapeHtml(gemeenteNaam)}
                     </div>
-                    ${doelTekst ? `<div style="font-size:13px;font-weight:600;color:${th.subKleur};margin-top:4px">Doel: ${escapeHtml(doelTekst)}</div>` : ''}
+                    ${doelTekst ? `<div style="font-size:${Math.round(13 * zoomFactor)}px;font-weight:600;color:${th.subKleur};margin-top:4px">Doel: ${escapeHtml(doelTekst)}</div>` : ''}
 
                     ${tikkieUrl ? `
                     <div style="margin-top:14px">
@@ -4601,8 +4627,8 @@ Retourneer UITSLUITEND een valide JSON object:
             const tekst = (it.tekst || '').trim();
             kaarten += `<div style="background:${th.kaartBg};border-radius:20px;padding:16px 18px;margin:12px 0;box-shadow:0 4px 16px ${th.schaduw};backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)">` +
                 (label ? `<div style="font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:${th.headerKleur};margin-bottom:3px">${escapeHtml(label)}</div>` : '') +
-                `<div style="font-size:17px;font-weight:700;color:${th.kaartTitel}">${escapeHtml(it.titel || '')}</div>` +
-                (tekst ? `<div style="font-size:14px;line-height:1.55;color:${th.kaartTekst};white-space:pre-line;margin-top:6px;text-align:${it.align || 'left'}">${formatteerMarkdownVoorHtml(tekst)}</div>` : '') +
+                `<div style="font-size:${Math.round(17 * zoomFactor)}px;font-weight:700;color:${th.kaartTitel}">${escapeHtml(it.titel || '')}</div>` +
+                (tekst ? `<div style="font-size:${Math.round(14 * zoomFactor)}px;line-height:1.55;color:${th.kaartTekst};white-space:pre-line;margin-top:6px;text-align:${it.align || 'left'}">${formatteerMarkdownVoorHtml(tekst)}</div>` : '') +
                 `</div>`;
         });
 
@@ -4617,10 +4643,10 @@ Retourneer UITSLUITEND een valide JSON object:
                 <div style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:${th.headerKleur};margin-bottom:4px;display:flex;align-items:center;gap:4px">
                     <span>🪙</span> <span>Collecte</span>
                 </div>
-                <div style="font-size:18px;font-weight:700;color:${th.kaartTitel};line-height:1.3">
+                <div style="font-size:${Math.round(18 * zoomFactor)}px;font-weight:700;color:${th.kaartTitel};line-height:1.3">
                     Collecte voor ${escapeHtml(gemeenteNaam)}
                 </div>
-                ${doelTekst ? `<div style="font-size:13px;font-weight:600;color:${th.subKleur};margin-top:4px">Doel: ${escapeHtml(doelTekst)}</div>` : ''}
+                ${doelTekst ? `<div style="font-size:${Math.round(13 * zoomFactor)}px;font-weight:600;color:${th.subKleur};margin-top:4px">Doel: ${escapeHtml(doelTekst)}</div>` : ''}
 
                 ${tikkieUrl ? `
                 <div style="margin-top:14px">
@@ -4656,12 +4682,30 @@ Retourneer UITSLUITEND een valide JSON object:
                         (data.gemeente ? `<div style="font-size:12px;font-weight:700;color:${th.subKleur};margin-top:2px;letter-spacing:.02em">${escapeHtml(data.gemeente)}</div>` : '') +
                         (data.datum ? `<div style="font-size:21px;font-weight:800;color:${th.titelKleur};margin-top:2px">${escapeHtml(data.datum)}</div>` : '') +
                         (data.voorganger ? `<div style="font-size:13px;font-weight:500;color:${th.subKleur};margin-top:2px">${escapeHtml(data.voorganger)}</div>` : '') +
+                        `<div style="display:inline-flex;align-items:center;justify-content:center;gap:6px;margin-top:10px;background:${th.kaartBg};border:1px solid ${th.divider};padding:3px 10px;border-radius:20px;box-shadow:0 2px 8px ${th.schaduw};user-select:none">` +
+                            `<button type="button" onclick="window.wijzigMeeleesFontSize(-10)" title="Tekst verkleinen" style="background:transparent;border:none;cursor:pointer;font-size:12px;font-weight:700;color:${th.kaartTitel};padding:3px 8px;border-radius:12px;-webkit-tap-highlight-color:transparent;transition:opacity 0.15s;${meeleesZoom <= 80 ? 'opacity:0.35;pointer-events:none;' : ''}">A-</button>` +
+                            `<span style="font-size:11px;font-weight:700;color:${th.subKleur};min-width:38px;text-align:center">${meeleesZoom}%</span>` +
+                            `<button type="button" onclick="window.wijzigMeeleesFontSize(10)" title="Tekst vergroten" style="background:transparent;border:none;cursor:pointer;font-size:15px;font-weight:700;color:${th.kaartTitel};padding:3px 8px;border-radius:12px;-webkit-tap-highlight-color:transparent;transition:opacity 0.15s;${meeleesZoom >= 160 ? 'opacity:0.35;pointer-events:none;' : ''}">A+</button>` +
+                        `</div>` +
                     `</div>` +
                     `<div style="padding:8px 16px 24px">${kaarten}</div>` +
                     `<div style="text-align:center;padding:0 20px 20px;font-size:11px;color:${th.voettekst}">Meelezen via Liturgie Assistent<br><span style="font-size:10px;opacity:0.85;margin-top:3px;display:block">Application made by Sem</span></div>` +
                 `</div>` +
             `</div>`;
     }
+
+    window.wijzigMeeleesFontSize = function(delta) {
+        let zoom = parseInt(localStorage.getItem('meeleesZoom') || '100', 10);
+        zoom = Math.max(80, Math.min(160, zoom + delta));
+        localStorage.setItem('meeleesZoom', zoom.toString());
+        if (window._huidigeMeeleesData && window._huidigeMeeleesOverlay) {
+            const scrollPos = window._huidigeMeeleesOverlay.scrollTop || window.scrollY || 0;
+            renderMeelees(window._huidigeMeeleesData, window._huidigeMeeleesOverlay);
+            if (window._huidigeMeeleesOverlay) {
+                window._huidigeMeeleesOverlay.scrollTop = scrollPos;
+            }
+        }
+    };
 
     // Instant interactieve mobiele weergave testen vanuit de app
     window.testMeeleesPagina = function() {
@@ -4750,7 +4794,7 @@ Retourneer UITSLUITEND een valide JSON object:
             // LocalStorage vol (meestal door zware base64 afbeeldingen in Foto-dia's).
             // Val direct terug op een lichte versie waarbij zware foto data URLs worden gestript,
             // zodat alle liederen, teksten, schriftlezingen en volgorde ALTIJD behouden blijven!
-            console.warn("Kon volledige liturgie niet lokaal opslaan (waarschijnlijk 5MB quota overschreden), sla lichte versie op:", e);
+            console.warn("Kon volledige liturgie niet in localStorage opslaan (waarschijnlijk 5MB quota overschreden), sla lichte versie op:", e);
             try {
                 const licht = liturgieVolgorde.map(it => (it.type === 'Foto' || it.type === 'QR') ? { ...it, tekst: '' } : it);
                 localStorage.setItem(LITURGIE_OPSLAG_SLEUTEL, JSON.stringify(licht));
@@ -4758,6 +4802,14 @@ Retourneer UITSLUITEND een valide JSON object:
                 console.warn("Kon ook lichte liturgie niet lokaal opslaan:", err2);
             }
         }
+
+        // Bewaar altijd de volledige liturgie (inclusief zware foto's en dia-afbeeldingen) in IndexedDB
+        if (window.KerkDB && typeof window.KerkDB.setItem === 'function') {
+            window.KerkDB.setItem('actieveLiturgieVolledig', liturgieVolgorde).catch(function(err) {
+                console.warn("KerkDB opslaan mislukt:", err);
+            });
+        }
+
         if (typeof planAutoArchief === 'function') planAutoArchief();
         if (typeof autoSyncObsLiveLiturgie === 'function') autoSyncObsLiveLiturgie();
         if (typeof autoSyncMeeleesLive === 'function') autoSyncMeeleesLive();
@@ -4773,6 +4825,30 @@ Retourneer UITSLUITEND een valide JSON object:
                     window.tekenVolgorde();
                     if (typeof autoSyncObsLiveLiturgie === 'function') autoSyncObsLiveLiturgie();
                 }
+            }
+
+            // Hydrateer media / foto's vanuit IndexedDB indien beschikbaar
+            if (window.KerkDB && typeof window.KerkDB.getItem === 'function') {
+                window.KerkDB.getItem('actieveLiturgieVolledig').then(function(fullData) {
+                    if (Array.isArray(fullData) && fullData.length === liturgieVolgorde.length) {
+                        let hasHydrated = false;
+                        for (let i = 0; i < liturgieVolgorde.length; i++) {
+                            const cur = liturgieVolgorde[i];
+                            const full = fullData[i];
+                            if (cur && full && (cur.type === 'Foto' || cur.type === 'QR')) {
+                                if (!cur.tekst && full.tekst) {
+                                    cur.tekst = full.tekst;
+                                    hasHydrated = true;
+                                }
+                            }
+                        }
+                        if (hasHydrated) {
+                            window.tekenVolgorde();
+                        }
+                    }
+                }).catch(function(err) {
+                    console.warn("KerkDB herstel mislukt:", err);
+                });
             }
 
             // Automatische upgrade van oude/saaie QR-codes naar de officiële Tikkie QR-kaart
@@ -4851,6 +4927,9 @@ Retourneer UITSLUITEND een valide JSON object:
         try { localStorage.removeItem(LITURGIE_OPSLAG_SLEUTEL); } catch (e) {}
         try { localStorage.removeItem('opgeslagenDienstDatum'); } catch (e) {}
         try { localStorage.removeItem('opgeslagenDienstVoorganger'); } catch (e) {}
+        if (window.KerkDB && typeof window.KerkDB.removeItem === 'function') {
+            window.KerkDB.removeItem('actieveLiturgieVolledig').catch(function() {});
+        }
         const dEl = document.getElementById('datumInput');
         const vEl = document.getElementById('voorgangerInput');
         if (dEl) dEl.value = '';
@@ -6495,6 +6574,11 @@ Bijbelliederen`;
         document.getElementById('modalKnoppen3').classList.remove('hidden');
         document.getElementById('modalKnoppen3').classList.add('flex');
         updateLiedbundelKnop(tijdelijkeTitel, tijdelijkeType);
+
+        // Initialiseer Slimme Couplet- en Verskiezer indien van toepassing (1.2)
+        if (typeof window.initVersKiezerVoorItem === 'function') {
+            window.initVersKiezerVoorItem(liturgieVolgorde[index], index);
+        }
         
         document.getElementById('opslaanKnop').innerText = "Wijziging Opslaan voor deze Dia";
         document.getElementById('controleModal').classList.remove('hidden');
@@ -6504,6 +6588,8 @@ Bijbelliederen`;
         document.getElementById('controleModal').classList.add('hidden');
         const foutBanner = document.getElementById('bijbelFoutBanner');
         if (foutBanner) foutBanner.classList.add('hidden');
+        const versKiezer = document.getElementById('versKiezerContainer');
+        if (versKiezer) versKiezer.classList.add('hidden');
         isAanHetBewerken = false;
         setTimeout(() => verwerkVolgendeImportItem(), 300);
     }
@@ -11070,8 +11156,27 @@ Antwoord UITSLUITEND in valide JSON:
             previewItemIdx = -1;
             lijst.innerHTML = '<div class="bg-transparent border-2 border-dashed border-gray-200 rounded-[16px] md:rounded-[20px] p-6 md:p-8 text-center text-gray-400 font-medium text-[12px] md:text-[13px]">Nog geen items toegevoegd</div>';
             renderSlidePreview(-1);
+            const totalBadge = document.getElementById('liturgieDiaTotaalBadge');
+            if (totalBadge) totalBadge.classList.add('hidden');
             if (window.updatePreflightBadge) window.updatePreflightBadge();
             return;
+        }
+
+        // Bereken aantal dia's per item en totaal aantal dia's (1.3)
+        let totaalDias = 0;
+        const diasPerItem = liturgieVolgorde.map(it => {
+            const d = (typeof window.telDiasVoorItem === 'function') 
+                ? window.telDiasVoorItem(it) 
+                : (it.type === 'Foto' || it.type === 'QR' || it.type === 'Leeg' ? 1 : 1);
+            totaalDias += d;
+            return d;
+        });
+
+        if (mobielTeller) mobielTeller.textContent = `${liturgieVolgorde.length} items (${totaalDias} dia's)`;
+        const totalBadge = document.getElementById('liturgieDiaTotaalBadge');
+        if (totalBadge) {
+            totalBadge.textContent = `${totaalDias} ${totaalDias === 1 ? 'dia' : "dia's"}`;
+            totalBadge.classList.remove('hidden');
         }
 
         if (previewItemIdx < 0 || previewItemIdx >= liturgieVolgorde.length) {
@@ -11086,6 +11191,7 @@ Antwoord UITSLUITEND in valide JSON:
             else if(item.type === 'Leeg') icon = '⬛ ';
 
             const isActive = index === previewItemIdx;
+            const aantalDias = diasPerItem[index] || 1;
 
             lijst.innerHTML += `
             <div ${window.innerWidth >= 768 ? 'draggable="true"' : ''} data-index="${index}" onclick="kiesItemEnPreview(${index})" class="volgorde-item bg-white flex items-center gap-3 p-3.5 md:p-4 rounded-[18px] shadow-[0_2px_12px_rgba(0,0,0,0.03)] border ${isActive ? 'ring-2 ring-[#007AFF] border-transparent' : 'border-black/[0.04]'} group transition-all duration-150 ease-out select-none md:active:scale-[0.99] hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] cursor-pointer">
@@ -11094,8 +11200,11 @@ Antwoord UITSLUITEND in valide JSON:
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                 </div>
                 <div class="flex-grow overflow-hidden pl-1 md:pl-2">
-                    <span class="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider">${icon}${escapeHtml(item.type)}</span>
-                    <h3 class="font-semibold text-[#1D1D1F] text-[13px] md:text-[14px] truncate">${escapeHtml(item.titel)}</h3>
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <span class="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider">${icon}${escapeHtml(item.type)}</span>
+                        <span class="text-[9px] md:text-[10px] font-bold px-1.5 py-0.2 rounded-md ${aantalDias > 1 ? 'bg-blue-50 text-[#007AFF] border border-blue-200/60 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/40' : 'bg-gray-100 text-gray-500 dark:bg-white/10 dark:text-gray-400'}">${aantalDias} ${aantalDias === 1 ? 'dia' : 'dia\'s'}</span>
+                    </div>
+                    <h3 class="font-semibold text-[#1D1D1F] text-[13px] md:text-[14px] truncate mt-0.5">${escapeHtml(item.titel)}</h3>
                 </div>
 
                 <button onclick="event.stopPropagation(); openBewerkScherm(${index})" aria-label="Tekst bewerken van ${escapeHtml(item.titel)}" class="w-10 h-10 md:w-9 md:h-9 flex items-center justify-center text-[#007AFF] bg-blue-50 hover:bg-blue-100 rounded-full transition-all flex-shrink-0 active:scale-95 ${item.type === 'Foto' || item.type === 'Leeg' || item.type === 'QR' ? 'hidden' : ''}" title="Tekst bewerken">
