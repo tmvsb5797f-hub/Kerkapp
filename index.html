@@ -1295,6 +1295,26 @@
             <div id="meeleesPaneelHuidig" class="flex flex-col items-center gap-3">
                 <p class="text-xs text-gray-500 dark:text-gray-400 text-center leading-snug">Gemeenteleden scannen deze QR-code met hun camera of openen de link om live op hun mobiel mee te lezen tijdens de dienst.</p>
                 
+                <!-- Live status banner -->
+                <div class="w-full flex items-center justify-between p-2.5 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/40 rounded-2xl text-xs">
+                    <div class="flex items-center gap-2">
+                        <span class="relative flex h-2.5 w-2.5">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                        </span>
+                        <div class="text-left">
+                            <div class="font-bold text-emerald-900 dark:text-emerald-200 text-[11px] flex items-center gap-1">
+                                <span>Live gesynchroniseerd</span>
+                            </div>
+                            <div class="text-[10px] text-emerald-700 dark:text-emerald-400" id="meeleesLiveSyncTijd">Wijzigingen in de liturgie gaan direct mee</div>
+                        </div>
+                    </div>
+                    <button type="button" onclick="window.updateActieveMeeleesLink(true)" class="px-2.5 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[11px] shadow-xs active:scale-95 transition-all flex items-center gap-1 cursor-pointer" title="Direct synchroniseren met de actieve QR">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        <span>Nu Bijwerken</span>
+                    </button>
+                </div>
+
                 <div class="p-3 bg-white rounded-2xl shadow-sm border border-gray-200 dark:border-white/20">
                     <div id="deelQR" class="w-48 h-48 flex items-center justify-center"></div>
                 </div>
@@ -1314,10 +1334,13 @@
                     </button>
                 </div>
 
-                <div class="w-full flex gap-2 pt-1">
-                    <button type="button" onclick="window.genereerVersMeeleesLink()" class="flex-1 py-2 px-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-[#007AFF] dark:text-blue-300 text-xs font-semibold transition-all border border-blue-200 dark:border-blue-800/40 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95">
+                <div class="w-full grid grid-cols-2 gap-2 pt-1">
+                    <button type="button" onclick="window.updateActieveMeeleesLink(true)" class="py-2 px-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-[#007AFF] dark:text-blue-300 text-xs font-semibold transition-all border border-blue-200 dark:border-blue-800/40 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95" title="Houd dezelfde QR-code, maar werk alle items en teksten direct bij">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                        <span>Vernieuw QR voor dienst</span>
+                        <span>Wijzigingen Nu Meenemen</span>
+                    </button>
+                    <button type="button" onclick="window.genereerNieuweMeeleesLink()" class="py-2 px-3 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-semibold transition-all border border-gray-200 dark:border-white/10 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95" title="Genereer een geheel nieuwe QR-code voor een nieuwe dienst">
+                        <span>➕ Nieuwe QR</span>
                     </button>
                 </div>
             </div>
@@ -3447,10 +3470,12 @@ Retourneer UITSLUITEND een valide JSON object:
     }
 
     // Slaat een lichte (tekst-only) versie op en geeft de deelbare meelees-URL terug.
-    async function maakMeeleesLink() {
-        const datum = document.getElementById('datumInput').value || '';
-        const voorganger = document.getElementById('voorgangerInput').value || '';
+    // Hergebruikt het bestaande Firestore-document voor de actieve dienst, tenzij forceerNieuw = true.
+    async function maakMeeleesLink(forceerNieuw = false) {
+        const datum = (document.getElementById('datumInput')?.value || '').trim();
+        const voorganger = (document.getElementById('voorgangerInput')?.value || '').trim();
         const gemeente = (typeof window.getActieveGemeente === 'function') ? window.getActieveGemeente() : 'Bethelkerk Maassluis';
+        const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : 'bethel';
         const items = liturgieVolgorde
             .filter(it => it.type !== 'Foto' && it.type !== 'QR')
             .map(it => ({ type: it.type, titel: it.titel || '', tekst: it.type === 'Leeg' ? '' : (it.tekst || ''), align: it.align || 'left' }));
@@ -3461,26 +3486,145 @@ Retourneer UITSLUITEND een valide JSON object:
             voorganger: voorganger, 
             items: items, 
             thema: thema,
-            gemaaktOp: firebase.firestore.FieldValue.serverTimestamp()
+            bijgewerktOp: firebase.firestore.FieldValue.serverTimestamp()
         };
         if (thema === 'custom' && MEELEES_THEMAS.custom) {
             payload.customThema = MEELEES_THEMAS.custom;
         }
-        const ref = await db.collection("meelees").add(payload);
-        const meeleesUrl = getAppBaseUrl() + '?meelees=' + ref.id;
+
+        const metaKey = `actieveMeeleesMeta_${slug}`;
+        let activeMeta = null;
+        try {
+            const raw = localStorage.getItem(metaKey);
+            if (raw) activeMeta = JSON.parse(raw);
+        } catch(e) {}
+
+        let docId = null;
+        let isBestaand = false;
+
+        // Als er al een actieve meelees-link is opgeslagen en we niet forceren:
+        // Hergebruik exact hetzelfde Firestore-document zodat de QR-code hetzelfde blijft!
+        if (!forceerNieuw && activeMeta && activeMeta.id) {
+            docId = activeMeta.id;
+            isBestaand = true;
+        }
+
+        if (isBestaand && docId) {
+            await db.collection("meelees").doc(docId).set(payload, { merge: true });
+        } else {
+            payload.gemaaktOp = firebase.firestore.FieldValue.serverTimestamp();
+            const ref = await db.collection("meelees").add(payload);
+            docId = ref.id;
+        }
+
+        const meeleesUrl = getAppBaseUrl() + '?meelees=' + docId;
+        const now = Date.now();
+
+        // Werk actieve metadata bij
+        try {
+            localStorage.setItem(metaKey, JSON.stringify({
+                id: docId,
+                url: meeleesUrl,
+                datum: datum,
+                voorganger: voorganger,
+                thema: thema,
+                aangemaaktOp: isBestaand && activeMeta?.aangemaaktOp ? activeMeta.aangemaaktOp : now,
+                bijgewerktOp: now
+            }));
+        } catch(e) {}
+
+        // Werk geschiedenis bij (als bestaand: update gegevens, behoud positie bovenaan)
         try {
             window.voegMeeleesToeAanGeschiedenis({
-                id: ref.id,
+                id: docId,
                 url: meeleesUrl,
                 datum: datum || 'Dienst zonder datum',
                 voorganger: voorganger || '',
                 thema: thema || 'standaard',
                 itemsCount: items.length,
-                aangemaaktOp: Date.now()
+                aangemaaktOp: isBestaand && activeMeta?.aangemaaktOp ? activeMeta.aangemaaktOp : now,
+                bijgewerktOp: now
             });
         } catch(e) {}
+
+        window.updateMeeleesSyncStatusUI(now);
         return meeleesUrl;
     }
+
+    window.updateMeeleesSyncStatusUI = function(timestamp) {
+        const tijdEl = document.getElementById('meeleesLiveSyncTijd');
+        if (!tijdEl) return;
+        if (!timestamp) {
+            const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : 'bethel';
+            try {
+                const raw = localStorage.getItem(`actieveMeeleesMeta_${slug}`);
+                if (raw) {
+                    const meta = JSON.parse(raw);
+                    timestamp = meta.bijgewerktOp || meta.aangemaaktOp;
+                }
+            } catch(e) {}
+        }
+        if (timestamp) {
+            const tijdStr = new Date(timestamp).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+            tijdEl.textContent = `Laatst live bijgewerkt: ${tijdStr}`;
+        } else {
+            tijdEl.textContent = 'Wijzigingen in de liturgie gaan direct mee';
+        }
+    };
+
+    let _meeleesSyncTimer = null;
+    function autoSyncMeeleesLive(direct = false) {
+        if (_meeleesSyncTimer) {
+            clearTimeout(_meeleesSyncTimer);
+            _meeleesSyncTimer = null;
+        }
+        const delay = direct ? 0 : 1500;
+        _meeleesSyncTimer = setTimeout(async () => {
+            const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : 'bethel';
+            const metaKey = `actieveMeeleesMeta_${slug}`;
+            let activeMeta = null;
+            try {
+                const raw = localStorage.getItem(metaKey);
+                if (raw) activeMeta = JSON.parse(raw);
+            } catch(e) {}
+
+            // Alleen live bijwerken als er al een actieve link gegenereerd is!
+            if (!activeMeta || !activeMeta.id) return;
+
+            try {
+                await maakMeeleesLink(false);
+                console.log("Meelees-versie automatisch gesynchroniseerd met laatste wijzigingen.");
+            } catch(err) {
+                console.warn("Automatische meelees sync mislukt:", err);
+            }
+        }, delay);
+    }
+    window.autoSyncMeeleesLive = autoSyncMeeleesLive;
+
+    window.updateActieveMeeleesLink = async function(toonMelding = true) {
+        try {
+            if (toonMelding) window.toonToast("Liturgie synchroniseren...", "info");
+            const url = await maakMeeleesLink(false);
+            toonDeelModal(url);
+            if (toonMelding) window.toonToast("✅ Meelees-versie bijgewerkt! Wijzigingen zijn live.", "success");
+        } catch(e) {
+            console.error("Meelees bijwerken mislukt:", e);
+            if (toonMelding) window.toonToast("Kon meelees-versie niet bijwerken", "error");
+        }
+    };
+
+    window.genereerNieuweMeeleesLink = async function() {
+        if (!confirm("Wil je een geheel NIEUWE QR-code genereren voor een nieuwe dienst? Gemeenteleden moeten dan de nieuwe QR scannen.")) return;
+        try {
+            window.toonToast("Nieuwe meelees-link genereren...", "info");
+            const url = await maakMeeleesLink(true);
+            toonDeelModal(url);
+            window.toonToast("✅ Nieuwe Meelees QR gegenereerd!", "success");
+        } catch(e) {
+            console.error("Nieuwe meelees genereren mislukt:", e);
+            window.toonToast("Kon meelees-link niet genereren", "error");
+        }
+    };
 
     window.kopieerDeelLink = function() {
         const inp = document.getElementById('deelLink');
@@ -3502,6 +3646,7 @@ Retourneer UITSLUITEND een valide JSON object:
         const th = MEELEES_THEMAS[thId] || MEELEES_THEMAS.standaard;
         const lbl = document.getElementById('deelModalThemaLabel');
         if (lbl) lbl.textContent = `${th.icoon} ${th.naam}`;
+        window.updateMeeleesSyncStatusUI();
         window.wisselMeeleesTab('huidig');
         window.renderMeeleesGeschiedenisUI();
         document.getElementById('deelModal')?.classList.remove('hidden');
@@ -3513,15 +3658,28 @@ Retourneer UITSLUITEND een valide JSON object:
     };
 
     window.openMeeleesModal = async function(tab = 'huidig') {
-        const linkInp = document.getElementById('deelLink');
-        let url = linkInp ? linkInp.value : '';
+        const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : 'bethel';
+        let url = '';
+        try {
+            const raw = localStorage.getItem(`actieveMeeleesMeta_${slug}`);
+            if (raw) {
+                const meta = JSON.parse(raw);
+                if (meta && meta.url) url = meta.url;
+            }
+        } catch(e) {}
+
+        if (!url) {
+            const linkInp = document.getElementById('deelLink');
+            if (linkInp && linkInp.value) url = linkInp.value;
+        }
+
         if (!url) {
             const gesch = window.getMeeleesGeschiedenis();
             if (gesch.length > 0) {
                 url = gesch[0].url;
                 toonDeelModal(url, gesch[0]);
             } else if (typeof liturgieVolgorde !== 'undefined' && liturgieVolgorde.length > 0) {
-                await window.genereerVersMeeleesLink();
+                await window.updateActieveMeeleesLink(false);
                 return;
             }
         }
@@ -3534,16 +3692,8 @@ Retourneer UITSLUITEND een valide JSON object:
         window.renderMeeleesGeschiedenisUI();
     };
 
-    window.genereerVersMeeleesLink = async function() {
-        try {
-            window.toonToast("Meelees-link genereren...", "info");
-            const url = await maakMeeleesLink();
-            toonDeelModal(url);
-            window.toonToast("✅ Nieuwe Meelees QR gegenereerd!", "success");
-        } catch(e) {
-            console.error("Meelees genereren mislukt:", e);
-            window.toonToast("Kon meelees-link niet genereren", "error");
-        }
+    window.genereerVersMeeleesLink = function() {
+        return window.updateActieveMeeleesLink(true);
     };
 
     window.wisselMeeleesTab = function(tab) {
@@ -3693,8 +3843,20 @@ Retourneer UITSLUITEND een valide JSON object:
         const gesch = window.getMeeleesGeschiedenis();
         const item = gesch[index];
         if (!item) return;
+        const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : 'bethel';
+        try {
+            localStorage.setItem(`actieveMeeleesMeta_${slug}`, JSON.stringify({
+                id: item.id,
+                url: item.url,
+                datum: item.datum,
+                voorganger: item.voorganger,
+                thema: item.thema,
+                aangemaaktOp: item.aangemaaktOp || Date.now(),
+                bijgewerktOp: item.bijgewerktOp || Date.now()
+            }));
+        } catch(e) {}
         toonDeelModal(item.url, item);
-        window.toonToast("✅ QR-code geladen uit geschiedenis!", "success");
+        window.toonToast("✅ QR-code geladen en actief gemaakt!", "success");
     };
 
     window.kopieerMeeleesUrlUitGeschiedenis = function(url) {
@@ -4106,24 +4268,69 @@ Retourneer UITSLUITEND een valide JSON object:
         </svg>`;
     }
 
+    function toonMeeleesLiveUpdateBadge() {
+        let badge = document.getElementById('meeleesLiveUpdatePill');
+        if (!badge) {
+            badge = document.createElement('div');
+            badge.id = 'meeleesLiveUpdatePill';
+            badge.className = 'fixed top-4 left-1/2 -translate-x-1/2 z-[450] flex items-center gap-2 bg-emerald-600/95 text-white text-xs font-semibold px-4 py-2 rounded-full shadow-2xl backdrop-blur-md transition-all duration-300 pointer-events-none transform -translate-y-8 opacity-0';
+            badge.innerHTML = `
+                <span class="inline-block w-2 h-2 rounded-full bg-white animate-pulse"></span>
+                <span>✨ Liturgie live bijgewerkt</span>
+            `;
+            document.body.appendChild(badge);
+        }
+        badge.style.display = 'flex';
+        requestAnimationFrame(() => {
+            badge.classList.remove('-translate-y-8', 'opacity-0');
+            badge.classList.add('translate-y-0', 'opacity-100');
+        });
+        clearTimeout(badge._timeout);
+        badge._timeout = setTimeout(() => {
+            badge.classList.remove('translate-y-0', 'opacity-100');
+            badge.classList.add('-translate-y-8', 'opacity-0');
+            setTimeout(() => {
+                if (badge.classList.contains('opacity-0')) {
+                    badge.style.display = 'none';
+                }
+            }, 300);
+        }, 2800);
+    }
+
     async function toonMeeleesPagina(id) {
         const overlay = document.getElementById('meeleesOverlay');
         overlay.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
         document.documentElement.style.overflow = 'hidden';
         Array.from(document.body.children).forEach(function(el) {
-            if (el.id !== 'meeleesOverlay') el.style.display = 'none';
+            if (el.id !== 'meeleesOverlay' && el.id !== 'meeleesLiveUpdatePill') el.style.display = 'none';
         });
         overlay.style.display = 'block';
         overlay.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f6b56b;color:#6b3f18;font-weight:600;font-family:Inter,sans-serif">Liturgie laden…</div>';
         try {
             await authKlaar;
-            const doc = await db.collection("meelees").doc(id).get();
-            if (!doc.exists) {
-                overlay.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f6b56b;color:#6b3f18;font-weight:600;text-align:center;padding:24px;font-family:Inter,sans-serif">Deze liturgie is niet (meer) beschikbaar.</div>';
-                return;
-            }
-            renderMeelees(doc.data(), overlay);
+            let eersteKeer = true;
+            // Realtime listener via onSnapshot: wijzigingen in de liturgie komen live binnen zonder herladen!
+            db.collection("meelees").doc(id).onSnapshot(function(doc) {
+                if (!doc.exists) {
+                    overlay.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f6b56b;color:#6b3f18;font-weight:600;text-align:center;padding:24px;font-family:Inter,sans-serif">Deze liturgie is niet (meer) beschikbaar.</div>';
+                    return;
+                }
+                const scrollPos = overlay.scrollTop || window.scrollY || 0;
+                renderMeelees(doc.data(), overlay);
+                if (!eersteKeer) {
+                    overlay.scrollTop = scrollPos;
+                    toonMeeleesLiveUpdateBadge();
+                }
+                eersteKeer = false;
+            }, function(err) {
+                console.error("Meelees realtime luisteren mislukt, val terug op eenmalige get:", err);
+                db.collection("meelees").doc(id).get().then(function(doc) {
+                    if (doc.exists) renderMeelees(doc.data(), overlay);
+                }).catch(function(e) {
+                    console.error("Meelees laden mislukt:", e);
+                });
+            });
         } catch (e) {
             console.error("Meelees laden mislukt:", e);
             overlay.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f6b56b;color:#6b3f18;font-weight:600;text-align:center;padding:24px;font-family:Inter,sans-serif">Kon de liturgie niet laden. Controleer je internetverbinding.</div>';
@@ -4243,6 +4450,7 @@ Retourneer UITSLUITEND een valide JSON object:
         }
         if (typeof planAutoArchief === 'function') planAutoArchief();
         if (typeof autoSyncObsLiveLiturgie === 'function') autoSyncObsLiveLiturgie();
+        if (typeof autoSyncMeeleesLive === 'function') autoSyncMeeleesLive();
     }
 
     function herstelLiturgie() {
@@ -13401,12 +13609,18 @@ window.verstuurExportFeedback = async function() {
         }
     };
 
-    // Luister naar datum en voorganger invoer om Pre-Flight live te updaten
+    // Luister naar datum en voorganger invoer om Pre-Flight live te updaten en automatisch op te slaan
     window.addEventListener('DOMContentLoaded', () => {
         const datumEl = document.getElementById('datumInput');
         const voorgangerEl = document.getElementById('voorgangerInput');
-        if (datumEl) datumEl.addEventListener('input', window.updatePreflightBadge);
-        if (voorgangerEl) voorgangerEl.addEventListener('input', window.updatePreflightBadge);
+        if (datumEl) datumEl.addEventListener('input', () => {
+            if (typeof window.updatePreflightBadge === 'function') window.updatePreflightBadge();
+            if (typeof bewaarLiturgie === 'function') bewaarLiturgie();
+        });
+        if (voorgangerEl) voorgangerEl.addEventListener('input', () => {
+            if (typeof window.updatePreflightBadge === 'function') window.updatePreflightBadge();
+            if (typeof bewaarLiturgie === 'function') bewaarLiturgie();
+        });
         setTimeout(window.updatePreflightBadge, 400);
     });
 })();
