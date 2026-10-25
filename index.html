@@ -3617,8 +3617,31 @@ Retourneer UITSLUITEND een valide JSON object:
     }
     window.maakTikkieQRDataURL = maakTikkieQRDataURL;
 
+    // --- KOPPELING TUSSEN ARCHIEF-ID EN MEELEES QR-CODE ---
+    let actiefArchiefDocId = null;
+    try { actiefArchiefDocId = localStorage.getItem('actiefArchiefDocId') || null; } catch (e) {}
+
+    function getActiefArchiefDocId(maakNieuwIndienNodig = false) {
+        if (actiefArchiefDocId) return actiefArchiefDocId;
+        try { actiefArchiefDocId = localStorage.getItem('actiefArchiefDocId') || null; } catch(e) {}
+        if (actiefArchiefDocId) return actiefArchiefDocId;
+        if (maakNieuwIndienNodig) {
+            let nieuwId = null;
+            try {
+                nieuwId = db.collection("liturgieen").doc().id;
+            } catch(e) {
+                nieuwId = 'liturgie_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+            }
+            actiefArchiefDocId = nieuwId;
+            try { localStorage.setItem('actiefArchiefDocId', nieuwId); } catch(e) {}
+            return nieuwId;
+        }
+        return null;
+    }
+    window.getActiefArchiefDocId = getActiefArchiefDocId;
+
     // Slaat een lichte (tekst-only) versie op en geeft de deelbare meelees-URL terug.
-    // Hergebruikt het bestaande Firestore-document voor de actieve dienst, tenzij forceerNieuw = true.
+    // De QR-code en meelees-URL zijn ALTIJD strikt gekoppeld aan het unieke archief ID!
     async function maakMeeleesLink(forceerNieuw = false) {
         const datum = (document.getElementById('datumInput')?.value || '').trim();
         const voorganger = (document.getElementById('voorgangerInput')?.value || '').trim();
@@ -3675,42 +3698,43 @@ Retourneer UITSLUITEND een valide JSON object:
         }
 
         const metaKey = `actieveMeeleesMeta_${slug}`;
-        let activeMeta = null;
-        try {
-            const raw = localStorage.getItem(metaKey);
-            if (raw) activeMeta = JSON.parse(raw);
-        } catch(e) {}
-
         let docId = null;
-        let isBestaand = false;
 
-        // Als er al een actieve meelees-link is opgeslagen en we niet forceren:
-        // Hergebruik exact hetzelfde Firestore-document zodat de QR-code hetzelfde blijft!
-        if (!forceerNieuw && activeMeta && activeMeta.id) {
-            docId = activeMeta.id;
-            isBestaand = true;
-        }
-
-        if (isBestaand && docId) {
-            await db.collection("meelees").doc(docId).set(payload, { merge: true });
+        // Als er geforceerd een nieuwe dienst wordt aangemaakt, of er is nog geen archief-ID:
+        // Ken een uniek archief ID toe zodat eerdere PowerPoint QR-codes NOOIT overschreven worden!
+        if (forceerNieuw) {
+            try {
+                docId = db.collection("liturgieen").doc().id;
+            } catch(e) {
+                docId = 'liturgie_' + Date.now();
+            }
+            actiefArchiefDocId = docId;
+            try {
+                localStorage.setItem('actiefArchiefDocId', docId);
+                if (datum) localStorage.setItem('actiefArchiefDatum', datum);
+            } catch(e) {}
         } else {
-            payload.gemaaktOp = firebase.firestore.FieldValue.serverTimestamp();
-            const ref = await db.collection("meelees").add(payload);
-            docId = ref.id;
+            // ALTIJD strikt gekoppeld aan het actieve archief-ID!
+            docId = getActiefArchiefDocId(true);
         }
+
+        payload.archiefId = docId;
+        payload.gemaaktOp = firebase.firestore.FieldValue.serverTimestamp();
+        await db.collection("meelees").doc(docId).set(payload, { merge: true });
 
         const meeleesUrl = getAppBaseUrl() + '?meelees=' + docId;
         const now = Date.now();
 
-        // Werk actieve metadata bij
+        // Werk actieve metadata bij gekoppeld aan het archief ID
         try {
             localStorage.setItem(metaKey, JSON.stringify({
                 id: docId,
+                archiefId: docId,
                 url: meeleesUrl,
                 datum: datum,
                 voorganger: voorganger,
                 thema: thema,
-                aangemaaktOp: isBestaand && activeMeta?.aangemaaktOp ? activeMeta.aangemaaktOp : now,
+                aangemaaktOp: now,
                 bijgewerktOp: now
             }));
         } catch(e) {}
@@ -3719,12 +3743,13 @@ Retourneer UITSLUITEND een valide JSON object:
         try {
             window.voegMeeleesToeAanGeschiedenis({
                 id: docId,
+                archiefId: docId,
                 url: meeleesUrl,
                 datum: datum || 'Dienst zonder datum',
                 voorganger: voorganger || '',
                 thema: thema || 'standaard',
                 itemsCount: items.length,
-                aangemaaktOp: isBestaand && activeMeta?.aangemaaktOp ? activeMeta.aangemaaktOp : now,
+                aangemaaktOp: now,
                 bijgewerktOp: now
             });
         } catch(e) {}
@@ -4490,7 +4515,16 @@ Retourneer UITSLUITEND een valide JSON object:
             // Realtime listener via onSnapshot: wijzigingen in de liturgie komen live binnen zonder herladen!
             db.collection("meelees").doc(id).onSnapshot(function(doc) {
                 if (!doc.exists) {
-                    overlay.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#1e293b;color:#f8fafc;font-weight:600;text-align:center;padding:24px;font-family:Inter,sans-serif">Deze liturgie is niet (meer) beschikbaar.</div>';
+                    // Fallback naar collectie "liturgieen" met hetzelfde archief-ID
+                    db.collection("liturgieen").doc(id).get().then(function(litDoc) {
+                        if (litDoc.exists) {
+                            renderMeelees(litDoc.data(), overlay);
+                        } else {
+                            overlay.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#1e293b;color:#f8fafc;font-weight:600;text-align:center;padding:24px;font-family:Inter,sans-serif">Deze liturgie is niet (meer) beschikbaar.</div>';
+                        }
+                    }).catch(function() {
+                        overlay.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#1e293b;color:#f8fafc;font-weight:600;text-align:center;padding:24px;font-family:Inter,sans-serif">Deze liturgie is niet (meer) beschikbaar.</div>';
+                    });
                     return;
                 }
                 const data = doc.data() || {};
@@ -4921,12 +4955,26 @@ Retourneer UITSLUITEND een valide JSON object:
         if (liturgieVolgorde.length === 0) return;
         if (!confirm("Weet je zeker dat je de hele liturgielijst wilt leegmaken?")) return;
         liturgieVolgorde = [];
-        actiefArchiefDocId = null;
-        try { localStorage.removeItem('actiefArchiefDocId'); } catch (e) {}
+
+        // Genereer direct een nieuw, uniek archief-ID voor de volgende dienst,
+        // zodat de QR code en meelees-pagina van de eerdere PowerPoint onaangetast bewaard blijven!
+        let nieuwArchiefId = null;
+        try {
+            nieuwArchiefId = db.collection("liturgieen").doc().id;
+        } catch(e) {
+            nieuwArchiefId = 'liturgie_' + Date.now();
+        }
+        actiefArchiefDocId = nieuwArchiefId;
+        try { localStorage.setItem('actiefArchiefDocId', nieuwArchiefId); } catch (e) {}
         try { localStorage.removeItem('actiefArchiefDatum'); } catch (e) {}
         try { localStorage.removeItem(LITURGIE_OPSLAG_SLEUTEL); } catch (e) {}
         try { localStorage.removeItem('opgeslagenDienstDatum'); } catch (e) {}
         try { localStorage.removeItem('opgeslagenDienstVoorganger'); } catch (e) {}
+
+        const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : 'bethel';
+        try { localStorage.removeItem(`actieveMeeleesMeta_${slug}`); } catch (e) {}
+        try { localStorage.removeItem('actieveMeeleesMeta'); } catch (e) {}
+
         if (window.KerkDB && typeof window.KerkDB.removeItem === 'function') {
             window.KerkDB.removeItem('actieveLiturgieVolledig').catch(function() {});
         }
@@ -4938,7 +4986,7 @@ Retourneer UITSLUITEND een valide JSON object:
         const el = document.getElementById('autoArchiefIndicator');
         if (el) el.innerHTML = '';
         window.tekenVolgorde();
-        window.toonToast("Liturgie leeggemaakt.", "success");
+        window.toonToast("Liturgie leeggemaakt. Klaargezet voor een nieuwe dienst met nieuwe QR-code.", "success");
     };
 
     // --- ARCHIEF (opslaan/laden in Firestore) ---
@@ -5357,8 +5405,9 @@ Retourneer UITSLUITEND een valide JSON object:
         }
     };
 
-    let actiefArchiefDocId = null;
-    try { actiefArchiefDocId = localStorage.getItem('actiefArchiefDocId') || null; } catch (e) {}
+    if (!actiefArchiefDocId) {
+        try { actiefArchiefDocId = localStorage.getItem('actiefArchiefDocId') || null; } catch (e) {}
+    }
     let autoArchiefTimer = null;
 
     function updateAutoArchiefStatus(status) {
@@ -5422,20 +5471,28 @@ Retourneer UITSLUITEND een valide JSON object:
             const opgArchiefDatum = localStorage.getItem('actiefArchiefDatum');
             if (actiefArchiefDocId && opgArchiefDatum && datum && opgArchiefDatum !== datum) {
                 // Andere datum: maak een nieuw archief document zodat de vorige dienst intact blijft!
-                actiefArchiefDocId = null;
-                try { localStorage.removeItem('actiefArchiefDocId'); } catch (e) {}
-            }
-
-            if (actiefArchiefDocId) {
-                await db.collection("liturgieen").doc(actiefArchiefDocId).set(payload, { merge: true });
-            } else {
-                const docRef = await db.collection("liturgieen").add(payload);
-                actiefArchiefDocId = docRef.id;
-                try { 
-                    localStorage.setItem('actiefArchiefDocId', docRef.id);
-                    if (datum) localStorage.setItem('actiefArchiefDatum', datum);
+                let nieuwDocId = null;
+                try { nieuwDocId = db.collection("liturgieen").doc().id; } catch(e) { nieuwDocId = 'liturgie_' + Date.now(); }
+                actiefArchiefDocId = nieuwDocId;
+                try {
+                    localStorage.setItem('actiefArchiefDocId', nieuwDocId);
+                    localStorage.setItem('actiefArchiefDatum', datum);
+                    const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : 'bethel';
+                    localStorage.removeItem(`actieveMeeleesMeta_${slug}`);
                 } catch (e) {}
             }
+
+            if (!actiefArchiefDocId) {
+                actiefArchiefDocId = getActiefArchiefDocId(true);
+            }
+
+            payload.archiefId = actiefArchiefDocId;
+            payload.meeleesId = actiefArchiefDocId;
+            await db.collection("liturgieen").doc(actiefArchiefDocId).set(payload, { merge: true });
+            try { 
+                localStorage.setItem('actiefArchiefDocId', actiefArchiefDocId);
+                if (datum) localStorage.setItem('actiefArchiefDatum', datum);
+            } catch (e) {}
             updateAutoArchiefStatus("Gearchiveerd");
             if (!stil) {
                 window.toonToast(`Liturgie opgeslagen in archief van ${huidigeGem}!`, "success");
@@ -5517,13 +5574,26 @@ Retourneer UITSLUITEND een valide JSON object:
         actiefArchiefDocId = docId || null;
         const datumVal = (data.datum && data.datum !== 'Zonder datum') ? data.datum : '';
         const voorgangerVal = data.voorganger || '';
+        const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : 'bethel';
         try {
             if (docId) {
                 localStorage.setItem('actiefArchiefDocId', docId);
                 if (datumVal) localStorage.setItem('actiefArchiefDatum', datumVal);
+                const meeleesUrl = getAppBaseUrl() + '?meelees=' + docId;
+                localStorage.setItem(`actieveMeeleesMeta_${slug}`, JSON.stringify({
+                    id: docId,
+                    archiefId: docId,
+                    url: meeleesUrl,
+                    datum: datumVal,
+                    voorganger: voorgangerVal,
+                    thema: window.getActiefMeeleesThema(),
+                    aangemaaktOp: Date.now(),
+                    bijgewerktOp: Date.now()
+                }));
             } else {
                 localStorage.removeItem('actiefArchiefDocId');
                 localStorage.removeItem('actiefArchiefDatum');
+                localStorage.removeItem(`actieveMeeleesMeta_${slug}`);
             }
             if (datumVal) localStorage.setItem('opgeslagenDienstDatum', datumVal);
             else localStorage.removeItem('opgeslagenDienstDatum');
@@ -5538,7 +5608,7 @@ Retourneer UITSLUITEND een valide JSON object:
         window.tekenVolgorde();
         updateAutoArchiefStatus("Gearchiveerd");
         document.getElementById('archiefModal').classList.add('hidden');
-        window.toonToast("Liturgie geladen uit archief.", "success");
+        window.toonToast("Liturgie geladen uit archief. Meelees QR gekoppeld aan deze PowerPoint!", "success");
     }
 
     // Auto-archief trigger bij wijzigen van datum of voorganger (met directe localStorage persistentie)
@@ -5552,8 +5622,15 @@ Retourneer UITSLUITEND een valide JSON object:
                 else localStorage.removeItem('opgeslagenDienstDatum');
                 const opgArchiefDatum = localStorage.getItem('actiefArchiefDatum');
                 if (opgArchiefDatum && val && opgArchiefDatum !== val) {
-                    actiefArchiefDocId = null;
-                    try { localStorage.removeItem('actiefArchiefDocId'); } catch(e) {}
+                    let nieuwId = null;
+                    try { nieuwId = db.collection("liturgieen").doc().id; } catch(e) { nieuwId = 'liturgie_' + Date.now(); }
+                    actiefArchiefDocId = nieuwId;
+                    try {
+                        localStorage.setItem('actiefArchiefDocId', nieuwId);
+                        localStorage.setItem('actiefArchiefDatum', val);
+                        const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : 'bethel';
+                        localStorage.removeItem(`actieveMeeleesMeta_${slug}`);
+                    } catch(e) {}
                 }
                 planAutoArchief();
             };
