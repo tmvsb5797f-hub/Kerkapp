@@ -39,13 +39,14 @@ function originToegestaan(origin) {
   if (!origin) return false;
   return origin === "https://tmvsb5797f-hub.github.io" ||
     origin.startsWith("http://localhost") ||
-    origin.startsWith("http://127.0.0.1");
+    origin.startsWith("http://127.0.0.1") ||
+    origin === "null";
 }
 
 function corsHeaders(origin) {
   return {
-    "Access-Control-Allow-Origin": origin,
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Origin": origin || "*",
+    "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, X-Admin-Key",
     "Access-Control-Max-Age": "86400",
   };
@@ -71,8 +72,8 @@ export default {
       return new Response("Niet toegestaan", { status: 403 });
     }
 
-    // Rate limit: alleen voor schrijf-operaties (POST)
-    if (request.method === "POST") {
+    // Rate limit: alleen voor schrijf-operaties (POST / DELETE)
+    if (request.method === "POST" || request.method === "DELETE") {
       opruimRateMap();
       const ip = request.headers.get("CF-Connecting-IP") || "onbekend";
       if (!rateLimitCheck(ip)) {
@@ -88,10 +89,29 @@ export default {
         for (const r of results) map[r.id] = r.tekst;
         return json(map, 200, origin);
       }
+      if (pad === "/liederen" && (request.method === "DELETE" || (request.method === "POST" && url.searchParams.get("action") === "delete"))) {
+        let id = url.searchParams.get("id");
+        if (!id) {
+          try {
+            const body = await request.json();
+            id = body && body.id;
+          } catch(e) {}
+        }
+        if (!id || typeof id !== "string") return json({ error: "id ontbreekt of ongeldig" }, 400, origin);
+        await env.DB.prepare("DELETE FROM liederen WHERE id = ?").bind(id).run();
+        await env.DB.prepare("DELETE FROM liederen WHERE id LIKE ?").bind(`${id} vers %`).run();
+        return json({ ok: true, verwijderd: id }, 200, origin);
+      }
       if (pad === "/liederen" && request.method === "POST") {
-        // Alleen origin-gelockt (geen sleutel in de openbare app). Basale groottecheck
-        // om misbruik te beperken.
-        const { id, tekst } = await request.json();
+        const body = await request.json();
+        if (body && body.action === "delete") {
+          const id = body.id;
+          if (!id || typeof id !== "string") return json({ error: "id ontbreekt" }, 400, origin);
+          await env.DB.prepare("DELETE FROM liederen WHERE id = ?").bind(id).run();
+          await env.DB.prepare("DELETE FROM liederen WHERE id LIKE ?").bind(`${id} vers %`).run();
+          return json({ ok: true, verwijderd: id }, 200, origin);
+        }
+        const { id, tekst } = body || {};
         if (!id || typeof id !== "string" || id.length > 200 || typeof tekst !== "string" || tekst.length > 20000) return json({ error: "ongeldig" }, 400, origin);
         await env.DB.prepare("INSERT INTO liederen (id, tekst) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET tekst=excluded.tekst").bind(id, tekst).run();
         return json({ ok: true }, 200, origin);

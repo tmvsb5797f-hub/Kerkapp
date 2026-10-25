@@ -545,14 +545,19 @@
                     <span class="text-[11px] text-gray-400">Kies gewenste methode</span>
                 </div>
 
-                <div class="grid grid-cols-2 p-1 bg-gray-100 dark:bg-white/5 rounded-2xl border border-gray-200/60 dark:border-white/10 text-xs">
-                    <button type="button" id="tikkieTabBtnScreenshot" onclick="window.setTikkieInvoerTab('screenshot')" class="py-2 rounded-xl font-bold bg-white dark:bg-[#2C2C2E] text-emerald-700 dark:text-emerald-300 shadow-xs transition-all flex items-center justify-center gap-1.5 active:scale-95">
-                        <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                        <span>Screenshot Uploaden</span>
+                <div class="grid grid-cols-3 p-1 bg-gray-100 dark:bg-white/5 rounded-2xl border border-gray-200/60 dark:border-white/10 text-xs gap-0.5">
+                    <button type="button" id="tikkieTabBtnScreenshot" onclick="window.setTikkieInvoerTab('screenshot')" class="py-2 rounded-xl font-bold bg-white dark:bg-[#2C2C2E] text-emerald-700 dark:text-emerald-300 shadow-xs transition-all flex items-center justify-center gap-1 active:scale-95">
+                        <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <span class="truncate">Screenshot</span>
                     </button>
-                    <button type="button" id="tikkieTabBtnLink" onclick="window.setTikkieInvoerTab('link')" class="py-2 rounded-xl font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-all flex items-center justify-center gap-1.5 active:scale-95">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
-                        <span>Tikkie Link Plakken</span>
+                    <button type="button" id="tikkieTabBtnLink" onclick="window.setTikkieInvoerTab('link')" class="py-2 rounded-xl font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-all flex items-center justify-center gap-1 active:scale-95">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                        <span class="truncate">Link Plakken</span>
+                    </button>
+                    <button type="button" id="tikkieTabBtnGeschiedenis" onclick="window.setTikkieInvoerTab('geschiedenis')" class="py-2 rounded-xl font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-all flex items-center justify-center gap-1 active:scale-95">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span class="truncate">Geschiedenis</span>
+                        <span id="tikkieGeschiedenisBadge" class="hidden text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300">0</span>
                     </button>
                 </div>
 
@@ -579,6 +584,19 @@
                         <input id="tikkieLinkInput" type="url" oninput="window.verwerkTikkieModalLink()" placeholder="https://tikkie.me/pay/..." class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-gray-200 dark:border-white/10 rounded-xl py-2.5 pl-9 pr-3 text-xs focus:bg-white focus:border-emerald-500 focus:outline-none"/>
                     </div>
                     <p class="text-[10px] text-gray-400 px-1">Plak de volledige deellink vanuit de Tikkie app of bankomgeving.</p>
+                </div>
+
+                <!-- Paneel 3: QR Geschiedenis -->
+                <div id="tikkiePaneGeschiedenis" class="hidden mt-1 flex flex-col gap-2">
+                    <div class="flex items-center justify-between px-1">
+                        <span class="text-[11px] font-semibold text-gray-600 dark:text-gray-300">Eerder opgeslagen Tikkies</span>
+                        <button type="button" onclick="window.wisTikkieGeschiedenis()" id="tikkieWisGeschiedenisKnop" class="text-[10px] font-semibold text-red-500 hover:text-red-700 dark:text-red-400 hover:underline transition-colors hidden">
+                            Geschiedenis wissen
+                        </button>
+                    </div>
+                    <div id="tikkieGeschiedenisLijst" class="flex flex-col gap-2 max-h-64 overflow-y-auto pr-1">
+                        <!-- Dynamisch gevuld door renderTikkieGeschiedenisUI() -->
+                    </div>
                 </div>
             </div>
 
@@ -641,6 +659,143 @@
         </div>
     </div>
 </div>
+
+<!-- LIEDEREN BIBLIOTHEEK & BEHEER MODAL -->
+<div id="liederenBeheerModal" class="fixed inset-0 z-[120] hidden flex items-center justify-center bg-black/40 backdrop-blur-xl transition-opacity p-2 sm:p-4" onclick="if(event.target === this) window.sluitLiederenBeheerModal()">
+    <div class="bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.05] dark:ring-white/10 w-full max-w-4xl overflow-hidden flex flex-col transform transition-all modal-animate max-h-[92vh]">
+        
+        <!-- Header -->
+        <div class="p-4 sm:p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center flex-shrink-0 bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-md">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#007AFF] to-indigo-500 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                    📚
+                </div>
+                <div>
+                    <h3 class="text-base sm:text-lg font-bold text-[#1D1D1F] dark:text-white flex items-center gap-2">
+                        <span>Liederen Bibliotheek &amp; Beheer</span>
+                        <span id="liedBeheerTotaalBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-[#007AFF] dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800/40">0 liederen</span>
+                    </h3>
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400">Bekijk, doorzoek, bewerk of verwijder liederen in de Cloud D1 database</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <button type="button" onclick="window.openLiedEditor('')" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold transition-all active:scale-95 shadow-xs flex items-center gap-1.5 cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+                    <span class="hidden sm:inline">Nieuw Lied</span>
+                </button>
+                <button type="button" onclick="window.sluitLiederenBeheerModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors" title="Sluiten">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- PANEEL 1: OVERZICHT & LIJST -->
+        <div id="liedBeheerLijstPaneel" class="flex flex-col flex-1 overflow-hidden min-h-[380px]">
+            <!-- Filters Toolbar -->
+            <div class="p-3 sm:p-4 bg-gray-50/90 dark:bg-gray-800/50 border-b border-gray-100 dark:border-white/10 flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center justify-between flex-shrink-0">
+                <div class="relative flex-1">
+                    <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    <input type="text" id="liedBeheerZoekInput" oninput="window.filterLiederenBeheerLijst()" placeholder="Zoek op titel, liednummer of songtekst..." class="w-full bg-white dark:bg-[#2C2C2E] border border-gray-200 dark:border-white/10 rounded-xl py-2 pl-9 pr-3 text-xs placeholder-gray-400 focus:outline-none focus:border-[#007AFF] focus:ring-1 focus:ring-[#007AFF] transition-all"/>
+                </div>
+
+                <div class="flex items-center gap-2 flex-wrap">
+                    <select id="liedBeheerBundelFilter" onchange="window.filterLiederenBeheerLijst()" class="bg-white dark:bg-[#2C2C2E] text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs focus:outline-none focus:border-[#007AFF] cursor-pointer">
+                        <option value="alle">Alle Bundels</option>
+                        <option value="psalm">Psalmen (1773 &amp; Klassiek)</option>
+                        <option value="weerklank_psalm">Weerklank Psalmen (Pw)</option>
+                        <option value="weerklank_lied">Weerklank Liederen (Lw)</option>
+                        <option value="op_toonhoogte">Op Toonhoogte</option>
+                        <option value="dnp">De Nieuwe Psalmberijming (DNP)</option>
+                        <option value="opwekking">Opwekking</option>
+                        <option value="overig">Overige Liederen</option>
+                    </select>
+
+                    <button type="button" onclick="window.vernieuwLiederenBeheer()" class="p-2 rounded-xl bg-white dark:bg-[#2C2C2E] hover:bg-gray-100 dark:hover:bg-white/10 border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 transition-colors shadow-xs" title="Vernieuw uit Cloud D1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Lijst Kaarten -->
+            <div id="liedBeheerGrid" class="p-3 sm:p-5 overflow-y-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 flex-1 min-h-[300px] max-h-[60vh]">
+                <!-- Gevuld via renderLiederenBeheerLijst() -->
+            </div>
+            
+            <!-- Lege status -->
+            <div id="liedBeheerLeegState" class="hidden p-8 text-center flex-col items-center justify-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-white/10 text-gray-400 flex items-center justify-center text-xl">
+                    🔍
+                </div>
+                <div>
+                    <h4 class="text-sm font-bold text-gray-700 dark:text-gray-200">Geen liederen gevonden</h4>
+                    <p class="text-xs text-gray-400 mt-0.5">Pas je zoekterm aan of voeg een nieuw lied toe aan de database.</p>
+                </div>
+                <button type="button" onclick="window.openLiedEditor(document.getElementById('liedBeheerZoekInput').value)" class="px-3.5 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-all shadow-xs">
+                    + Voeg dit lied toe
+                </button>
+            </div>
+        </div>
+
+        <!-- PANEEL 2: BEWERKEN / NIEUW LIED TOEVOEGEN -->
+        <div id="liedBeheerEditorPaneel" class="hidden flex flex-col flex-1 overflow-y-auto p-4 sm:p-6 gap-4">
+            <input type="hidden" id="liedEditorOudeTitel" value=""/>
+
+            <div class="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-white/10">
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="window.sluitLiedEditor()" class="p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 transition-colors" title="Terug naar overzicht">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+                    <div>
+                        <h4 id="liedEditorHeaderTitel" class="text-sm font-bold text-[#1D1D1F] dark:text-white">Lied bewerken</h4>
+                        <span id="liedEditorHeaderSub" class="text-[11px] text-gray-400">Pas de titel of verzen aan</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button type="button" id="liedEditorVerwijderKnop" onclick="window.verwijderLiedVanuitEditor()" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 transition-colors border border-rose-200 dark:border-rose-800/40 flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        <span>Verwijderen</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Invoervelden -->
+            <div class="flex flex-col gap-1.5">
+                <label for="liedEditorTitelInput" class="text-xs font-bold text-gray-700 dark:text-gray-300">Titel / Bundel en nummer</label>
+                <input type="text" id="liedEditorTitelInput" placeholder="Bijv. Weerklank 121 of Psalm 84" class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-gray-200 dark:border-white/10 rounded-xl p-3 text-xs md:text-sm font-semibold focus:bg-white focus:border-[#007AFF] focus:outline-none transition-all"/>
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+                <div class="flex items-center justify-between">
+                    <label for="liedEditorTekstArea" class="text-xs font-bold text-gray-700 dark:text-gray-300">Songtekst (scheid verzen met een witregel)</label>
+                    <span id="liedEditorVersTeller" class="text-[11px] font-semibold text-[#007AFF]">0 verzen gedetecteerd</span>
+                </div>
+                <textarea id="liedEditorTekstArea" rows="10" oninput="window.updateLiedEditorVersTeller()" placeholder="Typ of plak hier de tekst van de verzen. Scheid elk vers met een lege regel..." class="w-full font-sans bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-gray-200 dark:border-white/10 rounded-xl p-3 text-xs md:text-sm leading-relaxed focus:bg-white focus:border-[#007AFF] focus:outline-none transition-all resize-y"></textarea>
+                <p class="text-[10px] text-gray-400">Tip: Gebruik dubbele enters tussen de coupletten zodat de beamer en vers-kiezer elk couplet als aparte dia herkent.</p>
+            </div>
+
+            <!-- Knoppen balk onderaan editor -->
+            <div class="pt-2 flex flex-col sm:flex-row items-center justify-between gap-2.5">
+                <button type="button" onclick="window.sluitLiedEditor()" class="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 transition-colors">
+                    Annuleren
+                </button>
+                <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                    <button type="button" onclick="window.voegLiedVanuitEditorToeAanLiturgie()" class="flex-1 sm:flex-initial px-3.5 py-2.5 rounded-xl text-xs font-semibold text-[#007AFF] bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 transition-all border border-blue-200 dark:border-blue-800/40 flex items-center justify-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        <span>Toevoegen aan Liturgie</span>
+                    </button>
+                    <button type="button" onclick="window.slaLiedBeheerOp()" class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-[#007AFF] hover:bg-blue-600 transition-all active:scale-95 shadow-md flex items-center justify-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                        <span>Opslaan in Cloud &amp; App</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
 <div id="videoUitlegModal" class="fixed inset-0 z-[250] hidden items-center justify-center bg-black/75 backdrop-blur-xl p-2 sm:p-4 md:p-6 transition-all" onclick="if(event.target === this) sluitVideoUitleg()">
     <div id="videoModalDialog" class="bg-[#0D1117] text-white rounded-[28px] shadow-[0_25px_70px_rgba(0,0,0,0.85)] border border-white/15 w-full max-w-4xl overflow-hidden flex flex-col transform transition-all modal-animate max-h-[96vh]">
         <!-- Top header van de videospeler -->
@@ -965,7 +1120,13 @@
         </section>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-stretch">
             <section>
-                <h2 class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider mb-2 md:mb-3 ml-2">1. Liederen &amp; Psalmen</h2>
+                <div class="flex items-center justify-between mb-2 md:mb-3 ml-2 mr-1">
+                    <h2 class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider">1. Liederen &amp; Psalmen</h2>
+                    <button type="button" onclick="window.openLiederenBeheerModal()" class="text-[11px] font-semibold text-[#007AFF] hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1.5 transition-all active:scale-95 px-2.5 py-1 rounded-xl bg-blue-50/80 hover:bg-blue-100/80 dark:bg-blue-950/40 dark:hover:bg-blue-900/60 border border-blue-200/60 dark:border-blue-800/40 cursor-pointer" title="Bekijk, doorzoek, bewerk of verwijder alle liederen in de database">
+                        <svg class="w-3.5 h-3.5 text-[#007AFF] dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                        <span>📚 Alle Liederen Beheren</span>
+                    </button>
+                </div>
                 <div class="bg-white p-4 md:p-6 rounded-[20px] md:rounded-[24px] shadow-[0_4px_24px_rgba(0,0,0,0.04)] relative">
                     <div class="relative">
                         <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -1386,6 +1547,11 @@
                         <p id="grafiekLeeg" class="hidden text-center text-[11px] text-gray-400 py-4">Nog geen data beschikbaar. Kom morgen terug!</p>
                     </div>
                     
+                    <button type="button" onclick="document.getElementById('infoModal').classList.add('hidden'); window.openLiederenBeheerModal();" class="w-full mt-1 py-2 px-3 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all flex items-center justify-center gap-2 shadow-xs active:scale-95 cursor-pointer">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477-4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                        <span>📚 Alle Liederen Beheren &amp; Inzien</span>
+                    </button>
+
                     <div class="flex gap-2 w-full mt-1">
                         <button onclick="window.forceerCloudRefresh()" class="flex-1 py-1.5 rounded-xl text-[11px] font-semibold text-[#007AFF] bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
@@ -4717,6 +4883,16 @@ Retourneer UITSLUITEND een valide JSON object:
                         }
                     } catch(e) {}
                 }
+                const cloudTikkieGeschRaw = window.liederenDatabase[`__tikkie_geschiedenis_${slug}__`] || (slug === 'bethel' ? window.liederenDatabase['__tikkie_geschiedenis__'] : null);
+                if (cloudTikkieGeschRaw) {
+                    try {
+                        const cloudG = JSON.parse(cloudTikkieGeschRaw);
+                        if (Array.isArray(cloudG) && cloudG.length > 0) {
+                            localStorage.setItem(`tikkieGeschiedenis_${slug}`, JSON.stringify(cloudG));
+                            if (slug === 'bethel') localStorage.setItem('tikkieGeschiedenis', JSON.stringify(cloudG));
+                        }
+                    } catch(e) {}
+                }
                 if (typeof window.updateTikkieKnopUI === 'function') window.updateTikkieKnopUI();
                 setCloudStatus('ok', 'Cloud Actief');
                 return;
@@ -4741,6 +4917,16 @@ Retourneer UITSLUITEND een valide JSON object:
                     if (!lcl || (cloudT.bijgewerktOp && (!lcl.bijgewerktOp || cloudT.bijgewerktOp > lcl.bijgewerktOp))) {
                         localStorage.setItem(`weekTikkieData_${slug}`, JSON.stringify(cloudT));
                         if (slug === 'bethel') localStorage.setItem('weekTikkieData', JSON.stringify(cloudT));
+                    }
+                } catch(e) {}
+            }
+            const cloudTikkieGeschRaw = window.liederenDatabase[`__tikkie_geschiedenis_${slug}__`] || (slug === 'bethel' ? window.liederenDatabase['__tikkie_geschiedenis__'] : null);
+            if (cloudTikkieGeschRaw) {
+                try {
+                    const cloudG = JSON.parse(cloudTikkieGeschRaw);
+                    if (Array.isArray(cloudG) && cloudG.length > 0) {
+                        localStorage.setItem(`tikkieGeschiedenis_${slug}`, JSON.stringify(cloudG));
+                        if (slug === 'bethel') localStorage.setItem('tikkieGeschiedenis', JSON.stringify(cloudG));
                     }
                 } catch(e) {}
             }
@@ -8418,6 +8604,16 @@ Antwoord UITSLUITEND in valide JSON:
             window.setTikkieInvoerTab('screenshot');
         }
 
+        // Geschiedenis badge & UI bijwerken
+        const gesch = window.getTikkieGeschiedenis();
+        const badge = document.getElementById('tikkieGeschiedenisBadge');
+        if (badge) {
+            badge.textContent = gesch.length;
+            if (gesch.length > 0) badge.classList.remove('hidden');
+            else badge.classList.add('hidden');
+        }
+        window.renderTikkieGeschiedenisUI();
+
         modal.classList.remove('hidden');
     };
 
@@ -8441,24 +8637,38 @@ Antwoord UITSLUITEND in valide JSON:
     window.setTikkieInvoerTab = function(tab) {
         const btnShot = document.getElementById('tikkieTabBtnScreenshot');
         const btnLink = document.getElementById('tikkieTabBtnLink');
+        const btnGesch = document.getElementById('tikkieTabBtnGeschiedenis');
         const paneShot = document.getElementById('tikkiePaneScreenshot');
         const paneLink = document.getElementById('tikkiePaneLink');
+        const paneGesch = document.getElementById('tikkiePaneGeschiedenis');
+
+        const resetBtn = (btn) => {
+            btn?.classList.remove('bg-white', 'dark:bg-[#2C2C2E]', 'shadow-xs', 'text-emerald-700', 'dark:text-emerald-300', 'font-bold');
+            btn?.classList.add('text-gray-500', 'dark:text-gray-400', 'font-semibold');
+        };
+        const activeBtn = (btn) => {
+            btn?.classList.add('bg-white', 'dark:bg-[#2C2C2E]', 'shadow-xs', 'text-emerald-700', 'dark:text-emerald-300', 'font-bold');
+            btn?.classList.remove('text-gray-500', 'dark:text-gray-400', 'font-semibold');
+        };
+
+        resetBtn(btnShot);
+        resetBtn(btnLink);
+        resetBtn(btnGesch);
+        paneShot?.classList.add('hidden');
+        paneLink?.classList.add('hidden');
+        paneGesch?.classList.add('hidden');
 
         if (tab === 'screenshot') {
-            btnShot?.classList.add('bg-white', 'dark:bg-[#2C2C2E]', 'shadow-xs', 'text-emerald-700', 'dark:text-emerald-300', 'font-bold');
-            btnShot?.classList.remove('text-gray-500', 'dark:text-gray-400', 'font-semibold');
-            btnLink?.classList.remove('bg-white', 'dark:bg-[#2C2C2E]', 'shadow-xs', 'text-emerald-700', 'dark:text-emerald-300', 'font-bold');
-            btnLink?.classList.add('text-gray-500', 'dark:text-gray-400', 'font-semibold');
+            activeBtn(btnShot);
             paneShot?.classList.remove('hidden');
-            paneLink?.classList.add('hidden');
-        } else {
-            btnLink?.classList.add('bg-white', 'dark:bg-[#2C2C2E]', 'shadow-xs', 'text-emerald-700', 'dark:text-emerald-300', 'font-bold');
-            btnLink?.classList.remove('text-gray-500', 'dark:text-gray-400', 'font-semibold');
-            btnShot?.classList.remove('bg-white', 'dark:bg-[#2C2C2E]', 'shadow-xs', 'text-emerald-700', 'dark:text-emerald-300', 'font-bold');
-            btnShot?.classList.add('text-gray-500', 'dark:text-gray-400', 'font-semibold');
-            paneShot?.classList.add('hidden');
+        } else if (tab === 'link') {
+            activeBtn(btnLink);
             paneLink?.classList.remove('hidden');
             document.getElementById('tikkieLinkInput')?.focus();
+        } else if (tab === 'geschiedenis') {
+            activeBtn(btnGesch);
+            paneGesch?.classList.remove('hidden');
+            window.renderTikkieGeschiedenisUI();
         }
     };
 
@@ -8612,8 +8822,37 @@ Antwoord UITSLUITEND in valide JSON:
             console.warn("Cloud opslag week-tikkie mislukt:", e);
         }
 
+        // Automatisch toevoegen aan Tikkie Geschiedenis
+        try {
+            let gesch = window.getTikkieGeschiedenis();
+            // Filter eerdere versie van dezelfde link of QR
+            gesch = gesch.filter(item => {
+                if (tikkieOpslag.url && item.url === tikkieOpslag.url) return false;
+                if (tikkieOpslag.qrData && item.qrData === tikkieOpslag.qrData) return false;
+                return true;
+            });
+            gesch.unshift({
+                id: 'tikkie_' + Date.now(),
+                url: tikkieOpslag.url || '',
+                qrData: tikkieOpslag.qrData || '',
+                geldigTot: tikkieOpslag.geldigTot || '',
+                omschrijving: tikkieOpslag.omschrijving || '',
+                opgeslagenOp: Date.now()
+            });
+            gesch = gesch.slice(0, 30);
+            localStorage.setItem(`tikkieGeschiedenis_${slug}`, JSON.stringify(gesch));
+            if (slug === 'bethel') localStorage.setItem('tikkieGeschiedenis', JSON.stringify(gesch));
+            if (typeof slaLiedOpInCloud === 'function') {
+                slaLiedOpInCloud(`__tikkie_geschiedenis_${slug}__`, JSON.stringify(gesch));
+                if (slug === 'bethel') slaLiedOpInCloud('__tikkie_geschiedenis__', JSON.stringify(gesch));
+            }
+        } catch(e) {
+            console.warn("Tikkie geschiedenis opslag mislukt:", e);
+        }
+
         window.updateTikkieKnopUI();
         window.updateTikkieModalStatusCard();
+        window.renderTikkieGeschiedenisUI();
         window.sluitTikkieModal();
         window.toonToast("✅ Week-Tikkie succesvol opgeslagen en gesynchroniseerd!", "success");
 
@@ -8630,6 +8869,520 @@ Antwoord UITSLUITEND in valide JSON:
             window.tekenVolgorde();
             window.toonToast("Collecte dia toegevoegd aan liturgie!", "success");
         }
+    };
+
+    // --- TIKKIE GESCHIEDENIS BEHEER ---
+    window.getTikkieGeschiedenis = function() {
+        const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : 'bethel';
+        let list = [];
+        try {
+            const raw = localStorage.getItem(`tikkieGeschiedenis_${slug}`) || (slug === 'bethel' ? localStorage.getItem('tikkieGeschiedenis') : null);
+            if (raw) list = JSON.parse(raw);
+        } catch(e) {}
+
+        // Check if Cloud has list
+        if (window.liederenDatabase) {
+            const cloudRaw = window.liederenDatabase[`__tikkie_geschiedenis_${slug}__`] || (slug === 'bethel' ? window.liederenDatabase['__tikkie_geschiedenis__'] : null);
+            if (cloudRaw) {
+                try {
+                    const cloudList = JSON.parse(cloudRaw);
+                    if (Array.isArray(cloudList) && cloudList.length > list.length) {
+                        list = cloudList;
+                        try {
+                            localStorage.setItem(`tikkieGeschiedenis_${slug}`, JSON.stringify(list));
+                            if (slug === 'bethel') localStorage.setItem('tikkieGeschiedenis', JSON.stringify(list));
+                        } catch(e) {}
+                    }
+                } catch(e) {}
+            }
+        }
+
+        // Zorg dat actieve Tikkie ook in de geschiedenis voorkomt
+        const actieve = window.getActieveWeekTikkie();
+        if (actieve && (actieve.url || actieve.qrData)) {
+            const bestaatAl = list.some(h => (actieve.url && h.url === actieve.url) || (actieve.qrData && h.qrData === actieve.qrData));
+            if (!bestaatAl) {
+                list.unshift({
+                    id: 'tikkie_' + (actieve.bijgewerktOp || Date.now()),
+                    url: actieve.url || '',
+                    qrData: actieve.qrData || '',
+                    geldigTot: actieve.geldigTot || '',
+                    omschrijving: actieve.omschrijving || 'Huidige actieve Tikkie',
+                    opgeslagenOp: actieve.bijgewerktOp || Date.now()
+                });
+                try {
+                    localStorage.setItem(`tikkieGeschiedenis_${slug}`, JSON.stringify(list));
+                    if (slug === 'bethel') localStorage.setItem('tikkieGeschiedenis', JSON.stringify(list));
+                } catch(e) {}
+            }
+        }
+
+        return Array.isArray(list) ? list : [];
+    };
+
+    window.renderTikkieGeschiedenisUI = function() {
+        const container = document.getElementById('tikkieGeschiedenisLijst');
+        const wisKnop = document.getElementById('tikkieWisGeschiedenisKnop');
+        const badge = document.getElementById('tikkieGeschiedenisBadge');
+        if (!container) return;
+
+        const gesch = window.getTikkieGeschiedenis();
+        if (badge) {
+            badge.textContent = gesch.length;
+            if (gesch.length > 0) badge.classList.remove('hidden');
+            else badge.classList.add('hidden');
+        }
+
+        if (wisKnop) {
+            if (gesch.length > 0) wisKnop.classList.remove('hidden');
+            else wisKnop.classList.add('hidden');
+        }
+
+        if (!gesch || gesch.length === 0) {
+            container.innerHTML = `
+                <div class="p-6 text-center flex flex-col items-center justify-center gap-2 bg-gray-50 dark:bg-white/5 rounded-2xl border border-dashed border-gray-200 dark:border-white/10">
+                    <span class="text-2xl">📜</span>
+                    <span class="text-xs font-bold text-gray-700 dark:text-gray-300">Nog geen geschiedenis</span>
+                    <p class="text-[11px] text-gray-400 max-w-xs">Zodra je een QR-screenshot uploadt of een Tikkie opslaat, wordt deze hier automatisch bewaard voor hergebruik.</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        gesch.forEach((item, index) => {
+            const status = window.berekenTikkieStatusTekst(item.geldigTot);
+            const statusBadge = status.geldig
+                ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300/40">Geldig (${status.tekst})</span>`
+                : `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300/40">Verlopen (${item.geldigTot || 'Onbekend'})</span>`;
+
+            let qrSrc = item.qrData;
+            if (!qrSrc && item.url && typeof maakQRDataURL === 'function') {
+                qrSrc = maakQRDataURL(item.url, 4, 1);
+            }
+
+            const datumDatum = item.opgeslagenOp ? new Date(item.opgeslagenOp).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+            const isHuidigGeselecteerd = (tijdelijkeModalTikkieData.url && tijdelijkeModalTikkieData.url === item.url) || (tijdelijkeModalTikkieData.qrData && tijdelijkeModalTikkieData.qrData === item.qrData);
+
+            html += `
+                <div class="p-3 rounded-2xl bg-white dark:bg-[#2C2C2E] border ${isHuidigGeselecteerd ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-gray-200/80 dark:border-white/10'} shadow-xs flex items-center justify-between gap-3 transition-all hover:border-emerald-300">
+                    <div class="flex items-center gap-3 min-w-0 flex-1">
+                        <div class="w-14 h-14 bg-white p-1 rounded-xl shadow-xs border border-gray-100 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                            ${qrSrc ? `<img src="${qrSrc}" alt="QR" class="w-full h-full object-contain"/>` : `<span class="text-xs text-gray-400">QR</span>`}
+                        </div>
+                        <div class="flex flex-col min-w-0 flex-1">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <span class="text-xs font-bold text-[#1D1D1F] dark:text-white truncate max-w-[180px] sm:max-w-xs">${escapeHtml(item.omschrijving || 'Collecte Tikkie')}</span>
+                                ${statusBadge}
+                            </div>
+                            ${item.url ? `<span class="text-[10px] text-gray-500 dark:text-gray-400 font-mono truncate mt-0.5">${escapeHtml(item.url)}</span>` : ''}
+                            <div class="flex items-center gap-2 text-[10px] text-gray-400 mt-1">
+                                <span>Geldig t/m: <b>${item.geldigTot || '-'}</b></span>
+                                ${datumDatum ? `<span>· Opgeslagen: ${datumDatum}</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                        <button type="button" onclick="window.selecteerTikkieUitGeschiedenis(${index})" class="px-3 py-1.5 rounded-xl text-xs font-bold ${isHuidigGeselecteerd ? 'bg-emerald-600 text-white' : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100'} transition-all active:scale-95 shadow-xs flex items-center gap-1">
+                            ${isHuidigGeselecteerd ? '✓ Actief' : 'Gebruik'}
+                        </button>
+                        <button type="button" onclick="window.verwijderTikkieUitGeschiedenis(${index}, event)" class="p-1.5 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors" title="Verwijder uit geschiedenis">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    };
+
+    window.selecteerTikkieUitGeschiedenis = function(index) {
+        const gesch = window.getTikkieGeschiedenis();
+        const item = gesch[index];
+        if (!item) return;
+
+        tijdelijkeModalTikkieData = {
+            url: item.url || '',
+            qrData: item.qrData || '',
+            geldigTot: item.geldigTot || window.getVolgendeZondagDatum(),
+            omschrijving: item.omschrijving || ''
+        };
+
+        const linkInp = document.getElementById('tikkieLinkInput');
+        if (linkInp) linkInp.value = tijdelijkeModalTikkieData.url;
+        const datumInp = document.getElementById('tikkieGeldigTotInput');
+        if (datumInp) datumInp.value = tijdelijkeModalTikkieData.geldigTot;
+        const omsInp = document.getElementById('tikkieOmschrijvingInput');
+        if (omsInp) omsInp.value = tijdelijkeModalTikkieData.omschrijving;
+
+        window.updateTikkieModalStatusCard();
+        window.updateTikkieModalPreview();
+        window.renderTikkieGeschiedenisUI();
+        window.toonToast("✅ QR-code uit geschiedenis ingeladen!", "success");
+    };
+
+    window.verwijderTikkieUitGeschiedenis = function(index, ev) {
+        if (ev) ev.stopPropagation();
+        const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : 'bethel';
+        let gesch = window.getTikkieGeschiedenis();
+        gesch.splice(index, 1);
+        try {
+            localStorage.setItem(`tikkieGeschiedenis_${slug}`, JSON.stringify(gesch));
+            if (slug === 'bethel') localStorage.setItem('tikkieGeschiedenis', JSON.stringify(gesch));
+            if (typeof slaLiedOpInCloud === 'function') {
+                slaLiedOpInCloud(`__tikkie_geschiedenis_${slug}__`, JSON.stringify(gesch));
+                if (slug === 'bethel') slaLiedOpInCloud('__tikkie_geschiedenis__', JSON.stringify(gesch));
+            }
+        } catch(e) {}
+        window.renderTikkieGeschiedenisUI();
+        window.toonToast("Item verwijderd uit geschiedenis", "info");
+    };
+
+    window.wisTikkieGeschiedenis = function() {
+        if (!confirm("Weet je zeker dat je de hele Tikkie-geschiedenis wilt wissen?")) return;
+        const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : 'bethel';
+        try {
+            localStorage.removeItem(`tikkieGeschiedenis_${slug}`);
+            if (slug === 'bethel') localStorage.removeItem('tikkieGeschiedenis');
+            if (typeof slaLiedOpInCloud === 'function') {
+                slaLiedOpInCloud(`__tikkie_geschiedenis_${slug}__`, JSON.stringify([]));
+                if (slug === 'bethel') slaLiedOpInCloud('__tikkie_geschiedenis__', JSON.stringify([]));
+            }
+        } catch(e) {}
+        window.renderTikkieGeschiedenisUI();
+        window.toonToast("Tikkie geschiedenis gewist", "info");
+    };
+
+    // --- LIEDEREN BIBLIOTHEEK & BEHEER INTERFACE ---
+    window.openLiederenBeheerModal = function(zoekTerm = '') {
+        const modal = document.getElementById('liederenBeheerModal');
+        if (!modal) return;
+        window.sluitLiedEditor();
+        const inp = document.getElementById('liedBeheerZoekInput');
+        if (inp) inp.value = zoekTerm;
+        window.renderLiederenBeheerLijst();
+        modal.classList.remove('hidden');
+        if (inp) setTimeout(() => inp.focus(), 100);
+    };
+
+    window.sluitLiederenBeheerModal = function() {
+        const modal = document.getElementById('liederenBeheerModal');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    window.filterLiederenBeheerLijst = function() {
+        window.renderLiederenBeheerLijst();
+    };
+
+    window.bepaalLiedBundel = function(titel) {
+        const t = (titel || '').trim().toLowerCase();
+        if (/^weerklank\s+psalm/i.test(t) || /^pw\s*\d+/i.test(t) || /weerklank.*psalm/i.test(t)) return 'weerklank_psalm';
+        if (/^psalm\s+\d+/i.test(t) || /^ps\s*\d+/i.test(t)) return 'psalm';
+        if (/^weerklank/i.test(t) || /^wk\s*\d+/i.test(t) || /^lw\s*\d+/i.test(t)) return 'weerklank_lied';
+        if (/^op toonhoogte/i.test(t) || /^oth\s*\d+/i.test(t)) return 'op_toonhoogte';
+        if (/\bdnp\b/i.test(t) || /nieuwe psalmberijming/i.test(t)) return 'dnp';
+        if (/^opwekking/i.test(t) || /^opw\s*\d+/i.test(t)) return 'opwekking';
+        return 'overig';
+    };
+
+    window.getBundelBadgeInfo = function(bundel) {
+        switch(bundel) {
+            case 'psalm': return { label: 'Psalm (1773)', cls: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-300/40' };
+            case 'weerklank_psalm': return { label: 'Weerklank Psalm', cls: 'bg-teal-100 text-teal-800 dark:bg-teal-950/60 dark:text-teal-300 border-teal-300/40' };
+            case 'weerklank_lied': return { label: 'Weerklank Lied', cls: 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border-blue-300/40' };
+            case 'op_toonhoogte': return { label: 'Op Toonhoogte', cls: 'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border-purple-300/40' };
+            case 'dnp': return { label: 'DNP Psalmen', cls: 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-300/40' };
+            case 'opwekking': return { label: 'Opwekking', cls: 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border-rose-300/40' };
+            default: return { label: 'Overig Lied', cls: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300 border-gray-300/40' };
+        }
+    };
+
+    window.haalLiedTekstUitDatabase = function(basisTitel) {
+        if (!window.liederenDatabase) return '';
+        if (window.liederenDatabase[basisTitel]) return window.liederenDatabase[basisTitel];
+        const ciKey = Object.keys(window.liederenDatabase).find(k => k.toLowerCase() === basisTitel.toLowerCase());
+        if (ciKey && window.liederenDatabase[ciKey]) return window.liederenDatabase[ciKey];
+        const versKeys = Object.keys(window.liederenDatabase)
+            .filter(k => {
+                const m = k.match(/^(.+?)\s+vers\s+(\d+)$/i);
+                return m && m[1].trim().toLowerCase() === basisTitel.toLowerCase();
+            })
+            .sort((a, b) => {
+                const nA = parseInt(a.match(/vers\s+(\d+)/i)[1], 10);
+                const nB = parseInt(b.match(/vers\s+(\d+)/i)[1], 10);
+                return nA - nB;
+            });
+        if (versKeys.length > 0) {
+            return versKeys.map(k => window.liederenDatabase[k]).join('\n\n');
+        }
+        return '';
+    };
+
+    window.renderLiederenBeheerLijst = function() {
+        const grid = document.getElementById('liedBeheerGrid');
+        const leegState = document.getElementById('liedBeheerLeegState');
+        const totaalBadge = document.getElementById('liedBeheerTotaalBadge');
+        if (!grid) return;
+
+        const zoekInp = document.getElementById('liedBeheerZoekInput');
+        const filterSelect = document.getElementById('liedBeheerBundelFilter');
+        const zoekTerm = (zoekInp ? zoekInp.value : '').trim().toLowerCase();
+        const actieveBundel = filterSelect ? filterSelect.value : 'alle';
+
+        const db = window.liederenDatabase || {};
+        const alleKeys = Object.keys(db);
+        const basisTitelsMap = new Map();
+
+        alleKeys.forEach(k => {
+            if (k.startsWith('__')) return;
+            const versMatch = k.match(/^(.+?)\s+vers\s+\d+$/i);
+            const basis = versMatch ? versMatch[1].trim() : k.trim();
+            if (!basisTitelsMap.has(basis.toLowerCase())) {
+                basisTitelsMap.set(basis.toLowerCase(), basis);
+            }
+        });
+
+        const alleTitels = Array.from(basisTitelsMap.values());
+        if (totaalBadge) totaalBadge.textContent = `${alleTitels.length} liederen in Cloud`;
+
+        const gefilterd = alleTitels.filter(titel => {
+            const bundel = window.bepaalLiedBundel(titel);
+            if (actieveBundel !== 'alle' && bundel !== actieveBundel) return false;
+            if (!zoekTerm) return true;
+
+            if (titel.toLowerCase().includes(zoekTerm)) return true;
+            const tekst = window.haalLiedTekstUitDatabase(titel).toLowerCase();
+            return tekst.includes(zoekTerm);
+        });
+
+        gefilterd.sort((a, b) => {
+            const numA = (a.match(/\d+/) || [0])[0];
+            const numB = (b.match(/\d+/) || [0])[0];
+            const prefixA = a.replace(/\d+/g, '').trim();
+            const prefixB = b.replace(/\d+/g, '').trim();
+            if (prefixA === prefixB && numA && numB) {
+                return parseInt(numA, 10) - parseInt(numB, 10);
+            }
+            return a.localeCompare(b, 'nl', { numeric: true });
+        });
+
+        if (gefilterd.length === 0) {
+            grid.innerHTML = '';
+            grid.classList.add('hidden');
+            if (leegState) leegState.classList.remove('hidden');
+            return;
+        }
+
+        grid.classList.remove('hidden');
+        if (leegState) leegState.classList.add('hidden');
+
+        let cardsHtml = '';
+        gefilterd.forEach(titel => {
+            const bundel = window.bepaalLiedBundel(titel);
+            const badgeInfo = window.getBundelBadgeInfo(bundel);
+            const tekst = window.haalLiedTekstUitDatabase(titel);
+            const verzen = tekst ? tekst.split(/\n[ \t]*\n/).filter(v => v.trim() !== '') : [];
+            const versAantal = verzen.length;
+            const snippet = verzen[0] ? verzen[0].split('\n')[0].substring(0, 75) : 'Geen tekst ingevoerd';
+
+            cardsHtml += `
+                <div class="bg-white dark:bg-[#2C2C2E] p-3.5 rounded-2xl border border-gray-200/80 dark:border-white/10 shadow-xs hover:border-blue-300 dark:hover:border-blue-700/60 transition-all flex flex-col justify-between gap-2.5">
+                    <div class="flex flex-col gap-1.5">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeInfo.cls} truncate">${badgeInfo.label}</span>
+                            <span class="text-[10px] font-semibold text-gray-400 flex-shrink-0">${versAantal} ${versAantal === 1 ? 'vers' : 'verzen'}</span>
+                        </div>
+                        <h4 class="text-xs md:text-sm font-bold text-[#1D1D1F] dark:text-white truncate" title="${escapeHtml(titel)}">${escapeHtml(titel)}</h4>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-2 italic leading-snug">${escapeHtml(snippet)}</p>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-white/10 gap-1.5">
+                        <button type="button" onclick="window.voegLiedUitBeheerToeAanLiturgie('${escapeHtml(titel).replace(/'/g, "\\'")}')" class="px-2.5 py-1 rounded-xl bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 text-[#007AFF] text-[11px] font-semibold transition-all active:scale-95 flex items-center gap-1" title="Voeg direct toe aan de liturgie">
+                            <span>➕ Liturgie</span>
+                        </button>
+                        <div class="flex items-center gap-1">
+                            <button type="button" onclick="window.openLiedEditor('${escapeHtml(titel).replace(/'/g, "\\'")}')" class="px-2.5 py-1 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-gray-700 dark:text-gray-200 text-[11px] font-bold transition-all active:scale-95 flex items-center gap-1" title="Liedtekst bewerken">
+                                <span>✏️ Bewerk</span>
+                            </button>
+                            <button type="button" onclick="window.verwijderLiedBeheer('${escapeHtml(titel).replace(/'/g, "\\'")}')" class="p-1 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors" title="Lied verwijderen">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        grid.innerHTML = cardsHtml;
+    };
+
+    window.openLiedEditor = function(titel = '') {
+        const lijstPaneel = document.getElementById('liedBeheerLijstPaneel');
+        const editPaneel = document.getElementById('liedBeheerEditorPaneel');
+        const titelInp = document.getElementById('liedEditorTitelInput');
+        const oudeTitelInp = document.getElementById('liedEditorOudeTitel');
+        const tekstArea = document.getElementById('liedEditorTekstArea');
+        const headerTitel = document.getElementById('liedEditorHeaderTitel');
+        const headerSub = document.getElementById('liedEditorHeaderSub');
+        const delBtn = document.getElementById('liedEditorVerwijderKnop');
+
+        if (!lijstPaneel || !editPaneel) return;
+
+        lijstPaneel.classList.add('hidden');
+        editPaneel.classList.remove('hidden');
+
+        if (titel) {
+            const tekst = window.haalLiedTekstUitDatabase(titel);
+            oudeTitelInp.value = titel;
+            titelInp.value = titel;
+            tekstArea.value = tekst;
+            if (headerTitel) headerTitel.textContent = `Lied bewerken: ${titel}`;
+            if (headerSub) headerSub.textContent = `Pas de titel of coupletten aan`;
+            if (delBtn) delBtn.classList.remove('hidden');
+        } else {
+            oudeTitelInp.value = '';
+            titelInp.value = '';
+            tekstArea.value = '';
+            if (headerTitel) headerTitel.textContent = 'Nieuw Lied Toevoegen';
+            if (headerSub) headerSub.textContent = 'Voeg een lied toe aan de centrale database';
+            if (delBtn) delBtn.classList.add('hidden');
+            setTimeout(() => titelInp.focus(), 100);
+        }
+
+        window.updateLiedEditorVersTeller();
+    };
+
+    window.sluitLiedEditor = function() {
+        const lijstPaneel = document.getElementById('liedBeheerLijstPaneel');
+        const editPaneel = document.getElementById('liedBeheerEditorPaneel');
+        if (editPaneel) editPaneel.classList.add('hidden');
+        if (lijstPaneel) lijstPaneel.classList.remove('hidden');
+    };
+
+    window.updateLiedEditorVersTeller = function() {
+        const tekstArea = document.getElementById('liedEditorTekstArea');
+        const teller = document.getElementById('liedEditorVersTeller');
+        if (!tekstArea || !teller) return;
+        const verzen = tekstArea.value.split(/\n[ \t]*\n/).filter(v => v.trim() !== '');
+        teller.textContent = `${verzen.length} ${verzen.length === 1 ? 'vers' : 'verzen'} gedetecteerd`;
+    };
+
+    window.slaLiedBeheerOp = async function() {
+        const titelInp = document.getElementById('liedEditorTitelInput');
+        const oudeTitelInp = document.getElementById('liedEditorOudeTitel');
+        const tekstArea = document.getElementById('liedEditorTekstArea');
+
+        const nieuweTitel = (titelInp ? titelInp.value : '').trim();
+        const oudeTitel = (oudeTitelInp ? oudeTitelInp.value : '').trim();
+        const nieuweTekst = (tekstArea ? tekstArea.value : '').trim();
+
+        if (!nieuweTitel) {
+            window.toonToast("Vul a.u.b. een titel in (bijv. 'Weerklank 121')", "error");
+            if (titelInp) titelInp.focus();
+            return;
+        }
+
+        if (oudeTitel && oudeTitel !== nieuweTitel) {
+            await window.verwijderLiedUitCloud(oudeTitel);
+        }
+
+        await slaLiedOpInCloud(nieuweTitel, nieuweTekst);
+        if (typeof bouwZoekLijst === 'function') bouwZoekLijst();
+
+        window.toonToast(`✅ '${nieuweTitel}' opgeslagen in Cloud & database!`, "success");
+        window.sluitLiedEditor();
+        window.renderLiederenBeheerLijst();
+    };
+
+    window.verwijderLiedVanuitEditor = async function() {
+        const oudeTitelInp = document.getElementById('liedEditorOudeTitel');
+        const titel = (oudeTitelInp ? oudeTitelInp.value : '').trim();
+        if (!titel) return;
+        await window.verwijderLiedBeheer(titel);
+    };
+
+    window.verwijderLiedBeheer = async function(titel) {
+        if (!confirm(`Weet je zeker dat je '${titel}' definitief wilt verwijderen uit de database?`)) return;
+        await window.verwijderLiedUitCloud(titel);
+        window.toonToast(`🗑️ '${titel}' verwijderd uit database`, "info");
+        window.sluitLiedEditor();
+        window.renderLiederenBeheerLijst();
+    };
+
+    window.verwijderLiedUitCloud = async function(titel) {
+        if (!titel) return;
+        if (window.liederenDatabase) {
+            delete window.liederenDatabase[titel];
+            Object.keys(window.liederenDatabase).forEach(k => {
+                const m = k.match(/^(.+?)\s+vers\s+\d+$/i);
+                if (m && m[1].trim().toLowerCase() === titel.trim().toLowerCase()) {
+                    delete window.liederenDatabase[k];
+                }
+            });
+            try {
+                localStorage.setItem('liederenCache', JSON.stringify(window.liederenDatabase));
+            } catch(e) {}
+        }
+
+        try {
+            await fetch(DATA_URL + "/liederen?action=delete", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "delete", id: titel })
+            });
+        } catch(e) {
+            console.warn("Lied verwijderen uit Worker mislukt:", e);
+        }
+
+        if (typeof bouwZoekLijst === 'function') bouwZoekLijst();
+    };
+
+    window.voegLiedUitBeheerToeAanLiturgie = function(titel) {
+        const tekst = window.haalLiedTekstUitDatabase(titel);
+        if (!tekst) {
+            window.toonToast(`Geen tekst gevonden voor '${titel}'`, "error");
+            return;
+        }
+
+        const verzen = tekst.split(/\n[ \t]*\n/).filter(v => v.trim() !== '');
+        if (verzen.length > 1 && typeof window.toonVersSelectie === 'function') {
+            window.sluitLiederenBeheerModal();
+            window.toonVersSelectie(titel, tekst);
+        } else {
+            liturgieVolgorde.push({ type: "Zang", titel: titel, tekst: tekst });
+            window.tekenVolgorde();
+            window.toonToast(`🎵 '${titel}' toegevoegd aan liturgie!`, "success");
+            window.sluitLiederenBeheerModal();
+        }
+    };
+
+    window.voegLiedVanuitEditorToeAanLiturgie = function() {
+        const titelInp = document.getElementById('liedEditorTitelInput');
+        const tekstArea = document.getElementById('liedEditorTekstArea');
+        const titel = (titelInp ? titelInp.value : '').trim();
+        const tekst = (tekstArea ? tekstArea.value : '').trim();
+        if (!titel) {
+            window.toonToast("Vul eerst een titel in", "error");
+            return;
+        }
+        const verzen = tekst.split(/\n[ \t]*\n/).filter(v => v.trim() !== '');
+        if (verzen.length > 1 && typeof window.toonVersSelectie === 'function') {
+            window.sluitLiederenBeheerModal();
+            window.toonVersSelectie(titel, tekst);
+        } else {
+            liturgieVolgorde.push({ type: "Zang", titel: titel, tekst: tekst });
+            window.tekenVolgorde();
+            window.toonToast(`🎵 '${titel}' toegevoegd aan liturgie!`, "success");
+            window.sluitLiederenBeheerModal();
+        }
+    };
+
+    window.vernieuwLiederenBeheer = async function() {
+        window.toonToast("Liederen vernieuwen uit Cloud...", "info");
+        await window.forceerCloudRefresh();
+        window.renderLiederenBeheerLijst();
     };
 
     // Oude compatibiliteit
@@ -9959,6 +10712,7 @@ window.addEventListener('keydown', (e) => {
         if (checkModal('welkomstdiaModal', sluitWelkomstdiaModal)) return;
         if (checkModal('preflightModal', window.sluitPreflightModal)) return;
         if (checkModal('tikkieModal', window.sluitTikkieModal)) return;
+        if (checkModal('liederenBeheerModal', window.sluitLiederenBeheerModal)) return;
         if (checkModal('versModal', window.sluitVersModal)) return;
         if (checkModal('controleModal', window.sluitModal)) return;
         if (checkModal('importModal', window.sluitImportModal)) return;
