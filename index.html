@@ -3749,6 +3749,12 @@ Retourneer UITSLUITEND een valide JSON object:
     function bewaarLiturgie() {
         try {
             localStorage.setItem(LITURGIE_OPSLAG_SLEUTEL, JSON.stringify(liturgieVolgorde));
+            const dVal = (document.getElementById('datumInput')?.value || '').trim();
+            const vVal = (document.getElementById('voorgangerInput')?.value || '').trim();
+            if (dVal) localStorage.setItem('opgeslagenDienstDatum', dVal);
+            else localStorage.removeItem('opgeslagenDienstDatum');
+            if (vVal) localStorage.setItem('opgeslagenDienstVoorganger', vVal);
+            else localStorage.removeItem('opgeslagenDienstVoorganger');
         } catch (e) {
             // LocalStorage vol (meestal door zware base64 afbeeldingen in Foto-dia's).
             // Val direct terug op een lichte versie waarbij zware foto data URLs worden gestript,
@@ -3768,12 +3774,25 @@ Retourneer UITSLUITEND een valide JSON object:
     function herstelLiturgie() {
         try {
             const opgeslagen = localStorage.getItem(LITURGIE_OPSLAG_SLEUTEL);
-            if (!opgeslagen) return;
-            const data = JSON.parse(opgeslagen);
-            if (Array.isArray(data) && data.length > 0) {
-                liturgieVolgorde = data;
-                window.tekenVolgorde();
-                if (typeof autoSyncObsLiveLiturgie === 'function') autoSyncObsLiveLiturgie();
+            if (opgeslagen) {
+                const data = JSON.parse(opgeslagen);
+                if (Array.isArray(data) && data.length > 0) {
+                    liturgieVolgorde = data;
+                    window.tekenVolgorde();
+                    if (typeof autoSyncObsLiveLiturgie === 'function') autoSyncObsLiveLiturgie();
+                }
+            }
+
+            // Herstel ALTIJD voorganger en datum bij refresh!
+            const dEl = document.getElementById('datumInput');
+            const vEl = document.getElementById('voorgangerInput');
+            const opgDatum = localStorage.getItem('opgeslagenDienstDatum');
+            const opgVoorganger = localStorage.getItem('opgeslagenDienstVoorganger');
+            if (dEl && opgDatum && !dEl.value) {
+                dEl.value = opgDatum;
+            }
+            if (vEl && opgVoorganger && !vEl.value) {
+                vEl.value = opgVoorganger;
             }
         } catch (e) {
             console.warn("Kon opgeslagen liturgie niet herstellen:", e);
@@ -3786,7 +3805,14 @@ Retourneer UITSLUITEND een valide JSON object:
         liturgieVolgorde = [];
         actiefArchiefDocId = null;
         try { localStorage.removeItem('actiefArchiefDocId'); } catch (e) {}
+        try { localStorage.removeItem('actiefArchiefDatum'); } catch (e) {}
         try { localStorage.removeItem(LITURGIE_OPSLAG_SLEUTEL); } catch (e) {}
+        try { localStorage.removeItem('opgeslagenDienstDatum'); } catch (e) {}
+        try { localStorage.removeItem('opgeslagenDienstVoorganger'); } catch (e) {}
+        const dEl = document.getElementById('datumInput');
+        const vEl = document.getElementById('voorgangerInput');
+        if (dEl) dEl.value = '';
+        if (vEl) vEl.value = '';
         if (typeof autoArchiefTimer !== 'undefined' && autoArchiefTimer) clearTimeout(autoArchiefTimer);
         const el = document.getElementById('autoArchiefIndicator');
         if (el) el.innerHTML = '';
@@ -4159,12 +4185,22 @@ Retourneer UITSLUITEND een valide JSON object:
                         if (data.datum) {
                             const dEl = document.getElementById('datumInput');
                             if (dEl) dEl.value = data.datum;
+                            try {
+                                localStorage.setItem('opgeslagenDienstDatum', data.datum);
+                                localStorage.setItem('actiefArchiefDatum', data.datum);
+                            } catch(e) {}
                         }
                         if (data.voorganger) {
                             const vEl = document.getElementById('voorgangerInput');
                             if (vEl) vEl.value = data.voorganger;
+                            try { localStorage.setItem('opgeslagenDienstVoorganger', data.voorganger); } catch(e) {}
                         }
 
+                        // Nieuwe dienst via e-mail ontvangen: reset archief-id zodat hij een eigen archief-record krijgt
+                        actiefArchiefDocId = null;
+                        try { localStorage.removeItem('actiefArchiefDocId'); } catch(e) {}
+
+                        bewaarLiturgie();
                         window.tekenVolgorde();
 
                         const ontbrekend = liturgieVolgorde.filter(it => it.type === "Zang" && (!it.tekst || it.tekst.trim().length < 10));
@@ -4224,25 +4260,55 @@ Retourneer UITSLUITEND een valide JSON object:
             if (!stil) window.toonToast("Nog niets om op te slaan.", "error");
             return;
         }
-        const datum = (document.getElementById('datumInput') && document.getElementById('datumInput').value) || 'Zonder datum';
-        const voorganger = (document.getElementById('voorgangerInput') && document.getElementById('voorgangerInput').value) || '';
+
+        const dEl = document.getElementById('datumInput');
+        const vEl = document.getElementById('voorgangerInput');
+
+        // Haal actuele datum en voorganger op, val terug op localStorage als het DOM-element leeg is
+        let datum = (dEl && dEl.value.trim()) || localStorage.getItem('opgeslagenDienstDatum') || '';
+        let voorganger = (vEl && vEl.value.trim()) || localStorage.getItem('opgeslagenDienstVoorganger') || '';
+
+        // Synchroniseer terug naar de input-velden als ze om wat voor reden leeg waren
+        if (dEl && !dEl.value && datum) dEl.value = datum;
+        if (vEl && !vEl.value && voorganger) vEl.value = voorganger;
+
+        // BEVEILIGING VOOR AUTO-ARCHIEF:
+        // Als auto-archief stil draait, maar datum én voorganger ontbreken allebei nog,
+        // overschrijf dan NOOIT een bestaand archief-document met lege velden!
+        if (stil && !datum && !voorganger) {
+            console.warn("Auto-archief overgeslagen: nog geen datum of voorganger bekend.");
+            return;
+        }
+
         const huidigeGem = window.getActieveGemeente ? window.getActieveGemeente() : STANDAARD_GEMEENTE;
         const payload = {
             gemeente: huidigeGem,
-            datum: datum,
-            voorganger: voorganger,
+            datum: datum || 'Zonder datum',
+            voorganger: voorganger || '',
             items: liturgieVoorOpslag(),
             opgeslagenOp: firebase.firestore.FieldValue.serverTimestamp()
         };
 
         try {
             await authKlaar;
+
+            // Controleer of de huidige actieve archief-ID wel bij deze datum hoort
+            const opgArchiefDatum = localStorage.getItem('actiefArchiefDatum');
+            if (actiefArchiefDocId && opgArchiefDatum && datum && opgArchiefDatum !== datum) {
+                // Andere datum: maak een nieuw archief document zodat de vorige dienst intact blijft!
+                actiefArchiefDocId = null;
+                try { localStorage.removeItem('actiefArchiefDocId'); } catch (e) {}
+            }
+
             if (actiefArchiefDocId) {
                 await db.collection("liturgieen").doc(actiefArchiefDocId).set(payload, { merge: true });
             } else {
                 const docRef = await db.collection("liturgieen").add(payload);
                 actiefArchiefDocId = docRef.id;
-                try { localStorage.setItem('actiefArchiefDocId', docRef.id); } catch (e) {}
+                try { 
+                    localStorage.setItem('actiefArchiefDocId', docRef.id);
+                    if (datum) localStorage.setItem('actiefArchiefDatum', datum);
+                } catch (e) {}
             }
             updateAutoArchiefStatus("Gearchiveerd");
             if (!stil) {
@@ -4301,7 +4367,10 @@ Retourneer UITSLUITEND een valide JSON object:
                     if (!confirm(`Deze opgeslagen liturgie van ${huidigeGem} verwijderen?`)) return;
                     if (actiefArchiefDocId === doc.id) {
                         actiefArchiefDocId = null;
-                        try { localStorage.removeItem('actiefArchiefDocId'); } catch (e) {}
+                        try { 
+                            localStorage.removeItem('actiefArchiefDocId');
+                            localStorage.removeItem('actiefArchiefDatum');
+                        } catch (e) {}
                     }
                     await doc.ref.delete().catch(() => {});
                     laadArchiefLijst();
@@ -4319,12 +4388,25 @@ Retourneer UITSLUITEND een valide JSON object:
         const items = (data.items || []).filter(it => !((it.type === 'Foto' || it.type === 'QR') && !it.tekst));
         liturgieVolgorde = items;
         actiefArchiefDocId = docId || null;
+        const datumVal = (data.datum && data.datum !== 'Zonder datum') ? data.datum : '';
+        const voorgangerVal = data.voorganger || '';
         try {
-            if (docId) localStorage.setItem('actiefArchiefDocId', docId);
-            else localStorage.removeItem('actiefArchiefDocId');
+            if (docId) {
+                localStorage.setItem('actiefArchiefDocId', docId);
+                if (datumVal) localStorage.setItem('actiefArchiefDatum', datumVal);
+            } else {
+                localStorage.removeItem('actiefArchiefDocId');
+                localStorage.removeItem('actiefArchiefDatum');
+            }
+            if (datumVal) localStorage.setItem('opgeslagenDienstDatum', datumVal);
+            else localStorage.removeItem('opgeslagenDienstDatum');
+            if (voorgangerVal) localStorage.setItem('opgeslagenDienstVoorganger', voorgangerVal);
+            else localStorage.removeItem('opgeslagenDienstVoorganger');
         } catch (e) {}
-        document.getElementById('datumInput').value = (data.datum && data.datum !== 'Zonder datum') ? data.datum : '';
-        document.getElementById('voorgangerInput').value = data.voorganger || '';
+        const dEl = document.getElementById('datumInput');
+        const vEl = document.getElementById('voorgangerInput');
+        if (dEl) dEl.value = datumVal;
+        if (vEl) vEl.value = voorgangerVal;
         bewaarLiturgie();
         window.tekenVolgorde();
         updateAutoArchiefStatus("Gearchiveerd");
@@ -4332,12 +4414,35 @@ Retourneer UITSLUITEND een valide JSON object:
         window.toonToast("Liturgie geladen uit archief.", "success");
     }
 
-    // Auto-archief trigger bij wijzigen van datum of voorganger
+    // Auto-archief trigger bij wijzigen van datum of voorganger (met directe localStorage persistentie)
     setTimeout(() => {
         const dIn = document.getElementById('datumInput');
         const vIn = document.getElementById('voorgangerInput');
-        if (dIn) { dIn.addEventListener('input', planAutoArchief); dIn.addEventListener('change', planAutoArchief); }
-        if (vIn) { vIn.addEventListener('input', planAutoArchief); vIn.addEventListener('change', planAutoArchief); }
+        if (dIn) {
+            const onDatumInput = () => {
+                const val = dIn.value.trim();
+                if (val) localStorage.setItem('opgeslagenDienstDatum', val);
+                else localStorage.removeItem('opgeslagenDienstDatum');
+                const opgArchiefDatum = localStorage.getItem('actiefArchiefDatum');
+                if (opgArchiefDatum && val && opgArchiefDatum !== val) {
+                    actiefArchiefDocId = null;
+                    try { localStorage.removeItem('actiefArchiefDocId'); } catch(e) {}
+                }
+                planAutoArchief();
+            };
+            dIn.addEventListener('input', onDatumInput);
+            dIn.addEventListener('change', onDatumInput);
+        }
+        if (vIn) {
+            const onVoorgangerInput = () => {
+                const val = vIn.value.trim();
+                if (val) localStorage.setItem('opgeslagenDienstVoorganger', val);
+                else localStorage.removeItem('opgeslagenDienstVoorganger');
+                planAutoArchief();
+            };
+            vIn.addEventListener('input', onVoorgangerInput);
+            vIn.addEventListener('change', onVoorgangerInput);
+        }
     }, 500);
 
     // --- 2. START VARIABELEN ---
@@ -5773,6 +5878,7 @@ Bijbelliederen`;
                     const dagNaam = dagen[datum.getDay()];
                     input.value = dagNaam + ' ' + d + '-' + (huidigeMaand + 1) + '-' + huidigeJaar;
                     picker.classList.add('hidden');
+                    try { localStorage.setItem('opgeslagenDienstDatum', input.value); } catch(e) {}
                     input.dispatchEvent(new Event('input'));
                 });
                 dagenEl.appendChild(btn);
