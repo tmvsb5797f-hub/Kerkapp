@@ -3781,15 +3781,12 @@ Retourneer UITSLUITEND een valide JSON object:
     }
     window.autoSyncMeeleesLive = autoSyncMeeleesLive;
 
-    window.updateActieveMeeleesLink = async function(toonMelding = true) {
+    window.updateActieveMeeleesLink = async function(toonMelding = false) {
         try {
-            if (toonMelding) window.toonToast("Liturgie synchroniseren...", "info");
             const url = await maakMeeleesLink(false);
             toonDeelModal(url);
-            if (toonMelding) window.toonToast("✅ Meelees-versie bijgewerkt! Wijzigingen zijn live.", "success");
         } catch(e) {
             console.error("Meelees bijwerken mislukt:", e);
-            if (toonMelding) window.toonToast("Kon meelees-versie niet bijwerken", "error");
         }
     };
 
@@ -4449,32 +4446,10 @@ Retourneer UITSLUITEND een valide JSON object:
     }
 
     function toonMeeleesLiveUpdateBadge() {
-        let badge = document.getElementById('meeleesLiveUpdatePill');
-        if (!badge) {
-            badge = document.createElement('div');
-            badge.id = 'meeleesLiveUpdatePill';
-            badge.className = 'fixed top-4 left-1/2 -translate-x-1/2 z-[450] flex items-center gap-2 bg-emerald-600/95 text-white text-xs font-semibold px-4 py-2 rounded-full shadow-2xl backdrop-blur-md transition-all duration-300 pointer-events-none transform -translate-y-8 opacity-0';
-            badge.innerHTML = `
-                <span class="inline-block w-2 h-2 rounded-full bg-white animate-pulse"></span>
-                <span>✨ Liturgie live bijgewerkt</span>
-            `;
-            document.body.appendChild(badge);
-        }
-        badge.style.display = 'flex';
-        requestAnimationFrame(() => {
-            badge.classList.remove('-translate-y-8', 'opacity-0');
-            badge.classList.add('translate-y-0', 'opacity-100');
-        });
-        clearTimeout(badge._timeout);
-        badge._timeout = setTimeout(() => {
-            badge.classList.remove('translate-y-0', 'opacity-100');
-            badge.classList.add('-translate-y-8', 'opacity-0');
-            setTimeout(() => {
-                if (badge.classList.contains('opacity-0')) {
-                    badge.style.display = 'none';
-                }
-            }, 300);
-        }, 2800);
+        // Melding uitgeschakeld conform gebruikerswens: live synchronisatie verloopt stil en subtiel op de achtergrond
+        const oud = document.getElementById('meeleesLiveUpdatePill');
+        if (oud) oud.remove();
+        return;
     }
 
     async function toonMeeleesPagina(id) {
