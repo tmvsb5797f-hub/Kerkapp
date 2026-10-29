@@ -104,22 +104,28 @@
         }
 
         // Bepaal welke verzen momenteel geselecteerd zijn
-        const nrsInTitel = parseerVersNummersUitTitel(item.titel);
+        const nrsInItem = (Array.isArray(item.geselecteerdeVerzen) && item.geselecteerdeVerzen.length > 0)
+            ? item.geselecteerdeVerzen.map(n => parseInt(n, 10)).filter(n => !isNaN(n))
+            : (typeof window.extractVersNummers === 'function' ? window.extractVersNummers(item.titel) : parseerVersNummersUitTitel(item.titel));
         const geselecteerd = new Set();
 
-        if (nrsInTitel.length > 0) {
-            nrsInTitel.forEach(n => geselecteerd.add(n));
+        if (nrsInItem.length > 0) {
+            nrsInItem.forEach(n => geselecteerd.add(n));
         } else {
             // Als er geen nummers in de titel staan, selecteer alle verzen die momenteel in de tekst voorkomen
             alleVerzen.forEach(v => geselecteerd.add(v.nr));
         }
 
+        const gekozenNummersInit = alleVerzen.filter(v => geselecteerd.has(v.nr)).map(v => v.nr);
+
         _huidigeVerzenData = {
             basisTitel: basisTitel,
             alleVerzen: alleVerzen,
             geselecteerd: geselecteerd,
+            gekozenNummers: gekozenNummersInit,
             itemIndex: index
         };
+        window._huidigeVerzenData = _huidigeVerzenData;
 
         container.classList.remove('hidden');
         window.renderVersKiezerKnoppen();
@@ -224,6 +230,10 @@
         if (typeof tijdelijkeTitel !== 'undefined') {
             tijdelijkeTitel = nieuweTitel;
         }
+
+        _huidigeVerzenData.gekozenNummers = gekozenNummers;
+        _huidigeVerzenData.basisTitel = basisTitel;
+        window._huidigeVerzenData = _huidigeVerzenData;
 
         window.renderVersKiezerKnoppen();
     };

@@ -40,17 +40,25 @@
 
 <style>
     html {
-        overflow-x: hidden;
+        overflow-x: clip;
         -webkit-text-size-adjust: 100%;
+        background-color: #F5F5F7;
+    }
+    html.dark {
+        background-color: #1C1C1E;
     }
     body {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         background-color: #F5F5F7;
         -webkit-font-smoothing: antialiased;
-        transition: background-color 0.3s, color 0.3s;
-        overflow-x: hidden;
-        -webkit-overflow-scrolling: touch;
-        overscroll-behavior-x: none;
+        overflow-x: clip;
+        min-height: 100vh;
+        min-height: 100dvh;
+    }
+    .hidden {
+        display: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
     }
     body.dark-mode, html.dark body {
         background-color: #1C1C1E;
@@ -6685,7 +6693,13 @@ Bijbelliederen`;
         } else if (tijdelijkeType === "Schriftlezing" && tijdelijkeTekst.trim()) {
             slaBijbelOpInCloud(tijdelijkeTitel.replace(" (HSV)", ""), tijdelijkeTekst);
         }
-        liturgieVolgorde.push({ type: tijdelijkeType, titel: tijdelijkeTitel, tekst: tijdelijkeTekst });
+        const nieuwItem = { type: tijdelijkeType, titel: tijdelijkeTitel, tekst: tijdelijkeTekst };
+        if (window._huidigeVerzenData && Array.isArray(window._huidigeVerzenData.gekozenNummers)) {
+            nieuwItem.geselecteerdeVerzen = [...window._huidigeVerzenData.gekozenNummers];
+            if (window._huidigeVerzenData.basisTitel) nieuwItem.basisTitel = window._huidigeVerzenData.basisTitel;
+        }
+        liturgieVolgorde.push(nieuwItem);
+        bewaarLiturgie();
         window.tekenVolgorde();
         window.sluitModal();
     }
@@ -6701,6 +6715,7 @@ Bijbelliederen`;
 
     window.kiesLeeg = function() {
         liturgieVolgorde.push({ type: tijdelijkeType, titel: tijdelijkeTitel, tekst: " " });
+        bewaarLiturgie();
         window.tekenVolgorde();
         window.sluitModal();
     }
@@ -6732,11 +6747,19 @@ Bijbelliederen`;
         const isStandaardLied = /^(weerklank|dnp psalm|psalm \d+)/i.test(tijdelijkeTitel);
         
         if (isAanHetBewerken) {
-            // Wijzigingen aan een dia (inclusief vette tekst en uitlijning) zijn specifiek voor deze dia en worden NIET in de cloud opgeslagen
+            // Wijzigingen aan een dia (inclusief titel, verzen, vette tekst en uitlijning)
             liturgieVolgorde[huidigeBewerkIndex].tekst = nieuweTekst;
+            liturgieVolgorde[huidigeBewerkIndex].titel = tijdelijkeTitel;
+            if (window._huidigeVerzenData && Array.isArray(window._huidigeVerzenData.gekozenNummers)) {
+                liturgieVolgorde[huidigeBewerkIndex].geselecteerdeVerzen = [...window._huidigeVerzenData.gekozenNummers];
+                if (window._huidigeVerzenData.basisTitel) {
+                    liturgieVolgorde[huidigeBewerkIndex].basisTitel = window._huidigeVerzenData.basisTitel;
+                }
+            }
             if (modalGekozenAlign) {
                 liturgieVolgorde[huidigeBewerkIndex].align = modalGekozenAlign;
             }
+            bewaarLiturgie();
             window.toonToast("Wijziging opgeslagen voor deze dia.", "success");
         } else {
             if (tijdelijkeType === "Zang") {
@@ -6748,7 +6771,14 @@ Bijbelliederen`;
             }
             const nieuwItem = { type: tijdelijkeType, titel: tijdelijkeTitel, tekst: nieuweTekst };
             if (modalGekozenAlign) nieuwItem.align = modalGekozenAlign;
+            if (window._huidigeVerzenData && Array.isArray(window._huidigeVerzenData.gekozenNummers)) {
+                nieuwItem.geselecteerdeVerzen = [...window._huidigeVerzenData.gekozenNummers];
+                if (window._huidigeVerzenData.basisTitel) {
+                    nieuwItem.basisTitel = window._huidigeVerzenData.basisTitel;
+                }
+            }
             liturgieVolgorde.push(nieuwItem);
+            bewaarLiturgie();
         }
         
         window.tekenVolgorde();
@@ -6860,6 +6890,7 @@ Bijbelliederen`;
                 basisTitel: tijdelijkeTitel,
                 geselecteerdeVerzen: geselecteerdeNummers
             });
+            bewaarLiturgie();
             window.tekenVolgorde();
         }
         sluitVersModal();
@@ -8253,17 +8284,47 @@ Bijbelliederen`;
 // --- FUNCTIES VOOR DE SLIMME IMPORTER (MET INLINE PLAKKEN & AUTO-VERSSELECTIE) ---
     window.gevondenImportItems = [];
 
-    // Hulpfunctie: herken couplet/versnummers uit strings zoals '14 : 1, 3 en 5', 'vers 1-4', 'vs 2, 4', ': 1, 3'
+    // Hulpfunctie: extraheer schone basistitel én geselecteerde versnummers van een liturgie item
+    window.extractVersInfoVanItem = function(item) {
+        if (!item) return { basisTitel: '', versNummers: [] };
+        if (item.type !== 'Zang') return { basisTitel: item.titel || '', versNummers: [] };
+
+        let versNummers = [];
+        if (Array.isArray(item.geselecteerdeVerzen) && item.geselecteerdeVerzen.length > 0) {
+            versNummers = item.geselecteerdeVerzen.map(n => parseInt(n, 10)).filter(n => !isNaN(n));
+        }
+        if (versNummers.length === 0 && item.titel) {
+            versNummers = (typeof window.extractVersNummers === 'function')
+                ? window.extractVersNummers(item.titel)
+                : [];
+        }
+
+        let basisTitel = item.basisTitel || '';
+        if (!basisTitel || /(?::|\bvers(?:en)?\b|\bvs\.?\b|\bcouplet(?:ten)?\b)/i.test(basisTitel)) {
+            basisTitel = (item.titel || '')
+                .replace(/\s+(?:vers(?:en)?|vs\.?|couplet(?:ten)?)\s+[\d,\s\-–—en&]+$/i, '')
+                .replace(/:\s*[\d,\s\-–—en&]+$/, '')
+                .replace(/\s*\([\d,\s\-–—en&]+\)$/, '')
+                .trim();
+        }
+
+        return { basisTitel: basisTitel || item.titel || '', versNummers: versNummers };
+    };
+
+    // Hulpfunctie: herken couplet/versnummers uit strings zoals '14 : 1, 3 en 5', 'vers 1-4', 'vs 2, 4', ': 1, 3', '(1, 4)'
     window.extractVersNummers = function(str) {
         if (!str) return [];
         const colonAfterNumMatch = str.match(/\d+\s*[:]\s*([0-9\s,\-–—]|(?:\ben\b))+/i);
         const versMatch = str.match(/\b(?:vers(?:en)?|vs\.?)\s*([0-9\s,\-–—]|(?:\ben\b))+/i);
+        const parenMatch = str.match(/\(([^)]+)\)/);
         
         let raw = '';
         if (colonAfterNumMatch) {
             raw = colonAfterNumMatch[0].replace(/^\d+\s*[:]\s*/, '');
         } else if (versMatch) {
             raw = versMatch[0].replace(/^\b(?:vers(?:en)?|vs\.?)\s*/i, '');
+        } else if (parenMatch && /\d/.test(parenMatch[1])) {
+            raw = parenMatch[1].replace(/^\b(?:vers(?:en)?|vs\.?)\s*/i, '');
         }
         if (!raw) return [];
 
@@ -8394,22 +8455,24 @@ Bijbelliederen`;
             ? item.definitieveTekst.split(/\n[ \t]*\n/).map(v => v.trim()).filter(Boolean)
             : (dbResult.inCloud && dbResult.tekst ? dbResult.tekst.split(/\n[ \t]*\n/).map(v => v.trim()).filter(Boolean) : []);
 
+        const basisTitel = (item.basisTitel || item.titel || '')
+            .replace(/\s+(?:vers(?:en)?|vs\.?|couplet(?:ten)?)\s+[\d,\s\-–—en&]+$/i, '')
+            .replace(/:\s*[\d,\s\-–—en&]+$/, '')
+            .replace(/\s*\([\d,\s\-–—en&]+\)$/, '')
+            .trim();
+
         if (alleVerzen.length === 0) {
-            return { titel: item.titel, tekst: item.definitieveTekst || " ", verzen: [] };
+            return { titel: item.titel, basisTitel: basisTitel, tekst: item.definitieveTekst || " ", verzen: [] };
         }
         const gekozenNummers = (item.geselecteerdeVerzen && item.geselecteerdeVerzen.length > 0)
             ? item.geselecteerdeVerzen
             : (item.gevondenVerzen && item.gevondenVerzen.length > 0 ? item.gevondenVerzen : []);
-        
-        const basisTitel = (item.titel || '')
-            .replace(/\s+(vers(en)?|vs\.?|couplet(ten)?)\s+[\d,\s\-–—en&]+$/i, '')
-            .replace(/:\s*[\d,\s\-–—en&]+$/, '')
-            .trim();
 
         // Als alle coupletten gekozen zijn of niets gespecificeerd:
         if (gekozenNummers.length === 0 || gekozenNummers.length === alleVerzen.length) {
             return {
                 titel: basisTitel,
+                basisTitel: basisTitel,
                 tekst: alleVerzen.join('\n\n'),
                 verzen: (dbResult.versNummers && dbResult.versNummers.length === alleVerzen.length) ? dbResult.versNummers : alleVerzen.map((_, i) => i + 1)
             };
@@ -8435,6 +8498,7 @@ Bijbelliederen`;
         const titelMetVers = basisTitel + ' vers ' + gekozenNummers.join(', ');
         return {
             titel: titelMetVers,
+            basisTitel: basisTitel,
             tekst: gekozenTeksten.length > 0 ? gekozenTeksten.join('\n\n') : alleVerzen.join('\n\n'),
             verzen: gekozenNummers
         };
@@ -9199,6 +9263,7 @@ ${veiligeTekst}
             liturgieVolgorde.push(item);
         });
 
+        bewaarLiturgie();
         window.tekenVolgorde();
         window.sluitImportModal();
 
@@ -10770,15 +10835,21 @@ Antwoord UITSLUITEND in valide JSON:
         const th = item.tekstH ?? TEKST_DEF_H;
         let result = [];
 
-        const basisTitel = (item.basisTitel || item.titel || '')
-            .replace(/\s+(vers(en)?|vs\.?|couplet(ten)?)\s+[\d,\s\-–—en&]+$/i, '')
-            .replace(/:\s*[\d,\s\-–—en&]+$/, '')
-            .trim();
+        const versInfo = (typeof window.extractVersInfoVanItem === 'function')
+            ? window.extractVersInfoVanItem(item)
+            : {
+                basisTitel: (item.basisTitel || item.titel || '')
+                    .replace(/\s+(?:vers(?:en)?|vs\.?|couplet(?:ten)?)\s+[\d,\s\-–—en&]+$/i, '')
+                    .replace(/:\s*[\d,\s\-–—en&]+$/, '')
+                    .replace(/\s*\([\d,\s\-–—en&]+\)$/, '')
+                    .trim(),
+                versNummers: (item.geselecteerdeVerzen && item.geselecteerdeVerzen.length > 0)
+                    ? item.geselecteerdeVerzen
+                    : (typeof window.extractVersNummers === 'function' ? window.extractVersNummers(item.titel) : [])
+            };
 
-        // Bepaal de versnummers voor elk couplet
-        const bekendeVerzen = (item.geselecteerdeVerzen && item.geselecteerdeVerzen.length > 0)
-            ? item.geselecteerdeVerzen
-            : (typeof window.extractVersNummers === 'function' ? window.extractVersNummers(item.titel) : []);
+        const basisTitel = versInfo.basisTitel;
+        const bekendeVerzen = versInfo.versNummers;
 
         blokken.forEach((regelsArr, blokIdx) => {
             regelsArr = regelsArr.filter(r => !/^\d+\s*:\s*\d+\.?$/.test(r.trim()));
@@ -10799,9 +10870,8 @@ Antwoord UITSLUITEND in valide JSON:
             subBlokken.forEach((sb, sIdx) => {
                 let diaTitel = item.titel;
                 if (item.type === "Zang" && versNr != null) {
-                    const sep = (item.titel && item.titel.includes(':')) ? ' : ' : ' vers ';
                     const deelStr = subBlokken.length > 1 ? ` (${sIdx + 1}/${subBlokken.length})` : '';
-                    diaTitel = `${basisTitel}${sep}${versNr}${deelStr}`;
+                    diaTitel = `${basisTitel} : ${versNr}${deelStr}`;
                 } else if (item.type === "Schriftlezing" && blokken.length > 1) {
                     diaTitel = `${item.titel} (${blokIdx + 1}/${blokken.length})`;
                 }
@@ -11575,16 +11645,23 @@ function genereerStandaardZangLijst(formaat = 'afkorting') {
     const gezieneBasisTitels = new Map();
 
     liturgieVolgorde.filter(item => item.type === "Zang").forEach(item => {
-        const basisNaam = item.basisTitel || item.titel.replace(/\s+vers\s*[\d,\s]+$/i, '').trim();
-        const versMatch = item.titel.match(/vers\s*([\d,\s]+)$/i);
-        const versNummers = versMatch ? versMatch[1].split(/[,\s]+/).map(n => n.trim()).filter(Boolean) : null;
+        const info = (typeof window.extractVersInfoVanItem === 'function')
+            ? window.extractVersInfoVanItem(item)
+            : {
+                basisTitel: (item.basisTitel || item.titel || '').replace(/\s+(?:vers(?:en)?|vs\.?|couplet(?:ten)?)\s+[\d,\s\-–—en&]+$/i, '').trim(),
+                versNummers: (item.geselecteerdeVerzen && item.geselecteerdeVerzen.length > 0)
+                    ? item.geselecteerdeVerzen
+                    : (typeof window.extractVersNummers === 'function' ? window.extractVersNummers(item.titel) : [])
+            };
+        const basisNaam = info.basisTitel;
+        const versNummers = info.versNummers && info.versNummers.length > 0 ? info.versNummers.map(String) : null;
 
         if (gezieneBasisTitels.has(basisNaam)) {
             const bestaand = gegroepeerd[gezieneBasisTitels.get(basisNaam)];
             if (versNummers && bestaand.versNummers) {
                 bestaand.versNummers = bestaand.versNummers.concat(versNummers);
-            } else {
-                bestaand.versNummers = null;
+            } else if (versNummers) {
+                bestaand.versNummers = [...versNummers];
             }
         } else {
             gezieneBasisTitels.set(basisNaam, gegroepeerd.length);
@@ -11609,7 +11686,8 @@ function genereerStandaardZangLijst(formaat = 'afkorting') {
                      .replace(/Opwekking/i, "Opw").trim();
         }
         if (g.versNummers && g.versNummers.length > 0) {
-            return label + ' vers ' + g.versNummers.join(', ');
+            const unique = [...new Set(g.versNummers.map(n => parseInt(n, 10)).filter(n => !isNaN(n)))].sort((a,b) => a - b);
+            return label + ' : ' + unique.join(', ');
         }
         return label;
     });
@@ -11962,16 +12040,23 @@ window.bouwPowerPointPresentatie = async function(customOpties = null) {
         const gezieneBasisTitels = new Map();
 
         liturgieVolgorde.filter(item => item.type === "Zang").forEach(item => {
-            const basisNaam = item.basisTitel || item.titel.replace(/\s+vers\s*[\d,\s]+$/i, '').trim();
-            const versMatch = item.titel.match(/vers\s*([\d,\s]+)$/i);
-            const versNummers = versMatch ? versMatch[1].split(/[,\s]+/).map(n => n.trim()).filter(Boolean) : null;
+            const info = (typeof window.extractVersInfoVanItem === 'function')
+                ? window.extractVersInfoVanItem(item)
+                : {
+                    basisTitel: (item.basisTitel || item.titel || '').replace(/\s+(?:vers(?:en)?|vs\.?|couplet(?:ten)?)\s+[\d,\s\-–—en&]+$/i, '').trim(),
+                    versNummers: (item.geselecteerdeVerzen && item.geselecteerdeVerzen.length > 0)
+                        ? item.geselecteerdeVerzen
+                        : (typeof window.extractVersNummers === 'function' ? window.extractVersNummers(item.titel) : [])
+                };
+            const basisNaam = info.basisTitel;
+            const versNummers = info.versNummers && info.versNummers.length > 0 ? info.versNummers.map(String) : null;
 
             if (gezieneBasisTitels.has(basisNaam)) {
                 const bestaand = gegroepeerd[gezieneBasisTitels.get(basisNaam)];
                 if (versNummers && bestaand.versNummers) {
                     bestaand.versNummers = bestaand.versNummers.concat(versNummers);
-                } else {
-                    bestaand.versNummers = null;
+                } else if (versNummers) {
+                    bestaand.versNummers = [...versNummers];
                 }
             } else {
                 gezieneBasisTitels.set(basisNaam, gegroepeerd.length);
@@ -11988,7 +12073,8 @@ window.bouwPowerPointPresentatie = async function(customOpties = null) {
                          .replace(/Psalm/i, "Ps")
                          .replace(/Opwekking/i, "Opw").trim();
             if (g.versNummers && g.versNummers.length > 0) {
-                return afk + ' vers ' + g.versNummers.join(', ');
+                const unique = [...new Set(g.versNummers.map(n => parseInt(n, 10)).filter(n => !isNaN(n)))].sort((a,b) => a - b);
+                return afk + ' : ' + unique.join(', ');
             }
             return afk;
         });
@@ -12220,12 +12306,20 @@ window.stuurLiturgieNaarMij = async function() {
         const gegroepeerd = [];
         const gezieneBasisTitels = new Map();
         liturgieVolgorde.filter(item => item.type === "Zang").forEach(item => {
-            const basisNaam = item.basisTitel || item.titel.replace(/\s+vers\s*[\d,\s]+$/i, '').trim();
-            const versMatch = item.titel.match(/vers\s*([\d,\s]+)$/i);
-            const versNummers = versMatch ? versMatch[1].split(/[,\s]+/).map(n => n.trim()).filter(Boolean) : null;
+            const info = (typeof window.extractVersInfoVanItem === 'function')
+                ? window.extractVersInfoVanItem(item)
+                : {
+                    basisTitel: (item.basisTitel || item.titel || '').replace(/\s+(?:vers(?:en)?|vs\.?|couplet(?:ten)?)\s+[\d,\s\-–—en&]+$/i, '').trim(),
+                    versNummers: (item.geselecteerdeVerzen && item.geselecteerdeVerzen.length > 0)
+                        ? item.geselecteerdeVerzen
+                        : (typeof window.extractVersNummers === 'function' ? window.extractVersNummers(item.titel) : [])
+                };
+            const basisNaam = info.basisTitel;
+            const versNummers = info.versNummers && info.versNummers.length > 0 ? info.versNummers.map(String) : null;
             if (gezieneBasisTitels.has(basisNaam)) {
                 const bestaand = gegroepeerd[gezieneBasisTitels.get(basisNaam)];
                 if (versNummers && bestaand.versNummers) bestaand.versNummers = bestaand.versNummers.concat(versNummers);
+                else if (versNummers) bestaand.versNummers = [...versNummers];
             } else {
                 gezieneBasisTitels.set(basisNaam, gegroepeerd.length);
                 gegroepeerd.push({ basisNaam, versNummers: versNummers ? [...versNummers] : null });
@@ -12240,7 +12334,8 @@ window.stuurLiturgieNaarMij = async function() {
                          .replace(/Psalm/i, "Ps")
                          .replace(/Opwekking/i, "Opw").trim();
             if (g.versNummers && g.versNummers.length > 0) {
-                return `${afk} vers ${g.versNummers.join(', ')}`;
+                const unique = [...new Set(g.versNummers.map(n => parseInt(n, 10)).filter(n => !isNaN(n)))].sort((a,b) => a - b);
+                return `${afk} : ${unique.join(', ')}`;
             }
             return afk;
         });
