@@ -1151,14 +1151,38 @@
         </section>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-stretch">
             <section>
-                <h2 class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider mb-2 md:mb-3 ml-2">1. Liederen &amp; Psalmen</h2>
-                <div class="bg-white p-4 md:p-6 rounded-[20px] md:rounded-[24px] shadow-[0_4px_24px_rgba(0,0,0,0.04)] relative">
+                <div class="flex items-center justify-between mb-2 md:mb-3 ml-2">
+                    <h2 class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider">1. Liederen &amp; Psalmen</h2>
+                </div>
+                <div class="bg-white dark:bg-[#1C1C1E] p-4 md:p-6 rounded-[20px] md:rounded-[24px] shadow-[0_4px_24px_rgba(0,0,0,0.04)] dark:border dark:border-white/10 relative">
+                    <!-- Liedboek Filter Knoppen -->
+                    <div class="flex items-center gap-1.5 overflow-x-auto pb-2.5 mb-2.5 no-scrollbar select-none" id="liedboekFilterBar">
+                        <button type="button" onclick="window.kiesLiedZoekFilter('alle')" data-filter="alle" class="lied-filter-btn px-3 py-1.5 rounded-full text-xs font-bold bg-[#007AFF] text-white shadow-xs transition-all flex-shrink-0 cursor-pointer active:scale-95">
+                            Alle Bundels
+                        </button>
+                        <button type="button" onclick="window.kiesLiedZoekFilter('psalm')" data-filter="psalm" class="lied-filter-btn px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-gray-700 dark:text-gray-300 transition-all flex-shrink-0 cursor-pointer active:scale-95 flex items-center gap-1">
+                            <span>📖</span> <span>Psalmen (1773)</span>
+                        </button>
+                        <button type="button" onclick="window.kiesLiedZoekFilter('weerklank')" data-filter="weerklank" class="lied-filter-btn px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-gray-700 dark:text-gray-300 transition-all flex-shrink-0 cursor-pointer active:scale-95 flex items-center gap-1">
+                            <span>Weerklank</span>
+                        </button>
+                        <button type="button" onclick="window.kiesLiedZoekFilter('op_toonhoogte')" data-filter="op_toonhoogte" class="lied-filter-btn px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-gray-700 dark:text-gray-300 transition-all flex-shrink-0 cursor-pointer active:scale-95 flex items-center gap-1">
+                            <span>Op Toonhoogte</span>
+                        </button>
+                        <button type="button" onclick="window.kiesLiedZoekFilter('dnp')" data-filter="dnp" class="lied-filter-btn px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-gray-700 dark:text-gray-300 transition-all flex-shrink-0 cursor-pointer active:scale-95 flex items-center gap-1">
+                            <span>DNP</span>
+                        </button>
+                        <button type="button" onclick="window.kiesLiedZoekFilter('opwekking')" data-filter="opwekking" class="lied-filter-btn px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-gray-700 dark:text-gray-300 transition-all flex-shrink-0 cursor-pointer active:scale-95 flex items-center gap-1">
+                            <span>Opwekking</span>
+                        </button>
+                    </div>
+
                     <div class="relative">
                         <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                        <input id="liedInput" autocomplete="off" class="w-full bg-[#F5F5F7] border border-transparent rounded-xl py-3.5 pl-12 pr-4 text-[14px] md:text-[15px] font-medium placeholder-gray-400 apple-input transition-all" placeholder="Bijv: 'wk 15', 'oth 314' of 'psalm 23'..." type="text"/>
+                        <input id="liedInput" autocomplete="off" class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-transparent rounded-xl py-3.5 pl-12 pr-4 text-[14px] md:text-[15px] font-medium placeholder-gray-400 apple-input transition-all" placeholder="Bijv: 'wk 15', 'oth 314' of 'psalm 23'..." type="text"/>
                     </div>
-                    <p class="text-[11px] text-gray-400 mt-2 ml-1 leading-snug">Tip: Afkortingen zoals 'wk' of 'oth' werken ook! Staat je lied er écht niet tussen? Typ de titel in en klik onderaan de lijst op '+ Voeg toe'.</p>
-                    <div id="suggestieLied" class="absolute z-50 w-[calc(100%-2rem)] md:w-[calc(100%-3rem)] bg-white/95 backdrop-blur-xl mt-2 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-gray-100 hidden max-h-64 overflow-y-auto"></div>
+                    <p class="text-[11px] text-gray-400 mt-2 ml-1 leading-snug" id="liedZoekTipTekst">Tip: Afkortingen zoals 'wk' of 'oth' werken ook! Filter hierboven op bundel om direct het juiste lied te vinden.</p>
+                    <div id="suggestieLied" class="absolute z-50 w-[calc(100%-2rem)] md:w-[calc(100%-3rem)] bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-xl mt-2 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-gray-100 dark:border-white/10 hidden max-h-72 overflow-y-auto"></div>
                 </div>
             </section>
 
@@ -6254,8 +6278,8 @@ Bijbelliederen`;
             }
         });
 
-        for(let i=1; i<=150; i++) alleLiedTitels.push("DNP Psalm " + i);
         for(let i=1; i<=150; i++) alleLiedTitels.push("Psalm " + i);
+        for(let i=1; i<=150; i++) alleLiedTitels.push("DNP Psalm " + i);
         
         const othLijst = [
             "Op Toonhoogte 385, A B C", "Op Toonhoogte 375, Aan de oever van het meer", "Op Toonhoogte 168, Aan uw voeten Heer", 
@@ -6328,7 +6352,84 @@ Bijbelliederen`;
         return uniek;
     }
 
-   function setupAutocomplete(inputId, suggestieId, dataLijstOfFunctie, onSelect) {
+    // --- LIEDBOEK FILTER & BUNDEL INDELING ---
+    window.actieveLiedZoekFilter = 'alle';
+
+    window.bepaalLiedBundel = function(titel) {
+        const t = (titel || '').trim().toLowerCase();
+        if (/^weerklank\s+psalm/i.test(t) || /^pw\s*\d+/i.test(t) || /weerklank.*psalm/i.test(t)) return 'weerklank_psalm';
+        if (/\bdnp\b/i.test(t) || /nieuwe psalmberijming/i.test(t)) return 'dnp';
+        if (/^psalm\s+\d+/i.test(t) || /^ps\s*\d+/i.test(t) || /^psalm\b/i.test(t)) return 'psalm';
+        if (/^weerklank/i.test(t) || /^wk\s*\d+/i.test(t) || /^lw\s*\d+/i.test(t)) return 'weerklank_lied';
+        if (/^op toonhoogte/i.test(t) || /^oth\s*\d+/i.test(t)) return 'op_toonhoogte';
+        if (/^opwekking/i.test(t) || /^opw\s*\d+/i.test(t)) return 'opwekking';
+        return 'overig';
+    };
+
+    window.getBundelBadgeInfo = function(bundel) {
+        switch(bundel) {
+            case 'psalm': return { label: 'Psalm (1773)', cls: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-300/40' };
+            case 'weerklank_psalm': return { label: 'Weerklank Psalm', cls: 'bg-teal-100 text-teal-800 dark:bg-teal-950/60 dark:text-teal-300 border-teal-300/40' };
+            case 'weerklank_lied': return { label: 'Weerklank Lied', cls: 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border-blue-300/40' };
+            case 'op_toonhoogte': return { label: 'Op Toonhoogte', cls: 'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border-purple-300/40' };
+            case 'dnp': return { label: 'DNP Psalmen', cls: 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-300/40' };
+            case 'opwekking': return { label: 'Opwekking', cls: 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border-rose-300/40' };
+            default: return { label: 'Overig Lied', cls: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300 border-gray-300/40' };
+        }
+    };
+
+    window.kiesLiedZoekFilter = function(filter) {
+        window.actieveLiedZoekFilter = filter;
+
+        const knoppen = document.querySelectorAll('#liedboekFilterBar .lied-filter-btn');
+        knoppen.forEach(btn => {
+            const f = btn.getAttribute('data-filter');
+            if (f === filter) {
+                btn.className = 'lied-filter-btn px-3 py-1.5 rounded-full text-xs font-bold bg-[#007AFF] text-white shadow-xs transition-all flex-shrink-0 cursor-pointer active:scale-95';
+            } else {
+                btn.className = 'lied-filter-btn px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-gray-700 dark:text-gray-300 transition-all flex-shrink-0 cursor-pointer active:scale-95';
+            }
+        });
+
+        const inp = document.getElementById('liedInput');
+        const tip = document.getElementById('liedZoekTipTekst');
+        if (inp) {
+            switch(filter) {
+                case 'psalm':
+                    inp.placeholder = "Typ psalmnummer (bijv. '8' of '84')...";
+                    if (tip) tip.innerText = "Gefilterd op Psalmen (Oude Berijming 1773). Typ direct het nummer of 'psalm 8'.";
+                    break;
+                case 'weerklank':
+                    inp.placeholder = "Typ Weerklank nummer of titel (bijv. '121' of 'Heer onze Heer')...";
+                    if (tip) tip.innerText = "Gefilterd op Weerklank (Psalmen en Liederen).";
+                    break;
+                case 'op_toonhoogte':
+                    inp.placeholder = "Typ Op Toonhoogte nummer of titel (bijv. '384' of 'De Heer is mijn Herder')...";
+                    if (tip) tip.innerText = "Gefilterd op Op Toonhoogte.";
+                    break;
+                case 'dnp':
+                    inp.placeholder = "Typ DNP psalmnummer (bijv. '8' of '23')...";
+                    if (tip) tip.innerText = "Gefilterd op De Nieuwe Psalmberijming (DNP).";
+                    break;
+                case 'opwekking':
+                    inp.placeholder = "Typ Opwekking nummer of titel (bijv. '710')...";
+                    if (tip) tip.innerText = "Gefilterd op Opwekking.";
+                    break;
+                default:
+                    inp.placeholder = "Bijv: 'wk 15', 'oth 314' of 'psalm 23'...";
+                    if (tip) tip.innerText = "Tip: Typ 'psalm 8', 'wk 121' of kies een bundel hierboven voor supersnel zoeken.";
+                    break;
+            }
+
+            if (inp.value.trim()) {
+                inp.dispatchEvent(new Event('input'));
+            } else {
+                inp.focus();
+            }
+        }
+    };
+
+    function setupAutocomplete(inputId, suggestieId, dataLijstOfFunctie, onSelect) {
         const input = document.getElementById(inputId);
         const container = document.getElementById(suggestieId);
 
@@ -6354,34 +6455,94 @@ Bijbelliederen`;
             term = term.replace(/\bps\b/g, "psalm");
             term = term.replace(/\blw\b/g, "weerklank lied");
 
-            // --- SLIM ZOEKALGORITME ---
-            // Splits de zoekterm op in losse woorden. 
-            // Bijv: "Weerklank 15" -> ["weerklank", "15"]
-            const searchWords = term.split(/\s+/);
+            const isLiedSearch = (inputId === 'liedInput');
+            const activeFilter = isLiedSearch ? (window.actieveLiedZoekFilter || 'alle') : 'alle';
+            const searchWords = term.split(/\s+/).filter(Boolean);
             
-            const matches = dataLijst.filter(t => {
+            let matches = dataLijst.filter(t => {
                 const lowerT = t.toLowerCase();
-                // Check of ELK los getypt woordje ergens in de titel voorkomt
-                return searchWords.every(word => lowerT.includes(word));
-            }).slice(0, 10);
+
+                // 1. Filter op actieve bundel (indien liedInput)
+                if (isLiedSearch && activeFilter !== 'alle') {
+                    const bundel = window.bepaalLiedBundel(t);
+                    if (activeFilter === 'weerklank') {
+                        if (bundel !== 'weerklank_psalm' && bundel !== 'weerklank_lied') return false;
+                    } else if (activeFilter === 'psalm') {
+                        if (bundel !== 'psalm') return false;
+                    } else if (bundel !== activeFilter) {
+                        return false;
+                    }
+                }
+
+                // 2. Woord matching met slimme getal-herkenning (bijv. '8' matcht niet met '18' of '80')
+                for (const w of searchWords) {
+                    if (/^\d+[a-z]?$/.test(w)) {
+                        const numPattern = new RegExp('(^|[^0-9])' + w + '([^0-9]|$)', 'i');
+                        if (!numPattern.test(lowerT)) return false;
+                    } else {
+                        if (!lowerT.includes(w)) return false;
+                    }
+                }
+                return true;
+            });
+
+            // 3. Slimme relevantiesortering (Exacte matches zoals Psalm 8 altijd bovenaan)
+            if (isLiedSearch) {
+                matches.sort((a, b) => {
+                    const score = (str) => {
+                        const low = str.toLowerCase();
+                        let s = 0;
+                        if (low === term) s += 2000;
+                        if (low.startsWith(term)) s += 500;
+                        if (term.startsWith('psalm') && low.startsWith('psalm ')) s += 400;
+                        const numMatch = term.match(/\b\d+[a-z]?\b/);
+                        if (numMatch) {
+                            const n = numMatch[0];
+                            if (low === 'psalm ' + n) s += 1000;
+                            if (low.startsWith('psalm ' + n + ' ') || low.startsWith('psalm ' + n + ' -')) s += 800;
+                            if (low.startsWith('weerklank psalm ' + n)) s += 600;
+                            if (low.startsWith('dnp psalm ' + n)) s += 500;
+                        }
+                        s += Math.max(0, 100 - low.length);
+                        return s;
+                    };
+                    return score(b) - score(a);
+                });
+            }
 
             const exactMatch = dataLijst.some(t => t.toLowerCase() === term);
             let hasItems = false;
+            const toonMatches = matches.slice(0, 20);
 
-            if (matches.length > 0) {
+            if (toonMatches.length > 0) {
                 hasItems = true;
                 container.classList.remove('hidden');
-                matches.forEach((m, index) => {
+                toonMatches.forEach((m, index) => {
                     const d = document.createElement('div');
-                    d.className = `p-3 flex justify-between items-center hover:bg-[#F5F5F7] transition-colors ${index !== matches.length -1 ? 'border-b border-gray-100' : ''}`;
+                    d.className = `p-3 flex justify-between items-center hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] transition-colors ${index !== toonMatches.length - 1 ? 'border-b border-gray-100 dark:border-white/5' : ''}`;
+
+                    const textWrap = document.createElement('div');
+                    textWrap.className = 'flex items-center gap-2 cursor-pointer flex-grow py-1 min-w-0 pr-2';
+                    textWrap.onclick = () => onSelect(m, false);
 
                     const textSpan = document.createElement('span');
-                    textSpan.className = 'text-[14px] font-medium text-gray-800 cursor-pointer flex-grow py-1';
+                    textSpan.className = 'text-[14px] font-medium text-gray-800 dark:text-gray-100 truncate';
                     textSpan.innerText = m;
-                    textSpan.onclick = () => onSelect(m, false);
+                    textWrap.appendChild(textSpan);
+
+                    if (isLiedSearch) {
+                        const bundel = window.bepaalLiedBundel(m);
+                        const badgeInfo = window.getBundelBadgeInfo(bundel);
+                        if (badgeInfo) {
+                            const badge = document.createElement('span');
+                            badge.className = `text-[10px] font-bold px-2 py-0.5 rounded-full ${badgeInfo.cls} border flex-shrink-0`;
+                            badge.innerText = badgeInfo.label;
+                            textWrap.appendChild(badge);
+                        }
+                    }
 
                     const addButton = document.createElement('button');
-                    addButton.className = 'ml-3 p-2 rounded-full bg-blue-50 text-[#007AFF] hover:bg-blue-100 transition-colors flex-shrink-0';
+                    addButton.className = 'ml-2 p-2 rounded-full bg-blue-50 dark:bg-blue-950/40 text-[#007AFF] hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors flex-shrink-0 cursor-pointer';
                     addButton.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>`;
                     addButton.title = "Toevoegen en verder zoeken";
 
@@ -6398,7 +6559,7 @@ Bijbelliederen`;
                         }, 1000);
                     };
 
-                    d.appendChild(textSpan);
+                    d.appendChild(textWrap);
                     d.appendChild(addButton);
                     container.appendChild(d);
                 });
@@ -6410,10 +6571,10 @@ Bijbelliederen`;
                 container.classList.remove('hidden');
                 
                 const addDiv = document.createElement('div');
-                addDiv.className = 'p-3 flex justify-between items-center hover:bg-blue-50 bg-blue-50/30 transition-colors border-t border-blue-100 cursor-pointer';
+                addDiv.className = 'p-3 flex justify-between items-center hover:bg-blue-50 dark:hover:bg-blue-950/40 bg-blue-50/30 dark:bg-blue-950/20 transition-colors border-t border-blue-100 dark:border-blue-900/40 cursor-pointer';
                 
                 const textSpan = document.createElement('span');
-                textSpan.className = 'text-[14px] font-bold text-[#007AFF] flex-grow py-1';
+                textSpan.className = 'text-[14px] font-bold text-[#007AFF] dark:text-blue-400 flex-grow py-1';
                 textSpan.innerText = `+ Zoek / Voeg toe: "${rawTerm}"`;
                 
                 addDiv.onclick = () => {
@@ -10408,10 +10569,10 @@ Antwoord UITSLUITEND in valide JSON:
     window.bepaalLiedBundel = function(titel) {
         const t = (titel || '').trim().toLowerCase();
         if (/^weerklank\s+psalm/i.test(t) || /^pw\s*\d+/i.test(t) || /weerklank.*psalm/i.test(t)) return 'weerklank_psalm';
-        if (/^psalm\s+\d+/i.test(t) || /^ps\s*\d+/i.test(t)) return 'psalm';
+        if (/\bdnp\b/i.test(t) || /nieuwe psalmberijming/i.test(t)) return 'dnp';
+        if (/^psalm\s+\d+/i.test(t) || /^ps\s*\d+/i.test(t) || /^psalm\b/i.test(t)) return 'psalm';
         if (/^weerklank/i.test(t) || /^wk\s*\d+/i.test(t) || /^lw\s*\d+/i.test(t)) return 'weerklank_lied';
         if (/^op toonhoogte/i.test(t) || /^oth\s*\d+/i.test(t)) return 'op_toonhoogte';
-        if (/\bdnp\b/i.test(t) || /nieuwe psalmberijming/i.test(t)) return 'dnp';
         if (/^opwekking/i.test(t) || /^opw\s*\d+/i.test(t)) return 'opwekking';
         return 'overig';
     };
@@ -10481,9 +10642,17 @@ Antwoord UITSLUITEND in valide JSON:
             if (actieveBundel !== 'alle' && bundel !== actieveBundel) return false;
             if (!zoekTerm) return true;
 
-            if (titel.toLowerCase().includes(zoekTerm)) return true;
+            const lowerT = titel.toLowerCase();
+            const words = zoekTerm.split(/\s+/).filter(Boolean);
+            const matchesWords = words.every(w => {
+                if (/^\d+[a-z]?$/.test(w)) {
+                    return new RegExp('(^|[^0-9])' + w + '([^0-9]|$)', 'i').test(lowerT);
+                }
+                return lowerT.includes(w);
+            });
+            if (matchesWords) return true;
             const tekst = window.haalLiedTekstUitDatabase(titel).toLowerCase();
-            return tekst.includes(zoekTerm);
+            return words.every(w => tekst.includes(w));
         });
 
         gefilterd.sort((a, b) => {
