@@ -112,7 +112,7 @@ export default {
           return json({ ok: true, verwijderd: id }, 200, origin);
         }
         const { id, tekst } = body || {};
-        if (!id || typeof id !== "string" || id.length > 200 || typeof tekst !== "string" || tekst.length > 20000) return json({ error: "ongeldig" }, 400, origin);
+        if (!id || typeof id !== "string" || id.length > 200 || typeof tekst !== "string" || tekst.length > 100000) return json({ error: "ongeldig" }, 400, origin);
         await env.DB.prepare("INSERT INTO liederen (id, tekst) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET tekst=excluded.tekst").bind(id, tekst).run();
         return json({ ok: true }, 200, origin);
       }

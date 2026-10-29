@@ -670,12 +670,17 @@
 
         <!-- Footer Buttons -->
         <div class="p-4 md:p-5 border-t border-gray-100 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-2.5 bg-gray-50/70 dark:bg-gray-800/40 flex-shrink-0">
-            <button type="button" onclick="window.sluitTikkieModal()" class="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 transition-colors text-center">
-                Annuleren
-            </button>
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+                <button type="button" onclick="window.sluitTikkieModal()" class="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 transition-colors text-center">
+                    Annuleren
+                </button>
+                <button type="button" id="tikkieWisActieveKnop" onclick="window.verwijderActieveTikkie()" class="w-full sm:w-auto px-3 py-2.5 rounded-xl text-xs font-semibold text-rose-600 hover:text-rose-800 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors text-center" title="Actieve week-Tikkie wissen en opnieuw beginnen">
+                    Wissen
+                </button>
+            </div>
             <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
                 <button type="button" onclick="window.slaTikkieOpVanuitModal(false)" class="flex-1 sm:flex-initial px-3.5 py-2.5 rounded-xl text-xs font-semibold text-emerald-800 dark:text-emerald-200 bg-emerald-100/70 dark:bg-emerald-950/60 hover:bg-emerald-100 transition-all active:scale-95 shadow-xs border border-emerald-200/60 dark:border-emerald-800/40 text-center">
-                    Alleen Opslaan in Cloud
+                    Alleen Opslaan
                 </button>
                 <button type="button" onclick="window.slaTikkieOpVanuitModal(true)" class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-all active:scale-95 shadow-md flex items-center justify-center gap-1.5 text-center">
                     <span>Opslaan &amp; Toevoegen</span>
@@ -3660,8 +3665,11 @@ Retourneer UITSLUITEND een valide JSON object:
             .filter(it => it.type !== 'Foto')
             .map(it => {
                 if (it.type === 'QR') {
-                    const url = it.qrUrl || actieveTikkie?.url || '';
-                    const omschrijving = it.omschrijving || (it.titel ? it.titel.replace(/^Collecte\s*\(?|\)?$/gi, '').trim() : '') || actieveTikkie?.omschrijving || 'Kerk';
+                    const isActiefGeldig = actieveTikkie && (typeof window.isWeekTikkieGeldig === 'function' ? window.isWeekTikkieGeldig(actieveTikkie.geldigTot) : true);
+                    const url = (isActiefGeldig && actieveTikkie?.url) ? actieveTikkie.url : (it.qrUrl || actieveTikkie?.url || '');
+                    const omschrijving = (isActiefGeldig && actieveTikkie?.omschrijving)
+                        ? actieveTikkie.omschrijving
+                        : (it.omschrijving || (it.titel ? it.titel.replace(/^Collecte\s*/i, '').replace(/[()]/g, '').trim() : '') || actieveTikkie?.omschrijving || 'Kerk');
                     const qrKaart = (url && typeof maakTikkieQRDataURL === 'function')
                         ? maakTikkieQRDataURL(url, omschrijving)
                         : (it.tekst || actieveTikkie?.qrData || '');
@@ -4624,7 +4632,7 @@ Retourneer UITSLUITEND een valide JSON object:
             }
             if (it.type === 'Collecte' || it.type === 'QR') {
                 heeftCollecteInItems = true;
-                const doelTekst = it.omschrijving || (it.titel ? it.titel.replace(/^Collecte\s*\(?|\)?$/gi, '').trim() : '');
+                const doelTekst = it.omschrijving || (it.titel ? it.titel.replace(/^Collecte\s*/i, '').replace(/[()]/g, '').trim() : '');
                 const tikkieUrl = it.qrUrl || data.collecte?.url || '';
                 const qrAfbeelding = it.tekst && (it.tekst.startsWith('data:image') || it.tekst.startsWith('http')) ? it.tekst : (data.collecte?.qrData || '');
                 const gemeenteNaam = data.gemeente || 'Bethelkerk Maassluis';
@@ -4758,12 +4766,18 @@ Retourneer UITSLUITEND een valide JSON object:
         
         let items = liturgieVolgorde.filter(it => it.type !== 'Foto').map(it => {
             if (it.type === 'QR') {
-                const url = it.qrUrl || actieveTikkie?.url || '';
-                const omschrijving = it.omschrijving || (it.titel ? it.titel.replace(/^Collecte\s*\(?|\)?$/gi, '').trim() : '') || actieveTikkie?.omschrijving || 'Kerk';
+                const isActiefGeldig = actieveTikkie && (typeof window.isWeekTikkieGeldig === 'function' ? window.isWeekTikkieGeldig(actieveTikkie.geldigTot) : true);
+                const url = (isActiefGeldig && actieveTikkie?.url) ? actieveTikkie.url : (it.qrUrl || actieveTikkie?.url || '');
+                const omschrijving = (isActiefGeldig && actieveTikkie?.omschrijving)
+                    ? actieveTikkie.omschrijving
+                    : (it.omschrijving || (it.titel ? it.titel.replace(/^Collecte\s*/i, '').replace(/[()]/g, '').trim() : '') || actieveTikkie?.omschrijving || 'Kerk');
+                const qrKaart = (url && typeof maakTikkieQRDataURL === 'function')
+                    ? maakTikkieQRDataURL(url, omschrijving)
+                    : (it.tekst || actieveTikkie?.qrData || '');
                 return {
                     type: 'Collecte',
                     titel: 'Collecte',
-                    tekst: it.tekst || actieveTikkie?.qrData || '',
+                    tekst: qrKaart,
                     qrUrl: url,
                     omschrijving: omschrijving,
                     align: 'center'
@@ -4922,24 +4936,37 @@ Retourneer UITSLUITEND een valide JSON object:
 
         // 1. Upgrade actieve week-Tikkie in localStorage indien nodig
         if (tikkie && tikkie.url && typeof maakTikkieQRDataURL === 'function') {
-            tikkie.qrData = maakTikkieQRDataURL(tikkie.url, tikkie.omschrijving);
-            const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : 'bethel';
-            try {
-                localStorage.setItem(`weekTikkieData_${slug}`, JSON.stringify(tikkie));
-                if (slug === 'bethel') localStorage.setItem('weekTikkieData', JSON.stringify(tikkie));
-            } catch(e) {}
+            const qrCard = maakTikkieQRDataURL(tikkie.url, tikkie.omschrijving);
+            if (tikkie.qrData !== qrCard) {
+                tikkie.qrData = qrCard;
+                const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : 'bethel';
+                try {
+                    localStorage.setItem(`weekTikkieData_${slug}`, JSON.stringify(tikkie));
+                    if (slug === 'bethel') localStorage.setItem('weekTikkieData', JSON.stringify(tikkie));
+                } catch(e) {}
+            }
         }
 
         // 2. Upgrade items in liturgieVolgorde naar officiële Collecte QR en 'Collecte' titel
         if (Array.isArray(liturgieVolgorde)) {
             liturgieVolgorde.forEach(item => {
                 if (item && item.type === 'QR') {
-                    const doelUrl = item.qrUrl || tikkie?.url;
+                    const doelUrl = tikkie?.url || item.qrUrl;
                     const doelOms = item.omschrijving || tikkie?.omschrijving || 'kerk';
                     if (doelUrl && typeof maakTikkieQRDataURL === 'function') {
-                        item.tekst = maakTikkieQRDataURL(doelUrl, doelOms);
-                        if (!item.qrUrl) item.qrUrl = doelUrl;
-                        gewijzigd = true;
+                        const nieuweQR = maakTikkieQRDataURL(doelUrl, doelOms);
+                        if (item.tekst !== nieuweQR) {
+                            item.tekst = nieuweQR;
+                            gewijzigd = true;
+                        }
+                        if (item.qrUrl !== doelUrl) {
+                            item.qrUrl = doelUrl;
+                            gewijzigd = true;
+                        }
+                        if (tikkie?.geldigTot && item.geldigTot !== tikkie.geldigTot) {
+                            item.geldigTot = tikkie.geldigTot;
+                            gewijzigd = true;
+                        }
                     }
                     if (item.titel !== 'Collecte') {
                         item.titel = 'Collecte';
@@ -9613,7 +9640,12 @@ Antwoord UITSLUITEND in valide JSON:
             const lcl = lclSlug || (slug === 'bethel' ? localStorage.getItem('weekTikkieData') : null);
             if (lcl) {
                 const parsed = JSON.parse(lcl);
-                if (parsed && (parsed.url || parsed.qrData)) return parsed;
+                if (parsed && (parsed.url || parsed.qrData)) {
+                    if (parsed.url && (!parsed.qrData || parsed.qrData.length > 5000) && typeof maakTikkieQRDataURL === 'function') {
+                        parsed.qrData = maakTikkieQRDataURL(parsed.url, parsed.omschrijving);
+                    }
+                    return parsed;
+                }
             }
             // 2. Cloud cache per gemeente (met fallback naar legacy __week_tikkie__ bij bethel)
             if (window.liederenDatabase) {
@@ -9621,6 +9653,9 @@ Antwoord UITSLUITEND in valide JSON:
                 if (cloudRaw) {
                     const cloud = JSON.parse(cloudRaw);
                     if (cloud && (cloud.url || cloud.qrData)) {
+                        if (cloud.url && (!cloud.qrData || cloud.qrData.length > 5000) && typeof maakTikkieQRDataURL === 'function') {
+                            cloud.qrData = maakTikkieQRDataURL(cloud.url, cloud.omschrijving);
+                        }
                         try { localStorage.setItem(`weekTikkieData_${slug}`, JSON.stringify(cloud)); } catch(e) {}
                         return cloud;
                     }
@@ -9662,7 +9697,7 @@ Antwoord UITSLUITEND in valide JSON:
         const badge = document.getElementById('tikkieStatusBadge');
         if (!badge) return;
         const tikkie = window.getActieveWeekTikkie();
-        if (!tikkie) {
+        if (!tikkie || (!tikkie.url && !tikkie.qrData)) {
             badge.className = "text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-gray-100 text-gray-500 dark:bg-white/10 dark:text-gray-400 flex-shrink-0";
             badge.innerText = "Instellen";
             return;
@@ -9680,13 +9715,13 @@ Antwoord UITSLUITEND in valide JSON:
     // Actie bij klik op de grote knop in de zijbalk
     window.klikTikkieKnop = function() {
         const tikkie = window.getActieveWeekTikkie();
-        if (!tikkie) {
+        if (!tikkie || (!tikkie.url && !tikkie.qrData)) {
             window.openTikkieModal();
             return;
         }
         const status = window.berekenTikkieStatusTekst(tikkie.geldigTot);
         if (!status.geldig) {
-            window.toonToast(`⚠️ Let op: De week-Tikkie is verlopen op ${tikkie.geldigTot}! Upload een nieuwe.`, "error");
+            window.toonToast(`⚠️ De week-Tikkie is verlopen op ${tikkie.geldigTot}. Stel een nieuwe datum of link in.`, "error");
             window.openTikkieModal();
             return;
         }
@@ -9697,6 +9732,23 @@ Antwoord UITSLUITEND in valide JSON:
             window.openTikkieModal();
             return;
         }
+
+        // Kijk of er al een Collecte / QR dia in liturgieVolgorde staat:
+        const bestaandeIdx = liturgieVolgorde.findIndex(it => it && it.type === 'QR');
+        if (bestaandeIdx !== -1) {
+            liturgieVolgorde[bestaandeIdx].titel = "Collecte";
+            liturgieVolgorde[bestaandeIdx].tekst = qrData;
+            liturgieVolgorde[bestaandeIdx].qrUrl = tikkie.url || '';
+            liturgieVolgorde[bestaandeIdx].omschrijving = tikkie.omschrijving || '';
+            liturgieVolgorde[bestaandeIdx].geldigTot = tikkie.geldigTot || '';
+            liturgieVolgorde[bestaandeIdx].qrSize = 3.5;
+            previewItemIdx = bestaandeIdx;
+            bewaarLiturgie();
+            window.tekenVolgorde();
+            window.toonToast(`✨ Collecte dia bijgewerkt met actieve Tikkie (${status.tekst})!`, "success");
+            return;
+        }
+
         const titel = "Collecte";
         liturgieVolgorde.push({ 
             type: "QR", 
@@ -9707,6 +9759,8 @@ Antwoord UITSLUITEND in valide JSON:
             geldigTot: tikkie.geldigTot || '',
             qrSize: 3.5 
         });
+        previewItemIdx = liturgieVolgorde.length - 1;
+        bewaarLiturgie();
         window.tekenVolgorde();
         window.toonToast(`✨ Actieve Tikkie toegevoegd (${status.tekst})!`, "success");
     };
@@ -9722,10 +9776,19 @@ Antwoord UITSLUITEND in valide JSON:
         if (lbl) lbl.textContent = gem;
 
         const bestaand = window.getActieveWeekTikkie() || {};
+        // Als bestaande tikkie verlopen is of leeg: pak altijd aanstaande zondag als standaard!
+        const isGeldig = bestaand.geldigTot && window.isWeekTikkieGeldig(bestaand);
+        const standaardDatum = isGeldig ? bestaand.geldigTot : window.getVolgendeZondagDatum();
+
+        let qrData = bestaand.qrData || '';
+        if ((!qrData || qrData.length > 5000) && bestaand.url && typeof maakTikkieQRDataURL === 'function') {
+            qrData = maakTikkieQRDataURL(bestaand.url, bestaand.omschrijving);
+        }
+
         tijdelijkeModalTikkieData = {
             url: bestaand.url || '',
-            qrData: bestaand.qrData || '',
-            geldigTot: bestaand.geldigTot || window.getVolgendeZondagDatum(),
+            qrData: qrData,
+            geldigTot: standaardDatum,
             omschrijving: bestaand.omschrijving || ''
         };
 
@@ -9735,6 +9798,13 @@ Antwoord UITSLUITEND in valide JSON:
         if (datumInp) datumInp.value = tijdelijkeModalTikkieData.geldigTot;
         const omsInp = document.getElementById('tikkieOmschrijvingInput');
         if (omsInp) omsInp.value = tijdelijkeModalTikkieData.omschrijving;
+
+        // Wis-knop tonen als er een actieve tikkie is
+        const wisActiefBtn = document.getElementById('tikkieWisActieveKnop');
+        if (wisActiefBtn) {
+            if (bestaand.url || bestaand.qrData) wisActiefBtn.classList.remove('hidden');
+            else wisActiefBtn.classList.add('hidden');
+        }
 
         window.updateTikkieModalStatusCard();
         window.updateTikkieModalPreview();
@@ -9755,6 +9825,39 @@ Antwoord UITSLUITEND in valide JSON:
         window.renderTikkieGeschiedenisUI();
 
         modal.classList.remove('hidden');
+    };
+
+    window.verwijderActieveTikkie = function() {
+        if (!confirm("Weet je zeker dat je de actieve week-Tikkie wilt wissen?")) return;
+        const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : 'bethel';
+        try {
+            localStorage.removeItem(`weekTikkieData_${slug}`);
+            if (slug === 'bethel') localStorage.removeItem('weekTikkieData');
+        } catch(e) {}
+        if (window.liederenDatabase) {
+            delete window.liederenDatabase[`__week_tikkie_${slug}__`];
+            if (slug === 'bethel') delete window.liederenDatabase['__week_tikkie__'];
+        }
+        if (typeof slaLiedOpInCloud === 'function') {
+            slaLiedOpInCloud(`__week_tikkie_${slug}__`, '', true);
+            if (slug === 'bethel') slaLiedOpInCloud('__week_tikkie__', '', true);
+        }
+        tijdelijkeModalTikkieData = { url: '', qrData: '', geldigTot: window.getVolgendeZondagDatum(), omschrijving: '' };
+        const linkInp = document.getElementById('tikkieLinkInput');
+        if (linkInp) linkInp.value = '';
+        const datumInp = document.getElementById('tikkieGeldigTotInput');
+        if (datumInp) datumInp.value = tijdelijkeModalTikkieData.geldigTot;
+        const omsInp = document.getElementById('tikkieOmschrijvingInput');
+        if (omsInp) omsInp.value = '';
+
+        const wisActiefBtn = document.getElementById('tikkieWisActieveKnop');
+        if (wisActiefBtn) wisActiefBtn.classList.add('hidden');
+
+        window.updateTikkieKnopUI();
+        window.updateTikkieModalStatusCard();
+        window.updateTikkieModalPreview();
+        window.renderTikkieGeschiedenisUI();
+        window.toonToast("Actieve week-Tikkie gewist. Je kunt nu een nieuwe instellen.", "info");
     };
 
     window.sluitTikkieModal = function() {
@@ -9907,6 +10010,17 @@ Antwoord UITSLUITEND in valide JSON:
                     tijdelijkeModalTikkieData.qrData = e.target.result;
                     window.toonToast("Tikkie QR screenshot verwerkt!", "info");
                 }
+
+                // Als de huidige datum leeg of verlopen is: automatisch instellen op komende zondag
+                const datumInp = document.getElementById('tikkieGeldigTotInput');
+                const huidigeDatumVal = datumInp ? datumInp.value : tijdelijkeModalTikkieData.geldigTot;
+                if (!huidigeDatumVal || !window.isWeekTikkieGeldig(huidigeDatumVal)) {
+                    const nieuweDatum = window.getVolgendeZondagDatum();
+                    tijdelijkeModalTikkieData.geldigTot = nieuweDatum;
+                    if (datumInp) datumInp.value = nieuweDatum;
+                }
+
+                window.updateTikkieModalStatusCard();
                 window.updateTikkieModalPreview();
             };
             img.src = e.target.result;
@@ -9927,13 +10041,26 @@ Antwoord UITSLUITEND in valide JSON:
         } else if (!url) {
             tijdelijkeModalTikkieData.qrData = '';
         }
+
+        // Als de huidige datum leeg of verlopen is: automatisch instellen op komende zondag
+        if (url) {
+            const datumInp = document.getElementById('tikkieGeldigTotInput');
+            const huidigeDatumVal = datumInp ? datumInp.value : tijdelijkeModalTikkieData.geldigTot;
+            if (!huidigeDatumVal || !window.isWeekTikkieGeldig(huidigeDatumVal)) {
+                const nieuweDatum = window.getVolgendeZondagDatum();
+                tijdelijkeModalTikkieData.geldigTot = nieuweDatum;
+                if (datumInp) datumInp.value = nieuweDatum;
+            }
+        }
+
+        window.updateTikkieModalStatusCard();
         window.updateTikkieModalPreview();
     };
 
     window.slaTikkieOpVanuitModal = async function(directToevoegen = false) {
         const datumInp = document.getElementById('tikkieGeldigTotInput');
         const omsInp = document.getElementById('tikkieOmschrijvingInput');
-        const geldigTot = datumInp ? datumInp.value : tijdelijkeModalTikkieData.geldigTot;
+        let geldigTot = datumInp ? datumInp.value : tijdelijkeModalTikkieData.geldigTot;
         const omschrijving = omsInp ? omsInp.value.trim() : tijdelijkeModalTikkieData.omschrijving;
 
         if (!tijdelijkeModalTikkieData.qrData && !tijdelijkeModalTikkieData.url) {
@@ -9941,15 +10068,21 @@ Antwoord UITSLUITEND in valide JSON:
             return;
         }
 
+        // Waarborg dat de vervaldatum geldig is (als leeg of verlopen, zet op komende zondag)
+        if (!geldigTot || !window.isWeekTikkieGeldig(geldigTot)) {
+            geldigTot = window.getVolgendeZondagDatum();
+            if (datumInp) datumInp.value = geldigTot;
+        }
+
         // Waarborg dat als er een URL is, qrData altijd de officiële Tikkie QR-kaart is
-        if (tijdelijkeModalTikkieData.url && (!tijdelijkeModalTikkieData.qrData || tijdelijkeModalTikkieData.qrData.startsWith('data:image/gif')) && typeof maakTikkieQRDataURL === 'function') {
+        if (tijdelijkeModalTikkieData.url && (!tijdelijkeModalTikkieData.qrData || tijdelijkeModalTikkieData.qrData.startsWith('data:image/gif') || tijdelijkeModalTikkieData.qrData.length > 5000) && typeof maakTikkieQRDataURL === 'function') {
             tijdelijkeModalTikkieData.qrData = maakTikkieQRDataURL(tijdelijkeModalTikkieData.url, omschrijving);
         }
 
         const tikkieOpslag = {
             url: tijdelijkeModalTikkieData.url || '',
             qrData: tijdelijkeModalTikkieData.qrData || '',
-            geldigTot: geldigTot || window.getVolgendeZondagDatum(),
+            geldigTot: geldigTot,
             omschrijving: omschrijving || '',
             bijgewerktOp: Date.now()
         };
@@ -9963,11 +10096,23 @@ Antwoord UITSLUITEND in valide JSON:
             }
         } catch(e) {}
 
+        // Cloud payload optimaliseren
+        const cloudTikkieOpslag = { ...tikkieOpslag };
+        if (cloudTikkieOpslag.url && cloudTikkieOpslag.qrData && cloudTikkieOpslag.qrData.length > 5000) {
+            cloudTikkieOpslag.qrData = '';
+        }
+
         try {
-            if (typeof slaLiedOpInCloud === 'function') {
-                slaLiedOpInCloud(`__week_tikkie_${slug}__`, JSON.stringify(tikkieOpslag), true);
+            if (window.liederenDatabase) {
+                window.liederenDatabase[`__week_tikkie_${slug}__`] = JSON.stringify(cloudTikkieOpslag);
                 if (slug === 'bethel') {
-                    slaLiedOpInCloud('__week_tikkie__', JSON.stringify(tikkieOpslag), true);
+                    window.liederenDatabase['__week_tikkie__'] = JSON.stringify(cloudTikkieOpslag);
+                }
+            }
+            if (typeof slaLiedOpInCloud === 'function') {
+                slaLiedOpInCloud(`__week_tikkie_${slug}__`, JSON.stringify(cloudTikkieOpslag), true);
+                if (slug === 'bethel') {
+                    slaLiedOpInCloud('__week_tikkie__', JSON.stringify(cloudTikkieOpslag), true);
                 }
             }
         } catch(e) {
@@ -10002,26 +10147,47 @@ Antwoord UITSLUITEND in valide JSON:
             console.warn("Tikkie geschiedenis opslag mislukt:", e);
         }
 
-        window.updateTikkieKnopUI();
-        window.updateTikkieModalStatusCard();
-        window.renderTikkieGeschiedenisUI();
-        window.sluitTikkieModal();
-        window.toonToast("✅ Week-Tikkie succesvol opgeslagen en gesynchroniseerd!", "success");
+        // Werk direct bestaande Collecte/QR dia's in de liturgie bij!
+        let bestaandeCollecteDiaBijgewerkt = false;
+        if (Array.isArray(liturgieVolgorde)) {
+            liturgieVolgorde.forEach(item => {
+                const isQR = item.type === 'QR' || (item.titel && (item.titel.toLowerCase().includes('collecte') || item.titel.toLowerCase().includes('tikkie')));
+                if (isQR) {
+                    item.type = 'QR';
+                    item.titel = 'Collecte';
+                    item.tekst = tikkieOpslag.qrData;
+                    item.qrUrl = tikkieOpslag.url || '';
+                    item.omschrijving = omschrijving || '';
+                    item.geldigTot = tikkieOpslag.geldigTot;
+                    item.qrSize = 3.5;
+                    bestaandeCollecteDiaBijgewerkt = true;
+                }
+            });
+        }
 
-        if (directToevoegen) {
-            const titel = "Collecte";
+        if (directToevoegen && !bestaandeCollecteDiaBijgewerkt) {
             liturgieVolgorde.push({ 
                 type: "QR", 
-                titel: titel, 
+                titel: "Collecte", 
                 tekst: tikkieOpslag.qrData, 
                 qrUrl: tikkieOpslag.url || '',
                 omschrijving: omschrijving || '',
                 geldigTot: tikkieOpslag.geldigTot,
                 qrSize: 3.5 
             });
-            window.tekenVolgorde();
-            window.toonToast("Collecte dia toegevoegd aan liturgie!", "success");
+            bestaandeCollecteDiaBijgewerkt = true;
         }
+
+        if (bestaandeCollecteDiaBijgewerkt) {
+            if (typeof bewaarLiturgie === 'function') bewaarLiturgie();
+            if (typeof window.tekenVolgorde === 'function') window.tekenVolgorde();
+        }
+
+        window.updateTikkieKnopUI();
+        window.updateTikkieModalStatusCard();
+        window.renderTikkieGeschiedenisUI();
+        window.sluitTikkieModal();
+        window.toonToast("✅ Week-Tikkie succesvol opgeslagen en direct gesynchroniseerd!", "success");
     };
 
     // --- TIKKIE GESCHIEDENIS BEHEER ---
@@ -10156,10 +10322,20 @@ Antwoord UITSLUITEND in valide JSON:
         const item = gesch[index];
         if (!item) return;
 
+        let doelGeldigTot = item.geldigTot;
+        if (!doelGeldigTot || !window.isWeekTikkieGeldig(doelGeldigTot)) {
+            doelGeldigTot = window.getVolgendeZondagDatum();
+        }
+
+        let qrData = item.qrData || '';
+        if ((!qrData || qrData.length > 5000) && item.url && typeof maakTikkieQRDataURL === 'function') {
+            qrData = maakTikkieQRDataURL(item.url, item.omschrijving);
+        }
+
         tijdelijkeModalTikkieData = {
             url: item.url || '',
-            qrData: item.qrData || '',
-            geldigTot: item.geldigTot || window.getVolgendeZondagDatum(),
+            qrData: qrData,
+            geldigTot: doelGeldigTot,
             omschrijving: item.omschrijving || ''
         };
 
