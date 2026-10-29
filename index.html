@@ -245,8 +245,15 @@
     }
 
     .modal-animate {
-        animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
-        will-change: transform, opacity;
+        animation: modalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+    }
+
+    .modal-backdrop-safe {
+        isolation: isolate;
+        -webkit-backdrop-filter: blur(8px);
+        backdrop-filter: blur(8px);
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -308,7 +315,7 @@
     </div>
 </div>
 
-<div id="controleModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/20 backdrop-blur-xl transition-opacity">
+<div id="controleModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 modal-backdrop-safe transition-opacity">
     <div class="bg-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] w-11/12 max-w-lg overflow-hidden flex flex-col transform transition-all modal-animate">
         <div class="p-4 md:p-6 border-b border-gray-100 flex justify-between items-center">
             <h3 id="modalTitel" class="text-lg font-bold text-[#1D1D1F]">Controleer Tekst</h3>
@@ -383,7 +390,7 @@
     </div>
 </div>
 
-<div id="versModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/20 backdrop-blur-xl transition-opacity">
+<div id="versModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 modal-backdrop-safe transition-opacity">
     <div class="bg-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] w-11/12 max-w-lg overflow-hidden flex flex-col transform transition-all modal-animate">
         <div class="p-4 md:p-6 border-b border-gray-100 flex justify-between items-center">
             <h3 id="versModalTitel" class="text-lg font-bold text-[#1D1D1F]">Kies de verzen</h3>
@@ -398,9 +405,9 @@
         </div>
     </div>
 </div>
-<div id="importModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/30 backdrop-blur-xl transition-opacity p-2 sm:p-4">
+<div id="importModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 modal-backdrop-safe transition-opacity p-2 sm:p-4">
     <div class="bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.05] dark:ring-white/10 w-full max-w-xl overflow-hidden flex flex-col transform transition-all modal-animate max-h-[92vh]">
-        <div class="p-4 md:p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center flex-shrink-0 bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-md">
+        <div class="p-4 md:p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center flex-shrink-0 bg-white dark:bg-[#1C1C1E]">
             <div class="flex items-center gap-2.5">
                 <div class="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 flex items-center justify-center font-bold text-sm shadow-xs">
                     ✨
@@ -521,11 +528,11 @@
 </div>
 
 <!-- TIKKIE COLLECTE QR MODAL (WEEK-BEHEER MET GELDIGHEIDSDATUM) -->
-<div id="tikkieModal" class="fixed inset-0 z-[115] hidden flex items-center justify-center bg-black/40 backdrop-blur-xl transition-opacity p-2 sm:p-4" onclick="if(event.target === this) window.sluitTikkieModal()">
+<div id="tikkieModal" class="fixed inset-0 z-[115] hidden flex items-center justify-center bg-black/40 modal-backdrop-safe transition-opacity p-2 sm:p-4" onclick="if(event.target === this) window.sluitTikkieModal()">
     <div class="bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.05] dark:ring-white/10 w-full max-w-lg overflow-hidden flex flex-col transform transition-all modal-animate max-h-[92vh]">
         
         <!-- Header -->
-        <div class="p-4 md:p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center flex-shrink-0 bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-md">
+        <div class="p-4 md:p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center flex-shrink-0 bg-white dark:bg-[#1C1C1E]">
             <div class="flex items-center gap-2.5">
                 <div class="w-9 h-9 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-base shadow-xs">
                     <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -692,11 +699,11 @@
 </div>
 
 <!-- LIEDEREN BIBLIOTHEEK & BEHEER MODAL -->
-<div id="liederenBeheerModal" class="fixed inset-0 z-[120] hidden flex items-center justify-center bg-black/40 backdrop-blur-xl transition-opacity p-2 sm:p-4" onclick="if(event.target === this) window.sluitLiederenBeheerModal()">
+<div id="liederenBeheerModal" class="fixed inset-0 z-[120] hidden flex items-center justify-center bg-black/40 modal-backdrop-safe transition-opacity p-2 sm:p-4" onclick="if(event.target === this) window.sluitLiederenBeheerModal()">
     <div class="bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.05] dark:ring-white/10 w-full max-w-4xl overflow-hidden flex flex-col transform transition-all modal-animate max-h-[92vh]">
         
         <!-- Header -->
-        <div class="p-4 sm:p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center flex-shrink-0 bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-md">
+        <div class="p-4 sm:p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center flex-shrink-0 bg-white dark:bg-[#1C1C1E]">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#007AFF] to-indigo-500 text-white flex items-center justify-center font-bold text-lg shadow-sm">
                     📚
@@ -1314,10 +1321,10 @@
 
 <div id="meeleesOverlay" class="hidden fixed inset-0 z-[300] overflow-y-auto"></div>
 
-<div id="deelModal" class="fixed inset-0 z-[110] hidden flex items-center justify-center bg-black/40 backdrop-blur-xl transition-opacity p-2 sm:p-4" onclick="if(event.target === this) window.sluitDeelModal()">
+<div id="deelModal" class="fixed inset-0 z-[110] hidden flex items-center justify-center bg-black/40 modal-backdrop-safe transition-opacity p-2 sm:p-4" onclick="if(event.target === this) window.sluitDeelModal()">
     <div class="bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.05] dark:ring-white/10 w-full max-w-md overflow-hidden flex flex-col transform transition-all modal-animate max-h-[92vh]">
         <!-- Header -->
-        <div class="p-4 sm:p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center flex-shrink-0 bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-md">
+        <div class="p-4 sm:p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center flex-shrink-0 bg-white dark:bg-[#1C1C1E]">
             <div class="flex items-center gap-2.5">
                 <div class="w-9 h-9 rounded-2xl bg-blue-500/10 dark:bg-blue-500/20 text-[#007AFF] flex items-center justify-center font-bold text-base shadow-xs">
                     📱
@@ -1419,11 +1426,11 @@
     </div>
 </div>
 
-<div id="infoModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/20 backdrop-blur-xl transition-opacity p-2 sm:p-4">
+<div id="infoModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 modal-backdrop-safe transition-opacity p-2 sm:p-4">
     <div class="bg-white dark:bg-gray-900 rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] w-full max-w-md overflow-hidden flex flex-col transform transition-all modal-animate max-h-[92vh]">
         
         <!-- Header -->
-        <div class="p-4 sm:p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center flex-shrink-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md">
+        <div class="p-4 sm:p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center flex-shrink-0 bg-white dark:bg-gray-900">
             <div>
                 <h3 class="text-base font-bold text-[#1D1D1F] dark:text-white">Info &amp; Instellingen</h3>
                 <p class="text-[11px] text-gray-500 dark:text-gray-400">Bethelkerk Maassluis · Beamer Systeem</p>
@@ -7066,8 +7073,9 @@ Bijbelliederen`;
         });
 
         if (geselecteerdeTekst.length > 0) {
-            // Bouw een mooie titel met versnummers: "Psalm 119 vers 85, 86, 87, 88"
-            const alleVerzen = geselecteerdeNummers.length === tijdelijkeLiedVerzen.length;
+            // Bouw een mooie titel met versnummers: "Psalm 8 vers 1, 4, 9"
+            const alleVerzen = (geselecteerdeNummers.length === tijdelijkeLiedVerzen.length) &&
+                geselecteerdeNummers.every((n, i) => n === i + 1);
             const titelMetVers = alleVerzen
                 ? tijdelijkeTitel
                 : tijdelijkeTitel + ' vers ' + geselecteerdeNummers.join(', ');
@@ -7092,6 +7100,12 @@ Bijbelliederen`;
         if (!keepOpen) {
             document.getElementById('liedInput').value = '';
             document.getElementById('suggestieLied').classList.add('hidden');
+        }
+
+        // Automatisch versnummers detecteren als die in de zoekterm meegegeven zijn (bijv. "Psalm 8: 1, 4 en 9")
+        if (!voorgeselecteerd && typeof window.extractVersNummers === 'function') {
+            const geextraheerd = window.extractVersNummers(titel);
+            if (geextraheerd.length > 0) voorgeselecteerd = geextraheerd;
         }
 
         // Controleer via de centrale database-zoekfunctie (ondersteunt alle bundels, Psalmen en vers-syntaxis)
@@ -7157,8 +7171,11 @@ Bijbelliederen`;
                 preview.innerHTML = `<span class="text-[#FF3B30] font-bold">Fout in AI Model:</span><br>${data.error.message}`;
             } else if (data.candidates && data.candidates.length > 0) {
                 const resultaat = data.candidates[0].content.parts[0].text.trim();
-                slaLiedOpInCloud(titel, resultaat); // Sla op in de achtergrond
-                window.toonVersSelectie(titel, resultaat); // Open vers-kiezer
+                const basisTitel = (typeof window.extractVersInfoVanItem === 'function')
+                    ? window.extractVersInfoVanItem({ type: 'Zang', titel }).basisTitel
+                    : titel;
+                slaLiedOpInCloud(basisTitel || titel, resultaat); // Sla op in de achtergrond
+                window.toonVersSelectie(basisTitel || titel, resultaat, null, voorgeselecteerd); // Open vers-kiezer
             }
         } catch (err) { 
             let msg = err.message || "Onbekende fout";
@@ -8487,6 +8504,20 @@ Bijbelliederen`;
                 : [];
         }
 
+        // Als versNummers nog steeds leeg is, kijk of de alinea's in item.tekst versmarkeringen hebben
+        if (versNummers.length === 0 && item.tekst && item.tekst.trim()) {
+            const stanzas = item.tekst.split(/\n[ \t]*\n/).map(s => s.trim()).filter(Boolean);
+            const stanzaNums = [];
+            for (const s of stanzas) {
+                const firstLine = s.split('\n')[0].trim();
+                const m = firstLine.match(/^(?:vers|couplet|vs\.?|\[)?\s*(\d+)(?:[.:\]\)]|\s+|$)/i);
+                if (m) stanzaNums.push(parseInt(m[1], 10));
+            }
+            if (stanzaNums.length === stanzas.length && stanzaNums.length > 0) {
+                versNummers = stanzaNums;
+            }
+        }
+
         let basisTitel = item.basisTitel || '';
         if (!basisTitel || /(?::|\bvers(?:en)?\b|\bvs\.?\b|\bcouplet(?:ten)?\b)/i.test(basisTitel)) {
             basisTitel = (item.titel || '')
@@ -8496,6 +8527,14 @@ Bijbelliederen`;
                 .trim();
         }
 
+        // Cache op item voor naadloze werking in PowerPoint, Welkomstdia, Meelees en OBS
+        if (versNummers.length > 0 && (!item.geselecteerdeVerzen || item.geselecteerdeVerzen.length === 0)) {
+            item.geselecteerdeVerzen = [...versNummers];
+        }
+        if (basisTitel && !item.basisTitel) {
+            item.basisTitel = basisTitel;
+        }
+
         return { basisTitel: basisTitel || item.titel || '', versNummers: versNummers };
     };
 
@@ -8503,16 +8542,19 @@ Bijbelliederen`;
     window.extractVersNummers = function(str) {
         if (!str) return [];
         const colonAfterNumMatch = str.match(/\d+\s*[:]\s*([0-9\s,\-–—]|(?:\ben\b))+/i);
-        const versMatch = str.match(/\b(?:vers(?:en)?|vs\.?)\s*([0-9\s,\-–—]|(?:\ben\b))+/i);
+        const versMatch = str.match(/\b(?:vers(?:en)?|vs\.?|couplet(?:ten)?)\s*([0-9\s,\-–—]|(?:\ben\b))+/i);
         const parenMatch = str.match(/\(([^)]+)\)/);
+        const tailNumsMatch = str.match(/(?:psalm|ps\.?|lied|weerklank|oth|dnp|opw)\s+\d+\s+([0-9\s,\-–—]|(?:\ben\b))+$/i);
         
         let raw = '';
         if (colonAfterNumMatch) {
             raw = colonAfterNumMatch[0].replace(/^\d+\s*[:]\s*/, '');
         } else if (versMatch) {
-            raw = versMatch[0].replace(/^\b(?:vers(?:en)?|vs\.?)\s*/i, '');
+            raw = versMatch[0].replace(/^\b(?:vers(?:en)?|vs\.?|couplet(?:ten)?)\s*/i, '');
         } else if (parenMatch && /\d/.test(parenMatch[1])) {
-            raw = parenMatch[1].replace(/^\b(?:vers(?:en)?|vs\.?)\s*/i, '');
+            raw = parenMatch[1].replace(/^\b(?:vers(?:en)?|vs\.?|couplet(?:ten)?)\s*/i, '');
+        } else if (tailNumsMatch) {
+            raw = tailNumsMatch[1];
         }
         if (!raw) return [];
 
@@ -8657,7 +8699,11 @@ Bijbelliederen`;
             : (item.gevondenVerzen && item.gevondenVerzen.length > 0 ? item.gevondenVerzen : []);
 
         // Als alle coupletten gekozen zijn of niets gespecificeerd:
-        if (gekozenNummers.length === 0 || gekozenNummers.length === alleVerzen.length) {
+        const isEchtAlles = gekozenNummers.length === 0 || (
+            gekozenNummers.length === alleVerzen.length &&
+            gekozenNummers.every((n, i) => n === i + 1)
+        );
+        if (isEchtAlles) {
             return {
                 titel: basisTitel,
                 basisTitel: basisTitel,
@@ -9438,7 +9484,7 @@ ${veiligeTekst}
                         type: "Zang",
                         titel: gebouwd.titel,
                         tekst: gebouwd.tekst,
-                        basisTitel: item.titel,
+                        basisTitel: gebouwd.basisTitel || item.titel,
                         geselecteerdeVerzen: gebouwd.verzen
                     });
                 } else {
@@ -11202,12 +11248,28 @@ Antwoord UITSLUITEND in valide JSON:
 
             let versNr = null;
             if (item.type === "Zang") {
+                // 1. Matchen via bekende verzen array
                 if (bekendeVerzen && bekendeVerzen[blokIdx] != null) {
                     versNr = bekendeVerzen[blokIdx];
-                } else if (blokken.length > 1) {
-                    versNr = blokIdx + 1;
-                } else if (bekendeVerzen.length === 1) {
+                }
+                // 2. Extraheer uit couplet-tekst indien de eerste regel een versindicator is (bijv. "Vers 4" of "4.")
+                if (versNr == null && regelsArr.length > 0) {
+                    const firstL = regelsArr[0].trim();
+                    const m = firstL.match(/^(?:vers|couplet|vs\.?|\[)?\s*(\d+)(?:[.:\]\)]|\s+|$)/i);
+                    if (m) {
+                        versNr = parseInt(m[1], 10);
+                        if (/^(?:vers|couplet|vs\.?|\[)?\s*\d+[.:\]\)]?$/i.test(firstL)) {
+                            regelsArr.shift();
+                        }
+                    }
+                }
+                // 3. Eén enkel vers
+                if (versNr == null && bekendeVerzen && bekendeVerzen.length === 1) {
                     versNr = bekendeVerzen[0];
+                }
+                // 4. Fallback bij meerdere strofen
+                if (versNr == null && blokken.length > 1) {
+                    versNr = blokIdx + 1;
                 }
             }
 
@@ -11225,8 +11287,10 @@ Antwoord UITSLUITEND in valide JSON:
                 result.push(sb);
             });
         });
+        window.berekenSubSlidesVoorItem = berekenSubSlidesVoorItem;
         return result.length ? result : [{ regels: [], fontSize: fSize }];
     }
+    window.berekenSubSlidesVoorItem = berekenSubSlidesVoorItem;
 
     function renderSlidePreview(idx) {
         previewItemIdx = idx;
@@ -12840,7 +12904,7 @@ window.verstuurExportFeedback = async function() {
 </script>
 
 <!-- WELKOMSTDIA CUSTOMIZER MODAL -->
-<div id="welkomstdiaModal" class="fixed inset-0 z-[115] hidden flex items-center justify-center bg-black/20 backdrop-blur-xl transition-opacity p-3 md:p-6" onclick="if(event.target === this) sluitWelkomstdiaModal()">
+<div id="welkomstdiaModal" class="fixed inset-0 z-[115] hidden flex items-center justify-center bg-black/40 modal-backdrop-safe transition-opacity p-3 md:p-6" onclick="if(event.target === this) sluitWelkomstdiaModal()">
     <div class="bg-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] w-full max-w-4xl overflow-hidden flex flex-col transform transition-all modal-animate max-h-[92vh]">
         <!-- Header -->
         <div class="p-4 md:p-5 border-b border-gray-100 flex justify-between items-center flex-shrink-0">
@@ -12930,7 +12994,7 @@ window.verstuurExportFeedback = async function() {
     </div>
 </div>
 
-<div id="exportFeedbackModal" class="fixed inset-0 z-[120] hidden flex items-center justify-center bg-black/20 backdrop-blur-xl transition-opacity">
+<div id="exportFeedbackModal" class="fixed inset-0 z-[120] hidden flex items-center justify-center bg-black/40 modal-backdrop-safe transition-opacity">
     <div class="bg-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] w-11/12 max-w-sm overflow-hidden flex flex-col transform transition-all modal-animate">
         <div class="p-5 border-b border-gray-100 flex justify-between items-center">
             <h3 class="text-lg font-bold text-[#1D1D1F]">Hoe ging het? 🎉</h3>
@@ -12957,7 +13021,7 @@ window.verstuurExportFeedback = async function() {
 </div>
 
 <!-- GEMEENTE KEUZE MODAL -->
-<div id="gemeenteModal" class="fixed inset-0 z-[130] hidden flex items-center justify-center bg-black/25 backdrop-blur-xl transition-opacity p-4" onclick="if(event.target === this && localStorage.getItem('actieveGemeente')) sluitGemeenteModal()">
+<div id="gemeenteModal" class="fixed inset-0 z-[130] hidden flex items-center justify-center bg-black/40 modal-backdrop-safe transition-opacity p-4" onclick="if(event.target === this && localStorage.getItem('actieveGemeente')) sluitGemeenteModal()">
     <div class="bg-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] w-full max-w-md overflow-hidden flex flex-col transform transition-all modal-animate">
         <div class="p-5 border-b border-gray-100 flex justify-between items-center flex-shrink-0">
             <div class="flex items-center gap-2.5">
@@ -13003,7 +13067,7 @@ window.verstuurExportFeedback = async function() {
 </div>
 
 <!-- TEST MODAL: OBS & BEAMER LIVE REGIE -->
-<div id="obsTestModal" class="fixed inset-0 z-[120] hidden flex items-center justify-center bg-black/40 backdrop-blur-xl p-4 transition-all" onclick="if(event.target === this) sluitObsTestModal()">
+<div id="obsTestModal" class="fixed inset-0 z-[120] hidden flex items-center justify-center bg-black/50 modal-backdrop-safe p-4 transition-all" onclick="if(event.target === this) sluitObsTestModal()">
     <div class="bg-white dark:bg-gray-900 rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.3)] ring-1 ring-black/[0.08] w-full max-w-5xl max-h-[92vh] overflow-y-auto flex flex-col transform transition-all modal-animate border border-gray-100 dark:border-gray-800">
         <!-- Header -->
         <div class="p-5 md:p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-start bg-gray-50/70 dark:bg-gray-800/50 flex-shrink-0">
@@ -14098,10 +14162,10 @@ window.verstuurExportFeedback = async function() {
 </div>
 
 <!-- KWALITEITSCONTROLE MODAL (ZERO-DEFECT EXPORT) -->
-<div id="preflightModal" class="fixed inset-0 z-[140] hidden flex items-center justify-center bg-black/40 backdrop-blur-xl transition-opacity p-2 sm:p-4" onclick="if(event.target === this) sluitPreflightModal()">
+<div id="preflightModal" class="fixed inset-0 z-[140] hidden flex items-center justify-center bg-black/40 modal-backdrop-safe transition-opacity p-2 sm:p-4" onclick="if(event.target === this) sluitPreflightModal()">
     <div class="bg-white dark:bg-[#1C1C1E] text-[#1D1D1F] dark:text-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.05] dark:ring-white/10 w-full max-w-2xl overflow-hidden flex flex-col transform transition-all modal-animate max-h-[92vh]">
         <!-- Header -->
-        <div class="p-4 md:p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center flex-shrink-0 bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-md">
+        <div class="p-4 md:p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center flex-shrink-0 bg-white dark:bg-[#1C1C1E]">
             <div class="flex items-center gap-2.5">
                 <div class="w-9 h-9 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white flex items-center justify-center font-bold text-base shadow-sm">
                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>

@@ -218,7 +218,9 @@
 
         // Bouw geüpdatete titel
         let nieuweTitel = basisTitel;
-        if (gekozenNummers.length > 0 && gekozenNummers.length < alleVerzen.length) {
+        const isAlles = (gekozenNummers.length === alleVerzen.length) &&
+            gekozenNummers.every((n, i) => n === i + 1);
+        if (!isAlles && gekozenNummers.length > 0) {
             nieuweTitel = `${basisTitel} : ${gekozenNummers.join(', ')}`;
         }
 
@@ -226,13 +228,17 @@
         const modalTitelEl = document.getElementById('modalTitel');
         if (modalTitelEl) modalTitelEl.innerText = "Bewerk: " + nieuweTitel;
 
-        // Houd tijdelijke titel bij in de globale scope
-        if (typeof tijdelijkeTitel !== 'undefined') {
-            tijdelijkeTitel = nieuweTitel;
-        }
+        // Houd tijdelijke titel bij in globale scopes
+        window.tijdelijkeTitel = nieuweTitel;
+        try {
+            if (typeof tijdelijkeTitel !== 'undefined') {
+                tijdelijkeTitel = nieuweTitel;
+            }
+        } catch(e) {}
 
         _huidigeVerzenData.gekozenNummers = gekozenNummers;
         _huidigeVerzenData.basisTitel = basisTitel;
+        _huidigeVerzenData.nieuweTitel = nieuweTitel;
         window._huidigeVerzenData = _huidigeVerzenData;
 
         window.renderVersKiezerKnoppen();
