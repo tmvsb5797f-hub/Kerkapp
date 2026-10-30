@@ -1167,11 +1167,24 @@
         if (btnLinks) btnLinks.className = (tab === 'links') ? activeClass : inactiveClass;
         if (btnUitleg) btnUitleg.className = (tab === 'uitleg') ? activeClass : inactiveClass;
 
-        if (contentSim) contentSim.classList.toggle('hidden', tab !== 'simulator');
-        if (contentWs) contentWs.classList.toggle('hidden', tab !== 'ws');
-        if (contentCopilot) contentCopilot.classList.toggle('hidden', tab !== 'copilot');
-        if (contentLinks) contentLinks.classList.toggle('hidden', tab !== 'links');
-        if (contentUitleg) contentUitleg.classList.toggle('hidden', tab !== 'uitleg');
+        const panes = [
+            { el: contentSim, show: tab === 'simulator' },
+            { el: contentWs, show: tab === 'ws' },
+            { el: contentCopilot, show: tab === 'copilot' },
+            { el: contentLinks, show: tab === 'links' },
+            { el: contentUitleg, show: tab === 'uitleg' }
+        ];
+        panes.forEach(p => {
+            if (!p.el) return;
+            if (p.show) {
+                p.el.classList.remove('hidden');
+                p.el.classList.remove('tab-pane-animate');
+                void p.el.offsetWidth;
+                p.el.classList.add('tab-pane-animate');
+            } else {
+                p.el.classList.add('hidden');
+            }
+        });
 
         if (tab === 'copilot' && typeof window.copilotOnTabOpen === 'function') {
             window.copilotOnTabOpen();

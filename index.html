@@ -100,22 +100,20 @@
         padding-right: env(safe-area-inset-right, 0px);
         -webkit-tap-highlight-color: transparent;
     }
-    /* Vaste, dekkende top-shield voor Dynamic Island & Statusbar: voorkomt dat scrollende tekst eronder wazig schemert */
-    @media (max-width: 768px) {
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: max(2.6rem, env(safe-area-inset-top, 0px));
-            background: #F5F5F7;
-            z-index: 28;
-            pointer-events: none;
+    /* Vloeiende tab- en paneel-overgangen (Apple HIG spring animatie voor vloeiend schakelen) */
+    @keyframes tabFadeSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(6px);
         }
-        html.dark body::before, body.dark-mode::before {
-            background: #1C1C1E;
+        to {
+            opacity: 1;
+            transform: translateY(0);
         }
+    }
+    .tab-pane-animate {
+        animation: tabFadeSlideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+        will-change: opacity, transform;
     }
     /* Touch manipulation prevents 300ms tap delay & accidental double-tap zoom */
     button, [role="button"], select, input, a {
@@ -1141,8 +1139,8 @@
 </header>
 
 <main class="flex-grow px-3 sm:px-4 md:px-8 lg:px-12 max-w-[1400px] mx-auto w-full pb-44 sm:pb-36">
-    <!-- Mobiele Segmented Tab Schakelaar (Strakke dekkende weergave, geen wazige doorschemering) -->
-    <div class="md:hidden sticky z-30 mb-3 px-1" style="top: max(2.75rem, calc(env(safe-area-inset-top, 0px) + 0.35rem));">
+    <!-- Mobiele Segmented Tab Schakelaar (Strakke dekkende weergave onder safe area) -->
+    <div class="md:hidden sticky z-30 mb-3 px-1" style="top: max(0.5rem, calc(env(safe-area-inset-top, 0px) + 0.25rem));">
         <div class="bg-white dark:bg-[#2C2C2E] p-1 rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] border border-black/[0.06] dark:border-white/10 flex items-center gap-1">
             <button type="button" id="tabBtnInvoer" onclick="schakelMobieleTab('invoer', true)" class="flex-1 min-h-[44px] py-2 px-2.5 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-1 bg-[#007AFF] text-white shadow-xs active:scale-95">
                 <span>➕</span>
@@ -1962,16 +1960,31 @@
         }
 
         if (invoer) {
-            if (tab === 'invoer') invoer.classList.remove('hidden');
-            else invoer.classList.add('hidden');
+            if (tab === 'invoer') {
+                invoer.classList.remove('hidden');
+                invoer.classList.remove('tab-pane-animate');
+                void invoer.offsetWidth;
+                invoer.classList.add('tab-pane-animate');
+            } else {
+                invoer.classList.add('hidden');
+            }
         }
         if (volgorde) {
-            if (tab === 'volgorde') volgorde.classList.remove('hidden');
-            else volgorde.classList.add('hidden');
+            if (tab === 'volgorde') {
+                volgorde.classList.remove('hidden');
+                volgorde.classList.remove('tab-pane-animate');
+                void volgorde.offsetWidth;
+                volgorde.classList.add('tab-pane-animate');
+            } else {
+                volgorde.classList.add('hidden');
+            }
         }
         if (preview) {
             if (tab === 'preview') {
                 preview.classList.remove('hidden');
+                preview.classList.remove('tab-pane-animate');
+                void preview.offsetWidth;
+                preview.classList.add('tab-pane-animate');
                 requestAnimationFrame(() => {
                     const idx = (typeof previewItemIdx === 'number' && previewItemIdx >= 0 && previewItemIdx < (window.liturgieVolgorde || []).length)
                         ? previewItemIdx
@@ -4086,7 +4099,12 @@ Retourneer UITSLUITEND een valide JSON object:
             btnHuidig?.classList.remove('text-gray-600', 'dark:text-gray-300', 'font-semibold');
             btnGesch?.classList.remove('bg-white', 'dark:bg-[#2C2C2E]', 'shadow-xs', 'text-[#007AFF]', 'dark:text-blue-400', 'font-bold');
             btnGesch?.classList.add('text-gray-600', 'dark:text-gray-300', 'font-semibold');
-            paneelHuidig?.classList.remove('hidden');
+            if (paneelHuidig) {
+                paneelHuidig.classList.remove('hidden');
+                paneelHuidig.classList.remove('tab-pane-animate');
+                void paneelHuidig.offsetWidth;
+                paneelHuidig.classList.add('tab-pane-animate');
+            }
             paneelGesch?.classList.add('hidden');
         } else {
             btnGesch?.classList.add('bg-white', 'dark:bg-[#2C2C2E]', 'shadow-xs', 'text-[#007AFF]', 'dark:text-blue-400', 'font-bold');
@@ -4094,7 +4112,12 @@ Retourneer UITSLUITEND een valide JSON object:
             btnHuidig?.classList.remove('bg-white', 'dark:bg-[#2C2C2E]', 'shadow-xs', 'text-[#007AFF]', 'dark:text-blue-400', 'font-bold');
             btnHuidig?.classList.add('text-gray-600', 'dark:text-gray-300', 'font-semibold');
             paneelHuidig?.classList.add('hidden');
-            paneelGesch?.classList.remove('hidden');
+            if (paneelGesch) {
+                paneelGesch.classList.remove('hidden');
+                paneelGesch.classList.remove('tab-pane-animate');
+                void paneelGesch.offsetWidth;
+                paneelGesch.classList.add('tab-pane-animate');
+            }
             window.renderMeeleesGeschiedenisUI();
         }
     };
@@ -8890,12 +8913,23 @@ Bijbelliederen`;
             if (btnLit) btnLit.className = inactiveClass;
             if (btnArc) btnArc.className = activeClass;
             if (cLit) cLit.classList.add('hidden');
-            if (cArc) { cArc.classList.remove('hidden'); cArc.classList.add('flex'); }
+            if (cArc) {
+                cArc.classList.remove('hidden');
+                cArc.classList.add('flex');
+                cArc.classList.remove('tab-pane-animate');
+                void cArc.offsetWidth;
+                cArc.classList.add('tab-pane-animate');
+            }
             if (stapBadge) stapBadge.innerText = 'Archief Inlezen';
         } else {
             if (btnLit) btnLit.className = activeClass;
             if (btnArc) btnArc.className = inactiveClass;
-            if (cLit) cLit.classList.remove('hidden');
+            if (cLit) {
+                cLit.classList.remove('hidden');
+                cLit.classList.remove('tab-pane-animate');
+                void cLit.offsetWidth;
+                cLit.classList.add('tab-pane-animate');
+            }
             if (cArc) { cArc.classList.add('hidden'); cArc.classList.remove('flex'); }
             if (stapBadge) stapBadge.innerText = 'Stap 1: Plakken';
         }
@@ -10235,14 +10269,29 @@ Antwoord UITSLUITEND in valide JSON:
 
         if (tab === 'screenshot') {
             activeBtn(btnShot);
-            paneShot?.classList.remove('hidden');
+            if (paneShot) {
+                paneShot.classList.remove('hidden');
+                paneShot.classList.remove('tab-pane-animate');
+                void paneShot.offsetWidth;
+                paneShot.classList.add('tab-pane-animate');
+            }
         } else if (tab === 'link') {
             activeBtn(btnLink);
-            paneLink?.classList.remove('hidden');
+            if (paneLink) {
+                paneLink.classList.remove('hidden');
+                paneLink.classList.remove('tab-pane-animate');
+                void paneLink.offsetWidth;
+                paneLink.classList.add('tab-pane-animate');
+            }
             document.getElementById('tikkieLinkInput')?.focus();
         } else if (tab === 'geschiedenis') {
             activeBtn(btnGesch);
-            paneGesch?.classList.remove('hidden');
+            if (paneGesch) {
+                paneGesch.classList.remove('hidden');
+                paneGesch.classList.remove('tab-pane-animate');
+                void paneGesch.offsetWidth;
+                paneGesch.classList.add('tab-pane-animate');
+            }
             window.renderTikkieGeschiedenisUI();
         }
     };
@@ -12906,7 +12955,12 @@ window.wisselInfoTab = function(tabId) {
             if (btn) {
                 btn.className = "flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition-all bg-white dark:bg-gray-800 text-[#007AFF] shadow-xs flex items-center justify-center gap-1.5";
             }
-            if (content) content.classList.remove('hidden');
+            if (content) {
+                content.classList.remove('hidden');
+                content.classList.remove('tab-pane-animate');
+                void content.offsetWidth;
+                content.classList.add('tab-pane-animate');
+            }
         } else {
             if (btn) {
                 btn.className = "flex-1 py-1.5 px-2 rounded-xl text-xs font-semibold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all flex items-center justify-center gap-1.5";
