@@ -1010,51 +1010,61 @@
     </div>
 </div>
 
-<header class="mb-4 md:mb-10 px-4 md:px-12 max-w-[1400px] mx-auto w-full flex flex-col gap-3 md:gap-4" style="padding-top: max(1.25rem, calc(env(safe-area-inset-top, 0px) + 0.5rem));">
-    <!-- Bovenste rij: Titel + Gemeente links, Status-pill rechts (Strak uitgelijnd op dezelfde bovenste hoogte) -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full">
+<header class="mb-3 md:mb-10 px-3 sm:px-4 md:px-12 max-w-[1400px] mx-auto w-full flex flex-col gap-2.5 md:gap-4" style="padding-top: max(1rem, calc(env(safe-area-inset-top, 0px) + 0.35rem));">
+    <!-- Bovenste rij: Titel + Gemeente links, Status-pill rechts op desktop -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 w-full">
         <!-- Links: Titel & Gemeente-knop -->
-        <div class="flex items-center gap-3 flex-wrap">
-            <h1 onclick="checkOnderhoudCode()" class="text-2xl md:text-3xl font-bold tracking-tight cursor-default select-none text-[#1D1D1F] dark:text-white">Liturgie Assistent <span class="text-[#007AFF]">Pro</span></h1>
-            <button type="button" onclick="openGemeenteModal()" id="gemeenteBadgeBtn" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-[#007AFF] hover:bg-blue-100 transition-colors border border-blue-100 shadow-sm cursor-pointer active:scale-95" title="Klik om van gemeente te wisselen of een nieuwe toe te voegen">
+        <div class="flex items-center gap-2.5 sm:gap-3 justify-between sm:justify-start w-full sm:w-auto">
+            <h1 onclick="checkOnderhoudCode()" class="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight cursor-default select-none text-[#1D1D1F] dark:text-white truncate">Liturgie Assistent <span class="text-[#007AFF]">Pro</span></h1>
+            <button type="button" onclick="openGemeenteModal()" id="gemeenteBadgeBtn" class="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-950/40 text-[#007AFF] hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors border border-blue-100 dark:border-blue-900/40 shadow-xs cursor-pointer active:scale-95 flex-shrink-0" title="Klik om van gemeente te wisselen of een nieuwe toe te voegen">
                 <span>⛪</span>
-                <span id="headerGemeenteNaam" class="truncate max-w-[160px] sm:max-w-none">Bethelkerk Maassluis</span>
+                <span id="headerGemeenteNaam" class="truncate max-w-[130px] sm:max-w-none">Bethelkerk Maassluis</span>
                 <svg class="w-3 h-3 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
             </button>
         </div>
 
-        <!-- Rechts: Slanke status-pill (Helemaal bovenaan, wrap-resistant op iPhone) -->
-        <div class="flex items-center gap-2 self-start sm:self-auto max-w-full overflow-x-auto no-scrollbar py-0.5">
-            <div class="inline-flex items-center gap-2 sm:gap-2.5 px-3 py-1.5 rounded-full bg-white dark:bg-[#2C2C2E] border border-gray-200 dark:border-gray-700 text-xs shadow-xs text-gray-600 dark:text-gray-300 flex-shrink-0">
+        <!-- Tweede rij op mobiel / Rechts op desktop: Instellingen knop links (mobiel) & Status-pill -->
+        <div class="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
+            <!-- Mobiele toggle voor instellingen balk (links) -->
+            <div class="md:hidden flex-shrink-0">
+                <button type="button" onclick="toggleMobileInstellingen()" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-semibold bg-white dark:bg-[#2C2C2E] border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 shadow-xs active:scale-95 transition-all">
+                    <svg class="w-3.5 h-3.5 text-[#007AFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                    <span id="mobileInstellingenLabel">⚙️ Instellingen</span>
+                    <svg id="mobileInstellingenChevron" class="w-3 h-3 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+            </div>
+
+            <!-- Slanke status-pill (Helemaal bovenaan, wrap-resistant & compact op iPhone) -->
+            <div class="inline-flex items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-white dark:bg-[#2C2C2E] border border-gray-200 dark:border-gray-700 text-xs shadow-xs text-gray-600 dark:text-gray-300 flex-shrink-0">
                 <!-- 1. Bijbel API (Klikbaar) -->
-                <button type="button" onclick="checkBijbelAPI(true)" class="flex items-center gap-1.5 hover:text-[#007AFF] dark:hover:text-[#007AFF] transition-colors cursor-pointer active:scale-95" title="Bijbel API (klik om te testen)">
+                <button type="button" onclick="checkBijbelAPI(true)" class="flex items-center gap-1 sm:gap-1.5 hover:text-[#007AFF] dark:hover:text-[#007AFF] transition-colors cursor-pointer active:scale-95" title="Bijbel API (klik om te testen)">
                     <span id="bijbelDot" class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse flex-shrink-0"></span>
                     <span id="bijbelBadge" class="font-medium text-[11px] whitespace-nowrap">Bijbel</span>
                 </button>
                 <span class="text-gray-300 dark:text-gray-600 select-none">·</span>
                 <!-- 2. AI Assistent -->
-                <div class="flex items-center gap-1.5" title="Gemini AI Assistent status">
+                <div class="flex items-center gap-1 sm:gap-1.5" title="Gemini AI Assistent status">
                     <span id="statusDot" class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse flex-shrink-0"></span>
                     <span id="statusBadge" class="font-medium text-[11px] whitespace-nowrap">AI</span>
                 </div>
                 <span class="text-gray-300 dark:text-gray-600 select-none">·</span>
                 <!-- 3. Cloud Firestore Sync -->
-                <div class="flex items-center gap-1.5" title="Cloud synchronisatie status">
+                <div class="flex items-center gap-1 sm:gap-1.5" title="Cloud synchronisatie status">
                     <span id="cloudDot" class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse flex-shrink-0"></span>
                     <span id="cloudBadge" class="font-medium text-[11px] whitespace-nowrap">Cloud</span>
                 </div>
                 <span class="text-gray-300 dark:text-gray-600 select-none">·</span>
                 <!-- 4. AI Capaciteit & Quota mini-meter -->
-                <div class="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity select-none" title="AI Capaciteit (klik voor info)" onclick="window.toonQuotaInfo ? window.toonQuotaInfo() : null">
+                <div class="flex items-center gap-1 sm:gap-1.5 cursor-pointer hover:opacity-80 transition-opacity select-none" title="AI Capaciteit (klik voor info)" onclick="window.toonQuotaInfo ? window.toonQuotaInfo() : null">
                     <span class="text-[10px] text-gray-400">⚡</span>
-                    <div class="w-10 bg-gray-100 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
+                    <div class="w-7 sm:w-10 bg-gray-100 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
                         <div id="quotaBar" class="bg-[#34C759] h-full transition-all duration-500 rounded-full" style="width: 100%"></div>
                     </div>
                     <span id="quotaPercentage" class="text-[10px] font-mono text-gray-500 dark:text-gray-400 font-bold">100%</span>
                 </div>
                 <span class="text-gray-300 dark:text-gray-600 select-none">·</span>
                 <!-- 5. OBS & Beamer Live Status (Klikbaar) -->
-                <button type="button" onclick="openObsTestModal()" class="flex items-center gap-1.5 hover:text-purple-600 dark:hover:text-purple-400 transition-colors cursor-pointer active:scale-95" title="OBS Studio & Beamer Live Regie (klik om te openen)">
+                <button type="button" onclick="openObsTestModal()" class="flex items-center gap-1 sm:gap-1.5 hover:text-purple-600 dark:hover:text-purple-400 transition-colors cursor-pointer active:scale-95" title="OBS Studio & Beamer Live Regie (klik om te openen)">
                     <span id="obsHeaderDot" class="w-2 h-2 rounded-full bg-gray-400 flex-shrink-0 transition-colors"></span>
                     <span id="obsHeaderLabel" class="font-medium text-[11px] whitespace-nowrap">🎥 OBS</span>
                 </button>
@@ -1062,17 +1072,8 @@
         </div>
     </div>
 
-    <!-- Onderste rij: Instellingen Toolbar (Netjes onder de titel en status) -->
+    <!-- Onderste rij: Instellingen Toolbar (Uitklapbaar op mobiel) -->
     <div class="w-full">
-        <!-- Mobiele toggle voor instellingen balk -->
-        <div class="md:hidden">
-            <button type="button" onclick="toggleMobileInstellingen()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-white dark:bg-[#2C2C2E] border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 shadow-xs active:scale-95 transition-all">
-                <svg class="w-3.5 h-3.5 text-[#007AFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
-                <span id="mobileInstellingenLabel">⚙️ Instellingen (Beamer)</span>
-                <svg id="mobileInstellingenChevron" class="w-3 h-3 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-            </button>
-        </div>
-
         <div id="instellingenBalk" class="hidden md:flex items-center gap-2.5 flex-wrap">
             <div class="flex items-center gap-1.5 text-[#86868B] text-xs font-semibold uppercase tracking-wider mr-0.5">
                 <svg class="w-3.5 h-3.5 text-[#007AFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
@@ -1121,20 +1122,20 @@
     </div>
 </header>
 
-<main class="flex-grow px-4 md:px-8 lg:px-12 max-w-[1400px] mx-auto w-full pb-36">
+<main class="flex-grow px-3 sm:px-4 md:px-8 lg:px-12 max-w-[1400px] mx-auto w-full pb-44 sm:pb-36">
     <!-- Mobiele Segmented Tab Schakelaar (Geoptimaliseerd voor iPhone 15 tot 18 Pro & Pro Max met Dynamic Island) -->
-    <div class="md:hidden sticky z-30 mb-4 px-1" style="top: max(0.5rem, calc(env(safe-area-inset-top, 0px) + 0.25rem));">
-        <div class="bg-white/90 dark:bg-[#2C2C2E]/90 backdrop-blur-2xl p-1.5 rounded-2xl shadow-[0_6px_24px_rgba(0,0,0,0.08)] dark:shadow-[0_6px_24px_rgba(0,0,0,0.5)] border border-black/[0.06] dark:border-white/10 flex items-center gap-1.5">
-            <button type="button" id="tabBtnInvoer" onclick="schakelMobieleTab('invoer', true)" class="flex-1 min-h-[44px] py-2.5 px-3 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-1.5 bg-[#007AFF] text-white shadow-xs active:scale-95">
+    <div class="md:hidden sticky z-30 mb-3 px-0.5" style="top: max(0.4rem, calc(env(safe-area-inset-top, 0px) + 0.2rem));">
+        <div class="bg-white/95 dark:bg-[#2C2C2E]/95 backdrop-blur-2xl p-1 rounded-2xl shadow-[0_6px_24px_rgba(0,0,0,0.08)] dark:shadow-[0_6px_24px_rgba(0,0,0,0.5)] border border-black/[0.06] dark:border-white/10 flex items-center gap-1">
+            <button type="button" id="tabBtnInvoer" onclick="schakelMobieleTab('invoer', true)" class="flex-1 min-h-[44px] py-2 px-2.5 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-1 bg-[#007AFF] text-white shadow-xs active:scale-95">
                 <span>➕</span>
                 <span>Invoer</span>
             </button>
-            <button type="button" id="tabBtnVolgorde" onclick="schakelMobieleTab('volgorde', true)" class="flex-1 min-h-[44px] py-2.5 px-3 rounded-xl text-xs font-semibold transition-all text-center flex items-center justify-center gap-1.5 text-gray-600 dark:text-gray-300 hover:text-gray-900 active:scale-95">
+            <button type="button" id="tabBtnVolgorde" onclick="schakelMobieleTab('volgorde', true)" class="flex-1 min-h-[44px] py-2 px-2.5 rounded-xl text-xs font-semibold transition-all text-center flex items-center justify-center gap-1 text-gray-600 dark:text-gray-300 hover:text-gray-900 active:scale-95">
                 <span>📋</span>
                 <span>Volgorde</span>
-                <span id="mobielVolgordeTeller" class="ml-0.5 px-1.5 py-0.2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-full text-[10px] font-bold">0</span>
+                <span id="mobielVolgordeTeller" class="ml-1 px-1.5 py-0.5 min-w-[18px] text-center bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-200 rounded-full text-[10px] font-bold leading-none flex-shrink-0">0</span>
             </button>
-            <button type="button" id="tabBtnPreview" onclick="schakelMobieleTab('preview', true)" class="flex-1 min-h-[44px] py-2.5 px-3 rounded-xl text-xs font-semibold transition-all text-center flex items-center justify-center gap-1.5 text-gray-600 dark:text-gray-300 hover:text-gray-900 active:scale-95">
+            <button type="button" id="tabBtnPreview" onclick="schakelMobieleTab('preview', true)" class="flex-1 min-h-[44px] py-2 px-2.5 rounded-xl text-xs font-semibold transition-all text-center flex items-center justify-center gap-1 text-gray-600 dark:text-gray-300 hover:text-gray-900 active:scale-95">
                 <span>👁️</span>
                 <span>Preview</span>
             </button>
@@ -1143,12 +1144,12 @@
 
     <!-- SECTIE 1: INVOER (Dienst gegevens, liederen & bijbel, snelle knoppen) -->
     <div id="sectieInvoerContainer" class="mobile-tab-view">
-        <section class="mb-6">
-            <h2 class="text-[12px] font-semibold text-[#86868B] uppercase tracking-[0.04em] mb-2.5 ml-1">0. Dienst Gegevens (Voor Welkomst Dia)</h2>
-            <div class="bg-white dark:bg-[#1C1C1E] p-4 rounded-[20px] shadow-[0_4px_24px_rgba(0,0,0,0.04)] border border-transparent dark:border-white/10 flex flex-col md:flex-row gap-3 sm:gap-4">
+        <section class="mb-4">
+            <h2 class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider mb-2 ml-1">0. Dienst Gegevens (Voor Welkomst Dia)</h2>
+            <div class="bg-white dark:bg-[#1C1C1E] p-3 md:p-4 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.04)] border border-transparent dark:border-white/10 flex flex-col md:flex-row gap-2.5 sm:gap-4">
                 <div class="flex-1 relative">
-                    <input id="datumInput" type="text" readonly class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-transparent rounded-xl py-3 px-4 pr-10 text-sm font-medium placeholder-gray-400 apple-input transition-all cursor-pointer" placeholder="Klik om datum te kiezen"/>
-                    <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <input id="datumInput" type="text" readonly class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-transparent rounded-xl py-2.5 sm:py-3 px-3.5 pr-10 text-sm font-medium placeholder-gray-400 apple-input transition-all cursor-pointer" placeholder="Klik om datum te kiezen"/>
+                    <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                     <div id="datumPicker" class="absolute z-50 mt-2 bg-white dark:bg-[#1C1C1E] dark:text-white rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.18)] border border-gray-100 dark:border-white/10 p-4 hidden select-none max-w-[calc(100vw-2rem)] left-0 sm:left-auto" style="min-width: 280px;">
                         <div class="flex items-center justify-between mb-3">
                             <button id="datumVorige" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors text-gray-500">
@@ -1166,18 +1167,18 @@
                     </div>
                 </div>
                 <div class="flex-1">
-                    <input id="voorgangerInput" type="text" class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-transparent rounded-xl py-3 px-4 text-sm font-medium placeholder-gray-400 apple-input transition-all" placeholder="Bijv: ds. Mark Bot"/>
+                    <input id="voorgangerInput" type="text" class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-transparent rounded-xl py-2.5 sm:py-3 px-3.5 text-sm font-medium placeholder-gray-400 apple-input transition-all" placeholder="Bijv: ds. Mark Bot"/>
                 </div>
             </div>
         </section>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-stretch">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 items-stretch">
             <section>
-                <div class="flex items-center justify-between mb-2 md:mb-3 ml-2">
+                <div class="flex items-center justify-between mb-2 ml-1">
                     <h2 class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider">1. Liederen &amp; Psalmen</h2>
                 </div>
-                <div class="bg-white dark:bg-[#1C1C1E] p-4 md:p-6 rounded-[20px] md:rounded-[24px] shadow-[0_4px_24px_rgba(0,0,0,0.04)] dark:border dark:border-white/10 relative">
-                    <!-- Liedboek Filter Knoppen -->
-                    <div class="flex items-center gap-1.5 overflow-x-auto pb-2.5 mb-2.5 no-scrollbar select-none" id="liedboekFilterBar">
+                <div class="bg-white dark:bg-[#1C1C1E] p-3.5 sm:p-4 md:p-6 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.04)] dark:border dark:border-white/10 relative">
+                    <!-- Liedboek Filter Knoppen met soepele touch scroll -->
+                    <div class="flex items-center gap-1.5 overflow-x-auto pb-2.5 mb-2.5 no-scrollbar select-none" id="liedboekFilterBar" style="-webkit-overflow-scrolling: touch; scroll-behavior: smooth;">
                         <button type="button" onclick="window.kiesLiedZoekFilter('alle')" data-filter="alle" class="lied-filter-btn px-3 py-1.5 rounded-full text-xs font-bold bg-[#007AFF] text-white shadow-xs transition-all flex-shrink-0 cursor-pointer active:scale-95">
                             Alle Bundels
                         </button>
@@ -1199,8 +1200,8 @@
                     </div>
 
                     <div class="relative">
-                        <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                        <input id="liedInput" autocomplete="off" class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-transparent rounded-xl py-3.5 pl-12 pr-4 text-[14px] md:text-[15px] font-medium placeholder-gray-400 apple-input transition-all" placeholder="Bijv: 'wk 15', 'oth 314' of 'psalm 23'..." type="text"/>
+                        <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        <input id="liedInput" autocomplete="off" class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-transparent rounded-xl py-3 sm:py-3.5 pl-10 sm:pl-12 pr-4 text-[14px] md:text-[15px] font-medium placeholder-gray-400 apple-input transition-all" placeholder="Bijv: 'wk 15', 'oth 314' of 'psalm 23'..." type="text"/>
                     </div>
                     <p class="text-[11px] text-gray-400 mt-2 ml-1 leading-snug" id="liedZoekTipTekst">Tip: Afkortingen zoals 'wk' of 'oth' werken ook! Filter hierboven op bundel om direct het juiste lied te vinden.</p>
                     <div id="suggestieLied" class="absolute z-50 w-[calc(100%-2rem)] md:w-[calc(100%-3rem)] bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-xl mt-2 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-gray-100 dark:border-white/10 hidden max-h-72 overflow-y-auto"></div>
@@ -1208,42 +1209,42 @@
             </section>
 
             <section>
-                <h2 class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider mb-2 md:mb-3 ml-2">2. Bijbel (HSV)</h2>
-                <div class="bg-white p-4 md:p-6 rounded-[20px] md:rounded-[24px] shadow-[0_4px_24px_rgba(0,0,0,0.04)] relative flex flex-col gap-4">
+                <div class="flex items-center justify-between mb-2 ml-1">
+                    <h2 class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider">2. Bijbel (HSV)</h2>
+                </div>
+                <div class="bg-white dark:bg-[#1C1C1E] p-3.5 sm:p-4 md:p-6 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.04)] dark:border dark:border-white/10 relative flex flex-col gap-4">
                     <div class="relative">
-                        <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477-4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-                        <input id="bijbelInput" autocomplete="off" class="w-full bg-[#F5F5F7] border border-transparent rounded-xl py-3.5 pl-12 pr-4 text-[14px] md:text-[15px] font-medium placeholder-gray-400 apple-input transition-all" placeholder="Bijv: Genesis 1:1-15" type="text"/>
+                        <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477-4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                        <input id="bijbelInput" autocomplete="off" class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-transparent rounded-xl py-3 sm:py-3.5 pl-10 sm:pl-12 pr-4 text-[14px] md:text-[15px] font-medium placeholder-gray-400 apple-input transition-all" placeholder="Bijv: Genesis 1:1-15" type="text"/>
                     </div>
-                    <div id="suggestieBijbel" class="absolute z-50 w-[calc(100%-2rem)] md:w-[calc(100%-3rem)] bg-white/95 backdrop-blur-xl mt-2 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-gray-100 hidden max-h-64 overflow-y-auto"></div>
+                    <div id="suggestieBijbel" class="absolute z-50 w-[calc(100%-2rem)] md:w-[calc(100%-3rem)] bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-xl mt-2 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-gray-100 dark:border-white/10 hidden max-h-64 overflow-y-auto"></div>
                 </div>
             </section>
         </div>
 
-        <section class="mt-4 mb-2">
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                <button id="plakLiturgieKnop" onclick="openImportModal()" class="w-full bg-purple-100 text-purple-700 py-3 rounded-xl text-xs md:text-sm font-semibold flex items-center justify-center gap-2 hover:bg-purple-200 transition-all shadow-sm border border-purple-200 active:scale-95">
-                    <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                    <span>Plak Liturgie</span>
+        <!-- Snelle actieknoppen: 4 compacte knoppen op 1 strakke rij op mobiel (nooit overlap met de dock) -->
+        <section class="mt-3.5 mb-2">
+            <div class="grid grid-cols-4 gap-2 sm:gap-2.5">
+                <button id="plakLiturgieKnop" onclick="openImportModal()" class="w-full bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 py-2.5 px-1 rounded-xl text-[11px] md:text-sm font-semibold flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 hover:bg-purple-100 dark:hover:bg-purple-900/60 transition-all shadow-xs border border-purple-200/80 dark:border-purple-800/60 active:scale-95 cursor-pointer" title="Plak een complete liturgie">
+                    <svg class="w-4 h-4 md:w-5 md:h-5 text-purple-600 dark:text-purple-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    <span class="truncate">Plak Liturgie</span>
                 </button>
-                <button id="fotoDiaKnop" onclick="document.getElementById('imageFile').click()" class="w-full bg-blue-100 text-blue-700 py-3 rounded-xl text-xs md:text-sm font-semibold flex items-center justify-center gap-2 hover:bg-blue-200 transition-all shadow-sm border border-blue-200 active:scale-95">
-                    <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                    <span>Foto Dia</span>
+                <button id="fotoDiaKnop" onclick="document.getElementById('imageFile').click()" class="w-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 py-2.5 px-1 rounded-xl text-[11px] md:text-sm font-semibold flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-all shadow-xs border border-blue-200/80 dark:border-blue-800/60 active:scale-95 cursor-pointer" title="Afbeelding toevoegen als dia">
+                    <svg class="w-4 h-4 md:w-5 md:h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <span class="truncate">Foto Dia</span>
                 </button>
                 <input id="imageFile" type="file" class="hidden" accept="image/*" onchange="uploadFoto(event)"/>
-                <button id="legeDiaKnop" onclick="voegLegeDiaToe()" class="w-full bg-gray-200 text-gray-700 py-3 rounded-xl text-xs md:text-sm font-semibold flex items-center justify-center gap-2 hover:bg-gray-300 transition-all shadow-sm border border-gray-300 active:scale-95">
-                    <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
-                    <span>Lege Dia</span>
+                <button id="legeDiaKnop" onclick="voegLegeDiaToe()" class="w-full bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 py-2.5 px-1 rounded-xl text-[11px] md:text-sm font-semibold flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 hover:bg-gray-200 dark:hover:bg-white/15 transition-all shadow-xs border border-gray-200 dark:border-white/10 active:scale-95 cursor-pointer" title="Lege zwarte dia toevoegen">
+                    <svg class="w-4 h-4 md:w-5 md:h-5 text-gray-500 dark:text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
+                    <span class="truncate">Lege Dia</span>
                 </button>
-                <div class="w-full flex items-center rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 shadow-xs overflow-hidden group">
-                    <button id="tikkieDiaKnop" type="button" onclick="window.klikTikkieKnop()" class="flex-1 py-3 px-3 text-xs md:text-sm font-semibold text-emerald-900 dark:text-emerald-200 flex items-center justify-between gap-1.5 hover:bg-emerald-100/60 dark:hover:bg-emerald-900/40 transition-colors text-left active:scale-[0.99]" title="Voeg actieve week-Tikkie toe aan de liturgie">
-                        <div class="flex items-center gap-1.5 min-w-0">
-                            <svg class="w-4 h-4 md:w-5 md:h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="3" height="3"></rect><line x1="21" y1="14" x2="21" y2="14.01"></line><line x1="21" y1="21" x2="21" y2="21.01"></line><line x1="14" y1="21" x2="14" y2="21.01"></line><line x1="17" y1="17" x2="21" y2="17"></line><line x1="17" y1="21" x2="17" y2="17"></line></svg>
-                            <span class="font-bold truncate">Tikkie QR</span>
-                        </div>
-                        <span id="tikkieStatusBadge" class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300 flex-shrink-0 border border-emerald-300/40">Laden...</span>
+                <div class="w-full flex items-stretch rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 shadow-xs overflow-hidden group">
+                    <button id="tikkieDiaKnop" type="button" onclick="window.klikTikkieKnop()" class="flex-1 py-2.5 px-1 md:px-2.5 text-[11px] md:text-sm font-semibold text-emerald-900 dark:text-emerald-200 flex flex-col md:flex-row items-center justify-center gap-1 md:gap-1.5 hover:bg-emerald-100/60 dark:hover:bg-emerald-900/40 transition-colors active:scale-95 cursor-pointer min-w-0" title="Voeg actieve week-Tikkie toe aan de liturgie">
+                        <svg class="w-4 h-4 md:w-5 md:h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="3" height="3"></rect></svg>
+                        <span class="truncate font-bold">Tikkie</span>
                     </button>
-                    <button type="button" onclick="event.stopPropagation(); window.openTikkieModal();" class="px-2.5 py-3 border-l border-emerald-200/80 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors active:scale-95 flex items-center justify-center" title="Beheer & instellingen week-Tikkie">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    <button type="button" onclick="event.stopPropagation(); window.openTikkieModal();" class="px-1.5 md:px-2 border-l border-emerald-200/80 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors active:scale-95 flex items-center justify-center flex-shrink-0" title="Beheer & instellingen week-Tikkie">
+                        <svg class="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                     </button>
                 </div>
                 <input id="tikkieFile" type="file" class="hidden" accept="image/*" onchange="uploadTikkieQR(event)"/>
@@ -1690,24 +1691,42 @@
 
             <!-- TAB 3: HULP & INFO (Video, Systeem, Tools, Feedback) -->
             <div id="infoTabContent-info" class="hidden flex flex-col gap-3.5">
-                <!-- Video Uitleg Card -->
-                <div class="p-3.5 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-blue-500/10 dark:from-blue-950/40 dark:via-indigo-950/30 dark:to-blue-950/40 rounded-2xl border border-blue-200/80 dark:border-blue-800/60 flex items-center justify-between gap-3 shadow-xs">
-                    <div class="flex items-center gap-2.5 min-w-0">
-                        <div class="w-9 h-9 rounded-xl bg-blue-500/15 text-[#007AFF] flex items-center justify-center text-lg flex-shrink-0">
-                            🎬
-                        </div>
-                        <div class="min-w-0">
-                            <div class="flex items-center gap-1.5">
-                                <strong class="text-xs font-bold text-[#1D1D1F] dark:text-white">Video Uitleg</strong>
-                                <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-blue-100 dark:bg-blue-900/60 text-[#007AFF] dark:text-blue-300 border border-blue-300/40">4:06</span>
+                <!-- Video Uitleg & Rondleiding Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <!-- Video Uitleg Card -->
+                    <div class="p-3 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-blue-500/10 dark:from-blue-950/40 dark:via-indigo-950/30 dark:to-blue-950/40 rounded-2xl border border-blue-200/80 dark:border-blue-800/60 flex items-center justify-between gap-2 shadow-xs">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <div class="w-8 h-8 rounded-xl bg-blue-500/15 text-[#007AFF] flex items-center justify-center text-base flex-shrink-0">
+                                🎬
                             </div>
-                            <p class="text-[11px] text-gray-500 dark:text-gray-400 truncate">Met stem &amp; sound effects</p>
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-1">
+                                    <strong class="text-xs font-bold text-[#1D1D1F] dark:text-white">Video Uitleg</strong>
+                                    <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-blue-100 dark:bg-blue-900/60 text-[#007AFF] dark:text-blue-300">4:06</span>
+                                </div>
+                                <p class="text-[10px] text-gray-500 dark:text-gray-400 truncate">Met stem &amp; effecten</p>
+                            </div>
                         </div>
+                        <button type="button" onclick="document.getElementById('infoModal').classList.add('hidden'); openVideoUitlegModal(true);" class="px-3 py-1.5 rounded-xl bg-[#007AFF] hover:bg-blue-600 text-white text-xs font-bold transition-all active:scale-95 shadow-xs flex-shrink-0 flex items-center gap-1 cursor-pointer">
+                            <span>▶</span>
+                        </button>
                     </div>
-                    <button type="button" onclick="document.getElementById('infoModal').classList.add('hidden'); openVideoUitlegModal(true);" class="px-3.5 py-1.5 rounded-xl bg-[#007AFF] hover:bg-blue-600 text-white text-xs font-bold transition-all active:scale-95 shadow-xs flex-shrink-0 flex items-center gap-1 cursor-pointer">
-                        <span>Kijk</span>
-                        <span>▶</span>
-                    </button>
+
+                    <!-- Rondleiding Card -->
+                    <div class="p-3 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 dark:from-purple-950/40 dark:via-pink-950/30 dark:to-purple-950/40 rounded-2xl border border-purple-200/80 dark:border-purple-800/60 flex items-center justify-between gap-2 shadow-xs">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <div class="w-8 h-8 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center text-base flex-shrink-0">
+                                🧭
+                            </div>
+                            <div class="min-w-0">
+                                <strong class="text-xs font-bold text-[#1D1D1F] dark:text-white">Rondleiding</strong>
+                                <p class="text-[10px] text-gray-500 dark:text-gray-400 truncate">Interactieve tour</p>
+                            </div>
+                        </div>
+                        <button type="button" onclick="document.getElementById('infoModal').classList.add('hidden'); startUitleg();" class="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all active:scale-95 shadow-xs flex-shrink-0 flex items-center gap-1 cursor-pointer">
+                            <span>Start</span>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Systeeminfo & Statistieken -->
@@ -1817,7 +1836,7 @@
 </div>
 
 <!-- Unified Floating Action Dock (Geoptimaliseerd voor iPhone 15 tot 18 Pro & Pro Max met Home Indicator) -->
-<nav id="unifiedControlDock" aria-label="Snelle bediening" style="bottom: max(16px, calc(env(safe-area-inset-bottom, 0px) + 10px));" class="fixed left-1/2 -translate-x-1/2 z-40 w-max max-w-[calc(100vw-1.5rem)] p-1.5 sm:p-2 bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-2xl rounded-full shadow-[0_12px_40px_rgba(0,0,0,0.2)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.6)] border border-black/5 dark:border-white/15 transition-all duration-300 select-none">
+<nav id="unifiedControlDock" aria-label="Snelle bediening" style="bottom: max(16px, calc(env(safe-area-inset-bottom, 0px) + 10px));" class="fixed left-1/2 -translate-x-1/2 z-40 w-max max-w-[calc(100vw-1.5rem)] p-1.5 sm:p-2 bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl rounded-full shadow-[0_12px_40px_rgba(0,0,0,0.18)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.6)] border border-black/5 dark:border-white/15 transition-all duration-300 select-none">
     <div class="flex items-center justify-center gap-1 sm:gap-2 flex-nowrap whitespace-nowrap">
         <!-- 1. AI Hulp Chat Knop -->
         <button onclick="toggleChat()" aria-label="Vraag de AI assistent om hulp" title="Hulp nodig? Stel een vraag aan de AI assistent" class="min-w-[40px] min-h-[40px] text-gray-700 dark:text-gray-200 hover:text-[#007AFF] dark:hover:text-[#007AFF] hover:bg-gray-100/80 dark:hover:bg-white/10 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition-all flex-shrink-0 cursor-pointer">
@@ -1827,23 +1846,22 @@
 
         <div class="h-4 w-px bg-gray-200 dark:bg-gray-700/60 my-auto flex-shrink-0"></div>
 
-        <!-- 2. Info & Instellingen Knop (Hier zit OBS Live nu achter) -->
+        <!-- 2. Info & Instellingen Knop (Hier zit OBS Live, Video en Rondleiding ook achter) -->
         <button onclick="document.getElementById('infoModal').classList.remove('hidden')" aria-label="Over deze app, instellingen en OBS live" title="Instellingen, OBS Live & info over de app" class="min-w-[40px] min-h-[40px] text-gray-700 dark:text-gray-200 hover:text-[#007AFF] dark:hover:text-[#007AFF] hover:bg-gray-100/80 dark:hover:bg-white/10 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition-all flex-shrink-0 cursor-pointer">
             <svg class="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             <span class="hidden md:inline">Info &amp; OBS</span>
         </button>
 
-        <div class="h-4 w-px bg-gray-200 dark:bg-gray-700/60 my-auto flex-shrink-0"></div>
-
-        <!-- Video Uitleg Knop (Altijd terugkijken) -->
-        <button id="videoUitlegKnop" onclick="openVideoUitlegModal(true)" aria-label="Bekijk de video-uitleg met geluid" title="Bekijk de complete video-uitleg (4:06) met gesproken toelichting" class="min-w-[40px] min-h-[40px] relative text-gray-700 dark:text-gray-200 hover:text-[#007AFF] dark:hover:text-[#007AFF] hover:bg-gray-100/80 dark:hover:bg-white/10 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs font-semibold flex items-center justify-center gap-1 active:scale-95 transition-all flex-shrink-0 cursor-pointer">
+        <!-- Video Uitleg Knop (zichtbaar op desktop/tablet, op mobiel in Info Modal) -->
+        <div class="hidden sm:block h-4 w-px bg-gray-200 dark:bg-gray-700/60 my-auto flex-shrink-0"></div>
+        <button id="videoUitlegKnop" onclick="openVideoUitlegModal(true)" aria-label="Bekijk de video-uitleg met geluid" title="Bekijk de complete video-uitleg (4:06) met gesproken toelichting" class="hidden sm:flex min-w-[40px] min-h-[40px] relative text-gray-700 dark:text-gray-200 hover:text-[#007AFF] dark:hover:text-[#007AFF] hover:bg-gray-100/80 dark:hover:bg-white/10 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs font-semibold items-center justify-center gap-1 active:scale-95 transition-all flex-shrink-0 cursor-pointer">
             <span class="text-sm">🎬</span>
             <span class="hidden md:inline">Video Uitleg</span>
         </button>
 
-        <div class="h-4 w-px bg-gray-200 dark:bg-gray-700/60 my-auto flex-shrink-0"></div>
-
-        <button id="rondleidingKnop" onclick="startUitleg()" aria-label="Start de rondleiding: hoe werkt deze app?" title="Hoe werkt deze app? Start de rondleiding" class="min-w-[40px] min-h-[40px] relative text-gray-700 dark:text-gray-200 hover:text-[#007AFF] dark:hover:text-[#007AFF] hover:bg-gray-100/80 dark:hover:bg-white/10 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition-all flex-shrink-0 cursor-pointer">
+        <!-- Rondleiding Knop (zichtbaar op desktop/tablet, op mobiel in Info Modal) -->
+        <div class="hidden sm:block h-4 w-px bg-gray-200 dark:bg-gray-700/60 my-auto flex-shrink-0"></div>
+        <button id="rondleidingKnop" onclick="startUitleg()" aria-label="Start de rondleiding: hoe werkt deze app?" title="Hoe werkt deze app? Start de rondleiding" class="hidden sm:flex min-w-[40px] min-h-[40px] relative text-gray-700 dark:text-gray-200 hover:text-[#007AFF] dark:hover:text-[#007AFF] hover:bg-gray-100/80 dark:hover:bg-white/10 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs font-semibold items-center justify-center gap-1.5 active:scale-95 transition-all flex-shrink-0 cursor-pointer">
             <span id="rondleidingPulse" class="hidden absolute inset-0 rounded-full bg-[#007AFF] opacity-40 animate-ping"></span>
             <svg class="w-4 h-4 text-[#007AFF] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             <span class="hidden md:inline">Rondleiding</span>
@@ -1894,12 +1912,21 @@
             return;
         }
 
-        const actieveKlasse = 'flex-1 min-h-[44px] py-2.5 px-3 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-1.5 bg-[#007AFF] text-white shadow-xs active:scale-95';
-        const inactieveKlasse = 'flex-1 min-h-[44px] py-2.5 px-3 rounded-xl text-xs font-semibold transition-all text-center flex items-center justify-center gap-1.5 text-gray-600 dark:text-gray-300 hover:text-gray-900 active:scale-95';
+        const actieveKlasse = 'flex-1 min-h-[44px] py-2 px-2.5 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-1 bg-[#007AFF] text-white shadow-xs active:scale-95';
+        const inactieveKlasse = 'flex-1 min-h-[44px] py-2 px-2.5 rounded-xl text-xs font-semibold transition-all text-center flex items-center justify-center gap-1 text-gray-600 dark:text-gray-300 hover:text-gray-900 active:scale-95';
 
         if (btnInvoer) btnInvoer.className = (tab === 'invoer') ? actieveKlasse : inactieveKlasse;
         if (btnVolgorde) btnVolgorde.className = (tab === 'volgorde') ? actieveKlasse : inactieveKlasse;
         if (btnPreview) btnPreview.className = (tab === 'preview') ? actieveKlasse : inactieveKlasse;
+
+        const teller = document.getElementById('mobielVolgordeTeller');
+        if (teller) {
+            if (tab === 'volgorde') {
+                teller.className = 'ml-1 px-1.5 py-0.5 min-w-[18px] text-center bg-white/25 text-white rounded-full text-[10px] font-bold leading-none flex-shrink-0';
+            } else {
+                teller.className = 'ml-1 px-1.5 py-0.5 min-w-[18px] text-center bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-200 rounded-full text-[10px] font-bold leading-none flex-shrink-0';
+            }
+        }
 
         if (invoer) {
             if (tab === 'invoer') invoer.classList.remove('hidden');
@@ -5847,16 +5874,21 @@ Retourneer UITSLUITEND een valide JSON object:
     function setBijbelStatus(status, tekst) {
         const dot = document.getElementById('bijbelDot');
         const badge = document.getElementById('bijbelBadge');
-        badge.innerText = tekst;
-        if(status === 'ok') dot.className = "w-2.5 h-2.5 rounded-full bg-[#34C759] shadow-[0_0_8px_rgba(52,199,89,0.6)]";
-        if(status === 'err') dot.className = "w-2.5 h-2.5 rounded-full bg-[#FF3B30] shadow-[0_0_8px_rgba(255,59,48,0.6)]";
+        if (badge) {
+            const mobiel = tekst.replace(' API Actief', '').replace(' API', '').replace(' Actief', '');
+            badge.innerHTML = `<span class="hidden sm:inline">${escapeHtml(tekst)}</span><span class="sm:hidden">${escapeHtml(mobiel)}</span>`;
+        }
+        if (dot) {
+            if(status === 'ok') dot.className = "w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-[#34C759] shadow-[0_0_8px_rgba(52,199,89,0.6)] flex-shrink-0";
+            if(status === 'err') dot.className = "w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-[#FF3B30] shadow-[0_0_8px_rgba(255,59,48,0.6)] flex-shrink-0";
+        }
     }
     async function checkBijbelAPI(isHandmatig = false) {
         if (isHandmatig) {
             const dot = document.getElementById('bijbelDot');
             const badge = document.getElementById('bijbelBadge');
-            if (dot) dot.className = "w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse";
-            if (badge) badge.innerText = "Controleren...";
+            if (dot) dot.className = "w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-yellow-400 animate-pulse flex-shrink-0";
+            if (badge) badge.innerText = "Check...";
         }
         try {
             const controller = new AbortController();
@@ -5884,17 +5916,27 @@ Retourneer UITSLUITEND een valide JSON object:
     function setAiStatus(status, tekst) {
         const badgeText = document.getElementById('statusBadge');
         const badgeDot = document.getElementById('statusDot');
-        badgeText.innerText = tekst;
-        if(status === 'ok') badgeDot.className = "w-2.5 h-2.5 rounded-full bg-[#34C759] shadow-[0_0_8px_rgba(52,199,89,0.6)]";
-        if(status === 'err') badgeDot.className = "w-2.5 h-2.5 rounded-full bg-[#FF3B30] shadow-[0_0_8px_rgba(255,59,48,0.6)]";
+        if (badgeText) {
+            const mobiel = tekst.replace(' Gereed', '').replace(' Actief', '');
+            badgeText.innerHTML = `<span class="hidden sm:inline">${escapeHtml(tekst)}</span><span class="sm:hidden">${escapeHtml(mobiel)}</span>`;
+        }
+        if (badgeDot) {
+            if(status === 'ok') badgeDot.className = "w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-[#34C759] shadow-[0_0_8px_rgba(52,199,89,0.6)] flex-shrink-0";
+            if(status === 'err') badgeDot.className = "w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-[#FF3B30] shadow-[0_0_8px_rgba(255,59,48,0.6)] flex-shrink-0";
+        }
     }
 
     function setCloudStatus(status, tekst) {
         const badgeText = document.getElementById('cloudBadge');
         const badgeDot = document.getElementById('cloudDot');
-        badgeText.innerText = tekst;
-        if(status === 'ok') badgeDot.className = "w-2.5 h-2.5 rounded-full bg-[#007AFF] shadow-[0_0_8px_rgba(0,122,255,0.6)]";
-        if(status === 'err') badgeDot.className = "w-2.5 h-2.5 rounded-full bg-[#FF3B30] shadow-[0_0_8px_rgba(255,59,48,0.6)]";
+        if (badgeText) {
+            const mobiel = tekst.replace(' Actief', '').replace(' Gereed', '');
+            badgeText.innerHTML = `<span class="hidden sm:inline">${escapeHtml(tekst)}</span><span class="sm:hidden">${escapeHtml(mobiel)}</span>`;
+        }
+        if (badgeDot) {
+            if(status === 'ok') badgeDot.className = "w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-[#007AFF] shadow-[0_0_8px_rgba(0,122,255,0.6)] flex-shrink-0";
+            if(status === 'err') badgeDot.className = "w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-[#FF3B30] shadow-[0_0_8px_rgba(255,59,48,0.6)] flex-shrink-0";
+        }
     }
 
     async function ontdekAI() {
@@ -11887,7 +11929,10 @@ Antwoord UITSLUITEND in valide JSON:
             return d;
         });
 
-        if (mobielTeller) mobielTeller.textContent = `${liturgieVolgorde.length} items (${totaalDias} dia's)`;
+        if (mobielTeller) {
+            mobielTeller.textContent = liturgieVolgorde.length;
+            mobielTeller.title = `${liturgieVolgorde.length} items (${totaalDias} dia's)`;
+        }
         const totalBadge = document.getElementById('liturgieDiaTotaalBadge');
         if (totalBadge) {
             totalBadge.textContent = `${totaalDias} ${totaalDias === 1 ? 'dia' : "dia's"}`;
