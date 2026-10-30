@@ -370,13 +370,84 @@
 
     .modal-backdrop-safe {
         isolation: isolate;
-        -webkit-backdrop-filter: blur(12px);
-        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(16px);
+        backdrop-filter: blur(16px);
         padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
         padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
         padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
         padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
         box-sizing: border-box;
+    }
+
+    /* --- Apple Liquid Glass & Material Vibrancy (visionOS & iOS 18 style) --- */
+    .apple-liquid-glass {
+        background: rgba(255, 255, 255, 0.84) !important;
+        -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+        backdrop-filter: blur(28px) saturate(190%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.6) !important;
+        box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.12),
+                    inset 0 1px 1px 0 rgba(255, 255, 255, 0.8),
+                    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.04) !important;
+    }
+    html.dark .apple-liquid-glass,
+    body.dark-mode .apple-liquid-glass {
+        background: rgba(28, 28, 30, 0.84) !important;
+        border: 1px solid rgba(255, 255, 255, 0.14) !important;
+        box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.65),
+                    inset 0 1px 1px 0 rgba(255, 255, 255, 0.22),
+                    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.5) !important;
+    }
+
+    /* --- iOS Native Bottom Sheet styling op mobiel (<768px) --- */
+    @keyframes bottomSheetSpringUp {
+        0% {
+            transform: translateY(100%);
+            opacity: 0.6;
+        }
+        70% {
+            transform: translateY(-4px);
+            opacity: 1;
+        }
+        100% {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    @media (max-width: 767px) {
+        .modal-backdrop-safe {
+            align-items: flex-end !important;
+            padding: 0 !important;
+        }
+        .modal-backdrop-safe > div.modal-animate,
+        .modal-animate:not(#videoModalDialog) {
+            border-bottom-left-radius: 0 !important;
+            border-bottom-right-radius: 0 !important;
+            border-top-left-radius: 32px !important;
+            border-top-right-radius: 32px !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            max-height: calc(90dvh - env(safe-area-inset-top, 0px)) !important;
+            animation: bottomSheetSpringUp 0.36s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+            box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.28), 0 -1px 0 rgba(255, 255, 255, 0.18) !important;
+            padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)) !important;
+        }
+        .modal-animate:not(#videoModalDialog)::before {
+            content: '';
+            display: block;
+            width: 40px;
+            height: 5px;
+            border-radius: 9999px;
+            background-color: rgba(60, 60, 67, 0.28);
+            margin: 10px auto 4px auto;
+            flex-shrink: 0;
+            cursor: grab;
+        }
+        html.dark .modal-animate:not(#videoModalDialog)::before,
+        body.dark-mode .modal-animate:not(#videoModalDialog)::before {
+            background-color: rgba(235, 235, 245, 0.35);
+        }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -1119,9 +1190,22 @@
     </div>
 </div>
 
+<!-- Mobiele Sticky Mini-Nav Bar (Apple Collapsing Header effect bij scrollen) -->
+<div id="mobileCollapsingNav" class="md:hidden fixed top-0 left-0 right-0 z-35 pointer-events-none transition-all duration-300 opacity-0 -translate-y-2 apple-liquid-glass" style="padding-top: env(safe-area-inset-top, 0px);">
+    <div class="h-11 px-3.5 flex items-center justify-between pointer-events-auto">
+        <span onclick="checkOnderhoudCode()" class="font-bold text-sm tracking-tight text-[#1D1D1F] dark:text-white flex items-center gap-1.5 cursor-pointer">
+            Liturgie Assistent <span class="text-[#007AFF]">Pro</span>
+        </span>
+        <button type="button" onclick="openGemeenteModal()" class="text-xs font-semibold text-[#007AFF] bg-blue-50/90 dark:bg-blue-950/70 hover:bg-blue-100 px-2.5 py-1 rounded-full flex items-center gap-1 border border-blue-100 dark:border-blue-900/40 active:scale-95 transition-all cursor-pointer">
+            <span>⛪</span>
+            <span id="miniNavGemeenteNaam" class="truncate max-w-[120px]">Bethelkerk Maassluis</span>
+        </button>
+    </div>
+</div>
+
 <header class="mb-3 md:mb-10 px-3 sm:px-4 md:px-12 max-w-[1400px] mx-auto w-full flex flex-col gap-2.5 md:gap-4 md:!pt-8" style="padding-top: max(1.5rem, calc(env(safe-area-inset-top, 0px) + 1.45rem));">
     <!-- Bovenste rij: Titel + Gemeente links, Status-pill rechts op desktop -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 w-full">
+    <div id="largeTitleRow" class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 w-full transition-all duration-300">
         <!-- Links: Titel & Gemeente-knop -->
         <div class="flex items-center gap-2.5 sm:gap-3 justify-between sm:justify-start w-full sm:w-auto">
             <h1 onclick="checkOnderhoudCode()" class="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight cursor-default select-none text-[#1D1D1F] dark:text-white truncate">Liturgie Assistent <span class="text-[#007AFF]">Pro</span></h1>
@@ -1234,7 +1318,7 @@
 <main class="flex-grow px-3 sm:px-4 md:px-8 lg:px-12 max-w-[1400px] mx-auto w-full pb-44 sm:pb-36">
     <!-- Mobiele Segmented Tab Schakelaar (Strakke dekkende weergave onder safe area) -->
     <div class="md:hidden sticky z-30 mb-3 px-1" style="top: max(0.5rem, calc(env(safe-area-inset-top, 0px) + 0.25rem));">
-        <div class="bg-white dark:bg-[#2C2C2E] p-1 rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] border border-black/[0.06] dark:border-white/10 flex items-center gap-1">
+        <div class="apple-liquid-glass p-1 rounded-2xl flex items-center gap-1">
             <button type="button" id="tabBtnInvoer" onclick="schakelMobieleTab('invoer', true)" class="flex-1 min-h-[44px] py-2 px-2.5 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-1 bg-[#007AFF] text-white shadow-xs active:scale-95">
                 <span>➕</span>
                 <span>Invoer</span>
@@ -1960,7 +2044,7 @@
 </div>
 
 <!-- Unified Floating Action Dock (Geoptimaliseerd voor iPhone 15 tot 18 Pro & Pro Max met Home Indicator) -->
-<nav id="unifiedControlDock" aria-label="Snelle bediening" style="bottom: max(16px, calc(env(safe-area-inset-bottom, 0px) + 10px));" class="fixed left-1/2 -translate-x-1/2 z-40 w-max max-w-[calc(100vw-1.5rem)] p-1.5 sm:p-2 bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl rounded-full shadow-[0_12px_40px_rgba(0,0,0,0.18)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.6)] border border-black/5 dark:border-white/15 transition-all duration-300 select-none">
+<nav id="unifiedControlDock" aria-label="Snelle bediening" style="bottom: max(16px, calc(env(safe-area-inset-bottom, 0px) + 10px));" class="fixed left-1/2 -translate-x-1/2 z-40 w-max max-w-[calc(100vw-1.5rem)] p-1.5 sm:p-2 apple-liquid-glass rounded-full transition-all duration-300 select-none">
     <div class="flex items-center justify-center gap-1 sm:gap-2 flex-nowrap whitespace-nowrap">
         <!-- 1. AI Hulp Chat Knop -->
         <button onclick="toggleChat()" aria-label="Vraag de AI assistent om hulp" title="Hulp nodig? Stel een vraag aan de AI assistent" class="min-w-[40px] min-h-[40px] text-gray-700 dark:text-gray-200 hover:text-[#007AFF] dark:hover:text-[#007AFF] hover:bg-gray-100/80 dark:hover:bg-white/10 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition-all flex-shrink-0 cursor-pointer">
@@ -2219,6 +2303,139 @@
             window.schakelMobieleTab('invoer');
         }, 50);
     }
+
+    // --- 1. APPLE COLLAPSING LARGE TITLE OP MOBIEL ---
+    let _navScrollTicking = false;
+    window.addEventListener('scroll', () => {
+        if (_navScrollTicking) return;
+        _navScrollTicking = true;
+        requestAnimationFrame(() => {
+            const miniNav = document.getElementById('mobileCollapsingNav');
+            const largeRow = document.getElementById('largeTitleRow');
+            if (window.innerWidth < 768 && miniNav && largeRow) {
+                const scrollY = window.scrollY || document.documentElement.scrollTop;
+                if (scrollY > 36) {
+                    miniNav.classList.remove('opacity-0', '-translate-y-2', 'pointer-events-none');
+                    miniNav.classList.add('opacity-100', 'translate-y-0');
+                    largeRow.style.opacity = '0';
+                    largeRow.style.transform = 'translateY(-6px) scale(0.98)';
+                    largeRow.style.pointerEvents = 'none';
+                } else {
+                    miniNav.classList.remove('opacity-100', 'translate-y-0');
+                    miniNav.classList.add('opacity-0', '-translate-y-2', 'pointer-events-none');
+                    largeRow.style.opacity = '1';
+                    largeRow.style.transform = 'translateY(0) scale(1)';
+                    largeRow.style.pointerEvents = 'auto';
+                }
+            } else if (largeRow) {
+                largeRow.style.opacity = '1';
+                largeRow.style.transform = 'none';
+                largeRow.style.pointerEvents = 'auto';
+            }
+            _navScrollTicking = false;
+        });
+    }, { passive: true });
+
+    // --- 2. HORIZONTALE SWIPE GESTURES TUSSEN TABS OP MOBIEL ---
+    let _tabTouchStartX = 0;
+    let _tabTouchStartY = 0;
+    let _tabTouchStartTime = 0;
+
+    const _appMainElement = document.querySelector('main');
+    if (_appMainElement) {
+        _appMainElement.addEventListener('touchstart', (e) => {
+            if (window.innerWidth >= 768) return;
+            if (e.target.closest('input, textarea, select, button, [contenteditable="true"], .modal-animate, #unifiedControlDock, #previewItemSelectorBar, #uitlegDots, .overflow-x-auto, #slideCanvas')) return;
+            const touch = e.touches[0];
+            _tabTouchStartX = touch.clientX;
+            _tabTouchStartY = touch.clientY;
+            _tabTouchStartTime = Date.now();
+        }, { passive: true });
+
+        _appMainElement.addEventListener('touchend', (e) => {
+            if (window.innerWidth >= 768 || !_tabTouchStartX || !_tabTouchStartY) return;
+            const touch = e.changedTouches[0];
+            const deltaX = touch.clientX - _tabTouchStartX;
+            const deltaY = touch.clientY - _tabTouchStartY;
+            const deltaTime = Date.now() - _tabTouchStartTime;
+
+            _tabTouchStartX = 0;
+            _tabTouchStartY = 0;
+
+            // Horizontale veeg: > 50px verplaatsing, overwegend horizontaal, < 450ms
+            if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5 && deltaTime < 450) {
+                const tabs = ['invoer', 'volgorde', 'preview'];
+                const curIdx = tabs.indexOf(window.huidigeMobieleTab || 'invoer');
+                if (deltaX < 0 && curIdx < tabs.length - 1) {
+                    window.schakelMobieleTab(tabs[curIdx + 1], false);
+                    if (navigator.vibrate) try { navigator.vibrate(8); } catch(e){}
+                } else if (deltaX > 0 && curIdx > 0) {
+                    window.schakelMobieleTab(tabs[curIdx - 1], false);
+                    if (navigator.vibrate) try { navigator.vibrate(8); } catch(e){}
+                }
+            }
+        }, { passive: true });
+    }
+
+    // --- 3. MOBIELE BOTTOM SHEET SWIPE-DOWN TO CLOSE ---
+    let _sheetTouchStartY = 0;
+    let _sheetCurrentTouchY = 0;
+    let _activeDragSheet = null;
+
+    document.addEventListener('touchstart', (e) => {
+        if (window.innerWidth >= 768) return;
+        const sheet = e.target.closest('.modal-animate');
+        if (!sheet) return;
+
+        const scrollableArea = sheet.querySelector('.overflow-y-auto') || sheet;
+        if (scrollableArea && scrollableArea.scrollTop > 5) return;
+
+        if (e.target.closest('input, textarea, select, button, [contenteditable="true"]')) return;
+
+        _activeDragSheet = sheet;
+        _sheetTouchStartY = e.touches[0].clientY;
+        _sheetCurrentTouchY = _sheetTouchStartY;
+    }, { passive: true });
+
+    document.addEventListener('touchmove', (e) => {
+        if (!_activeDragSheet || window.innerWidth >= 768) return;
+        _sheetCurrentTouchY = e.touches[0].clientY;
+        const diffY = _sheetCurrentTouchY - _sheetTouchStartY;
+        if (diffY > 0) {
+            _activeDragSheet.style.transform = `translateY(${diffY * 0.72}px)`;
+            _activeDragSheet.style.transition = 'none';
+        }
+    }, { passive: true });
+
+    document.addEventListener('touchend', () => {
+        if (!_activeDragSheet || window.innerWidth >= 768) return;
+        const diffY = _sheetCurrentTouchY - _sheetTouchStartY;
+        const sheet = _activeDragSheet;
+        _activeDragSheet = null;
+
+        sheet.style.transition = 'transform 0.28s cubic-bezier(0.16, 1, 0.3, 1)';
+
+        if (diffY > 80) {
+            sheet.style.transform = 'translateY(100%)';
+            setTimeout(() => {
+                const closeBtn = sheet.querySelector('button[title*="sluit" i], button[title*="annuleren" i], button[onclick*="sluit" i], button[onclick*="Annuleren" i]');
+                if (closeBtn) {
+                    closeBtn.click();
+                } else {
+                    const backdrop = sheet.closest('.fixed.inset-0');
+                    if (backdrop) backdrop.classList.add('hidden');
+                }
+                sheet.style.transform = '';
+                sheet.style.transition = '';
+            }, 200);
+        } else {
+            sheet.style.transform = 'translateY(0)';
+            setTimeout(() => {
+                sheet.style.transform = '';
+                sheet.style.transition = '';
+            }, 280);
+        }
+    }, { passive: true });
 
     // --- 1. FIREBASE CONFIGURATIE ---
     const firebaseConfig = {
@@ -5504,6 +5721,8 @@ Retourneer UITSLUITEND een valide JSON object:
     function updateGemeenteUI(naam) {
         const headerLabel = document.getElementById('headerGemeenteNaam');
         if (headerLabel) headerLabel.textContent = naam;
+        const miniNavLabel = document.getElementById('miniNavGemeenteNaam');
+        if (miniNavLabel) miniNavLabel.textContent = naam;
         const infoLabel = document.getElementById('infoGemeenteNaam');
         if (infoLabel) infoLabel.textContent = naam;
         const archiefLabel = document.getElementById('archiefGemeenteNaam');
