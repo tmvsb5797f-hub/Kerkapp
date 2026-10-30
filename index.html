@@ -100,6 +100,23 @@
         padding-right: env(safe-area-inset-right, 0px);
         -webkit-tap-highlight-color: transparent;
     }
+    /* Vaste, dekkende top-shield voor Dynamic Island & Statusbar: voorkomt dat scrollende tekst eronder wazig schemert */
+    @media (max-width: 768px) {
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: max(2.6rem, env(safe-area-inset-top, 0px));
+            background: #F5F5F7;
+            z-index: 28;
+            pointer-events: none;
+        }
+        html.dark body::before, body.dark-mode::before {
+            background: #1C1C1E;
+        }
+    }
     /* Touch manipulation prevents 300ms tap delay & accidental double-tap zoom */
     button, [role="button"], select, input, a {
         touch-action: manipulation;
@@ -1124,9 +1141,9 @@
 </header>
 
 <main class="flex-grow px-3 sm:px-4 md:px-8 lg:px-12 max-w-[1400px] mx-auto w-full pb-44 sm:pb-36">
-    <!-- Mobiele Segmented Tab Schakelaar (Geoptimaliseerd voor iPhone 15 tot 18 Pro & Pro Max met Dynamic Island) -->
-    <div class="md:hidden sticky z-30 mb-3 px-0.5" style="top: max(0.4rem, calc(env(safe-area-inset-top, 0px) + 0.2rem));">
-        <div class="bg-white/95 dark:bg-[#2C2C2E]/95 backdrop-blur-2xl p-1 rounded-2xl shadow-[0_6px_24px_rgba(0,0,0,0.08)] dark:shadow-[0_6px_24px_rgba(0,0,0,0.5)] border border-black/[0.06] dark:border-white/10 flex items-center gap-1">
+    <!-- Mobiele Segmented Tab Schakelaar (Strakke dekkende weergave, geen wazige doorschemering) -->
+    <div class="md:hidden sticky z-30 mb-3 px-1" style="top: max(2.75rem, calc(env(safe-area-inset-top, 0px) + 0.35rem));">
+        <div class="bg-white dark:bg-[#2C2C2E] p-1 rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] border border-black/[0.06] dark:border-white/10 flex items-center gap-1">
             <button type="button" id="tabBtnInvoer" onclick="schakelMobieleTab('invoer', true)" class="flex-1 min-h-[44px] py-2 px-2.5 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-1 bg-[#007AFF] text-white shadow-xs active:scale-95">
                 <span>➕</span>
                 <span>Invoer</span>
