@@ -7,10 +7,11 @@
 <meta name="mobile-web-app-capable" content="yes"/>
 <title>Liturgie Assistent Pro</title>
 <link rel="manifest" href="manifest.webmanifest"/>
-<meta name="theme-color" content="#007AFF"/>
+<meta name="theme-color" content="#F5F5F7" media="(prefers-color-scheme: light)"/>
+<meta name="theme-color" content="#1C1C1E" media="(prefers-color-scheme: dark)"/>
 <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
 <meta name="apple-mobile-web-app-title" content="Liturgie"/>
 <script>
   if ('serviceWorker' in navigator) {
@@ -93,7 +94,7 @@
         --safe-right: env(safe-area-inset-right, 0px);
     }
     body {
-        padding-top: env(safe-area-inset-top, 0px);
+        padding-top: 0;
         padding-bottom: max(7.5rem, calc(env(safe-area-inset-bottom, 0px) + 5.5rem)) !important;
         padding-left: env(safe-area-inset-left, 0px);
         padding-right: env(safe-area-inset-right, 0px);
@@ -1010,7 +1011,7 @@
     </div>
 </div>
 
-<header class="mb-3 md:mb-10 px-3 sm:px-4 md:px-12 max-w-[1400px] mx-auto w-full flex flex-col gap-2.5 md:gap-4" style="padding-top: max(1rem, calc(env(safe-area-inset-top, 0px) + 0.35rem));">
+<header class="mb-3 md:mb-10 px-3 sm:px-4 md:px-12 max-w-[1400px] mx-auto w-full flex flex-col gap-2.5 md:gap-4" style="padding-top: max(1.25rem, calc(env(safe-area-inset-top, 0px) + 0.6rem));">
     <!-- Bovenste rij: Titel + Gemeente links, Status-pill rechts op desktop -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 w-full">
         <!-- Links: Titel & Gemeente-knop -->
@@ -1278,6 +1279,21 @@
                     </button>
                 </div>
             </div>
+
+            <!-- Item Selector: direct bladeren door de liturgie in de preview (ideaal op smartphone & iPad) -->
+            <div id="previewItemSelectorBar" class="mb-2.5 bg-white dark:bg-[#1C1C1E] p-1.5 sm:p-2 rounded-xl shadow-xs border border-gray-100 dark:border-white/10 flex items-center justify-between gap-2">
+                <button type="button" onclick="previewStapItem(-1)" class="w-10 h-10 min-w-[40px] flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 font-bold transition-all cursor-pointer text-base" title="Vorig liturgie-item">
+                    ‹
+                </button>
+                <div class="text-center min-w-0 flex-1 px-1">
+                    <div id="previewItemTitel" class="text-xs sm:text-sm font-bold text-[#1D1D1F] dark:text-white truncate">Geen item geselecteerd</div>
+                    <div id="previewItemTeller" class="text-[10px] text-gray-500 dark:text-gray-400 font-medium">Item 0 van 0</div>
+                </div>
+                <button type="button" onclick="previewStapItem(1)" class="w-10 h-10 min-w-[40px] flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 font-bold transition-all cursor-pointer text-base" title="Volgend liturgie-item">
+                    ›
+                </button>
+            </div>
+
             <div class="relative">
                 <div id="slideCanvas" class="aspect-video bg-black rounded-xl relative overflow-hidden shadow-inner border border-gray-800">
                     <div class="absolute top-2 left-3 text-[8px] text-gray-500 uppercase tracking-widest font-bold z-20 pointer-events-none">Slide Preview</div>
@@ -1315,7 +1331,7 @@
                     <button onclick="wisLiturgie()" class="px-2 py-1.5 rounded-lg text-[11px] font-semibold text-gray-400 hover:text-[#FF3B30] hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors active:scale-95 cursor-pointer">Leegmaken</button>
                 </div>
             </div>
-            <div id="volgordeLijst" class="space-y-3 pb-8">
+            <div id="volgordeLijst" class="space-y-3 pb-36 sm:pb-24">
                 <div class="bg-transparent border-2 border-dashed border-gray-200 rounded-[16px] md:rounded-[20px] p-6 md:p-8 text-center text-gray-400 font-medium text-[12px] md:text-[13px]">Nog geen items toegevoegd</div>
             </div>
         </section>
@@ -1940,9 +1956,9 @@
             if (tab === 'preview') {
                 preview.classList.remove('hidden');
                 requestAnimationFrame(() => {
-                    const idx = (typeof previewItemIdx !== 'undefined' && previewItemIdx >= 0)
+                    const idx = (typeof previewItemIdx === 'number' && previewItemIdx >= 0 && previewItemIdx < (window.liturgieVolgorde || []).length)
                         ? previewItemIdx
-                        : ((typeof liturgieVolgorde !== 'undefined' && liturgieVolgorde.length > 0) ? 0 : -1);
+                        : (((window.liturgieVolgorde || []).length > 0) ? 0 : -1);
                     if (typeof renderSlidePreview === 'function' && idx >= 0) {
                         renderSlidePreview(idx);
                     } else if (typeof tekenSlidePreview === 'function') {
@@ -11508,6 +11524,14 @@ Antwoord UITSLUITEND in valide JSON:
         if (typeof autoSyncObsSlideIndex === 'function') autoSyncObsSlideIndex(idx);
     }
 
+    window.previewStapItem = function(delta) {
+        if (!liturgieVolgorde || liturgieVolgorde.length === 0) return;
+        let nieuwIdx = (typeof previewItemIdx === 'number' && previewItemIdx >= 0) ? (previewItemIdx + delta) : 0;
+        if (nieuwIdx < 0) nieuwIdx = liturgieVolgorde.length - 1;
+        if (nieuwIdx >= liturgieVolgorde.length) nieuwIdx = 0;
+        renderSlidePreview(nieuwIdx);
+    };
+
     window.navigeerSlide = function(dir) {
         if (!previewSubSlides.length) return;
         previewSubSlide = (previewSubSlide + dir + previewSubSlides.length) % previewSubSlides.length;
@@ -11519,6 +11543,24 @@ Antwoord UITSLUITEND in valide JSON:
         const fitInd = document.getElementById('fitIndicator');
         const nav = document.getElementById('slideNav');
         const hint = document.getElementById('dragHint');
+        const titelEl = document.getElementById('previewItemTitel');
+        const tellerEl = document.getElementById('previewItemTeller');
+
+        if (titelEl) {
+            if (previewItemIdx >= 0 && previewItemIdx < liturgieVolgorde.length) {
+                const cur = liturgieVolgorde[previewItemIdx];
+                titelEl.textContent = (cur.type ? cur.type + ': ' : '') + (cur.titel || 'Zonder titel');
+            } else {
+                titelEl.textContent = 'Geen item geselecteerd';
+            }
+        }
+        if (tellerEl) {
+            if (previewItemIdx >= 0 && previewItemIdx < liturgieVolgorde.length) {
+                tellerEl.textContent = `Item ${previewItemIdx + 1} van ${liturgieVolgorde.length}`;
+            } else {
+                tellerEl.textContent = 'Item 0 van 0';
+            }
+        }
 
         if (previewItemIdx < 0 || previewItemIdx >= liturgieVolgorde.length) {
             preview.innerHTML = '<div class="w-full h-full flex items-center justify-center text-white text-[12px] italic opacity-40">Typ of selecteer een lied, bijbeltekst of media</div>';
@@ -11628,7 +11670,11 @@ Antwoord UITSLUITEND in valide JSON:
             return;
         }
         if (item.type === 'Leeg' || !item.tekst || item.tekst.trim() === '' || item.tekst === ' ') {
-            preview.innerHTML = '<div class="w-full h-full"></div>';
+            preview.innerHTML = `
+                <div class="w-full h-full flex flex-col items-center justify-center text-gray-500/70 select-none pointer-events-none">
+                    <span class="text-xl mb-1">⬛</span>
+                    <span class="text-[11px] font-semibold tracking-wider uppercase">Lege Zwarte Dia</span>
+                </div>`;
             fitInd.classList.add('hidden'); nav.classList.add('hidden'); hint.classList.add('hidden');
             return;
         }
