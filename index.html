@@ -102,17 +102,17 @@
     }
     /* Vloeiende tab- en paneel-overgangen (Apple HIG spring animatie voor vloeiend schakelen) */
     @keyframes tabFadeSlideIn {
-        from {
+        0% {
             opacity: 0;
-            transform: translateY(6px);
+            transform: translateY(8px) scale(0.99);
         }
-        to {
+        100% {
             opacity: 1;
-            transform: translateY(0);
+            transform: translateY(0) scale(1);
         }
     }
     .tab-pane-animate {
-        animation: tabFadeSlideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+        animation: tabFadeSlideIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
         will-change: opacity, transform;
     }
     /* Touch manipulation prevents 300ms tap delay & accidental double-tap zoom */
@@ -1026,7 +1026,7 @@
     </div>
 </div>
 
-<header class="mb-3 md:mb-10 px-3 sm:px-4 md:px-12 max-w-[1400px] mx-auto w-full flex flex-col gap-2.5 md:gap-4" style="padding-top: max(1.25rem, calc(env(safe-area-inset-top, 0px) + 0.6rem));">
+<header class="mb-3 md:mb-10 px-3 sm:px-4 md:px-12 max-w-[1400px] mx-auto w-full flex flex-col gap-2.5 md:gap-4 md:!pt-8" style="padding-top: max(1.5rem, calc(env(safe-area-inset-top, 0px) + 1.45rem));">
     <!-- Bovenste rij: Titel + Gemeente links, Status-pill rechts op desktop -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 w-full">
         <!-- Links: Titel & Gemeente-knop -->
@@ -1374,7 +1374,7 @@
 <div id="meeleesOverlay" class="hidden fixed inset-0 z-[300] overflow-y-auto"></div>
 
 <div id="deelModal" class="fixed inset-0 z-[110] hidden flex items-center justify-center bg-black/40 modal-backdrop-safe transition-opacity p-2 sm:p-4" onclick="if(event.target === this) window.sluitDeelModal()">
-    <div class="bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.05] dark:ring-white/10 w-full max-w-md overflow-hidden flex flex-col transform transition-all modal-animate max-h-[92vh]">
+    <div class="bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.05] dark:ring-white/10 w-full max-w-md overflow-hidden flex flex-col transform transition-all modal-animate h-[580px] max-h-[88vh]">
         <!-- Header -->
         <div class="p-4 sm:p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center flex-shrink-0 bg-white dark:bg-[#1C1C1E]">
             <div class="flex items-center gap-2.5">
@@ -1394,11 +1394,11 @@
         <!-- Segmented Tab control -->
         <div class="px-4 pt-3 pb-2 bg-gray-50/80 dark:bg-gray-800/60 border-b border-gray-100 dark:border-white/10 flex-shrink-0">
             <div class="grid grid-cols-2 p-1 bg-gray-200/70 dark:bg-gray-700/60 rounded-2xl gap-1 text-xs">
-                <button type="button" id="meeleesTabBtnHuidig" onclick="window.wisselMeeleesTab('huidig')" class="py-1.5 px-3 rounded-xl font-bold bg-white dark:bg-[#2C2C2E] text-[#007AFF] dark:text-blue-400 shadow-xs transition-all flex items-center justify-center gap-1.5 active:scale-95">
+                <button type="button" id="meeleesTabBtnHuidig" onclick="window.wisselMeeleesTab('huidig')" class="py-1.5 px-3 rounded-xl font-bold bg-white dark:bg-[#2C2C2E] text-[#007AFF] dark:text-blue-400 shadow-xs transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer">
                     <span>📱</span>
                     <span>Huidige QR</span>
                 </button>
-                <button type="button" id="meeleesTabBtnGeschiedenis" onclick="window.wisselMeeleesTab('geschiedenis')" class="py-1.5 px-3 rounded-xl font-semibold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all flex items-center justify-center gap-1.5 active:scale-95">
+                <button type="button" id="meeleesTabBtnGeschiedenis" onclick="window.wisselMeeleesTab('geschiedenis')" class="py-1.5 px-3 rounded-xl font-semibold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer">
                     <span>📜</span>
                     <span>QR Geschiedenis</span>
                     <span id="meeleesGeschiedenisBadge" class="hidden text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-blue-100 text-[#007AFF] dark:bg-blue-950/60 dark:text-blue-300">0</span>
@@ -1407,7 +1407,7 @@
         </div>
 
         <!-- Scrollable Content -->
-        <div class="p-4 sm:p-5 flex flex-col gap-3.5 overflow-y-auto">
+        <div class="p-4 sm:p-5 flex flex-col gap-3.5 overflow-y-auto flex-1 min-h-0">
             <!-- TAB 1: HUIDIGE QR -->
             <div id="meeleesPaneelHuidig" class="flex flex-col items-center gap-3">
                 <p class="text-xs text-gray-500 dark:text-gray-400 text-center leading-snug">Gemeenteleden scannen deze QR-code met hun camera of openen de link om live op hun mobiel mee te lezen tijdens de dienst.</p>
@@ -1479,7 +1479,7 @@
 </div>
 
 <div id="infoModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 modal-backdrop-safe transition-opacity p-2 sm:p-4">
-    <div class="bg-white dark:bg-gray-900 rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] w-full max-w-md overflow-hidden flex flex-col transform transition-all modal-animate max-h-[92vh]">
+    <div class="bg-white dark:bg-gray-900 rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] w-full max-w-md overflow-hidden flex flex-col transform transition-all modal-animate h-[620px] max-h-[88vh]">
         
         <!-- Header -->
         <div class="p-4 sm:p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center flex-shrink-0 bg-white dark:bg-gray-900">
@@ -1496,25 +1496,25 @@
         <div class="px-4 pt-3 pb-2 bg-gray-50/80 dark:bg-gray-800/60 border-b border-gray-100 dark:border-white/10 flex-shrink-0">
             <div class="flex p-1 bg-gray-200/70 dark:bg-gray-700/60 rounded-2xl gap-1">
                 <button type="button" onclick="window.wisselInfoTab('beamer')" id="infoTabBtn-beamer"
-                    class="flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition-all bg-white dark:bg-gray-800 text-[#007AFF] shadow-xs flex items-center justify-center gap-1.5">
+                    class="flex-1 py-2 px-2.5 rounded-xl text-xs font-bold transition-all duration-200 bg-white dark:bg-gray-800 text-[#007AFF] shadow-xs flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer">
                     <span>⚙️</span>
                     <span>Beamer</span>
                 </button>
                 <button type="button" onclick="window.wisselInfoTab('koppelingen')" id="infoTabBtn-koppelingen"
-                    class="flex-1 py-1.5 px-2 rounded-xl text-xs font-semibold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all flex items-center justify-center gap-1.5">
+                    class="flex-1 py-2 px-2.5 rounded-xl text-xs font-semibold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all duration-200 flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer">
                     <span>⚡</span>
                     <span>Koppelingen</span>
                 </button>
                 <button type="button" onclick="window.wisselInfoTab('info')" id="infoTabBtn-info"
-                    class="flex-1 py-1.5 px-2 rounded-xl text-xs font-semibold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all flex items-center justify-center gap-1.5">
+                    class="flex-1 py-2 px-2.5 rounded-xl text-xs font-semibold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all duration-200 flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer">
                     <span>ℹ️</span>
                     <span>Hulp &amp; Info</span>
                 </button>
             </div>
         </div>
 
-        <!-- Scrollable Body with Tabs -->
-        <div class="p-4 sm:p-5 flex flex-col gap-3 overflow-y-auto min-h-[350px]">
+        <!-- Scrollable Body with Tabs (Vaste stabiele hoogte: geen verspringen bij tabwissel!) -->
+        <div id="infoModalBody" class="p-4 sm:p-5 flex flex-col gap-3 overflow-y-auto flex-1 min-h-0">
             
             <!-- TAB 1: BEAMER & WEERGAVE (Toggles, Meelees) -->
             <div id="infoTabContent-beamer" class="flex flex-col gap-3.5">
@@ -12948,12 +12948,21 @@ window.maakPowerPoint = async function(customOpties = null, forceExport = false)
 
 window.wisselInfoTab = function(tabId) {
     const tabs = ['beamer', 'koppelingen', 'info'];
+    const activeClasses = ['bg-white', 'dark:bg-gray-800', 'text-[#007AFF]', 'shadow-xs', 'font-bold'];
+    const inactiveClasses = ['text-gray-600', 'dark:text-gray-300', 'hover:text-gray-900', 'dark:hover:text-white', 'font-semibold'];
+
+    const modalBody = document.getElementById('infoModalBody');
+    if (modalBody) {
+        modalBody.scrollTop = 0;
+    }
+
     tabs.forEach(t => {
         const btn = document.getElementById('infoTabBtn-' + t);
         const content = document.getElementById('infoTabContent-' + t);
         if (t === tabId) {
             if (btn) {
-                btn.className = "flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition-all bg-white dark:bg-gray-800 text-[#007AFF] shadow-xs flex items-center justify-center gap-1.5";
+                btn.classList.remove(...inactiveClasses);
+                btn.classList.add(...activeClasses);
             }
             if (content) {
                 content.classList.remove('hidden');
@@ -12963,7 +12972,8 @@ window.wisselInfoTab = function(tabId) {
             }
         } else {
             if (btn) {
-                btn.className = "flex-1 py-1.5 px-2 rounded-xl text-xs font-semibold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all flex items-center justify-center gap-1.5";
+                btn.classList.remove(...activeClasses);
+                btn.classList.add(...inactiveClasses);
             }
             if (content) content.classList.add('hidden');
         }
