@@ -268,25 +268,104 @@
         0%, 100% { outline-color: #007AFF; box-shadow: 0 0 0 0 rgba(0,122,255,0.4); }
         50% { outline-color: #5AC8FA; box-shadow: 0 0 20px 4px rgba(0,122,255,0.2); }
     }
-    /* --- Modal Animatie (Vloeiend infaden en opschalen) --- */
-    @keyframes modalFadeIn {
-        from {
+    /* --- Modal Animatie (Vloeiend Apple Spring Popin met lichte blur dissolve) --- */
+    @keyframes modalSpringIn {
+        0% {
             opacity: 0;
-            transform: scale(0.95);
+            transform: scale(0.92) translateY(14px);
+            filter: blur(4px);
         }
-        to {
+        65% {
+            transform: scale(1.012) translateY(-1px);
+            filter: blur(0px);
+        }
+        100% {
             opacity: 1;
-            transform: scale(1);
+            transform: scale(1) translateY(0);
+            filter: blur(0px);
         }
     }
 
     .modal-animate {
-        animation: modalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+        animation: modalSpringIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+        will-change: transform, opacity, filter;
         -webkit-backface-visibility: hidden;
         backface-visibility: hidden;
         max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 1.5rem);
         overscroll-behavior: contain;
         -webkit-overflow-scrolling: touch;
+    }
+
+    /* Apple Spring Popover & Chat Animatie (Chatwolk verschijnt vloeiend vanuit dock) */
+    @keyframes chatWindowPopIn {
+        0% {
+            opacity: 0;
+            transform: scale(0.8) translateY(24px);
+            filter: blur(8px);
+        }
+        65% {
+            transform: scale(1.02) translateY(-2px);
+            filter: blur(0px);
+        }
+        100% {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            filter: blur(0px);
+        }
+    }
+    @keyframes chatWindowPopOut {
+        0% {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            filter: blur(0px);
+        }
+        100% {
+            opacity: 0;
+            transform: scale(0.85) translateY(18px);
+            filter: blur(6px);
+        }
+    }
+    .chat-window-enter {
+        animation: chatWindowPopIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+        will-change: transform, opacity, filter;
+    }
+    .chat-window-exit {
+        animation: chatWindowPopOut 0.2s cubic-bezier(0.4, 0, 1, 1) both !important;
+        will-change: transform, opacity, filter;
+    }
+
+    /* iMessage-stijl Chat Bubble Spring */
+    @keyframes chatBubblePop {
+        0% {
+            opacity: 0;
+            transform: translateY(12px) scale(0.92);
+        }
+        70% {
+            transform: translateY(-2px) scale(1.01);
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+    .chat-bubble-animate {
+        animation: chatBubblePop 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+        will-change: transform, opacity;
+    }
+
+    /* Vloeiende Dropdown Spring (voor suggesties & keuzemenu's) */
+    @keyframes dropdownSpringIn {
+        0% {
+            opacity: 0;
+            transform: translateY(-8px) scale(0.98);
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+    .suggestion-dropdown-animate {
+        animation: dropdownSpringIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
     }
 
     .modal-backdrop-safe {
@@ -1231,10 +1310,10 @@
 
                     <div class="relative">
                         <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                        <input id="liedInput" autocomplete="off" class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-transparent rounded-xl py-3 sm:py-3.5 pl-10 sm:pl-12 pr-4 text-[14px] md:text-[15px] font-medium placeholder-gray-400 apple-input transition-all" placeholder="Bijv: 'wk 15', 'oth 314' of 'psalm 23'..." type="text"/>
+                        <input id="liedInput" autocomplete="off" class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-transparent rounded-xl py-3 sm:py-3.5 pl-10 sm:pl-12 pr-4 text-[16px] md:text-[15px] font-medium placeholder-gray-400 apple-input transition-all" placeholder="Bijv: 'wk 15', 'oth 314' of 'psalm 23'..." type="text"/>
                     </div>
                     <p class="text-[11px] text-gray-400 mt-2 ml-1 leading-snug" id="liedZoekTipTekst">Tip: Afkortingen zoals 'wk' of 'oth' werken ook! Filter hierboven op bundel om direct het juiste lied te vinden.</p>
-                    <div id="suggestieLied" class="absolute z-50 w-[calc(100%-2rem)] md:w-[calc(100%-3rem)] bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-xl mt-2 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-gray-100 dark:border-white/10 hidden max-h-72 overflow-y-auto"></div>
+                    <div id="suggestieLied" class="absolute z-50 w-[calc(100%-2rem)] md:w-[calc(100%-3rem)] bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-xl mt-2 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-gray-100 dark:border-white/10 hidden max-h-72 overflow-y-auto suggestion-dropdown-animate"></div>
                 </div>
             </section>
 
@@ -1245,9 +1324,9 @@
                 <div class="bg-white dark:bg-[#1C1C1E] p-3.5 sm:p-4 md:p-6 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.04)] dark:border dark:border-white/10 relative flex flex-col gap-4">
                     <div class="relative">
                         <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477-4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-                        <input id="bijbelInput" autocomplete="off" class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-transparent rounded-xl py-3 sm:py-3.5 pl-10 sm:pl-12 pr-4 text-[14px] md:text-[15px] font-medium placeholder-gray-400 apple-input transition-all" placeholder="Bijv: Genesis 1:1-15" type="text"/>
+                        <input id="bijbelInput" autocomplete="off" class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-transparent rounded-xl py-3 sm:py-3.5 pl-10 sm:pl-12 pr-4 text-[16px] md:text-[15px] font-medium placeholder-gray-400 apple-input transition-all" placeholder="Bijv: Genesis 1:1-15" type="text"/>
                     </div>
-                    <div id="suggestieBijbel" class="absolute z-50 w-[calc(100%-2rem)] md:w-[calc(100%-3rem)] bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-xl mt-2 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-gray-100 dark:border-white/10 hidden max-h-64 overflow-y-auto"></div>
+                    <div id="suggestieBijbel" class="absolute z-50 w-[calc(100%-2rem)] md:w-[calc(100%-3rem)] bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-xl mt-2 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-gray-100 dark:border-white/10 hidden max-h-64 overflow-y-auto suggestion-dropdown-animate"></div>
                 </div>
             </section>
         </div>
@@ -1843,26 +1922,26 @@
     </div>
 </div>
 
-<div id="toastMelding" style="top: max(1rem, calc(env(safe-area-inset-top, 0px) + 0.6rem));" class="fixed left-1/2 transform -translate-x-1/2 -translate-y-24 opacity-0 z-[250] bg-[#34C759] text-white px-5 py-2.5 rounded-full shadow-[0_12px_32px_rgba(0,0,0,0.25)] font-semibold text-xs sm:text-[13px] flex items-center gap-2 transition-all duration-400 pointer-events-none max-w-[calc(100vw-2rem)] border border-white/20 select-none">
+<div id="toastMelding" style="top: max(1rem, calc(env(safe-area-inset-top, 0px) + 0.75rem)); transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.28s ease;" class="fixed left-1/2 transform -translate-x-1/2 -translate-y-24 scale-95 opacity-0 z-[250] bg-[#34C759] text-white px-5 py-2.5 rounded-full shadow-[0_12px_32px_rgba(0,0,0,0.25)] font-semibold text-xs sm:text-[13px] flex items-center gap-2 pointer-events-none max-w-[calc(100vw-2rem)] border border-white/20 select-none">
     <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
     <span id="toastTekst" class="truncate">Succesvol opgeslagen!</span>
 </div>
 
 
-<!-- Gecombineerd Chatvenster (Boven het centrale dock gepositioneerd) -->
-<div id="chatWindow" class="fixed bottom-24 left-3 right-3 sm:left-6 sm:right-auto z-50 hidden flex-col w-auto sm:w-88 max-w-[calc(100vw-1.5rem)] sm:max-w-sm h-[28rem] max-h-[75vh] bg-white dark:bg-[#1C1C1E] dark:text-white rounded-2xl shadow-2xl border border-gray-200 dark:border-white/10 overflow-hidden transition-all">
+<!-- Gecombineerd Chatvenster (Boven het centrale dock gepositioneerd met vloeiende Apple Spring popover) -->
+<div id="chatWindow" class="fixed bottom-24 left-3 right-3 sm:left-6 sm:right-auto z-50 hidden flex-col w-auto sm:w-88 max-w-[calc(100vw-1.5rem)] sm:max-w-sm h-[28rem] max-h-[75vh] bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[24px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.28)] dark:shadow-[0_24px_60px_-12px_rgba(0,0,0,0.7)] border border-gray-200/80 dark:border-white/10 overflow-hidden origin-bottom sm:origin-bottom-left overscroll-contain">
     <div class="bg-[#007AFF] p-3 text-white font-bold flex justify-between items-center shadow-sm">
         <div class="flex items-center gap-2">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
             <span class="text-sm">Hulp Assistent</span>
         </div>
-        <button onclick="toggleChat()" class="text-white hover:text-gray-200 transition-colors">
+        <button onclick="toggleChat()" class="text-white hover:text-gray-200 p-1 rounded-lg transition-colors cursor-pointer" title="Sluit chat">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
     </div>
 
     <div id="chatMessages" class="flex-grow p-4 overflow-y-auto bg-gray-50 dark:bg-[#2C2C2E] flex flex-col gap-3 text-sm">
-        <div class="bg-white dark:bg-[#1C1C1E] p-3 rounded-xl rounded-tl-none shadow-sm border border-gray-100 dark:border-white/10 text-gray-700 dark:text-gray-200 self-start max-w-[90%] leading-relaxed text-[13px]">
+        <div class="chat-bubble-animate bg-white dark:bg-[#1C1C1E] p-3 rounded-xl rounded-tl-none shadow-sm border border-gray-100 dark:border-white/10 text-gray-700 dark:text-gray-200 self-start max-w-[90%] leading-relaxed text-[13px]">
             Hallo! Ik help je met de Liturgie app. Vraag me bijvoorbeeld:
             <ul class="mt-2 space-y-1 text-[12px] text-gray-500 dark:text-gray-400">
                 <li class="cursor-pointer hover:text-[#007AFF]" onclick="document.getElementById('chatInput').value='Hoe voeg ik een lied toe?'; stuurChatBericht();">• "Hoe voeg ik een lied toe?"</li>
@@ -1873,8 +1952,8 @@
     </div>
 
     <div class="p-3 bg-white dark:bg-[#1C1C1E] border-t border-gray-100 dark:border-white/10 flex gap-2">
-        <input id="chatInput" type="text" class="flex-grow bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white rounded-xl px-4 py-2 text-[13px] font-medium outline-none focus:ring-2 focus:ring-blue-300 border border-transparent transition-all" placeholder="Stel een vraag over de app..." onkeypress="if(event.key === 'Enter') stuurChatBericht()">
-        <button onclick="stuurChatBericht()" class="bg-[#007AFF] text-white p-2.5 rounded-xl hover:bg-blue-600 transition-colors shadow-sm">
+        <input id="chatInput" type="text" class="flex-grow bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white rounded-xl px-4 py-2 text-[16px] md:text-sm font-medium outline-none focus:ring-2 focus:ring-blue-300 border border-transparent transition-all" placeholder="Stel een vraag over de app..." onkeypress="if(event.key === 'Enter') stuurChatBericht()">
+        <button onclick="stuurChatBericht()" class="bg-[#007AFF] text-white p-2.5 rounded-xl hover:bg-blue-600 transition-colors shadow-sm cursor-pointer" title="Verzend vraag">
             <svg class="w-4 h-4 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
         </button>
     </div>
@@ -6871,13 +6950,15 @@ Bijbelliederen`;
             toast.classList.replace('bg-[#FF3B30]', 'bg-[#34C759]'); // Maak de knop groen
         }
         
-        // Schuif hem soepel in beeld (onder Dynamic Island op iPhone)
-        toast.classList.remove('-translate-y-24', 'opacity-0');
+        // Schuif hem soepel in beeld (Apple spring onder Dynamic Island op iPhone)
+        toast.classList.remove('-translate-y-24', 'scale-95', 'opacity-0');
+        toast.classList.add('translate-y-0', 'scale-100', 'opacity-100');
         
         // Wacht 4 seconden en schuif hem weer zachtjes weg
         if (window._toastTimeout) clearTimeout(window._toastTimeout);
         window._toastTimeout = setTimeout(() => {
-            toast.classList.add('-translate-y-24', 'opacity-0');
+            toast.classList.remove('translate-y-0', 'scale-100', 'opacity-100');
+            toast.classList.add('-translate-y-24', 'scale-95', 'opacity-0');
         }, 4000);
     }
 
@@ -9808,10 +9889,24 @@ ${veiligeTekst}
 
     window.toggleChat = function() {
         const chat = document.getElementById('chatWindow');
-        chat.classList.toggle('hidden');
-        chat.classList.toggle('flex');
-        if(!chat.classList.contains('hidden')) {
-            document.getElementById('chatInput').focus();
+        if (!chat) return;
+
+        if (chat.classList.contains('hidden')) {
+            chat.classList.remove('hidden', 'chat-window-exit');
+            chat.classList.add('flex', 'chat-window-enter');
+            if (typeof window.lockBodyScroll === 'function') window.lockBodyScroll(true, 'chatWindow');
+            setTimeout(() => {
+                const input = document.getElementById('chatInput');
+                if (input) input.focus();
+            }, 120);
+        } else {
+            chat.classList.remove('chat-window-enter');
+            chat.classList.add('chat-window-exit');
+            if (typeof window.lockBodyScroll === 'function') window.lockBodyScroll(false, 'chatWindow');
+            setTimeout(() => {
+                chat.classList.remove('flex', 'chat-window-exit');
+                chat.classList.add('hidden');
+            }, 190);
         }
     };
 
@@ -9825,7 +9920,7 @@ ${veiligeTekst}
         const chatMessages = document.getElementById('chatMessages');
 
         chatMessages.innerHTML += `
-            <div class="bg-[#007AFF] text-white p-3 rounded-xl rounded-tr-none shadow-sm border border-white/30 dark:border-white/20 ring-1 ring-black/5 dark:ring-white/10 self-end max-w-[90%] break-words leading-relaxed text-[13px]">
+            <div class="chat-bubble-animate bg-[#007AFF] text-white p-3 rounded-xl rounded-tr-none shadow-sm border border-white/30 dark:border-white/20 ring-1 ring-black/5 dark:ring-white/10 self-end max-w-[90%] break-words leading-relaxed text-[13px]">
                 ${escapeHtml(message)}
             </div>`;
         input.value = '';
@@ -9983,7 +10078,7 @@ Antwoord UITSLUITEND in valide JSON:
                 }
 
                 chatMessages.innerHTML += `
-                    <div class="bg-white dark:bg-[#1C1C1E] p-3 rounded-xl rounded-tl-none shadow-sm border border-gray-100 dark:border-white/10 text-gray-800 dark:text-gray-200 self-start max-w-[90%] leading-relaxed text-[13px]">
+                    <div class="chat-bubble-animate bg-white dark:bg-[#1C1C1E] p-3 rounded-xl rounded-tl-none shadow-sm border border-gray-100 dark:border-white/10 text-gray-800 dark:text-gray-200 self-start max-w-[90%] leading-relaxed text-[13px]">
                         ${displayText}
                         ${highlightKnop}
                     </div>`;
