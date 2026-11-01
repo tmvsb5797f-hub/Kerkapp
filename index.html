@@ -58,7 +58,7 @@
         min-height: 100vh;
         min-height: 100dvh;
     }
-    .hidden {
+    .hidden:not([class*="sm:"]):not([class*="md:"]):not([class*="lg:"]):not([class*="xl:"]) {
         display: none !important;
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
@@ -489,6 +489,21 @@
         opacity: 0 !important;
         transform: scale(0.8) translateX(20px) !important;
         pointer-events: none !important;
+    }
+
+    /* Header weergave: desktop vs mobiel strikt gescheiden */
+    @media (max-width: 767px) {
+        #desktopHeader {
+            display: none !important;
+        }
+    }
+    @media (min-width: 768px) {
+        #desktopHeader {
+            display: flex !important;
+        }
+        #mobileStickyHeaderWrapper {
+            display: none !important;
+        }
     }
 
     /* --- iOS Native Bottom Sheet styling op mobiel (<768px) --- */
@@ -1319,8 +1334,8 @@
     </div>
 </div>
 
-<!-- DESKTOP HEADER (100% ongewijzigd voor laptop & desktop) -->
-<header class="hidden md:flex mb-6 md:mb-10 px-3 sm:px-4 md:px-12 max-w-[1400px] mx-auto w-full flex-col gap-2.5 md:gap-4 !pt-8">
+<!-- DESKTOP HEADER (100% zichtbaar voor computer, laptop & desktop) -->
+<header id="desktopHeader" class="flex mb-6 md:mb-10 px-3 sm:px-4 md:px-12 max-w-[1400px] mx-auto w-full flex-col gap-2.5 md:gap-4 !pt-8">
     <!-- Bovenste rij: Titel + Gemeente links, Status-pill rechts op desktop -->
     <div id="largeTitleRow" class="flex items-center justify-between gap-2.5 w-full">
         <!-- Links: Titel & Gemeente-knop -->
