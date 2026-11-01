@@ -544,17 +544,28 @@
         .modal-animate:not(#videoModalDialog)::before {
             content: '';
             display: block;
-            width: 40px;
+            width: 44px;
             height: 5px;
             border-radius: 9999px;
-            background-color: rgba(60, 60, 67, 0.28);
-            margin: 10px auto 4px auto;
+            background-color: rgba(60, 60, 67, 0.32);
+            margin: 12px auto 6px auto;
             flex-shrink: 0;
             cursor: grab;
+            touch-action: none;
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease;
+        }
+        .modal-animate:not(#videoModalDialog):active::before {
+            cursor: grabbing;
+            transform: scale(1.1);
+            background-color: rgba(60, 60, 67, 0.55);
         }
         html.dark .modal-animate:not(#videoModalDialog)::before,
         body.dark-mode .modal-animate:not(#videoModalDialog)::before {
-            background-color: rgba(235, 235, 245, 0.35);
+            background-color: rgba(235, 235, 245, 0.38);
+        }
+        html.dark .modal-animate:not(#videoModalDialog):active::before,
+        body.dark-mode .modal-animate:not(#videoModalDialog):active::before {
+            background-color: rgba(235, 235, 245, 0.65);
         }
     }
 
@@ -2447,11 +2458,24 @@
 
         const touch = e.touches[0];
         // Negeer te dicht bij schermranden (om iOS Safari geschiedenis-terug/vooruit te sparen)
-        if (touch.clientX < 14 || touch.clientX > window.innerWidth - 14) return;
+        if (touch.clientX < 16 || touch.clientX > window.innerWidth - 16) return;
 
         // Negeer wanneer een modal sheet openstaat of bij typen in tekstvelden
         if (e.target.closest('.modal-animate, #unifiedControlDock, input[type="range"], select')) return;
         if (e.target.closest('input:not([type="button"]):not([type="submit"]):not([type="checkbox"]), textarea, [contenteditable="true"]')) return;
+
+        // CRUCIAAL: Negeer wanneer de touch plaatsvindt binnen een horizontaal scrollbare balk of container (zoals het liedboek filter)
+        if (e.target.closest('#liedboekFilterBar, .overflow-x-auto, [class*="overflow-x"], #suggestieLied, #suggestieBijbel, #previewItemSelectorBar, #uitlegDots, #datumPicker, .no-scrollbar, #recenteItemsLijst, #snelleFiltersContainer, #suggestieContainer, #liedSuggestieContainer')) return;
+
+        // Extra dynamische controle: check of enig voorouder-element horizontaal kan scrollen
+        let parentEl = e.target;
+        while (parentEl && parentEl !== document.body && parentEl !== document.documentElement) {
+            if (parentEl.scrollWidth > parentEl.clientWidth + 6) {
+                const ox = window.getComputedStyle(parentEl).overflowX;
+                if (ox === 'auto' || ox === 'scroll') return;
+            }
+            parentEl = parentEl.parentElement;
+        }
 
         _swipeStartX = touch.clientX;
         _swipeStartY = touch.clientY;
@@ -2466,14 +2490,14 @@
         const dx = touch.clientX - _swipeStartX;
         const dy = touch.clientY - _swipeStartY;
 
-        // Vergrendel horizontaal zodra horizontale beweging duidelijk groter is dan verticaal
-        if (!_swipeLockedHorizontal && Math.abs(dx) > 12) {
-            if (Math.abs(dx) > Math.abs(dy) * 1.2) {
+        // Vergrendel horizontaal alleen bij overtuigende, bewuste horizontale swipe (minstens 24px en 1.8x zo horizontaal als verticaal)
+        if (!_swipeLockedHorizontal && Math.abs(dx) > 24) {
+            if (Math.abs(dx) > Math.abs(dy) * 1.8) {
                 _swipeLockedHorizontal = true;
             }
         }
 
-        // Voorkom schuin wiebelen van de pagina tijdens een horizontale swipe
+        // Voorkom schuin wiebelen van de pagina tijdens een bevestigde horizontale swipe
         if (_swipeLockedHorizontal) {
             _suppressNextClick = true;
             if (e.cancelable) e.preventDefault();
@@ -2492,7 +2516,7 @@
         const dx = touch.clientX - _swipeStartX;
         const dy = touch.clientY - _swipeStartY;
         const duration = Date.now() - _swipeStartTime;
-        const isHorizontal = _swipeLockedHorizontal || (Math.abs(dx) > 34 && Math.abs(dx) > Math.abs(dy) * 1.25);
+        const isHorizontal = _swipeLockedHorizontal || (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.8);
 
         const initialTarget = _swipeInitialTarget;
         _swipeStartX = 0;
@@ -2500,7 +2524,7 @@
         _swipeLockedHorizontal = false;
         _swipeInitialTarget = null;
 
-        if (isHorizontal && Math.abs(dx) > 34 && duration < 500) {
+        if (isHorizontal && Math.abs(dx) > 48 && duration < 550) {
             // A. Preview Tab Slide Navigatie: swipe op de preview dia bladert door dia's
             const isSlideArea = initialTarget && initialTarget.closest('#previewVak, #slideCanvas, #slideTextBox, .aspect-video');
             if (isSlideArea && window.huidigeMobieleTab === 'preview') {
@@ -2547,63 +2571,153 @@
         }
     }, true);
 
-    // --- 3. MOBIELE BOTTOM SHEET SWIPE-DOWN TO CLOSE ---
+    // --- 3. MOBIELE BOTTOM SHEET SWIPE-DOWN TO CLOSE (Vloeiende iOS Sheet Dismiss & Grab Handle) ---
     let _sheetTouchStartY = 0;
+    let _sheetTouchStartX = 0;
     let _sheetCurrentTouchY = 0;
     let _activeDragSheet = null;
+    let _activeDragBackdrop = null;
+    let _isSheetDragging = false;
 
     document.addEventListener('touchstart', (e) => {
         if (window.innerWidth >= 768) return;
         const sheet = e.target.closest('.modal-animate');
-        if (!sheet) return;
+        if (!sheet || sheet.id === 'videoModalDialog') return;
 
-        const scrollableArea = sheet.querySelector('.overflow-y-auto') || sheet;
-        if (scrollableArea && scrollableArea.scrollTop > 5) return;
-
+        // Negeer invoervelden
         if (e.target.closest('input:not([type="button"]):not([type="submit"]):not([type="checkbox"]), textarea, select, [contenteditable="true"]')) return;
 
+        const rect = sheet.getBoundingClientRect();
+        const touchY = e.touches[0].clientY;
+        const touchX = e.touches[0].clientX;
+
+        // Bovenste 56px van het paneel is de drag-zone / grab handle bar
+        const isHandleArea = (touchY - rect.top) < 56;
+        const scrollableArea = sheet.querySelector('.overflow-y-auto') || sheet;
+
+        // Als niet in handle area en scroll-positie > 4, laat de gebruiker in de content omhoog scrollen
+        if (!isHandleArea && scrollableArea && scrollableArea.scrollTop > 4) return;
+
         _activeDragSheet = sheet;
-        _sheetTouchStartY = e.touches[0].clientY;
-        _sheetCurrentTouchY = _sheetTouchStartY;
+        _activeDragBackdrop = sheet.closest('.modal-backdrop-safe, .fixed.inset-0');
+        _sheetTouchStartY = touchY;
+        _sheetTouchStartX = touchX;
+        _sheetCurrentTouchY = touchY;
+        _isSheetDragging = false;
     }, { passive: true });
 
     document.addEventListener('touchmove', (e) => {
         if (!_activeDragSheet || window.innerWidth >= 768) return;
-        _sheetCurrentTouchY = e.touches[0].clientY;
-        const diffY = _sheetCurrentTouchY - _sheetTouchStartY;
-        if (diffY > 0) {
-            _activeDragSheet.style.transform = `translateY(${diffY * 0.72}px)`;
-            _activeDragSheet.style.transition = 'none';
+        const touchY = e.touches[0].clientY;
+        const touchX = e.touches[0].clientX;
+        const diffY = touchY - _sheetTouchStartY;
+        const diffX = touchX - _sheetTouchStartX;
+
+        // Controleer of er een binnenwaartse scrollarea is die nog niet op top staat
+        const scrollableArea = _activeDragSheet.querySelector('.overflow-y-auto');
+        const rect = _activeDragSheet.getBoundingClientRect();
+        const isHandleArea = (_sheetTouchStartY - rect.top) < 56;
+        if (!isHandleArea && scrollableArea && scrollableArea.scrollTop > 4) {
+            _activeDragSheet = null;
+            _activeDragBackdrop = null;
+            return;
         }
-    }, { passive: true });
+
+        // Alleen naar beneden slepen (pull to dismiss)
+        if (diffY > 6 && Math.abs(diffY) > Math.abs(diffX) * 1.2) {
+            _isSheetDragging = true;
+            _sheetCurrentTouchY = touchY;
+            const translateY = Math.max(0, diffY * 0.76);
+            _activeDragSheet.style.transform = `translateY(${translateY}px)`;
+            _activeDragSheet.style.transition = 'none';
+
+            if (_activeDragBackdrop) {
+                const fade = Math.max(0.12, 1 - (diffY / 340));
+                _activeDragBackdrop.style.opacity = fade.toFixed(3);
+                _activeDragBackdrop.style.transition = 'none';
+            }
+
+            if (e.cancelable) e.preventDefault();
+        }
+    }, { passive: false });
 
     document.addEventListener('touchend', () => {
-        if (!_activeDragSheet || window.innerWidth >= 768) return;
+        if (!_activeDragSheet || window.innerWidth >= 768) {
+            _activeDragSheet = null;
+            _activeDragBackdrop = null;
+            _isSheetDragging = false;
+            return;
+        }
+
         const diffY = _sheetCurrentTouchY - _sheetTouchStartY;
         const sheet = _activeDragSheet;
+        const backdrop = _activeDragBackdrop;
+        const wasDragging = _isSheetDragging;
+
         _activeDragSheet = null;
+        _activeDragBackdrop = null;
+        _isSheetDragging = false;
 
-        sheet.style.transition = 'transform 0.26s cubic-bezier(0.16, 1, 0.3, 1)';
+        if (!wasDragging || diffY <= 12) {
+            sheet.style.transform = '';
+            sheet.style.transition = '';
+            if (backdrop) {
+                backdrop.style.opacity = '';
+                backdrop.style.transition = '';
+            }
+            return;
+        }
 
-        if (diffY > 70) {
+        const shouldClose = diffY > 75;
+
+        if (shouldClose) {
+            // Soepele iOS glide naar beneden met gelijktijdige backdrop fade
+            sheet.style.transition = 'transform 0.28s cubic-bezier(0.32, 0.72, 0, 1)';
             sheet.style.transform = 'translateY(100%)';
+            if (backdrop) {
+                backdrop.style.transition = 'opacity 0.28s cubic-bezier(0.32, 0.72, 0, 1)';
+                backdrop.style.opacity = '0';
+            }
+
             setTimeout(() => {
-                const closeBtn = sheet.querySelector('button[title*="sluit" i], button[title*="annuleren" i], button[onclick*="sluit" i], button[onclick*="Annuleren" i]');
-                if (closeBtn) {
-                    closeBtn.click();
+                // Sluit modal netjes via zijn functie of knop
+                if (backdrop && backdrop.id === 'tikkieModal' && typeof window.sluitTikkieModal === 'function') {
+                    window.sluitTikkieModal();
+                } else if (backdrop && backdrop.id === 'gemeenteModal' && typeof window.sluitGemeenteModal === 'function') {
+                    window.sluitGemeenteModal();
+                } else if (backdrop && backdrop.id === 'preflightModal' && typeof window.sluitPreflightModal === 'function') {
+                    window.sluitPreflightModal();
                 } else {
-                    const backdrop = sheet.closest('.fixed.inset-0');
-                    if (backdrop) backdrop.classList.add('hidden');
+                    const closeBtn = sheet.querySelector('button[title*="sluit" i], button[title*="annuleren" i], button[onclick*="sluit" i], button[onclick*="Annuleren" i], button[onclick*="classList.add(\'hidden\')"]');
+                    if (closeBtn) {
+                        closeBtn.click();
+                    } else if (backdrop) {
+                        backdrop.classList.add('hidden');
+                    }
                 }
                 sheet.style.transform = '';
                 sheet.style.transition = '';
-            }, 180);
+                if (backdrop) {
+                    backdrop.style.opacity = '';
+                    backdrop.style.transition = '';
+                }
+            }, 280);
         } else {
+            // Veer terug naar oorspronkelijke positie
+            sheet.style.transition = 'transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1)';
             sheet.style.transform = 'translateY(0)';
+            if (backdrop) {
+                backdrop.style.transition = 'opacity 0.25s ease-out';
+                backdrop.style.opacity = '1';
+            }
             setTimeout(() => {
                 sheet.style.transform = '';
                 sheet.style.transition = '';
-            }, 260);
+                if (backdrop) {
+                    backdrop.style.opacity = '';
+                    backdrop.style.transition = '';
+                }
+            }, 255);
         }
     }, { passive: true });
 
