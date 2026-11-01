@@ -469,42 +469,26 @@
                     inset 0 1px 1px 0 rgba(255, 255, 255, 0.16);
     }
 
-    /* --- Apple Collapsing Header Animation op Mobiel --- */
+    /* --- Apple Collapsing Header Animation op Mobiel (GPU-accelerated, 0 layout reflow) --- */
     #mobileHeaderTitle {
         transform-origin: left center;
-        transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), font-size 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+        transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+        will-change: transform;
     }
     #mobileGemeenteBadgeBtn {
         transform-origin: right center;
-        transition: opacity 0.26s cubic-bezier(0.16, 1, 0.3, 1), transform 0.26s cubic-bezier(0.16, 1, 0.3, 1), max-width 0.28s ease, margin 0.26s ease, padding 0.26s ease;
-    }
-    #mobileCollapsingMetaRow {
-        transition: max-height 0.26s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease, margin 0.26s ease, padding 0.26s ease;
+        transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+        will-change: transform, opacity;
     }
 
-    /* Scrolled state: titel wordt kleiner in de linkerhoek, kerkkeuze verdwijnt soepel naar rechts */
+    /* Scrolled state: titel wordt subtiel compacter in de linkerhoek, kerkkeuze schuift weg naar rechts */
     .mobile-header-scrolled #mobileHeaderTitle {
-        transform: scale(0.82) translateY(-1px);
+        transform: scale(0.85);
     }
     .mobile-header-scrolled #mobileGemeenteBadgeBtn {
         opacity: 0 !important;
-        transform: scale(0.68) translateX(18px) !important;
+        transform: scale(0.8) translateX(20px) !important;
         pointer-events: none !important;
-        max-width: 0 !important;
-        padding-left: 0 !important;
-        padding-right: 0 !important;
-        margin: 0 !important;
-        border-color: transparent !important;
-        overflow: hidden !important;
-    }
-    .mobile-header-scrolled #mobileCollapsingMetaRow {
-        max-height: 0 !important;
-        opacity: 0 !important;
-        padding-top: 0 !important;
-        padding-bottom: 0 !important;
-        margin: 0 !important;
-        pointer-events: none !important;
-        overflow: hidden !important;
     }
 
     /* --- iOS Native Bottom Sheet styling op mobiel (<768px) --- */
@@ -1299,41 +1283,24 @@
     </div>
 </div>
 
-<!-- MOBIELE UNIFIED STICKY LIQUID GLASS HEADER (Titel + Kerkkeuze + Tabs gestackt: titel verdwijnt nooit meer achter de tab-bar!) -->
-<div id="mobileStickyHeaderWrapper" class="md:hidden sticky top-0 z-30 w-full apple-liquid-glass transition-all duration-300 px-3 pb-2.5 mb-3" style="padding-top: max(0.65rem, env(safe-area-inset-top, 0px));">
-    <!-- Rij 1: Titel links, Kerk-keuze rechts (animeert soepel bij scrollen/swipen) -->
-    <div id="mobileHeaderTopRow" class="flex items-center justify-between gap-2 h-9 transition-all duration-300">
-        <h1 id="mobileHeaderTitle" onclick="window.scrollTo({top: 0, behavior: 'smooth'}); checkOnderhoudCode();" class="text-base sm:text-lg font-bold tracking-tight text-[#1D1D1F] dark:text-white truncate cursor-pointer select-none transition-all duration-300 origin-left flex items-center gap-1">
+<!-- MOBIELE UNIFIED STICKY LIQUID GLASS HEADER (Titel + Kerkkeuze + Tabs gestackt: stabiele hoogte, geen layout-sprongen!) -->
+<div id="mobileStickyHeaderWrapper" class="md:hidden sticky top-0 z-30 w-full apple-liquid-glass px-3 pb-2.5 mb-3" style="padding-top: max(0.65rem, env(safe-area-inset-top, 0px));">
+    <!-- Rij 1: Titel links, Kerk-keuze rechts (animeert soepel via GPU zonder reflow) -->
+    <div id="mobileHeaderTopRow" class="flex items-center justify-between gap-2 h-8">
+        <h1 id="mobileHeaderTitle" onclick="window.scrollTo({top: 0, behavior: 'smooth'}); checkOnderhoudCode();" class="text-base sm:text-lg font-bold tracking-tight text-[#1D1D1F] dark:text-white truncate cursor-pointer select-none origin-left flex items-center gap-1">
             <span>Liturgie Assistent</span>
             <span class="text-[#007AFF]">Pro</span>
         </h1>
-        <button type="button" onclick="openGemeenteModal()" id="mobileGemeenteBadgeBtn" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-50/90 dark:bg-blue-950/70 text-[#007AFF] hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-all duration-300 border border-blue-100 dark:border-blue-900/40 shadow-xs cursor-pointer active:scale-95 flex-shrink-0 origin-right">
+        <button type="button" onclick="openGemeenteModal()" id="mobileGemeenteBadgeBtn" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-50/90 dark:bg-blue-950/70 text-[#007AFF] hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-100 dark:border-blue-900/40 shadow-xs cursor-pointer active:scale-95 flex-shrink-0 origin-right">
             <span>⛪</span>
-            <span id="mobileHeaderGemeenteNaam" class="truncate max-w-[125px]">Bethelkerk Maassluis</span>
+            <span id="mobileHeaderGemeenteNaam" class="truncate max-w-[120px]">Bethelkerk Maassluis</span>
+            <span id="mobileStatusDot" class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(52,199,89,0.7)] flex-shrink-0" title="Verbinding gereed"></span>
             <svg class="w-3 h-3 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
         </button>
     </div>
 
-    <!-- Rij 2 (in rusttoestand): Subtiele status & instellingen toggle (klapt zachtjes in bij scroll/swipe) -->
-    <div id="mobileCollapsingMetaRow" class="flex items-center justify-between gap-2 py-0.5 transition-all duration-300 max-h-8 overflow-hidden opacity-100">
-        <button type="button" onclick="toggleMobileInstellingen()" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-black/[0.04] dark:bg-white/10 text-gray-700 dark:text-gray-300 active:scale-95 transition-all">
-            <svg class="w-3 h-3 text-[#007AFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
-            <span id="mobileInstellingenLabel">⚙️ Instellingen</span>
-        </button>
-        <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-black/[0.04] dark:bg-white/10 text-[10px] text-gray-600 dark:text-gray-300">
-            <span id="mobileBijbelDot" class="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse"></span>
-            <span>Bijbel</span>
-            <span class="text-gray-300 dark:text-gray-600">·</span>
-            <span id="mobileStatusDot" class="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse"></span>
-            <span>AI</span>
-            <span class="text-gray-300 dark:text-gray-600">·</span>
-            <span id="mobileCloudDot" class="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse"></span>
-            <span>Cloud</span>
-        </div>
-    </div>
-
-    <!-- Rij 3: Segmented Tab Schakelaar (Direct ONDER de titel gestackt) -->
-    <div class="mt-1">
+    <!-- Rij 2: Segmented Tab Schakelaar (Direct ONDER de titel gestackt) -->
+    <div class="mt-1.5">
         <div class="p-0.5 rounded-xl bg-black/[0.05] dark:bg-white/10 flex items-center gap-1">
             <button type="button" id="tabBtnInvoer" onclick="schakelMobieleTab('invoer', false)" class="flex-1 min-h-[40px] py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-center flex items-center justify-center gap-1 apple-liquid-pill-active active:scale-95 cursor-pointer">
                 <span>➕</span>
@@ -2428,7 +2395,9 @@
     }
 
     // --- 1. APPLE COLLAPSING LARGE TITLE OP MOBIEL ---
+    // --- 1. APPLE COLLAPSING LARGE TITLE OP MOBIEL (Met Hysteresis Deadzone Buffer: nooit meer trippen!) ---
     let _navScrollTicking = false;
+    let _headerIsScrolled = false;
     window.addEventListener('scroll', () => {
         if (_navScrollTicking) return;
         _navScrollTicking = true;
@@ -2436,9 +2405,12 @@
             const headerWrap = document.getElementById('mobileStickyHeaderWrapper');
             if (window.innerWidth < 768 && headerWrap) {
                 const scrollY = window.scrollY || document.documentElement.scrollTop;
-                if (scrollY > 16) {
+                // Deadzone buffer (24px): activeer pas bij > 36px, deactiveer alleen bij < 12px of pull-to-refresh
+                if (!_headerIsScrolled && scrollY > 36) {
+                    _headerIsScrolled = true;
                     headerWrap.classList.add('mobile-header-scrolled');
-                } else {
+                } else if (_headerIsScrolled && (scrollY < 12 || scrollY <= 0)) {
+                    _headerIsScrolled = false;
                     headerWrap.classList.remove('mobile-header-scrolled');
                 }
             }
@@ -2446,78 +2418,119 @@
         });
     }, { passive: true });
 
-    // --- 2. HORIZONTALE SWIPE GESTURES TUSSEN TABS OP MOBIEL (Stabiel, geen reload, geen wegschieten) ---
-    let _tabTouchStartX = 0;
-    let _tabTouchStartY = 0;
-    let _tabTouchStartTime = 0;
-    let _isSwipingHorizontally = false;
+    // --- 2. VLOEIENDE SWIPE GESTURES OP MOBIEL (Tabs wisselen & Slide preview navigeren) ---
+    let _swipeStartX = 0;
+    let _swipeStartY = 0;
+    let _swipeStartTime = 0;
+    let _swipeLockedHorizontal = false;
+    let _swipeInitialTarget = null;
+    let _suppressNextClick = false;
 
-    const _appMainElement = document.querySelector('main');
-    if (_appMainElement) {
-        _appMainElement.addEventListener('touchstart', (e) => {
-            if (window.innerWidth >= 768) return;
-            const touch = e.touches[0];
-            // Negeer vegen te dicht bij schermranden (om Safari back/forward history navigation te ontzien)
-            if (touch.clientX < 24 || touch.clientX > window.innerWidth - 24) return;
-            // Negeer interactieve elementen, inputs, selectievakken, modalvensters en sliders
-            if (e.target.closest('input, textarea, select, button, [contenteditable="true"], .modal-animate, #unifiedControlDock, #previewItemSelectorBar, #uitlegDots, .overflow-x-auto, #slideCanvas, #datumPicker')) return;
+    window.addEventListener('touchstart', (e) => {
+        if (window.innerWidth >= 768) return;
+        if (e.touches.length !== 1) return;
 
-            _tabTouchStartX = touch.clientX;
-            _tabTouchStartY = touch.clientY;
-            _tabTouchStartTime = Date.now();
-            _isSwipingHorizontally = false;
-        }, { passive: true });
+        const touch = e.touches[0];
+        // Negeer te dicht bij schermranden (om iOS Safari geschiedenis-terug/vooruit te sparen)
+        if (touch.clientX < 14 || touch.clientX > window.innerWidth - 14) return;
 
-        _appMainElement.addEventListener('touchmove', (e) => {
-            if (window.innerWidth >= 768 || !_tabTouchStartX || !_tabTouchStartY) return;
-            const touch = e.touches[0];
-            const diffX = touch.clientX - _tabTouchStartX;
-            const diffY = touch.clientY - _tabTouchStartY;
+        // Negeer wanneer een modal sheet openstaat of bij typen in tekstvelden
+        if (e.target.closest('.modal-animate, #unifiedControlDock, input[type="range"], select')) return;
+        if (e.target.closest('input:not([type="button"]):not([type="submit"]):not([type="checkbox"]), textarea, [contenteditable="true"]')) return;
 
-            // Zodra horizontale beweging groter is dan verticaal, vergrendelen we horizontaal
-            if (!_isSwipingHorizontally && Math.abs(diffX) > 10) {
-                if (Math.abs(diffX) > Math.abs(diffY) * 1.2) {
-                    _isSwipingHorizontally = true;
+        _swipeStartX = touch.clientX;
+        _swipeStartY = touch.clientY;
+        _swipeStartTime = Date.now();
+        _swipeLockedHorizontal = false;
+        _swipeInitialTarget = e.target;
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+        if (!_swipeStartX || !_swipeStartY || window.innerWidth >= 768) return;
+        const touch = e.touches[0];
+        const dx = touch.clientX - _swipeStartX;
+        const dy = touch.clientY - _swipeStartY;
+
+        // Vergrendel horizontaal zodra horizontale beweging duidelijk groter is dan verticaal
+        if (!_swipeLockedHorizontal && Math.abs(dx) > 12) {
+            if (Math.abs(dx) > Math.abs(dy) * 1.2) {
+                _swipeLockedHorizontal = true;
+            }
+        }
+
+        // Voorkom schuin wiebelen van de pagina tijdens een horizontale swipe
+        if (_swipeLockedHorizontal) {
+            _suppressNextClick = true;
+            if (e.cancelable) e.preventDefault();
+        }
+    }, { passive: false });
+
+    window.addEventListener('touchend', (e) => {
+        if (!_swipeStartX || !_swipeStartY || window.innerWidth >= 768) {
+            _swipeStartX = 0;
+            _swipeStartY = 0;
+            _swipeLockedHorizontal = false;
+            return;
+        }
+
+        const touch = e.changedTouches[0];
+        const dx = touch.clientX - _swipeStartX;
+        const dy = touch.clientY - _swipeStartY;
+        const duration = Date.now() - _swipeStartTime;
+        const isHorizontal = _swipeLockedHorizontal || (Math.abs(dx) > 34 && Math.abs(dx) > Math.abs(dy) * 1.25);
+
+        const initialTarget = _swipeInitialTarget;
+        _swipeStartX = 0;
+        _swipeStartY = 0;
+        _swipeLockedHorizontal = false;
+        _swipeInitialTarget = null;
+
+        if (isHorizontal && Math.abs(dx) > 34 && duration < 500) {
+            // A. Preview Tab Slide Navigatie: swipe op de preview dia bladert door dia's
+            const isSlideArea = initialTarget && initialTarget.closest('#previewVak, #slideCanvas, #slideTextBox, .aspect-video');
+            if (isSlideArea && window.huidigeMobieleTab === 'preview') {
+                if (dx < 0) {
+                    // Swipe naar links op dia -> volgende dia
+                    if (typeof previewSubSlides !== 'undefined' && previewSubSlides.length > 1) {
+                        if (typeof navigeerSlide === 'function') navigeerSlide(1);
+                    } else if (typeof previewStapItem === 'function') {
+                        previewStapItem(1);
+                    }
+                } else {
+                    // Swipe naar rechts op dia -> vorige dia
+                    if (typeof previewSubSlides !== 'undefined' && previewSubSlides.length > 1) {
+                        if (typeof navigeerSlide === 'function') navigeerSlide(-1);
+                    } else if (typeof previewStapItem === 'function') {
+                        previewStapItem(-1);
+                    }
                 }
-            }
-
-            // Cruciaal: blokkeer Safari's pull-to-refresh en schuine viewport-sprong tijdens een swipe!
-            if (_isSwipingHorizontally) {
-                if (e.cancelable) e.preventDefault();
-            }
-        }, { passive: false });
-
-        _appMainElement.addEventListener('touchend', (e) => {
-            if (window.innerWidth >= 768 || !_tabTouchStartX || !_tabTouchStartY) {
-                _isSwipingHorizontally = false;
+                if (navigator.vibrate) try { navigator.vibrate(10); } catch(err){}
                 return;
             }
-            const touch = e.changedTouches[0];
-            const deltaX = touch.clientX - _tabTouchStartX;
-            const deltaY = touch.clientY - _tabTouchStartY;
-            const deltaTime = Date.now() - _tabTouchStartTime;
 
-            const wasHorizontal = _isSwipingHorizontally || (Math.abs(deltaX) > Math.abs(deltaY) * 1.3);
-            _tabTouchStartX = 0;
-            _tabTouchStartY = 0;
-            _isSwipingHorizontally = false;
-
-            // Horizontale veeg: minimaal 42px binnen 450ms
-            if (wasHorizontal && Math.abs(deltaX) > 42 && deltaTime < 450) {
-                const tabs = ['invoer', 'volgorde', 'preview'];
-                const curIdx = tabs.indexOf(window.huidigeMobieleTab || 'invoer');
-                if (deltaX < 0 && curIdx < tabs.length - 1) {
-                    // Swipe naar links -> volgende tab (schuift in vanaf rechts)
-                    window.schakelMobieleTab(tabs[curIdx + 1], false);
-                    if (navigator.vibrate) try { navigator.vibrate(10); } catch(e){}
-                } else if (deltaX > 0 && curIdx > 0) {
-                    // Swipe naar rechts -> vorige tab (schuift in vanaf links)
-                    window.schakelMobieleTab(tabs[curIdx - 1], false);
-                    if (navigator.vibrate) try { navigator.vibrate(10); } catch(e){}
-                }
+            // B. Algemene Tab Navigatie (Invoer <-> Volgorde <-> Preview)
+            const tabs = ['invoer', 'volgorde', 'preview'];
+            const curIdx = tabs.indexOf(window.huidigeMobieleTab || 'invoer');
+            if (dx < 0 && curIdx < tabs.length - 1) {
+                // Swipe naar links -> volgende tab
+                window.schakelMobieleTab(tabs[curIdx + 1], false);
+                if (navigator.vibrate) try { navigator.vibrate(10); } catch(err){}
+            } else if (dx > 0 && curIdx > 0) {
+                // Swipe naar rechts -> vorige tab
+                window.schakelMobieleTab(tabs[curIdx - 1], false);
+                if (navigator.vibrate) try { navigator.vibrate(10); } catch(err){}
             }
-        }, { passive: true });
-    }
+        }
+    }, { passive: true });
+
+    // Onderdruk onbedoelde kliks na een swipe die over een knop heen veegt
+    window.addEventListener('click', (e) => {
+        if (_suppressNextClick) {
+            _suppressNextClick = false;
+            e.stopPropagation();
+            e.preventDefault();
+        }
+    }, true);
 
     // --- 3. MOBIELE BOTTOM SHEET SWIPE-DOWN TO CLOSE ---
     let _sheetTouchStartY = 0;
@@ -2532,7 +2545,7 @@
         const scrollableArea = sheet.querySelector('.overflow-y-auto') || sheet;
         if (scrollableArea && scrollableArea.scrollTop > 5) return;
 
-        if (e.target.closest('input, textarea, select, button, [contenteditable="true"]')) return;
+        if (e.target.closest('input:not([type="button"]):not([type="submit"]):not([type="checkbox"]), textarea, select, [contenteditable="true"]')) return;
 
         _activeDragSheet = sheet;
         _sheetTouchStartY = e.touches[0].clientY;
@@ -2555,9 +2568,9 @@
         const sheet = _activeDragSheet;
         _activeDragSheet = null;
 
-        sheet.style.transition = 'transform 0.28s cubic-bezier(0.16, 1, 0.3, 1)';
+        sheet.style.transition = 'transform 0.26s cubic-bezier(0.16, 1, 0.3, 1)';
 
-        if (diffY > 80) {
+        if (diffY > 70) {
             sheet.style.transform = 'translateY(100%)';
             setTimeout(() => {
                 const closeBtn = sheet.querySelector('button[title*="sluit" i], button[title*="annuleren" i], button[onclick*="sluit" i], button[onclick*="Annuleren" i]');
@@ -2569,13 +2582,13 @@
                 }
                 sheet.style.transform = '';
                 sheet.style.transition = '';
-            }, 200);
+            }, 180);
         } else {
             sheet.style.transform = 'translateY(0)';
             setTimeout(() => {
                 sheet.style.transform = '';
                 sheet.style.transition = '';
-            }, 280);
+            }, 260);
         }
     }, { passive: true });
 
