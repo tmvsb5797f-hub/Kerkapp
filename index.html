@@ -2121,9 +2121,13 @@
     </div>
 </div>
 
-<div id="toastMelding" style="top: max(1rem, calc(env(safe-area-inset-top, 0px) + 0.75rem)); transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.28s ease;" class="fixed left-1/2 transform -translate-x-1/2 -translate-y-24 scale-95 opacity-0 z-[250] bg-[#34C759] text-white px-5 py-2.5 rounded-full shadow-[0_12px_32px_rgba(0,0,0,0.25)] font-semibold text-xs sm:text-[13px] flex items-center gap-2 pointer-events-none max-w-[calc(100vw-2rem)] border border-white/20 select-none">
-    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
-    <span id="toastTekst" class="truncate">Succesvol opgeslagen!</span>
+<div id="toastMelding" style="top: max(0.85rem, calc(env(safe-area-inset-top, 0px) + 0.65rem)); transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.24s ease;" class="fixed left-1/2 -translate-x-1/2 -translate-y-12 scale-95 opacity-0 hidden z-[250] bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl text-[#1D1D1F] dark:text-white px-4 py-2 rounded-full shadow-[0_16px_36px_rgba(0,0,0,0.22)] border border-black/10 dark:border-white/15 font-semibold text-xs sm:text-[13px] flex items-center gap-2.5 pointer-events-none max-w-[calc(100vw-2rem)] select-none">
+    <span id="toastIconBadge" class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-white bg-[#34C759] shadow-xs">
+        <svg id="toastCheckIcon" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+        <svg id="toastErrorIcon" class="w-3 h-3 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+        <svg id="toastInfoIcon" class="w-3 h-3 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+    </span>
+    <span id="toastTekst" class="truncate font-medium text-xs sm:text-[13px]">Succesvol opgeslagen!</span>
 </div>
 
 
@@ -7506,26 +7510,55 @@ Bijbelliederen`;
 
     window.toonToast = function(bericht, type = "success") {
         const toast = document.getElementById('toastMelding');
-        document.getElementById('toastTekst').innerText = bericht;
-        
-        // Check of het een foutmelding is of niet
-        if (type === "error") {
-            toast.classList.replace('bg-[#34C759]', 'bg-[#FF3B30]'); // Maak de knop rood
-        } else {
-            toast.classList.replace('bg-[#FF3B30]', 'bg-[#34C759]'); // Maak de knop groen
+        const tekstEl = document.getElementById('toastTekst');
+        const badgeEl = document.getElementById('toastIconBadge');
+        if (!toast || !tekstEl) return;
+
+        tekstEl.innerText = bericht;
+
+        const checkIcon = document.getElementById('toastCheckIcon');
+        const errorIcon = document.getElementById('toastErrorIcon');
+        const infoIcon = document.getElementById('toastInfoIcon');
+
+        if (badgeEl) {
+            if (type === "error") {
+                badgeEl.className = 'w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-white bg-[#FF3B30] shadow-xs';
+                if (checkIcon) checkIcon.classList.add('hidden');
+                if (errorIcon) errorIcon.classList.remove('hidden');
+                if (infoIcon) infoIcon.classList.add('hidden');
+            } else if (type === "info") {
+                badgeEl.className = 'w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-white bg-[#007AFF] shadow-xs';
+                if (checkIcon) checkIcon.classList.add('hidden');
+                if (errorIcon) errorIcon.classList.add('hidden');
+                if (infoIcon) infoIcon.classList.remove('hidden');
+            } else {
+                badgeEl.className = 'w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-white bg-[#34C759] shadow-xs';
+                if (checkIcon) checkIcon.classList.remove('hidden');
+                if (errorIcon) errorIcon.classList.add('hidden');
+                if (infoIcon) infoIcon.classList.add('hidden');
+            }
         }
-        
-        // Schuif hem soepel in beeld (Apple spring onder Dynamic Island op iPhone)
-        toast.classList.remove('-translate-y-24', 'scale-95', 'opacity-0');
-        toast.classList.add('translate-y-0', 'scale-100', 'opacity-100');
-        
-        // Wacht 4 seconden en schuif hem weer zachtjes weg
+
+        // Toon de toast soepel (Dynamic Island capsule stijl)
+        if (window._toastHideTimeout) clearTimeout(window._toastHideTimeout);
         if (window._toastTimeout) clearTimeout(window._toastTimeout);
+
+        toast.classList.remove('hidden');
+        void toast.offsetWidth; // Forceer reflow
+
+        toast.classList.remove('-translate-y-12', 'scale-95', 'opacity-0');
+        toast.classList.add('translate-y-0', 'scale-100', 'opacity-100');
+
+        // Wacht 3.5 seconden en schuif hem weer zachtjes weg
         window._toastTimeout = setTimeout(() => {
             toast.classList.remove('translate-y-0', 'scale-100', 'opacity-100');
-            toast.classList.add('-translate-y-24', 'scale-95', 'opacity-0');
-        }, 4000);
-    }
+            toast.classList.add('-translate-y-12', 'scale-95', 'opacity-0');
+
+            window._toastHideTimeout = setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 260);
+        }, 3500);
+    };
 
     // --- FUNCTIES VOOR DE REGULIERE MODAL ---
     window.toonControleModal = function(titel, tekst, type = "Zang") {
