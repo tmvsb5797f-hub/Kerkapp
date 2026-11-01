@@ -2983,9 +2983,33 @@
             .replace(/'/g, "&#39;");
     }
 
+    // Decodeert HTML-entiteiten (zoals &ndash;, &mdash;, &nbsp;) en herstelt spaties na leestekens
+    window.decodeerHtmlEntiteiten = function(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&ndash;|&#8211;/g, '–')
+            .replace(/&mdash;|&#8212;/g, '—')
+            .replace(/&nbsp;|&#160;/g, ' ')
+            .replace(/&hellip;|&#8230;/g, '…')
+            .replace(/&lsquo;|&#8216;/g, '‘')
+            .replace(/&rsquo;|&#8217;/g, '’')
+            .replace(/&ldquo;|&#8220;/g, '“')
+            .replace(/&rdquo;|&#8221;/g, '”')
+            .replace(/&quot;|&#34;/g, '"')
+            .replace(/&apos;|&#39;/g, "'")
+            .replace(/&amp;/g, '&')
+            .replace(/([,;:.!?])([A-Za-z\u00C0-\u017E])/g, '$1 $2')
+            .replace(/\bUen\b/g, 'U en')
+            .replace(/\bleidenen\b/g, 'leiden en')
+            .replace(/\bbenen\b/g, 'ben en')
+            .replace(/\bisen\b/g, 'is en')
+            .replace(/\s{2,}/g, ' ');
+    };
+
     function formatteerMarkdownVoorHtml(tekst) {
         if (!tekst) return '';
-        let safe = escapeHtml(tekst);
+        let ontdaanVanEntities = window.decodeerHtmlEntiteiten(tekst);
+        let safe = escapeHtml(ontdaanVanEntities);
         safe = safe.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
         safe = safe.replace(/&lt;b&gt;(.*?)&lt;\/b&gt;/gi, '<strong>$1</strong>');
         return safe;
@@ -5356,10 +5380,31 @@ Retourneer UITSLUITEND een valide JSON object:
 
             const label = typeLabel[it.type] || it.type || '';
             const tekst = (it.tekst || '').trim();
+
+            let opgemaakteTekstHtml = '';
+            if (tekst) {
+                if (it.type === 'Schriftlezing') {
+                    // Bijbelverzen met ademruimte (1.72 line-height) en subtiele versnummering (YouVersion stijl)
+                    const regels = tekst.split('\n').map(r => r.trim()).filter(Boolean);
+                    opgemaakteTekstHtml = `<div style="font-size:${Math.round(15 * zoomFactor)}px;line-height:1.72;color:${th.kaartTekst};margin-top:8px;text-align:${it.align || 'left'}">` +
+                        regels.map(r => {
+                            const versMatch = r.match(/^(\d+)\s+(.*)/);
+                            if (versMatch) {
+                                return `<p style="margin:0 0 10px 0;"><span style="display:inline-block;min-width:18px;font-size:11px;font-weight:700;color:${th.headerKleur};opacity:0.9;margin-right:5px;user-select:none;">${versMatch[1]}</span>${formatteerMarkdownVoorHtml(versMatch[2])}</p>`;
+                            }
+                            return `<p style="margin:0 0 10px 0;">${formatteerMarkdownVoorHtml(r)}</p>`;
+                        }).join('') +
+                        `</div>`;
+                } else {
+                    // Liederen en andere items: comfortabele regelafstand (1.68) en duidelijke coupletspatiëring
+                    opgemaakteTekstHtml = `<div style="font-size:${Math.round(15 * zoomFactor)}px;line-height:1.68;letter-spacing:-0.01em;color:${th.kaartTekst};white-space:pre-line;margin-top:8px;text-align:${it.align || 'left'}">${formatteerMarkdownVoorHtml(tekst)}</div>`;
+                }
+            }
+
             kaarten += `<div style="background:${th.kaartBg};border-radius:20px;padding:16px 18px;margin:12px 0;box-shadow:0 4px 16px ${th.schaduw};backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)">` +
                 (label ? `<div style="font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:${th.headerKleur};margin-bottom:3px">${escapeHtml(label)}</div>` : '') +
                 `<div style="font-size:${Math.round(17 * zoomFactor)}px;font-weight:700;color:${th.kaartTitel}">${escapeHtml(it.titel || '')}</div>` +
-                (tekst ? `<div style="font-size:${Math.round(14 * zoomFactor)}px;line-height:1.55;color:${th.kaartTekst};white-space:pre-line;margin-top:6px;text-align:${it.align || 'left'}">${formatteerMarkdownVoorHtml(tekst)}</div>` : '') +
+                opgemaakteTekstHtml +
                 `</div>`;
         });
 
@@ -7963,10 +8008,19 @@ Bijbelliederen`;
                 : verzen;
             if (gefilterd.length === 0) return null;
             const resTxt = gefilterd.map(v => {
-                let t = v.text
-                    .replace(/<[^>]*>/g, '')
+                let t = (v.text || '')
+                    .replace(/<\/?b>/gi, ' ')
+                    .replace(/<br\s*\/?>/gi, ' ')
+                    .replace(/<\/p>/gi, ' ')
+                    .replace(/<[^>]*>/g, ' ')
                     .replace(/[Ⓐ-ⓩ①-⑳⓪-⓿¹²³⁰-₟†‡§¶※⸮⁂⁋⁓]/g, '')
                     .replace(/\[\d+\]/g, '')
+                    .replace(/&ndash;|&#8211;/g, '–')
+                    .replace(/&mdash;|&#8212;/g, '—')
+                    .replace(/&nbsp;|&#160;/g, ' ')
+                    .replace(/&hellip;|&#8230;/g, '…')
+                    .replace(/&[a-z]+;/gi, (m) => ({ '&amp;': '&', '&quot;': '"', '&apos;': "'", '&lt;': '<', '&gt;': '>' }[m] || ' '))
+                    .replace(/([,;:.!?])([A-Za-z\u00C0-\u017E])/g, '$1 $2')
                     .replace(/\s{2,}/g, ' ')
                     .trim();
                 return v.verse + ' ' + t;
@@ -12012,10 +12066,14 @@ Antwoord UITSLUITEND in valide JSON:
             return [{ regels: [], fontSize: fSize }];
         }
 
+        const schoneItemTekst = (typeof window.decodeerHtmlEntiteiten === 'function')
+            ? window.decodeerHtmlEntiteiten(item.tekst)
+            : item.tekst;
+
         let blokken = [];
         if (item.type === "Schriftlezing") {
             const MAX_CHAR = 180;
-            let bron = item.tekst.replace(/(?=\[\d+\]|\b\d+\.\s|^\d+\s|\n\d+\s)/gm, '\n')
+            let bron = schoneItemTekst.replace(/(?=\[\d+\]|\b\d+\.\s|^\d+\s|\n\d+\s)/gm, '\n')
                 .split('\n').map(r => r.trim()).filter(r => r);
             let tot = bron.reduce((s, r) => s + r.length, 0);
             let nd = Math.max(1, Math.ceil(tot / MAX_CHAR)), doel = tot / nd;
@@ -12029,15 +12087,15 @@ Antwoord UITSLUITEND in valide JSON:
             if (hb.length) blokken.push(hb);
         } else {
             if (splitMethod === "auto") {
-                if (item.tekst.includes("\n\n")) {
-                    blokken = item.tekst.split(/\n[ \t]*\n/).filter(v => v.trim()).map(b => b.split('\n').filter(l => l.trim()));
+                if (schoneItemTekst.includes("\n\n")) {
+                    blokken = schoneItemTekst.split(/\n[ \t]*\n/).filter(v => v.trim()).map(b => b.split('\n').filter(l => l.trim()));
                 } else {
-                    let regels = item.tekst.split('\n').filter(l => l.trim());
+                    let regels = schoneItemTekst.split('\n').filter(l => l.trim());
                     for (let i = 0; i < regels.length; i += 4) blokken.push(regels.slice(i, i + 4));
                 }
             } else {
                 let n = parseInt(splitMethod);
-                let regels = item.tekst.split('\n').filter(l => l.trim());
+                let regels = schoneItemTekst.split('\n').filter(l => l.trim());
                 for (let i = 0; i < regels.length; i += n) blokken.push(regels.slice(i, i + n));
             }
             if (blokken.length >= 2) {
@@ -15346,6 +15404,43 @@ window.verstuurExportFeedback = async function() {
             });
         }
 
+        // 8. Typografie & HTML-entiteiten controle (zoals &ndash; of plakwoorden zoals Uen, leidenen)
+        let htmlEntityItem = null;
+        let plakwoordItem = null;
+        items.forEach((it, idx) => {
+            if (it && it.tekst && it.type !== 'Foto' && it.type !== 'Leeg' && it.type !== 'QR') {
+                if (/&(ndash|mdash|nbsp|hellip|quot|apos|#8211|#8212);/i.test(it.tekst)) {
+                    if (!htmlEntityItem) htmlEntityItem = { index: idx, titel: it.titel || `Dia #${idx + 1}` };
+                }
+                if (/([,;:.!?])([A-Za-z\u00C0-\u017E])/g.test(it.tekst) || /\b(Uen|leidenen|benen|isen)\b/i.test(it.tekst)) {
+                    if (!plakwoordItem) plakwoordItem = { index: idx, titel: it.titel || `Dia #${idx + 1}` };
+                }
+            }
+        });
+
+        if (htmlEntityItem || plakwoordItem) {
+            waarschuwingenAantal++;
+            const probleemTitel = htmlEntityItem ? 'HTML-code in tekst (&ndash;)' : 'Plakwoorden of typografie';
+            const probleemDesc = htmlEntityItem 
+                ? `In '${htmlEntityItem.titel}' staat nog ruwe HTML-code (&ndash;). Klik op 'Repareren' om dit om te zetten naar een streepje (–).`
+                : `In '${plakwoordItem.titel}' ontbreken spaties na leestekens of zijn woorden aan elkaar geplakt. Klik op 'Repareren' om dit op te schonen.`;
+            checks.push({
+                categorie: 'typografie',
+                status: 'warning',
+                titel: probleemTitel,
+                beschrijving: probleemDesc,
+                actieTekst: 'Automatisch repareren',
+                actieType: 'repareer_typografie'
+            });
+        } else if (items.length > 0) {
+            checks.push({
+                categorie: 'typografie',
+                status: 'ok',
+                titel: 'Typografie & leestekens gecontroleerd',
+                beschrijving: 'Geen ruwe HTML-codes of samengevoegde plakwoorden gevonden.'
+            });
+        }
+
         // Bereken statistieken
         let totaalVerzen = 0;
         liedItems.forEach(it => {
@@ -15607,6 +15702,32 @@ window.verstuurExportFeedback = async function() {
             if (window.openBewerkScherm) window.openBewerkScherm(diaIndex);
         } else if (actieType === 'bekijk_dia' && diaIndex >= 0) {
             if (window.kiesItemEnPreview) window.kiesItemEnPreview(diaIndex);
+        } else if (actieType === 'repareer_typografie') {
+            if (window.repareerAlleTypografieInLiturgie) {
+                window.repareerAlleTypografieInLiturgie();
+            }
+            setTimeout(() => {
+                if (window.openPreflightModal) window.openPreflightModal();
+            }, 300);
+        }
+    };
+
+    window.repareerAlleTypografieInLiturgie = function() {
+        let hersteldAantal = 0;
+        if (Array.isArray(window.liturgieVolgorde)) {
+            window.liturgieVolgorde.forEach(it => {
+                if (it && it.tekst && typeof window.decodeerHtmlEntiteiten === 'function') {
+                    const oud = it.tekst;
+                    it.tekst = window.decodeerHtmlEntiteiten(it.tekst);
+                    if (it.tekst !== oud) hersteldAantal++;
+                }
+            });
+        }
+        if (typeof bewaarLiturgie === 'function') bewaarLiturgie();
+        if (typeof window.tekenVolgorde === 'function') window.tekenVolgorde();
+        if (typeof window.updatePreflightBadge === 'function') window.updatePreflightBadge();
+        if (window.toonToast) {
+            window.toonToast(`Typografie opgeschoond: ${hersteldAantal} onderdeel(en) hersteld!`, 'success');
         }
     };
 
