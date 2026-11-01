@@ -1452,13 +1452,13 @@
 
     <!-- SECTIE 1: INVOER (Dienst gegevens, liederen & bijbel, snelle knoppen) -->
     <div id="sectieInvoerContainer" class="mobile-tab-view">
-        <section class="mb-4">
+        <section class="mb-4 relative z-30">
             <h2 class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider mb-2 ml-1">0. Dienst Gegevens (Voor Welkomst Dia)</h2>
-            <div class="apple-liquid-card p-3 md:p-4 rounded-2xl flex flex-col md:flex-row gap-2.5 sm:gap-4">
-                <div class="flex-1 relative">
+            <div class="apple-liquid-card p-3 md:p-4 rounded-2xl flex flex-col md:flex-row gap-2.5 sm:gap-4 relative z-30">
+                <div class="flex-1 relative z-40">
                     <input id="datumInput" type="text" readonly class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-transparent rounded-xl py-2.5 sm:py-3 px-3.5 pr-10 text-sm font-medium placeholder-gray-400 apple-input transition-all cursor-pointer" placeholder="Klik om datum te kiezen"/>
                     <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                    <div id="datumPicker" class="absolute z-50 mt-2 bg-white dark:bg-[#1C1C1E] dark:text-white rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.18)] border border-gray-100 dark:border-white/10 p-4 hidden select-none max-w-[calc(100vw-2rem)] left-0 sm:left-auto" style="min-width: 280px;">
+                    <div id="datumPicker" class="absolute z-50 mt-2 bg-white dark:bg-[#1C1C1E] dark:text-white rounded-2xl shadow-[0_12px_44px_rgba(0,0,0,0.22)] border border-gray-100 dark:border-white/10 p-4 hidden select-none max-w-[calc(100vw-2rem)] left-0 sm:left-auto suggestion-dropdown-animate" style="min-width: 280px;">
                         <div class="flex items-center justify-between mb-3">
                             <button id="datumVorige" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors text-gray-500">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
@@ -1479,12 +1479,12 @@
                 </div>
             </div>
         </section>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 items-stretch">
-            <section>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 items-stretch relative z-20">
+            <section class="relative z-20">
                 <div class="flex items-center justify-between mb-2 ml-1">
                     <h2 class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider">1. Liederen &amp; Psalmen</h2>
                 </div>
-                <div class="apple-liquid-card p-3.5 sm:p-4 md:p-6 rounded-2xl relative">
+                <div class="apple-liquid-card p-3.5 sm:p-4 md:p-6 rounded-2xl relative z-20">
                     <!-- Liedboek Filter Knoppen met soepele touch scroll -->
                     <div class="flex items-center gap-1.5 overflow-x-auto pb-2.5 mb-2.5 no-scrollbar select-none" id="liedboekFilterBar" style="-webkit-overflow-scrolling: touch; scroll-behavior: smooth;">
                         <button type="button" onclick="window.kiesLiedZoekFilter('alle')" data-filter="alle" class="lied-filter-btn px-3 py-1.5 rounded-full text-xs font-bold bg-[#007AFF] text-white shadow-xs transition-all flex-shrink-0 cursor-pointer active:scale-95">
@@ -1516,11 +1516,11 @@
                 </div>
             </section>
 
-            <section>
+            <section class="relative z-10">
                 <div class="flex items-center justify-between mb-2 ml-1">
                     <h2 class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider">2. Bijbel (HSV)</h2>
                 </div>
-                <div class="apple-liquid-card p-3.5 sm:p-4 md:p-6 rounded-2xl relative flex flex-col gap-4">
+                <div class="apple-liquid-card p-3.5 sm:p-4 md:p-6 rounded-2xl relative z-10 flex flex-col gap-4">
                     <div class="relative">
                         <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477-4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
                         <input id="bijbelInput" autocomplete="off" class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-transparent rounded-xl py-3 sm:py-3.5 pl-10 sm:pl-12 pr-4 text-[16px] md:text-[15px] font-medium placeholder-gray-400 apple-input transition-all" placeholder="Bijv: Genesis 1:1-15" type="text"/>
@@ -1531,7 +1531,7 @@
         </div>
 
         <!-- Snelle actieknoppen: 4 compacte knoppen op 1 strakke rij op mobiel (nooit overlap met de dock) -->
-        <section class="mt-3.5 mb-2">
+        <section class="mt-3.5 mb-2 relative z-0">
             <div class="grid grid-cols-4 gap-2 sm:gap-2.5">
                 <button id="plakLiturgieKnop" onclick="openImportModal()" class="w-full bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 py-2.5 px-1 rounded-xl text-[11px] md:text-sm font-semibold flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 hover:bg-purple-100 dark:hover:bg-purple-900/60 transition-all shadow-xs border border-purple-200/80 dark:border-purple-800/60 active:scale-95 cursor-pointer" title="Plak een complete liturgie">
                     <svg class="w-4 h-4 md:w-5 md:h-5 text-purple-600 dark:text-purple-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
@@ -8234,11 +8234,17 @@ Bijbelliederen`;
             for (let d = 1; d <= aantalDagen; d++) {
                 const datum = new Date(huidigeJaar, huidigeMaand, d);
                 const isVandaag = datum.toDateString() === vandaag.toDateString();
+                const isZondag = datum.getDay() === 0;
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.textContent = d;
-                btn.className = 'w-8 h-8 rounded-full text-[13px] font-medium transition-colors ' +
-                    (isVandaag ? 'bg-[#007AFF] text-white' : 'hover:bg-[#F5F5F7] text-[#1D1D1F]');
+                let kleurKlasse = 'text-[#1D1D1F] dark:text-gray-200 hover:bg-[#F5F5F7] dark:hover:bg-white/10';
+                if (isVandaag) {
+                    kleurKlasse = 'bg-[#007AFF] text-white font-bold shadow-xs';
+                } else if (isZondag) {
+                    kleurKlasse = 'text-[#007AFF] dark:text-[#0A84FF] font-bold hover:bg-blue-50 dark:hover:bg-blue-950/40';
+                }
+                btn.className = 'w-8 h-8 mx-auto flex items-center justify-center rounded-full text-[13px] font-medium transition-colors cursor-pointer active:scale-95 ' + kleurKlasse;
                 btn.addEventListener('click', () => {
                     const dagNaam = dagen[datum.getDay()];
                     input.value = dagNaam + ' ' + d + '-' + (huidigeMaand + 1) + '-' + huidigeJaar;
