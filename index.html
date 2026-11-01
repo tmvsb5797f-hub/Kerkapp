@@ -2159,16 +2159,9 @@
 <!-- APPLE VIRTUAL DYNAMIC ISLAND (Meelees Monitor, Preflight Checklist & Live Alerts) -->
 <div id="islandBackdrop" class="fixed inset-0 bg-black/45 backdrop-blur-xs z-[210] hidden opacity-0 transition-opacity duration-300" onclick="window.toggleDynamicIsland(false)"></div>
 
-<div id="appleDynamicIsland" class="apple-dynamic-island fixed left-1/2 -translate-x-1/2 z-[220] select-none text-white pointer-events-auto flex items-center justify-center font-sans" style="top: max(0.45rem, calc(env(safe-area-inset-top, 0px) * 0.25 + 0.35rem));">
+<div id="appleDynamicIsland" class="apple-dynamic-island fixed left-1/2 -translate-x-1/2 z-[220] select-none text-white pointer-events-auto hidden items-center justify-center font-sans" style="top: max(0.45rem, calc(env(safe-area-inset-top, 0px) * 0.25 + 0.35rem));">
 
-    <!-- 1. COMPACTE RUSTSTAND (Pill capsule) -->
-    <div id="islandCompactView" onclick="window.toggleDynamicIsland(true)" class="flex items-center gap-2 px-3 py-1.5 cursor-pointer active:scale-95 transition-transform" title="Klik om liturgie-status en meelees monitor te openen">
-        <span id="islandLedDot" class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.85)] flex-shrink-0 animate-pulse"></span>
-        <span id="islandCompactText" class="text-[11px] font-bold tracking-tight text-white/95 whitespace-nowrap">Liturgie Gereed ✓</span>
-        <span id="islandMeeleesIcon" class="text-[11px] text-emerald-400 font-bold ml-0.5" title="Meelees QR actief">🌿</span>
-    </div>
-
-    <!-- 2. NOTIFICATIE / ALERT WEERGAVE (Expandeert bij meldingen) -->
+    <!-- 1. NOTIFICATIE / ALERT WEERGAVE (Expandeert bij meldingen vanuit het Dynamic Island) -->
     <div id="islandAlertView" class="hidden items-center gap-2.5 px-4 py-2 w-full max-w-[calc(100vw-1.5rem)]">
         <span id="islandAlertBadge" class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-white bg-emerald-500 shadow-xs">
             <svg id="islandAlertCheckIcon" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
@@ -7762,14 +7755,14 @@ Bijbelliederen`;
                     alertView.classList.add('hidden');
                     alertView.classList.remove('flex');
                 }
-                if (compactView) compactView.classList.remove('hidden');
                 island.classList.remove('island-expanded', 'island-alert-active');
+                island.classList.add('hidden');
+                island.classList.remove('flex');
                 if (backdrop) {
                     backdrop.classList.remove('opacity-100');
                     backdrop.classList.add('opacity-0');
                     setTimeout(() => { backdrop.classList.add('hidden'); }, 280);
                 }
-                window.updateDynamicIslandStatus();
             }
         };
 
@@ -7815,9 +7808,10 @@ Bijbelliederen`;
                 expandedView.classList.add('hidden');
                 expandedView.classList.remove('flex');
             }
-            if (compactView) compactView.classList.add('hidden');
 
             // Open Alert View
+            island.classList.remove('hidden');
+            island.classList.add('flex');
             alertView.classList.remove('hidden');
             alertView.classList.add('flex');
             island.classList.remove('island-expanded');
@@ -7829,9 +7823,9 @@ Bijbelliederen`;
             _islandAlertTimeout = setTimeout(() => {
                 alertView.classList.add('hidden');
                 alertView.classList.remove('flex');
-                if (compactView) compactView.classList.remove('hidden');
                 island.classList.remove('island-alert-active', 'island-spring-pop');
-                window.updateDynamicIslandStatus();
+                island.classList.add('hidden');
+                island.classList.remove('flex');
             }, 3600);
         };
 
