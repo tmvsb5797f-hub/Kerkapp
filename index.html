@@ -569,6 +569,41 @@
         }
     }
 
+    /* APPLE DYNAMIC ISLAND COMPONENT */
+    .apple-dynamic-island {
+        background: #000000;
+        border-radius: 9999px;
+        box-shadow: 0 8px 24px -2px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.14);
+        transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                    height 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                    border-radius 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                    box-shadow 0.3s ease,
+                    background-color 0.2s ease;
+        will-change: width, height, transform, border-radius;
+        backface-visibility: hidden;
+    }
+
+    .apple-dynamic-island.island-expanded {
+        border-radius: 28px !important;
+        box-shadow: 0 24px 64px -8px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.18) !important;
+    }
+
+    .apple-dynamic-island.island-alert-active {
+        border-radius: 9999px !important;
+        box-shadow: 0 16px 40px -4px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.22) !important;
+    }
+
+    @keyframes islandSpringPop {
+        0% { transform: scale(0.92); }
+        50% { transform: scale(1.03); }
+        100% { transform: scale(1); }
+    }
+
+    .island-spring-pop {
+        animation: islandSpringPop 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
     @media (prefers-reduced-motion: reduce) {
         .modal-animate {
             animation: none !important;
@@ -2121,13 +2156,82 @@
     </div>
 </div>
 
-<div id="toastMelding" style="top: max(0.85rem, calc(env(safe-area-inset-top, 0px) + 0.65rem)); transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.24s ease;" class="fixed left-1/2 -translate-x-1/2 -translate-y-12 scale-95 opacity-0 hidden z-[250] bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl text-[#1D1D1F] dark:text-white px-4 py-2 rounded-full shadow-[0_16px_36px_rgba(0,0,0,0.22)] border border-black/10 dark:border-white/15 font-semibold text-xs sm:text-[13px] flex items-center gap-2.5 pointer-events-none max-w-[calc(100vw-2rem)] select-none">
-    <span id="toastIconBadge" class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-white bg-[#34C759] shadow-xs">
-        <svg id="toastCheckIcon" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-        <svg id="toastErrorIcon" class="w-3 h-3 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
-        <svg id="toastInfoIcon" class="w-3 h-3 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-    </span>
-    <span id="toastTekst" class="truncate font-medium text-xs sm:text-[13px]">Succesvol opgeslagen!</span>
+<!-- APPLE VIRTUAL DYNAMIC ISLAND (Meelees Monitor, Preflight Checklist & Live Alerts) -->
+<div id="islandBackdrop" class="fixed inset-0 bg-black/45 backdrop-blur-xs z-[210] hidden opacity-0 transition-opacity duration-300" onclick="window.toggleDynamicIsland(false)"></div>
+
+<div id="appleDynamicIsland" class="apple-dynamic-island fixed left-1/2 -translate-x-1/2 z-[220] select-none text-white pointer-events-auto flex items-center justify-center font-sans" style="top: max(0.45rem, calc(env(safe-area-inset-top, 0px) * 0.25 + 0.35rem));">
+
+    <!-- 1. COMPACTE RUSTSTAND (Pill capsule) -->
+    <div id="islandCompactView" onclick="window.toggleDynamicIsland(true)" class="flex items-center gap-2 px-3 py-1.5 cursor-pointer active:scale-95 transition-transform" title="Klik om liturgie-status en meelees monitor te openen">
+        <span id="islandLedDot" class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.85)] flex-shrink-0 animate-pulse"></span>
+        <span id="islandCompactText" class="text-[11px] font-bold tracking-tight text-white/95 whitespace-nowrap">Liturgie Gereed ✓</span>
+        <span id="islandMeeleesIcon" class="text-[11px] text-emerald-400 font-bold ml-0.5" title="Meelees QR actief">🌿</span>
+    </div>
+
+    <!-- 2. NOTIFICATIE / ALERT WEERGAVE (Expandeert bij meldingen) -->
+    <div id="islandAlertView" class="hidden items-center gap-2.5 px-4 py-2 w-full max-w-[calc(100vw-1.5rem)]">
+        <span id="islandAlertBadge" class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-white bg-emerald-500 shadow-xs">
+            <svg id="islandAlertCheckIcon" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+            <svg id="islandAlertErrorIcon" class="w-3 h-3 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+            <svg id="islandAlertInfoIcon" class="w-3 h-3 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        </span>
+        <span id="islandAlertText" class="truncate font-semibold text-xs sm:text-[13px] text-white flex-1"></span>
+        <span class="w-1.5 h-1.5 rounded-full bg-white/40 flex-shrink-0"></span>
+    </div>
+
+    <!-- 3. UITGEVOUWEN DASHBOARD (Bij aantikken: Preflight Checklist + Live Meelees) -->
+    <div id="islandExpandedView" class="hidden flex-col w-[330px] max-w-[calc(100vw-2rem)] p-3.5 text-left">
+        <!-- Header -->
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-white/10">
+            <div class="flex items-center gap-1.5">
+                <span class="text-xs">⚡</span>
+                <span class="text-xs font-bold text-white tracking-tight">Liturgie Status &amp; Meelees</span>
+            </div>
+            <button type="button" onclick="event.stopPropagation(); window.toggleDynamicIsland(false)" class="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-gray-300 hover:text-white transition-colors active:scale-90 text-xs cursor-pointer" title="Sluiten">✕</button>
+        </div>
+
+        <!-- Preflight Kwaliteit Status -->
+        <div class="bg-white/5 rounded-xl p-2.5 mb-2 border border-white/10">
+            <div class="flex items-center justify-between mb-1.5">
+                <span class="text-[11px] font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1">
+                    <span>🛡️</span>
+                    <span>Kwaliteitscontrole</span>
+                </span>
+                <span id="islandPreflightBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">100% Zero-Defect</span>
+            </div>
+            <div class="space-y-1 text-[11px]" id="islandPreflightChecks">
+                <div class="flex items-center gap-1.5 text-emerald-400"><span class="font-bold">✓</span> <span class="text-gray-200" id="islandCheckDatum">Datum &amp; Voorganger ingevuld</span></div>
+                <div class="flex items-center gap-1.5 text-emerald-400"><span class="font-bold">✓</span> <span class="text-gray-200" id="islandCheckLiederen">Alle liedteksten compleet</span></div>
+                <div class="flex items-center gap-1.5 text-emerald-400"><span class="font-bold">✓</span> <span class="text-gray-200" id="islandCheckTikkie">Collecte QR gekoppeld</span></div>
+            </div>
+            <button type="button" onclick="event.stopPropagation(); window.toggleDynamicIsland(false); window.openPreflightModal();" class="mt-2 w-full py-1.5 px-2 rounded-lg bg-white/10 hover:bg-white/15 active:scale-95 text-[11px] font-semibold text-blue-300 transition-all text-center flex items-center justify-center gap-1 cursor-pointer">
+                <span>Details &amp; Kwaliteitsrapport</span>
+                <span>→</span>
+            </button>
+        </div>
+
+        <!-- Live Meelees Monitor -->
+        <div class="bg-white/5 rounded-xl p-2.5 border border-white/10">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-[11px] font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1">
+                    <span>🌿</span>
+                    <span>Meelees Monitor</span>
+                </span>
+                <span id="islandMeeleesStatusBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">Actief</span>
+            </div>
+            <p id="islandMeeleesDesc" class="text-[11px] text-gray-300 mb-2 leading-tight">Telefoon-versie is gekoppeld en gesynchroniseerd.</p>
+            <div class="flex gap-1.5">
+                <button type="button" onclick="event.stopPropagation(); window.toggleDynamicIsland(false); window.openDeelModal();" class="flex-1 py-1.5 px-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-bold text-[11px] transition-all flex items-center justify-center gap-1 shadow-xs cursor-pointer">
+                    <span>📱</span>
+                    <span>Toon QR</span>
+                </button>
+                <button type="button" onclick="event.stopPropagation(); window.kopieerHuidigeMeeleesUrl();" class="flex-1 py-1.5 px-2 rounded-lg bg-white/10 hover:bg-white/15 active:scale-95 text-gray-200 font-semibold text-[11px] transition-all flex items-center justify-center gap-1 cursor-pointer">
+                    <span>🔗</span>
+                    <span>Kopieer Link</span>
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 
@@ -7508,57 +7612,264 @@ Bijbelliederen`;
         }
     }
 
-    window.toonToast = function(bericht, type = "success") {
-        const toast = document.getElementById('toastMelding');
-        const tekstEl = document.getElementById('toastTekst');
-        const badgeEl = document.getElementById('toastIconBadge');
-        if (!toast || !tekstEl) return;
+    // --- APPLE VIRTUAL DYNAMIC ISLAND CONTROLLER ---
+    (function() {
+        const island = document.getElementById('appleDynamicIsland');
+        const compactView = document.getElementById('islandCompactView');
+        const alertView = document.getElementById('islandAlertView');
+        const expandedView = document.getElementById('islandExpandedView');
+        const backdrop = document.getElementById('islandBackdrop');
 
-        tekstEl.innerText = bericht;
+        let _islandAlertTimeout = null;
+        let _isExpanded = false;
 
-        const checkIcon = document.getElementById('toastCheckIcon');
-        const errorIcon = document.getElementById('toastErrorIcon');
-        const infoIcon = document.getElementById('toastInfoIcon');
+        window.updateDynamicIslandStatus = function() {
+            if (!island) return;
+            const led = document.getElementById('islandLedDot');
+            const txt = document.getElementById('islandCompactText');
+            const meeleesIcon = document.getElementById('islandMeeleesIcon');
 
-        if (badgeEl) {
-            if (type === "error") {
-                badgeEl.className = 'w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-white bg-[#FF3B30] shadow-xs';
-                if (checkIcon) checkIcon.classList.add('hidden');
-                if (errorIcon) errorIcon.classList.remove('hidden');
-                if (infoIcon) infoIcon.classList.add('hidden');
-            } else if (type === "info") {
-                badgeEl.className = 'w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-white bg-[#007AFF] shadow-xs';
-                if (checkIcon) checkIcon.classList.add('hidden');
-                if (errorIcon) errorIcon.classList.add('hidden');
-                if (infoIcon) infoIcon.classList.remove('hidden');
-            } else {
-                badgeEl.className = 'w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-white bg-[#34C759] shadow-xs';
-                if (checkIcon) checkIcon.classList.remove('hidden');
-                if (errorIcon) errorIcon.classList.add('hidden');
-                if (infoIcon) infoIcon.classList.add('hidden');
+            // 1. Kwaliteitscontrole (Preflight)
+            let report = null;
+            if (typeof window.voerPreflightControleUit === 'function') {
+                try { report = window.voerPreflightControleUit(); } catch(e){}
             }
-        }
 
-        // Toon de toast soepel (Dynamic Island capsule stijl)
-        if (window._toastHideTimeout) clearTimeout(window._toastHideTimeout);
-        if (window._toastTimeout) clearTimeout(window._toastTimeout);
+            const items = (typeof window.getLiturgieVolgorde === 'function' ? window.getLiturgieVolgorde() : (window.liturgieVolgorde || []));
+            const itemsCount = items.length;
 
-        toast.classList.remove('hidden');
-        void toast.offsetWidth; // Forceer reflow
+            if (report && report.heeftFouten) {
+                if (led) led.className = 'w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.95)] flex-shrink-0 animate-pulse';
+                if (txt) txt.textContent = `${report.foutenAantal} aandachtspunt${report.foutenAantal > 1 ? 'en' : ''} ⚠️`;
+            } else if (report && report.heeftWaarschuwingen) {
+                if (led) led.className = 'w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.9)] flex-shrink-0';
+                if (txt) txt.textContent = `${itemsCount} item${itemsCount === 1 ? '' : 's'} · Controleer`;
+            } else {
+                if (led) led.className = 'w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.9)] flex-shrink-0 animate-pulse';
+                if (txt) txt.textContent = itemsCount > 0 ? `${itemsCount} item${itemsCount === 1 ? '' : 's'} · Gereed ✓` : 'Liturgie Leeg';
+            }
 
-        toast.classList.remove('-translate-y-12', 'scale-95', 'opacity-0');
-        toast.classList.add('translate-y-0', 'scale-100', 'opacity-100');
+            // 2. Meelees Status
+            const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : 'bethel';
+            let heeftMeelees = false;
+            let meeleesMeta = null;
+            try {
+                const meta = localStorage.getItem(`actieveMeeleesMeta_${slug}`);
+                if (meta) {
+                    meeleesMeta = JSON.parse(meta);
+                    if (meeleesMeta && meeleesMeta.url) heeftMeelees = true;
+                }
+            } catch(e) {}
 
-        // Wacht 3.5 seconden en schuif hem weer zachtjes weg
-        window._toastTimeout = setTimeout(() => {
-            toast.classList.remove('translate-y-0', 'scale-100', 'opacity-100');
-            toast.classList.add('-translate-y-12', 'scale-95', 'opacity-0');
+            if (meeleesIcon) {
+                meeleesIcon.textContent = heeftMeelees ? '🌿' : '';
+                meeleesIcon.title = heeftMeelees ? 'Meelees QR actief gekoppeld' : 'Meelees QR nog niet gegenereerd';
+            }
 
-            window._toastHideTimeout = setTimeout(() => {
-                toast.classList.add('hidden');
-            }, 260);
-        }, 3500);
-    };
+            // 3. Update elementen in expanded dashboard
+            if (_isExpanded) {
+                const pBadge = document.getElementById('islandPreflightBadge');
+                if (pBadge && report) {
+                    if (report.heeftFouten) {
+                        pBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30';
+                        pBadge.textContent = `${report.foutenAantal} fouten`;
+                    } else if (report.heeftWaarschuwingen) {
+                        pBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30';
+                        pBadge.textContent = `${report.waarschuwingenAantal} aandachtspunten`;
+                    } else {
+                        pBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+                        pBadge.textContent = '100% Zero-Defect';
+                    }
+                }
+
+                // Dynamische checklist items
+                const datumVal = document.getElementById('datumInput')?.value?.trim();
+                const voorgangerVal = document.getElementById('voorgangerInput')?.value?.trim();
+                const cDatum = document.getElementById('islandCheckDatum');
+                if (cDatum) {
+                    const ok = !!(datumVal || voorgangerVal);
+                    cDatum.parentElement.className = ok ? 'flex items-center gap-1.5 text-emerald-400' : 'flex items-center gap-1.5 text-amber-400';
+                    cDatum.textContent = ok ? `Dienst: ${datumVal || 'Datum ingevuld'}` : 'Datum & Voorganger nog leeg';
+                }
+
+                const ontbrekendeLiederen = items.filter(it => it.type === 'Zang' && (!it.tekst || it.tekst.trim().length === 0));
+                const cLiederen = document.getElementById('islandCheckLiederen');
+                if (cLiederen) {
+                    const ok = ontbrekendeLiederen.length === 0 && items.length > 0;
+                    cLiederen.parentElement.className = ok ? 'flex items-center gap-1.5 text-emerald-400' : 'flex items-center gap-1.5 text-amber-400';
+                    cLiederen.textContent = ok ? `Alle ${items.filter(it => it.type === 'Zang').length} liederen compleet` : (items.length === 0 ? 'Nog geen items toegevoegd' : `${ontbrekendeLiederen.length} liederen missen tekst`);
+                }
+
+                const heeftTikkie = items.some(it => it.type === 'Collecte' || it.type === 'QR' || it.isCollecte);
+                const cTikkie = document.getElementById('islandCheckTikkie');
+                if (cTikkie) {
+                    cTikkie.parentElement.className = heeftTikkie ? 'flex items-center gap-1.5 text-emerald-400' : 'flex items-center gap-1.5 text-gray-400';
+                    cTikkie.textContent = heeftTikkie ? 'Collecte Tikkie QR in liturgie ✓' : 'Geen Tikkie in liturgie (optioneel)';
+                }
+
+                const mBadge = document.getElementById('islandMeeleesStatusBadge');
+                const mDesc = document.getElementById('islandMeeleesDesc');
+                if (mBadge) {
+                    mBadge.className = heeftMeelees
+                        ? 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                        : 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-500/20 text-gray-400 border border-gray-500/30';
+                    mBadge.textContent = heeftMeelees ? 'Actief Gekoppeld' : 'Nog Niet Aangemaakt';
+                }
+                if (mDesc) {
+                    mDesc.textContent = heeftMeelees
+                        ? 'Telefoon-pagina is gekoppeld en klaar voor de gemeente.'
+                        : 'Klik op "Toon QR" om een meelees-pagina voor deze dienst aan te maken.';
+                }
+            }
+        };
+
+        window.toggleDynamicIsland = function(open) {
+            if (!island) return;
+            if (open === undefined) open = !_isExpanded;
+            _isExpanded = open;
+
+            if (_islandAlertTimeout) {
+                clearTimeout(_islandAlertTimeout);
+                _islandAlertTimeout = null;
+            }
+
+            if (open) {
+                if (alertView) {
+                    alertView.classList.add('hidden');
+                    alertView.classList.remove('flex');
+                }
+                if (compactView) compactView.classList.add('hidden');
+                if (expandedView) {
+                    expandedView.classList.remove('hidden');
+                    expandedView.classList.add('flex');
+                }
+                island.classList.add('island-expanded');
+                island.classList.remove('island-alert-active');
+                if (backdrop) {
+                    backdrop.classList.remove('hidden');
+                    void backdrop.offsetWidth;
+                    backdrop.classList.remove('opacity-0');
+                    backdrop.classList.add('opacity-100');
+                }
+                window.updateDynamicIslandStatus();
+                if (navigator.vibrate) try { navigator.vibrate(12); } catch(err){}
+            } else {
+                if (expandedView) {
+                    expandedView.classList.add('hidden');
+                    expandedView.classList.remove('flex');
+                }
+                if (alertView) {
+                    alertView.classList.add('hidden');
+                    alertView.classList.remove('flex');
+                }
+                if (compactView) compactView.classList.remove('hidden');
+                island.classList.remove('island-expanded', 'island-alert-active');
+                if (backdrop) {
+                    backdrop.classList.remove('opacity-100');
+                    backdrop.classList.add('opacity-0');
+                    setTimeout(() => { backdrop.classList.add('hidden'); }, 280);
+                }
+                window.updateDynamicIslandStatus();
+            }
+        };
+
+        // Koppel toonToast aan het Dynamic Island
+        window.toonToast = function(bericht, type = "success") {
+            if (!island || !alertView) return;
+
+            const badge = document.getElementById('islandAlertBadge');
+            const txt = document.getElementById('islandAlertText');
+            const checkIco = document.getElementById('islandAlertCheckIcon');
+            const errIco = document.getElementById('islandAlertErrorIcon');
+            const infoIco = document.getElementById('islandAlertInfoIcon');
+
+            if (txt) txt.textContent = bericht;
+
+            if (badge) {
+                if (type === "error") {
+                    badge.className = 'w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-white bg-[#FF3B30] shadow-xs';
+                    if (checkIco) checkIco.classList.add('hidden');
+                    if (errIco) errIco.classList.remove('hidden');
+                    if (infoIco) infoIco.classList.add('hidden');
+                } else if (type === "info" || type === "warning") {
+                    badge.className = 'w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-white bg-[#007AFF] shadow-xs';
+                    if (checkIco) checkIco.classList.add('hidden');
+                    if (errIco) errIco.classList.add('hidden');
+                    if (infoIco) infoIco.classList.remove('hidden');
+                } else {
+                    badge.className = 'w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-white bg-[#34C759] shadow-xs';
+                    if (checkIco) checkIco.classList.remove('hidden');
+                    if (errIco) errIco.classList.add('hidden');
+                    if (infoIco) infoIco.classList.add('hidden');
+                }
+            }
+
+            // Sluit expanded view als die openstond
+            if (_isExpanded && backdrop) {
+                backdrop.classList.remove('opacity-100');
+                backdrop.classList.add('opacity-0');
+                setTimeout(() => { backdrop.classList.add('hidden'); }, 250);
+                _isExpanded = false;
+            }
+            if (expandedView) {
+                expandedView.classList.add('hidden');
+                expandedView.classList.remove('flex');
+            }
+            if (compactView) compactView.classList.add('hidden');
+
+            // Open Alert View
+            alertView.classList.remove('hidden');
+            alertView.classList.add('flex');
+            island.classList.remove('island-expanded');
+            island.classList.add('island-alert-active', 'island-spring-pop');
+
+            if (navigator.vibrate) try { navigator.vibrate(10); } catch(err){}
+
+            if (_islandAlertTimeout) clearTimeout(_islandAlertTimeout);
+            _islandAlertTimeout = setTimeout(() => {
+                alertView.classList.add('hidden');
+                alertView.classList.remove('flex');
+                if (compactView) compactView.classList.remove('hidden');
+                island.classList.remove('island-alert-active', 'island-spring-pop');
+                window.updateDynamicIslandStatus();
+            }, 3600);
+        };
+
+        // Kopieer meelees url sneltoets vanuit Dynamic Island
+        window.kopieerHuidigeMeeleesUrl = async function() {
+            const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : 'bethel';
+            let url = '';
+            try {
+                const meta = localStorage.getItem(`actieveMeeleesMeta_${slug}`);
+                if (meta) {
+                    const parsed = JSON.parse(meta);
+                    url = parsed.url;
+                }
+            } catch(e) {}
+
+            if (!url) {
+                if (typeof window.maakMeeleesLink === 'function') {
+                    url = await window.maakMeeleesLink(false);
+                }
+            }
+
+            if (url) {
+                try {
+                    await navigator.clipboard.writeText(url);
+                    window.toonToast("Meelees-link gekopieerd!", "success");
+                } catch(e) {
+                    window.toonToast("Kopiëren mislukt", "error");
+                }
+            } else {
+                window.toonToast("Nog geen actieve meelees-link", "info");
+            }
+        };
+
+        // Initialiseer direct
+        setTimeout(() => {
+            if (window.updateDynamicIslandStatus) window.updateDynamicIslandStatus();
+        }, 150);
+    })();
 
     // --- FUNCTIES VOOR DE REGULIERE MODAL ---
     window.toonControleModal = function(titel, tekst, type = "Zang") {
@@ -15673,6 +15984,10 @@ window.verstuurExportFeedback = async function() {
             if (badge) badge.className = "hidden";
             if (text) text.innerText = "Controle";
             if (btn) btn.title = "Kwaliteitscontrole van de liturgie";
+        }
+
+        if (typeof window.updateDynamicIslandStatus === 'function') {
+            window.updateDynamicIslandStatus();
         }
     };
 
