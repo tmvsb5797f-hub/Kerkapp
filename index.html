@@ -3237,8 +3237,11 @@
             .replace(/&amp;/g, '&')
             // Herstel ontbrekende spaties na leestekens (bijv. 'worden,Jeruzalem' -> 'worden, Jeruzalem')
             .replace(/([,;:.!?])([A-Za-z\u00C0-\u017E])/g, '$1 $2')
-            // Versnummers direct vastgeplakt aan eerste woord (bijv. '12Daarom' -> '12 Daarom')
+            // Versnummers direct vastgeplakt aan eerste woord (bijv. '12Daarom' -> '12 Daarom', '12Als' -> '12 Als')
             .replace(/(\b\d{1,3})([A-Z\u00C0-\u017E][a-z\u00E0-\u00FF]+)/g, '$1 $2')
+            // Typografische fouten zoals 'é én' -> 'één'
+            .replace(/(^|\s)é\s+én(?=\s|$|[.,;:!?])/g, '$1één')
+            .replace(/(^|\s)é\s+éne(?=\s|$|[.,;:!?])/g, '$1éne')
             // Plakwoorden met kleine letter direct gevolgd door hoofdletter splitsen (bijv. 'uSion' -> 'u Sion', 'totHem' -> 'tot Hem')
             .replace(/([a-z\u00E0-\u00FF])([A-Z\u00C0-\u017E])/g, function(match, p1, p2) {
                 // Merknamen zoals iPhone, iPad, eBay niet splitsen
@@ -3254,7 +3257,10 @@
             .replace(/\bUen\b/g, 'U en')
             .replace(/\bisen\b/g, 'is en')
             .replace(/\bwasen\b/g, 'was en')
-            .replace(/\s{2,}/g, ' ');
+            // Dubbele spaties op dezelfde regel opschonen, maar gewenste alinea-/witregels behouden
+            .replace(/[^\S\r\n]{2,}/g, ' ')
+            .replace(/[ \t]+\n/g, '\n')
+            .replace(/\n{3,}/g, '\n\n');
 
         // Herstel originele URLs
         urls.forEach(function(u, i) {
@@ -12581,7 +12587,15 @@ Antwoord UITSLUITEND in valide JSON:
         let blokken = [];
         if (item.type === "Schriftlezing") {
             const MAX_CHAR = 180;
-            let bron = schoneItemTekst.replace(/(?=\[\d+\]|\b\d+\.\s|^\d+\s|\n\d+\s)/gm, '\n')
+            // Als de geplakte tekst per ongeluk begint met een referentie zoals 'Leviticus 7:11-17 Dit nu is...',
+            // zetten we die netjes om naar het startvers (bijv. '11 Dit nu is...')
+            let verwerkteTekst = schoneItemTekst.replace(/^([A-Za-z0-9\s]+?\s+\d+:(\d+)(?:-\d+)?)\s+(?=[A-Za-z])/i, '$2 ');
+            // Herstel eventuele komma aan het einde van de schriftlezing naar een punt
+            verwerkteTekst = verwerkteTekst.replace(/,\s*$/, '.');
+
+            let bron = verwerkteTekst
+                .replace(/(?<=[.!?])\s+(?=\d+\s+[A-Za-z\u00C0-\u017E])/g, '\n')
+                .replace(/(?=\[\d+\]|\b\d+\.\s|^\d+\s|\n\d+\s)/gm, '\n')
                 .split('\n').map(r => r.trim()).filter(r => r);
             let tot = bron.reduce((s, r) => s + r.length, 0);
             let nd = Math.max(1, Math.ceil(tot / MAX_CHAR)), doel = tot / nd;
