@@ -8355,73 +8355,31 @@ Bijbelliederen`;
         }
 
 
-        // Auteursrechtelijk beschermde bundels: nooit AI laten gokken.
-        // Direct naar het plakscherm, zodat de tekst uit de eigen licentie
-        // (Liedbundel Online / liedbundels.nu) wordt geplakt en meteen goed in de Cloud staat.
-        const isBeschermdeBundel = /weerklank|op toonhoogte|\bdnp\b/i.test(titel);
-        if (isBeschermdeBundel) {
-            tijdelijkeTitel = titel;
-            tijdelijkeTekst = "";
-            tijdelijkeType = "Zang";
-            isAanHetBewerken = false;
+        // Lied staat niet in de database: NOOIT met AI gokken/verzinnen!
+        // AI kent Nederlandse liedbundels niet woordelijk en hallucineert coupletten.
+        // Direct naar het invoer-/plakscherm, zodat de officiële tekst wordt geplakt en meteen goed in de Cloud staat.
+        tijdelijkeTitel = titel;
+        tijdelijkeTekst = "";
+        tijdelijkeType = "Zang";
+        isAanHetBewerken = false;
 
-            document.getElementById('modalTitel').innerText = "Plak tekst: " + titel;
-            document.getElementById('handmatigeTekst').value = "";
-            document.getElementById('handmatigeTekst').placeholder = "Haal de tekst op via Liedbundel Online (liedbundels.nu) en plak 'm hier...";
+        document.getElementById('modalTitel').innerText = "Tekst invoeren / plakken: " + titel;
+        document.getElementById('handmatigeTekst').value = "";
+        document.getElementById('handmatigeTekst').placeholder = "Dit lied staat nog niet in de database. Plak hier de officiële coupletten (met een witregel tussen elk couplet)...";
 
-            document.getElementById('modalTekstContainer').classList.add('hidden');
-            document.getElementById('modalKnoppen1').classList.add('hidden');
-            document.getElementById('modalKnoppen1').classList.remove('flex', 'md:flex');
-            document.getElementById('modalKnoppen2').classList.add('hidden');
-            document.getElementById('modalKnoppen2').classList.remove('flex');
-            document.getElementById('modalKnoppen3').classList.remove('hidden');
-            document.getElementById('modalKnoppen3').classList.add('flex');
-            updateLiedbundelKnop(tijdelijkeTitel, tijdelijkeType);
-            document.getElementById('opslaanKnop').innerText = "Opslaan in Cloud & Toevoegen";
+        document.getElementById('modalTekstContainer').classList.add('hidden');
+        document.getElementById('modalKnoppen1').classList.add('hidden');
+        document.getElementById('modalKnoppen1').classList.remove('flex', 'md:flex');
+        document.getElementById('modalKnoppen2').classList.add('hidden');
+        document.getElementById('modalKnoppen2').classList.remove('flex');
+        document.getElementById('modalKnoppen3').classList.remove('hidden');
+        document.getElementById('modalKnoppen3').classList.add('flex');
+        updateLiedbundelKnop(tijdelijkeTitel, tijdelijkeType);
+        document.getElementById('opslaanKnop').innerText = "Opslaan in Cloud & Toevoegen";
 
-            document.getElementById('controleModal').classList.remove('hidden');
-            preview.innerHTML = `<span class="text-white text-[12px] text-center px-4 italic opacity-60">Plak de tekst vanuit Liedbundel Online in het venster...</span>`;
-            return;
-        }
-
-        if (huidigeQuota <= 0) { preview.innerHTML = `<span class="text-[#FFCC00] font-bold">Wacht op AI Capaciteit...</span>`; return; }
-        if (!gevondenModel) { preview.innerHTML = `<span class="text-[#FF3B30] font-bold">Geen model geselecteerd.</span>`; return; }
-
-        // NIEUW: Explicitiete foutmelding en uitleg aan de gebruiker
-        preview.innerHTML = `
-            <div class="flex flex-col items-center justify-center gap-2">
-                <span class="text-[#FF3B30] font-bold text-[14px]">⚠️ Niet in de Cloud gevonden!</span>
-                <span class="text-[#007AFF] font-medium animate-pulse text-[12px]">AI vraagt nu de VOLLEDIGE tekst (alle verzen) op voor: <b>${escapeHtml(titel)}</b>...</span>
-            </div>
-        `;
-
-        try {
-            consumeerAiQuota(1);
-            
-            // NIEUW: Striktere prompt voor de AI om echt ALLE verzen te eisen
-            const aiPrompt = "Geef de VOLLEDIGE, letterlijke tekst (inclusief ALLE coupletten/verzen) van het christelijke lied: '" + titel + "'. Geef uitsluitend de liedtekst, geen introductie of verdere uitleg. Belangrijk: gebruik een DUBBELE witregel (enter) tussen elk couplet of vers zodat ik ze goed kan splitsen.";
-            
-            const data = await fetchGeminiWithFallback({
-                contents: [{ parts: [{ text: aiPrompt }] }]
-            }, gevondenModel);
-            
-            if (data.error) {
-                preview.innerHTML = `<span class="text-[#FF3B30] font-bold">Fout in AI Model:</span><br>${data.error.message}`;
-            } else if (data.candidates && data.candidates.length > 0) {
-                const resultaat = data.candidates[0].content.parts[0].text.trim();
-                const basisTitel = (typeof window.extractVersInfoVanItem === 'function')
-                    ? window.extractVersInfoVanItem({ type: 'Zang', titel }).basisTitel
-                    : titel;
-                slaLiedOpInCloud(basisTitel || titel, resultaat); // Sla op in de achtergrond
-                window.toonVersSelectie(basisTitel || titel, resultaat, null, voorgeselecteerd); // Open vers-kiezer
-            }
-        } catch (err) { 
-            let msg = err.message || "Onbekende fout";
-            if (/high demand|spikes in demand|overloaded/i.test(msg)) {
-                msg = "Google AI ervaart een tijdelijke piekbelasting. Probeer het over een ogenblik opnieuw.";
-            }
-            preview.innerHTML = `<span class="text-[#FF3B30] font-bold">AI Fout:</span><br>${escapeHtml(msg)}`; 
-        }
+        document.getElementById('controleModal').classList.remove('hidden');
+        preview.innerHTML = `<span class="text-white text-[12px] text-center px-4 italic opacity-75">Niet in database gevonden. Plak of typ de officiële tekst in het geopende venster...</span>`;
+        return;
     };
 
     // --- BIJBEL VIA API (bolls.life HSV17) + AI FALLBACK ---
@@ -8544,25 +8502,7 @@ Bijbelliederen`;
             return schoneResTxt;
         } catch(e) {
             clearTimeout(timeoutId);
-            // 3. Fallback: Gemini AI backup
-            try {
-                const resAi = await fetchGeminiWithFallback({
-                    contents: [{ role: "user", parts: [{ text: `Geef de letterlijke tekst van de Herziene Statenvertaling (HSV) voor ${referentie}. Nummer elk vers duidelijk (bijv. 1 ..., 2 ...). Geef ALLEEN de verzen, zonder toelichting.` }] }],
-                    generationConfig: { temperature: 0.1 }
-                });
-                const txt = resAi?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-                if (txt && txt.length > 25) {
-                    const schoneAiTxt = (typeof window.decodeerHtmlEntiteiten === 'function') ? window.decodeerHtmlEntiteiten(txt) : txt;
-                    try {
-                        fetch(DATA_URL + "/bijbel_hsv", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ id: schoneRef, tekst: schoneAiTxt })
-                        }).catch(() => {});
-                    } catch(e) {}
-                    return schoneAiTxt;
-                }
-            } catch(err2) {}
+            // Geen AI fallback voor Bijbelteksten: geef null terug zodat gebruiker zelf de officiële tekst kan invoeren
             return null;
         }
     }

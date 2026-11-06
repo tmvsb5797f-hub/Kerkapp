@@ -432,34 +432,7 @@ async function haalBijbelTekst(refStr, parsed, env) {
     console.warn("[Bijbel Fetch] Bolls Life API fout:", err.message);
   }
 
-  // 3. Fallback: Gemini AI Proxy (met geautoriseerde Origin)
-  try {
-    const prompt = `Geef de letterlijke tekst van de Herziene Statenvertaling (HSV) voor: ${refStr}. Nummer elk vers duidelijk met het versnummer (bijv. 1 ..., 2 ...). Geef ALLEEN de verzen, zonder toelichting of headers.`;
-    const aiRes = await fetch("https://gemini-proxy.kerkapp.workers.dev/v1beta/models/gemini-flash-lite-latest:generateContent", {
-      method: "POST",
-      headers: { 
-        "Content-Type": "application/json",
-        "Origin": "https://tmvsb5797f-hub.github.io"
-      },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.1 }
-      })
-    });
-    if (aiRes.ok) {
-      const data = await aiRes.json();
-      const txt = (data.candidates?.[0]?.content?.parts?.[0]?.text || "").trim();
-      if (txt.length > 20) {
-        if (env.DB) {
-          try {
-            await env.DB.prepare("INSERT OR REPLACE INTO bijbel_hsv (id, tekst) VALUES (?, ?)").bind(refStr, txt).run();
-          } catch(e) {}
-        }
-        return txt;
-      }
-    }
-  } catch(e) {}
-
+  // 3. Geen AI fallback voor Bijbelteksten: geef null terug zodat er nooit gehallucineerde verzen in D1 komen.
   return null;
 }
 
@@ -545,44 +518,9 @@ async function haalLiedTekstOp(db, bundel, nummer, versNummers, extraTitel) {
     } catch(e) {}
   }
 
-  // 3. Fallback: Gemini AI Proxy voor liedtekst (NOOIT voor Weerklank of DNP wegens auteursrecht & hallucinaties!)
-  const isBeschermd = /weerklank|dnp|op toonhoogte/i.test(bundel);
-  if (isBeschermd) {
-    // Weerklank en DNP hebben auteursrecht en AI verzint foutieve teksten.
-    // Laat de tekst leeg zodat de meegestuurde PowerPoint van de predikant of Liedbundel Online gebruikt wordt.
-    return null;
-  }
-
-  try {
-    const vStr = (versNummers && versNummers.length > 0) ? `couplet ${versNummers.join(', ')}` : "alle coupletten";
-    const titelDetail = extraTitel ? ` (getiteld "${extraTitel}")` : "";
-    const prompt = `Geef de Nederlandse tekst van het kerklied of christelijke lied "${bundel} ${nummer}"${titelDetail} (${vStr}). Nummer elk couplet duidelijk met "1." of "2." op een eigen regel gevolgd door de couplettekst en een witregel. Geef ALLEEN de coupletteksten zonder inleiding of toelichting.`;
-    
-    const aiRes = await fetch("https://gemini-proxy.kerkapp.workers.dev/v1beta/models/gemini-flash-lite-latest:generateContent", {
-      method: "POST",
-      headers: { 
-        "Content-Type": "application/json",
-        "Origin": "https://tmvsb5797f-hub.github.io"
-      },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.1 }
-      })
-    });
-    if (aiRes.ok) {
-      const data = await aiRes.json();
-      let txt = (data.candidates?.[0]?.content?.parts?.[0]?.text || "").trim();
-      txt = txt.replace(/^```[a-z]*\n?/i, "").replace(/```$/, "").trim();
-      if (txt.length > 25 && !txt.toLowerCase().includes("kan ik niet vinden")) {
-        try {
-          await db.prepare("INSERT OR REPLACE INTO liederen (id, tekst, toegevoegd_door) VALUES (?, ?, 'AI-Email-Sync')")
-            .bind(`${bundel} ${nummer}`, txt).run();
-        } catch(e) {}
-        return txt;
-      }
-    }
-  } catch(e) {}
-
+  // 3. NOOIT AI gebruiken om liedteksten te verzinnen.
+  // AI kent de Nederlandse kerkliederen niet woordelijk en hallucineert coupletten.
+  // Laat de tekst leeg zodat de meegestuurde PowerPoint van de predikant of Liedbundel Online gebruikt wordt.
   return null;
 }
 
