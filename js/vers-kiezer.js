@@ -154,7 +154,7 @@
             html += `
                 <button type="button" 
                         onclick="window.toggleVersSelectie(${vers.nr})"
-                        class="px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer ${activeClasses}"
+                        class="shrink-0 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs flex items-center gap-1 sm:gap-1.5 transition-all duration-150 active:scale-95 cursor-pointer whitespace-nowrap ${activeClasses}"
                         title="Klik om vers ${vers.nr} aan/uit te zetten">
                     <span>${isActief ? '✓' : '○'}</span>
                     <span>Vers ${vers.nr}</span>
