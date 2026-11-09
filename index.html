@@ -8765,6 +8765,37 @@ Bijbelliederen`;
         return partiel >= 0 ? partiel + 1 : null;
     }
 
+    window.normaliseerBijbelTekst = function(tekst) {
+        if (!tekst || typeof tekst !== 'string') return '';
+        let t = (typeof window.decodeerHtmlEntiteiten === 'function') ? window.decodeerHtmlEntiteiten(tekst) : tekst;
+        return t
+            .replace(/<\/?b>/gi, ' ')
+            .replace(/<br\s*\/?>/gi, ' ')
+            .replace(/<\/p>/gi, ' ')
+            .replace(/<[^>]*>/g, ' ')
+            .replace(/[Ⓐ-ⓩ①-⑳⓪-⓿¹²³⁰-₟†‡§¶※⸮⁂⁋⁓]/g, '')
+            .replace(/\[\d+\]/g, '')
+            .replace(/&ndash;|&#8211;/g, '–')
+            .replace(/&mdash;|&#8212;/g, '—')
+            .replace(/&nbsp;|&#160;/g, ' ')
+            .replace(/&hellip;|&#8230;/g, '…')
+            .replace(/&[a-z]+;/gi, (m) => ({ '&amp;': '&', '&quot;': '"', '&apos;': "'", '&lt;': '<', '&gt;': '>' }[m] || ' '))
+            .replace(/é\s+én/gi, 'één')
+            .replace(/(\d+)([A-Za-z\u00C0-\u017E])/g, '$1 $2')
+            .replace(/([,;:.!?])([A-Za-z\u00C0-\u017E])/g, '$1 $2')
+            .replace(/([a-z\u00C0-\u017E])([A-Z])/g, '$1 $2')
+            .replace(/\bwordenen\b/g, 'worden en')
+            .replace(/\bgoedeen\b/g, 'goede en')
+            .replace(/\bbloeden\b/g, 'bloed en')
+            .replace(/\bJakoben\b/g, 'Jakob en')
+            .replace(/\bniethet\b/g, 'niet het')
+            .replace(/\bzijnhet\b/g, 'zijn het')
+            .replace(/\bvolvan\b/g, 'vol van')
+            .replace(/\bafen\b/g, 'af en')
+            .replace(/[ \t]{2,}/g, ' ')
+            .trim();
+    };
+
     async function haalBijbelViaAPI(referentie) {
         const schoneRef = referentie.replace(/\(HSV\)/gi, '').trim();
 
@@ -8774,7 +8805,12 @@ Bijbelliederen`;
             if (r.ok) {
                 const data = await r.json();
                 if (data && data.gevonden && data.tekst && data.tekst.length > 25 && !data.tekst.startsWith("Schriftlezing uit")) {
-                    return (typeof window.decodeerHtmlEntiteiten === 'function') ? window.decodeerHtmlEntiteiten(data.tekst) : data.tekst;
+                    // Detecteer eventuele oude gecorrumpeerde D1-cache (bijv. 'uSion', 'worden,Jeruzalem', 'wordenen')
+                    const isCorrupt = /([,;:.!?][A-Za-z\u00C0-\u017E]|[a-z][A-Z]|\b(?:wordenen|goedeen|bloeden|zijnhet|niethet|volvan)\b)/.test(data.tekst);
+                    if (!isCorrupt) {
+                        return window.normaliseerBijbelTekst(data.tekst);
+                    }
+                    console.warn("[Bijbel] Oude gecorrumpeerde D1 cache gedetecteerd voor " + schoneRef + ", wordt vers opgehaald en hersteld.");
                 }
             }
         } catch(e) {}
@@ -8799,25 +8835,11 @@ Bijbelliederen`;
                 : verzen;
             if (gefilterd.length === 0) return null;
             const resTxt = gefilterd.map(v => {
-                let t = (v.text || '')
-                    .replace(/<\/?b>/gi, ' ')
-                    .replace(/<br\s*\/?>/gi, ' ')
-                    .replace(/<\/p>/gi, ' ')
-                    .replace(/<[^>]*>/g, ' ')
-                    .replace(/[Ⓐ-ⓩ①-⑳⓪-⓿¹²³⁰-₟†‡§¶※⸮⁂⁋⁓]/g, '')
-                    .replace(/\[\d+\]/g, '')
-                    .replace(/&ndash;|&#8211;/g, '–')
-                    .replace(/&mdash;|&#8212;/g, '—')
-                    .replace(/&nbsp;|&#160;/g, ' ')
-                    .replace(/&hellip;|&#8230;/g, '…')
-                    .replace(/&[a-z]+;/gi, (m) => ({ '&amp;': '&', '&quot;': '"', '&apos;': "'", '&lt;': '<', '&gt;': '>' }[m] || ' '))
-                    .replace(/([,;:.!?])([A-Za-z\u00C0-\u017E])/g, '$1 $2')
-                    .replace(/\s{2,}/g, ' ')
-                    .trim();
+                const t = window.normaliseerBijbelTekst(v.text || '');
                 return v.verse + ' ' + t;
             }).join('\n');
 
-            const schoneResTxt = (typeof window.decodeerHtmlEntiteiten === 'function') ? window.decodeerHtmlEntiteiten(resTxt) : resTxt;
+            const schoneResTxt = window.normaliseerBijbelTekst(resTxt);
             try {
                 fetch(DATA_URL + "/bijbel_hsv", {
                     method: "POST",
@@ -12856,7 +12878,10 @@ Antwoord UITSLUITEND in valide JSON:
             const MAX_CHAR = 180;
             // Als de geplakte tekst per ongeluk begint met een referentie zoals 'Leviticus 7:11-17 Dit nu is...',
             // zetten we die netjes om naar het startvers (bijv. '11 Dit nu is...')
-            let verwerkteTekst = schoneItemTekst.replace(/^([A-Za-z0-9\s]+?\s+\d+:(\d+)(?:-\d+)?)\s+(?=[A-Za-z])/i, '$2 ');
+            let verwerkteTekst = (typeof window.normaliseerBijbelTekst === 'function')
+                ? window.normaliseerBijbelTekst(schoneItemTekst)
+                : schoneItemTekst;
+            verwerkteTekst = verwerkteTekst.replace(/^([A-Za-z0-9\s]+?\s+\d+:(\d+)(?:-\d+)?)\s+(?=[A-Za-z])/i, '$2 ');
             // Herstel eventuele komma aan het einde van de schriftlezing naar een punt
             verwerkteTekst = verwerkteTekst.replace(/,\s*$/, '.');
 

@@ -408,9 +408,21 @@ async function haalBijbelTekst(refStr, parsed, env) {
         if (gefilterd.length > 0) {
           const lines = gefilterd.map(v => {
             const schoneTekst = (v.text || "")
-              .replace(/<[^>]*>/g, "")
+              .replace(/<\/?b>/gi, " ")
+              .replace(/<br\s*\/?>/gi, " ")
+              .replace(/<\/p>/gi, " ")
+              .replace(/<[^>]*>/g, " ")
               .replace(/[Ⓐ-ⓩ①-⑳⓪-⓿¹²³⁰-₟†‡§¶※⸮⁂⁋⁓]/g, "")
               .replace(/\[\d+\]/g, "")
+              .replace(/&ndash;|&#8211;/g, "–")
+              .replace(/&mdash;|&#8212;/g, "—")
+              .replace(/&nbsp;|&#160;/g, " ")
+              .replace(/&hellip;|&#8230;/g, "…")
+              .replace(/&[a-z]+;/gi, (m) => ({ '&amp;': '&', '&quot;': '"', '&apos;': "'", '&lt;': '<', '&gt;': '>' }[m] || ' '))
+              .replace(/é\s+én/gi, "één")
+              .replace(/(\d+)([A-Za-z\u00C0-\u017E])/g, "$1 $2")
+              .replace(/([,;:.!?])([A-Za-z\u00C0-\u017E])/g, "$1 $2")
+              .replace(/([a-z\u00C0-\u017E])([A-Z])/g, "$1 $2")
               .replace(/\s+/g, " ")
               .trim();
             return `${v.verse} ${schoneTekst}`;
