@@ -2214,7 +2214,7 @@
             </div>
             <p id="islandMeeleesDesc" class="text-[11px] text-gray-300 mb-2 leading-tight">Telefoon-versie is gekoppeld en gesynchroniseerd.</p>
             <div class="flex gap-1.5">
-                <button type="button" onclick="event.stopPropagation(); window.toggleDynamicIsland(false); window.openDeelModal();" class="flex-1 py-1.5 px-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-bold text-[11px] transition-all flex items-center justify-center gap-1 shadow-xs cursor-pointer">
+                <button type="button" onclick="event.stopPropagation(); window.toggleDynamicIsland(false); window.openMeeleesModal();" class="flex-1 py-1.5 px-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-bold text-[11px] transition-all flex items-center justify-center gap-1 shadow-xs cursor-pointer">
                     <span>📱</span>
                     <span>Toon QR</span>
                 </button>
@@ -4889,6 +4889,7 @@ Retourneer UITSLUITEND een valide JSON object:
         window.wisselMeeleesTab(tab);
         window.renderMeeleesGeschiedenisUI();
     };
+    window.openDeelModal = window.openMeeleesModal;
 
     window.genereerVersMeeleesLink = function() {
         return window.updateActieveMeeleesLink(true);
@@ -7596,6 +7597,20 @@ Bijbelliederen`;
                 container.classList.add('hidden');
             }
         });
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                if (!container.classList.contains('hidden') && container.children.length > 0) {
+                    const firstOption = container.firstElementChild;
+                    if (firstOption) {
+                        e.preventDefault();
+                        const clickTarget = firstOption.querySelector('.cursor-pointer') || firstOption;
+                        clickTarget.click();
+                        container.classList.add('hidden');
+                    }
+                }
+            }
+        });
     }
 
   async function slaLiedOpInCloud(titel, tekst, stil = false) {
@@ -8652,8 +8667,8 @@ Bijbelliederen`;
             if(!keepOpen) document.getElementById('suggestieBijbel').classList.add('hidden');
         });
 
-       // Event listener voor de Bijbel input (MET database check + AI fallback)
-        document.getElementById('bijbelInput').addEventListener('keypress', async (e) => {
+       // Event listener voor de Bijbel input (MET database check)
+        document.getElementById('bijbelInput').addEventListener('keydown', async (e) => {
             if (e.key === 'Enter') {
                 const invoer = e.target.value.trim();
                 if (!invoer) return;

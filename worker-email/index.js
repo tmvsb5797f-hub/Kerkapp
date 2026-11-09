@@ -7,8 +7,8 @@
  *    - Het e-mailadres (bijv. "bethel@liturgie.nl" of "liturgie+maranatha@liturgie.nl")
  *    - Of de afzender van de predikant (gekoppeld aan een kerk)
  * 3. Analyseert de liturgie (datum, predikant, liederen, schriftlezingen).
- * 4. Haalt ontbrekende liederen en bijbelteksten op uit de centrale Cloudflare D1 database,
- *    bolls.life HSV17 API en Gemini AI fallback.
+ * 4. Haalt ontbrekende liederen en bijbelteksten op uit de centrale Cloudflare D1 database
+ *    en bolls.life HSV17 API (zonder AI-hallucinaties).
  * 5. Slaat de complete dienst op in D1 onder de specifieke kerk_id.
  * 6. De beamer-pc en OBS in díe specifieke kerk halen hun dienst direct op via GET /dienst?kerk=<kerk_id>.
  */
