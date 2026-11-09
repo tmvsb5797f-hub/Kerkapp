@@ -7554,11 +7554,19 @@ Bijbelliederen`;
             const dataLijst = typeof dataLijstOfFunctie === 'function' ? dataLijstOfFunctie() : dataLijstOfFunctie;
 
             // --- SLIMME ZOEK ALIASSEN (Afkortingen) ---
-            term = term.replace(/\both\b/g, "op toonhoogte");
-            term = term.replace(/\bwk\b/g, "weerklank");
-            term = term.replace(/\bopw\b/g, "opwekking");
-            term = term.replace(/\bps\b/g, "psalm");
-            term = term.replace(/\blw\b/g, "weerklank lied");
+            term = term.replace(/\bpw\s*(\d+)/gi, "weerklank psalm $1");
+            term = term.replace(/\bpw\b/gi, "weerklank psalm");
+            term = term.replace(/\blw\s*(\d+)/gi, "weerklank lied $1");
+            term = term.replace(/\blw\b/gi, "weerklank lied");
+            term = term.replace(/\bwk\s*(\d+)/gi, "weerklank $1");
+            term = term.replace(/\bwk\b/gi, "weerklank");
+            term = term.replace(/\both\s*(\d+)/gi, "op toonhoogte $1");
+            term = term.replace(/\both\b/gi, "op toonhoogte");
+            term = term.replace(/\bopw\s*(\d+)/gi, "opwekking $1");
+            term = term.replace(/\bopw\b/gi, "opwekking");
+            term = term.replace(/\bdnp\s*(\d+)/gi, "dnp psalm $1");
+            term = term.replace(/\bps\s*(\d+)/gi, "psalm $1");
+            term = term.replace(/\bps\b/gi, "psalm");
 
             const isLiedSearch = (inputId === 'liedInput');
             const activeFilter = isLiedSearch ? (window.actieveLiedZoekFilter || 'alle') : 'alle';
@@ -8659,10 +8667,51 @@ Bijbelliederen`;
         sluitVersModal();
     }
 
-    // --- LIEDEREN VERWERKEN ---
+    // --- LIEDEREN VERWERKEN & AFKORTINGEN EXPANSIE ---
+    window.expandeerLiedAfkorting = function(titel) {
+        if (!titel || typeof titel !== 'string') return '';
+        let t = titel.trim();
+        // Optionele aanduiding zoals "Zingen: ", "Slotlied: ", etc. behouden
+        const prefixMatch = t.match(/^(voorzang|slotlied|aanvangslied|zingen|lied)\s*[:\-]\s*/i);
+        let prefix = "";
+        if (prefixMatch) {
+            prefix = prefixMatch[0];
+            t = t.substring(prefix.length).trim();
+        }
+
+        // 1. Weerklank Psalm: PW15 of PW 15 -> Weerklank Psalm 15
+        t = t.replace(/^(?:PW|Pw|pw)\s*([0-9]+[a-z]?)\b/i, 'Weerklank Psalm $1');
+        // 2. Weerklank Lied: LW15 of LW 15 of WL15 -> Weerklank Lied 15
+        t = t.replace(/^(?:LW|Lw|lw|WL|Wl|wl)\s*([0-9]+[a-z]?)\b/i, 'Weerklank Lied $1');
+        // 3. Weerklank algemeen: WK15 of WK 15 -> Weerklank 15
+        t = t.replace(/^(?:WK|Wk|wk)\s*([0-9]+[a-z]?)\b/i, 'Weerklank $1');
+        // 4. Op Toonhoogte: OTH15 of OTH 15 -> Op Toonhoogte 15
+        t = t.replace(/^(?:OTH|Oth|oth)\s*([0-9]+[a-z]?)\b/i, 'Op Toonhoogte $1');
+        // 5. Opwekking: OPW15 of OPW 15 -> Opwekking 15
+        t = t.replace(/^(?:OPW|Opw|opw)\s*([0-9]+[a-z]?)\b/i, 'Opwekking $1');
+        // 6. De Nieuwe Psalmberijming: DNP15 of DNP 15 -> DNP Psalm 15
+        t = t.replace(/^(?:DNP\s*Ps(?:alm)?|DNP|Dnp|dnp)\s*([0-9]+[a-z]?)\b/i, 'DNP Psalm $1');
+        // 7. Psalmen: PS15 of PS 15 (maar niet als het al Psalm is) -> Psalm 15
+        t = t.replace(/^(?:PS|Ps|ps)(?!\s*alm|\s*DNP)\s*([0-9]+[a-z]?)\b/i, 'Psalm $1');
+        // 8. Gereformeerd Kerkboek: GK15 of GK 15 -> Gereformeerd Kerkboek 15
+        t = t.replace(/^(?:GK|Gk|gk)\s*([0-9]+[a-z]?)\b/i, 'Gereformeerd Kerkboek $1');
+        // 9. Liedboek: LB15 of LB 15 -> Liedboek 15
+        t = t.replace(/^(?:LB|Lb|lb)\s*([0-9]+[a-z]?)\b/i, 'Liedboek $1');
+        // 10. Hemelhoog: HH15 of HH 15 -> Hemelhoog 15
+        t = t.replace(/^(?:HH|Hh|hh)\s*([0-9]+[a-z]?)\b/i, 'Hemelhoog $1');
+        // 11. Johannes de Heer: JDH15 of JDH 15 -> Joh. de Heer 15
+        t = t.replace(/^(?:JDH|Jdh|JdH|jdh)\s*([0-9]+[a-z]?)\b/i, 'Joh. de Heer $1');
+        // 12. Evangelische Liedbundel: EL15 of EL 15 -> Evangelische Liedbundel 15
+        t = t.replace(/^(?:EL|El|el)\s*([0-9]+[a-z]?)\b/i, 'Evangelische Liedbundel $1');
+
+        return prefix + t;
+    };
 
     window.handleLiedSelectie = async (titel, keepOpen = false, voorgeselecteerd = null) => {
         const preview = document.getElementById('previewVak');
+        if (typeof window.expandeerLiedAfkorting === 'function') {
+            titel = window.expandeerLiedAfkorting(titel);
+        }
         
         if (!keepOpen) {
             document.getElementById('liedInput').value = '';
@@ -10081,6 +10130,9 @@ Bijbelliederen`;
                 .replace(/\s*\([\d,\s\-–—en&]+\)$/, '')
                 .trim();
         }
+        if (typeof window.expandeerLiedAfkorting === 'function') {
+            basisTitel = window.expandeerLiedAfkorting(basisTitel);
+        }
 
         // Cache op item voor naadloze werking in PowerPoint, Welkomstdia, Meelees en OBS
         if (versNummers.length > 0 && (!item.geselecteerdeVerzen || item.geselecteerdeVerzen.length === 0)) {
@@ -10136,6 +10188,9 @@ Bijbelliederen`;
     window.zoekLiedInDatabase = function(titel) {
         if (!window.liederenDatabase) return { inCloud: false, tekst: "", versNummers: [] };
         let genormaliseerd = (titel || "").trim();
+        if (typeof window.expandeerLiedAfkorting === 'function') {
+            genormaliseerd = window.expandeerLiedAfkorting(genormaliseerd);
+        }
         // Normaliseer "Ps 119" of "Ps. 119" naar "Psalm 119"
         genormaliseerd = genormaliseerd.replace(/^ps\.?\s*(\d+)/i, 'Psalm $1');
         if (!genormaliseerd) return { inCloud: false, tekst: "", versNummers: [] };
@@ -10862,6 +10917,9 @@ ${veiligeTekst}
                 if (item.type !== "Zang" && item.type !== "Schriftlezing") continue;
                 let titel = (item.titel || "").trim();
                 if (!titel) continue;
+                if (item.type === "Zang" && typeof window.expandeerLiedAfkorting === 'function') {
+                    titel = window.expandeerLiedAfkorting(titel);
+                }
                 let definitieveTekst = " ";
                 let inCloud = false;
 
@@ -12952,7 +13010,9 @@ Antwoord UITSLUITEND in valide JSON:
                     : (typeof window.extractVersNummers === 'function' ? window.extractVersNummers(item.titel) : [])
             };
 
-        const basisTitel = versInfo.basisTitel;
+        let basisTitel = (item.type === "Zang" && typeof window.expandeerLiedAfkorting === 'function')
+            ? window.expandeerLiedAfkorting(versInfo.basisTitel)
+            : versInfo.basisTitel;
         const bekendeVerzen = versInfo.versNummers;
 
         blokken.forEach((regelsArr, blokIdx) => {
@@ -12988,7 +13048,9 @@ Antwoord UITSLUITEND in valide JSON:
 
             const subBlokken = pptFitBlok(regelsArr, fSize, font, tw, th);
             subBlokken.forEach((sb, sIdx) => {
-                let diaTitel = item.titel;
+                let diaTitel = (item.type === "Zang" && typeof window.expandeerLiedAfkorting === 'function')
+                    ? window.expandeerLiedAfkorting(item.titel)
+                    : item.titel;
                 if (item.type === "Zang" && versNr != null) {
                     const deelStr = subBlokken.length > 1 ? ` (${sIdx + 1}/${subBlokken.length})` : '';
                     diaTitel = `${basisTitel} : ${versNr}${deelStr}`;
@@ -13495,6 +13557,14 @@ Antwoord UITSLUITEND in valide JSON:
 
         lijst.innerHTML = "";
         liturgieVolgorde.forEach((item, index) => {
+            if (item.type === 'Zang' && typeof window.expandeerLiedAfkorting === 'function') {
+                const netteTitel = window.expandeerLiedAfkorting(item.titel);
+                if (netteTitel !== item.titel) {
+                    item.titel = netteTitel;
+                    if (item.basisTitel) item.basisTitel = window.expandeerLiedAfkorting(item.basisTitel);
+                }
+            }
+
             let icon = '';
             if(item.type === 'Foto') icon = '📸 ';
             else if(item.type === 'QR') icon = '💳 ';
@@ -14324,7 +14394,10 @@ window.bouwPowerPointPresentatie = async function(customOpties = null) {
             const tekstAlign = window.getDiaAlign(item, subIdx);
             let slide = pres.addSlide();
             slide.background = pptBg;
-            const diaTitel = sub.diaTitel || item.titel || "";
+            let diaTitel = sub.diaTitel || item.titel || "";
+            if (item.type === "Zang" && typeof window.expandeerLiedAfkorting === 'function') {
+                diaTitel = window.expandeerLiedAfkorting(diaTitel);
+            }
             slide.addText(diaTitel, { x: tx, y: TITEL_Y, w: tw, h: 0.4, color: "FFFFFF", fontSize: 18, bold: true, fontFace: pptFont, align: "left", valign: "top" });
 
             const heeftVetOpmaak = sub.regels.some(r => /\*\*.*?\*\*|<b>.*?<\/b>/i.test(r));
