@@ -723,62 +723,62 @@
         </div>
 
         <!-- 2. Bewerkbare Body -->
-        <div id="modalKnoppen3" class="p-4 sm:p-6 hidden flex-col gap-4 bg-white dark:bg-[#1C1C1E] overflow-y-auto flex-1 min-h-0">
+        <div id="modalKnoppen3" class="p-4 sm:p-6 hidden flex-col gap-4 bg-white dark:bg-[#1C1C1E] overflow-y-auto overflow-x-hidden flex-1 min-h-0 w-full max-w-full min-w-0 box-border">
             
             <!-- Rij 1: Titel Input + Externe Zoekhulp Links (Liedbundels Online & DNP) -->
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gray-50/80 dark:bg-white/5 p-3 rounded-2xl border border-gray-200/70 dark:border-white/10">
-                <div class="flex-grow flex items-center gap-2">
-                    <label for="modalTitelInput" class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Titel:</label>
-                    <input type="text" id="modalTitelInput" class="flex-grow bg-white dark:bg-[#2C2C2E] dark:text-white border border-gray-200 dark:border-white/10 rounded-xl px-3 py-1.5 text-sm font-semibold focus:border-[#007AFF] focus:outline-none transition-all" placeholder="Bijv. Psalm 23 of Weerklank 121"/>
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-gray-50/80 dark:bg-white/5 p-3 rounded-2xl border border-gray-200/70 dark:border-white/10 w-full min-w-0 max-w-full box-border">
+                <div class="flex-grow flex items-center gap-2 min-w-0">
+                    <label for="modalTitelInput" class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider shrink-0">Titel:</label>
+                    <input type="text" id="modalTitelInput" class="w-full min-w-0 bg-white dark:bg-[#2C2C2E] dark:text-white border border-gray-200 dark:border-white/10 rounded-xl px-3 py-1.5 text-sm font-semibold focus:border-[#007AFF] focus:outline-none transition-all box-border" placeholder="Bijv. Psalm 23 of Weerklank 121"/>
                 </div>
-                <div class="flex items-center gap-2 flex-shrink-0" id="modalLiedLinksBalk">
-                    <a id="liedbundelKnop" href="https://www.liedbundelsonline.nl/nl/lied-zoeken" target="_blank" rel="noopener noreferrer" class="hidden py-1.5 px-3 rounded-xl text-[11px] font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 dark:hover:bg-purple-900/60 transition-colors items-center gap-1 border border-purple-200 dark:border-purple-800/50 shadow-2xs">
+                <div class="flex items-center gap-1.5 flex-wrap shrink-0" id="modalLiedLinksBalk">
+                    <a id="liedbundelKnop" href="https://www.liedbundelsonline.nl/nl/lied-zoeken" target="_blank" rel="noopener noreferrer" class="hidden py-1.5 px-2.5 rounded-xl text-[11px] font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 dark:hover:bg-purple-900/60 transition-colors items-center gap-1 border border-purple-200 dark:border-purple-800/50 shadow-2xs whitespace-nowrap">
                         <span>🔗 Liedbundels Online ↗</span>
                     </a>
-                    <a id="dnpKnop" href="https://www.denieuwepsalmberijming.nl/berijmingen" target="_blank" rel="noopener noreferrer" class="hidden py-1.5 px-3 rounded-xl text-[11px] font-bold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/50 hover:bg-teal-100 dark:hover:bg-teal-900/60 transition-colors items-center gap-1 border border-teal-200 dark:border-teal-800/50 shadow-2xs">
+                    <a id="dnpKnop" href="https://www.denieuwepsalmberijming.nl/berijmingen" target="_blank" rel="noopener noreferrer" class="hidden py-1.5 px-2.5 rounded-xl text-[11px] font-bold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/50 hover:bg-teal-100 dark:hover:bg-teal-900/60 transition-colors items-center gap-1 border border-teal-200 dark:border-teal-800/50 shadow-2xs whitespace-nowrap">
                         <span>🔗 DNP ↗</span>
                     </a>
                 </div>
             </div>
 
-            <div id="bijbelFoutBanner" class="hidden p-3.5 rounded-2xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/40 text-amber-900 dark:text-amber-200 text-xs font-medium flex items-start gap-3">
+            <div id="bijbelFoutBanner" class="hidden p-3.5 rounded-2xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/40 text-amber-900 dark:text-amber-200 text-xs font-medium flex items-start gap-3 w-full min-w-0 max-w-full box-border">
                 <div class="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/60 flex items-center justify-center flex-shrink-0 text-amber-600 dark:text-amber-300 font-bold text-xs">⚠️</div>
-                <div class="flex-grow">
+                <div class="flex-grow min-w-0">
                     <p class="font-bold text-[13px] text-amber-950 dark:text-amber-100">Bijbel API error!</p>
                     <p class="text-amber-800 dark:text-amber-300 text-[12px] mt-0.5 leading-relaxed">Kon de verzen niet automatisch ophalen via de Bijbel API. Vul of plak de tekst hieronder zelf in:</p>
                 </div>
             </div>
 
             <!-- SLIMME COUPLET- EN VERSKIEZER BALK (1.2) -->
-            <div id="versKiezerContainer" class="hidden p-3.5 bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/50 rounded-2xl flex flex-col gap-2 shadow-xs transition-all">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold text-blue-900 dark:text-blue-300 flex items-center gap-1.5">
+            <div id="versKiezerContainer" class="hidden p-3.5 bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/50 rounded-2xl flex flex-col gap-2 shadow-xs transition-all w-full min-w-0 max-w-full box-border">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="text-xs font-bold text-blue-900 dark:text-blue-300 flex items-center gap-1.5 min-w-0 truncate">
                         <span>🎵</span> <span>Couplet / Vers selectie:</span>
                     </span>
-                    <button type="button" onclick="window.toggleAlleVerzenInModal()" id="versKiezerToggleAllesBtn" class="text-[11px] font-bold text-[#007AFF] hover:underline cursor-pointer">Alles selecteren</button>
+                    <button type="button" onclick="window.toggleAlleVerzenInModal()" id="versKiezerToggleAllesBtn" class="text-[11px] font-bold text-[#007AFF] hover:underline cursor-pointer shrink-0">Alles selecteren</button>
                 </div>
-                <div id="versKiezerKnoppen" class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto pt-0.5 pr-1">
+                <div id="versKiezerKnoppen" class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto pt-0.5 pr-1 w-full min-w-0 box-border">
                     <!-- Dynamisch gevuld met interactieve pills [✓ Vers 1] [✓ Vers 2] -->
                 </div>
             </div>
 
             <!-- Rij 2: Toolbar met Vet, Schoon & Splits, Refrein herhalen & Uitlijning -->
-            <div class="flex items-center justify-between flex-wrap gap-2 pt-1">
-                <div class="flex items-center gap-2 flex-wrap">
-                    <button type="button" onclick="maakSelectieVetInModal()" class="px-3 py-1.5 bg-[#F5F5F7] dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 border border-black/[0.06] dark:border-white/10 text-[#1D1D1F] dark:text-white text-xs font-bold rounded-xl shadow-2xs flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer" title="Geselecteerd woord vetgedrukt maken (**woord** of Ctrl+B)">
+            <div class="flex items-center justify-between flex-wrap gap-2 pt-1 w-full min-w-0 max-w-full box-border">
+                <div class="flex items-center gap-2 flex-wrap min-w-0">
+                    <button type="button" onclick="maakSelectieVetInModal()" class="px-3 py-1.5 bg-[#F5F5F7] dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 border border-black/[0.06] dark:border-white/10 text-[#1D1D1F] dark:text-white text-xs font-bold rounded-xl shadow-2xs flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer shrink-0" title="Geselecteerd woord vetgedrukt maken (**woord** of Ctrl+B)">
                         <span class="font-black text-sm text-[#007AFF]">B</span>
                         <span>Vet</span>
                     </button>
-                    <button type="button" onclick="window.schoonEnSplitsTekstInModal()" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 border border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-amber-200 text-xs font-bold rounded-xl shadow-2xs flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer" title="Schoon tekst op en splits coupletten automatisch met dubbele witregels">
+                    <button type="button" onclick="window.schoonEnSplitsTekstInModal()" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 border border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-amber-200 text-xs font-bold rounded-xl shadow-2xs flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer shrink-0" title="Schoon tekst op en splits coupletten automatisch met dubbele witregels">
                         <span>🧹</span>
                         <span>Schoon &amp; Splits</span>
                     </button>
-                    <button type="button" onclick="window.herhaalRefreinInModal()" class="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 dark:hover:bg-purple-900/50 border border-purple-200 dark:border-purple-800/40 text-purple-900 dark:text-purple-200 text-xs font-bold rounded-xl shadow-2xs flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer" title="Detecteer refrein (Chorus) en herhaal automatisch na elk couplet">
+                    <button type="button" onclick="window.herhaalRefreinInModal()" class="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 dark:hover:bg-purple-900/50 border border-purple-200 dark:border-purple-800/40 text-purple-900 dark:text-purple-200 text-xs font-bold rounded-xl shadow-2xs flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer shrink-0" title="Detecteer refrein (Chorus) en herhaal automatisch na elk couplet">
                         <span>🔁</span>
                         <span>Refrein herhalen</span>
                     </button>
                 </div>
-                <div class="flex items-center gap-1 bg-[#F5F5F7] dark:bg-white/5 p-1 rounded-xl border border-black/[0.04] dark:border-white/10">
+                <div class="flex items-center gap-1 bg-[#F5F5F7] dark:bg-white/5 p-1 rounded-xl border border-black/[0.04] dark:border-white/10 shrink-0">
                     <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1.5">Uitlijning:</span>
                     <button type="button" id="modalAlignLeftBtn" onclick="kiesModalUitlijning('left')" class="px-2.5 py-1 rounded-lg text-xs font-semibold text-gray-600 dark:text-gray-300 transition-all flex items-center gap-1 cursor-pointer" title="Links uitlijnen">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h10M4 18h14"></path></svg>
@@ -792,20 +792,20 @@
             </div>
 
             <!-- Tekstvak met royale ademruimte -->
-            <div class="flex flex-col gap-1.5">
-                <textarea id="handmatigeTekst" rows="7" class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-gray-200/80 dark:border-white/10 rounded-2xl p-4 text-[15px] leading-relaxed apple-input transition-all resize-y font-normal" placeholder="Typ of plak hier de tekst..."></textarea>
+            <div class="flex flex-col gap-1.5 w-full min-w-0 max-w-full box-border">
+                <textarea id="handmatigeTekst" rows="7" class="w-full min-w-0 max-w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-gray-200/80 dark:border-white/10 rounded-2xl p-4 text-[15px] leading-relaxed apple-input transition-all resize-y font-normal box-border" placeholder="Typ of plak hier de tekst..."></textarea>
                 <p class="text-[11px] text-gray-400 dark:text-gray-500 font-medium">💡 Tip: Gebruik een lege regel (dubbele enter) tussen verzen voor aparte dia's.</p>
             </div>
 
             <!-- Footer: Database Sync Checkbox + Actieknoppen -->
-            <div class="pt-2 border-t border-gray-100 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div id="bewerkDatabaseOptieContainer" class="hidden items-center">
-                    <label class="flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-blue-950 dark:text-blue-200 bg-blue-50/80 dark:bg-blue-950/40 px-3 py-2 rounded-xl border border-blue-200/80 dark:border-blue-800/40">
-                        <input type="checkbox" id="bewerkOokInDatabaseCheckbox" class="w-4 h-4 rounded text-[#007AFF] focus:ring-0 cursor-pointer"/>
-                        <span>💾 Ook permanent bijwerken in bibliotheek</span>
+            <div class="pt-2 border-t border-gray-100 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full min-w-0 max-w-full box-border">
+                <div id="bewerkDatabaseOptieContainer" class="hidden items-center min-w-0">
+                    <label class="flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-blue-950 dark:text-blue-200 bg-blue-50/80 dark:bg-blue-950/40 px-3 py-2 rounded-xl border border-blue-200/80 dark:border-blue-800/40 max-w-full">
+                        <input type="checkbox" id="bewerkOokInDatabaseCheckbox" class="w-4 h-4 rounded text-[#007AFF] focus:ring-0 cursor-pointer shrink-0"/>
+                        <span class="truncate">💾 Ook permanent bijwerken in bibliotheek</span>
                     </label>
                 </div>
-                <div class="flex items-center gap-2 ml-auto w-full sm:w-auto">
+                <div class="flex items-center gap-2 ml-auto w-full sm:w-auto shrink-0">
                     <button type="button" onclick="sluitModal()" class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl text-xs font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 transition-all cursor-pointer">
                         Annuleren
                     </button>
@@ -8245,9 +8245,8 @@ Bijbelliederen`;
             liedbundelKnop.href = targetUrl;
             liedbundelKnop.target = '_blank';
             liedbundelKnop.rel = 'noopener noreferrer';
-            liedbundelKnop.innerHTML = num 
-                ? `<span>🔗 Zoek <b>${escapeHtml(titel)}</b> op Liedbundels Online ↗</span>`
-                : `<span>🔗 Open Liedbundels Online (Weerklank/OTH) ↗</span>`;
+            liedbundelKnop.title = num ? `Zoek ${titel} op Liedbundels Online` : "Open Liedbundels Online";
+            liedbundelKnop.innerHTML = `<span>🔗 Liedbundels Online ↗</span>`;
             liedbundelKnop.classList.remove('hidden');
             liedbundelKnop.classList.add('flex');
         } else {
@@ -8260,9 +8259,8 @@ Bijbelliederen`;
             dnpKnop.href = dnpUrl;
             dnpKnop.target = '_blank';
             dnpKnop.rel = 'noopener noreferrer';
-            dnpKnop.innerHTML = num
-                ? `<span>🔗 Open <b>Psalm ${num}</b> op DNP ↗</span>`
-                : `<span>🔗 Open De Nieuwe Psalmberijming ↗</span>`;
+            dnpKnop.title = num ? `Open Psalm ${num} op De Nieuwe Psalmberijming` : "Open De Nieuwe Psalmberijming";
+            dnpKnop.innerHTML = `<span>🔗 DNP ↗</span>`;
             dnpKnop.classList.remove('hidden');
             dnpKnop.classList.add('flex');
         } else {
@@ -8350,6 +8348,8 @@ Bijbelliederen`;
 
         document.getElementById('modalKnoppen3').classList.remove('hidden');
         document.getElementById('modalKnoppen3').classList.add('flex');
+        const m3fout = document.getElementById('modalKnoppen3');
+        if (m3fout) { m3fout.scrollLeft = 0; m3fout.scrollTop = 0; }
         updateLiedbundelKnop(tijdelijkeTitel, tijdelijkeType);
 
         modalGekozenAlign = window.getAlign ? window.getAlign() : 'center';
@@ -8392,6 +8392,8 @@ Bijbelliederen`;
         
         document.getElementById('modalKnoppen3').classList.remove('hidden');
         document.getElementById('modalKnoppen3').classList.add('flex');
+        const m3 = document.getElementById('modalKnoppen3');
+        if (m3) { m3.scrollLeft = 0; m3.scrollTop = 0; }
         updateLiedbundelKnop(tijdelijkeTitel, tijdelijkeType);
 
         // Toon checkbox om ook in de database op te slaan als het een lied betreft
@@ -8410,6 +8412,9 @@ Bijbelliederen`;
         
         document.getElementById('opslaanKnop').innerText = "Wijziging Opslaan voor deze Dia";
         document.getElementById('controleModal').classList.remove('hidden');
+        requestAnimationFrame(() => {
+            if (m3) { m3.scrollLeft = 0; }
+        });
     };
 
     window.sluitModal = function() {
@@ -8469,6 +8474,8 @@ Bijbelliederen`;
         // Toon alleen het onderste grijze invulvak en de opslaan knop
         document.getElementById('modalKnoppen3').classList.remove('hidden');
         document.getElementById('modalKnoppen3').classList.add('flex');
+        const m3fout = document.getElementById('modalKnoppen3');
+        if (m3fout) { m3fout.scrollLeft = 0; m3fout.scrollTop = 0; }
         updateLiedbundelKnop(tijdelijkeTitel, tijdelijkeType);
         modalGekozenAlign = window.getAlign ? window.getAlign() : 'center';
         updateModalAlignUI(modalGekozenAlign);
@@ -8761,6 +8768,8 @@ Bijbelliederen`;
         document.getElementById('modalKnoppen2').classList.remove('flex');
         document.getElementById('modalKnoppen3').classList.remove('hidden');
         document.getElementById('modalKnoppen3').classList.add('flex');
+        const m3fout = document.getElementById('modalKnoppen3');
+        if (m3fout) { m3fout.scrollLeft = 0; m3fout.scrollTop = 0; }
         updateLiedbundelKnop(tijdelijkeTitel, tijdelijkeType);
         document.getElementById('opslaanKnop').innerText = "Opslaan in Cloud & Toevoegen";
 
