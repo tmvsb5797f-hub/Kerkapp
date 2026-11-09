@@ -16,7 +16,7 @@
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('service-worker.js?v=10').catch(function (e) { console.warn('SW registratie mislukt:', e); });
+      navigator.serviceWorker.register('service-worker.js?v=11').catch(function (e) { console.warn('SW registratie mislukt:', e); });
     });
   }
 </script>
@@ -306,6 +306,22 @@
         white-space: nowrap;
     }
     .uitleg-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    html.dark .uitleg-input,
+    body.dark-mode .uitleg-input {
+        background-color: #2C2C2E !important;
+        color: #ffffff !important;
+        border-color: rgba(255, 255, 255, 0.1) !important;
+    }
+    html.dark .uitleg-dropdown,
+    body.dark-mode .uitleg-dropdown {
+        background-color: #1C1C1E !important;
+        border-color: rgba(255, 255, 255, 0.1) !important;
+        color: #ffffff !important;
+    }
+    html.dark .uitleg-dropdown-item.hovered,
+    body.dark-mode .uitleg-dropdown-item.hovered {
+        background-color: rgba(255, 255, 255, 0.08) !important;
+    }
     #uitlegDots {
         scrollbar-width: none;
         -ms-overflow-style: none;
@@ -1422,37 +1438,44 @@
     </div>
 </div>
 
-<div id="uitlegModal" class="fixed inset-0 z-[200] hidden items-center justify-center bg-black/20 backdrop-blur-xl p-4" onclick="if(event.target === this) sluitUitleg()">
-    <div class="bg-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] w-full max-w-xl overflow-hidden flex flex-col transform transition-all modal-animate max-h-[92vh]">
-        <div class="p-4 md:p-5 border-b border-gray-100 flex justify-between items-center flex-shrink-0">
+<div id="uitlegModal" class="fixed inset-0 z-[200] hidden items-center justify-center bg-black/40 modal-backdrop-safe transition-opacity p-2 sm:p-4" onclick="if(event.target === this) sluitUitleg()">
+    <div class="bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[24px] sm:rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.05] dark:ring-white/10 w-full max-w-xl overflow-hidden flex flex-col transform transition-all modal-animate max-h-[94dvh] sm:max-h-[92vh]">
+        <!-- Progress Bar aan de bovenkant -->
+        <div class="h-1 w-full bg-gray-100 dark:bg-white/10 overflow-hidden flex-shrink-0">
+            <div id="uitlegProgressBar" class="h-full bg-gradient-to-r from-[#007AFF] to-[#5856D6] transition-all duration-300" style="width: 6%;"></div>
+        </div>
+
+        <div class="p-3.5 sm:p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center flex-shrink-0 bg-white dark:bg-[#1C1C1E]">
             <div class="flex items-center gap-2">
-                <span class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider">Hoe werkt de app?</span>
-                <span id="uitlegStapTeller" class="text-[10px] font-bold text-[#007AFF] bg-blue-50 px-2 py-0.5 rounded-full tabular-nums">1 / 15</span>
+                <span class="w-6 h-6 rounded-lg bg-blue-500/10 dark:bg-blue-500/20 text-[#007AFF] flex items-center justify-center text-xs font-bold shadow-2xs">✨</span>
+                <span class="text-[11px] font-bold text-[#86868B] dark:text-gray-400 uppercase tracking-wider">Interactieve Rondleiding</span>
+                <span id="uitlegStapTeller" class="text-[10px] font-bold text-[#007AFF] dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 border border-blue-200/50 dark:border-blue-800/40 px-2 py-0.5 rounded-full tabular-nums">Stap 1 van 15</span>
             </div>
             <div class="flex items-center gap-1">
-                <button onclick="sluitUitleg()" class="text-[12px] font-semibold text-gray-400 hover:text-gray-700 px-3 py-1 rounded-full hover:bg-gray-100 transition-colors">Sla over</button>
-                <button onclick="sluitUitleg()" title="Sluiten" class="text-gray-400 hover:text-gray-600 p-1">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                <button onclick="sluitUitleg()" class="text-[11px] sm:text-[12px] font-semibold text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 px-2.5 sm:px-3 py-1 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer">Sla over</button>
+                <button onclick="sluitUitleg()" title="Sluiten" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 sm:p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
         </div>
 
-        <div class="p-5 md:p-8 overflow-y-auto">
-            <div class="text-center mb-5 min-h-[70px]">
-                <h3 id="uitlegSceneTitel" class="text-xl md:text-2xl font-bold text-[#1D1D1F] transition-opacity duration-300">Welkom!</h3>
-                <p id="uitlegSceneTekst" class="text-gray-500 mt-2 text-[13px] md:text-[15px] leading-relaxed transition-opacity duration-300">&nbsp;</p>
+        <div class="p-4 sm:p-6 md:p-8 overflow-y-auto flex-1 min-h-0 bg-white dark:bg-[#1C1C1E]">
+            <div class="text-center mb-4 sm:mb-5 min-h-[64px] sm:min-h-[70px]">
+                <h3 id="uitlegSceneTitel" class="text-lg sm:text-xl md:text-2xl font-bold text-[#1D1D1F] dark:text-white transition-opacity duration-300">Welkom!</h3>
+                <p id="uitlegSceneTekst" class="text-gray-500 dark:text-gray-400 mt-1.5 sm:mt-2 text-xs sm:text-[14px] md:text-[15px] leading-relaxed transition-opacity duration-300">&nbsp;</p>
             </div>
 
-            <div class="relative bg-[#F5F5F7] rounded-[20px] border border-gray-100 overflow-hidden" style="min-height: 260px;">
-                <div id="uitlegDemoInner" class="relative p-6 md:p-8" style="min-height: 260px;"></div>
+            <div class="relative bg-[#F5F5F7] dark:bg-white/5 rounded-[20px] border border-gray-100 dark:border-white/10 overflow-hidden shadow-inner touch-pan-x" style="min-height: 240px;">
+                <div id="uitlegDemoInner" class="relative p-4 sm:p-6 md:p-8 select-none" style="min-height: 240px;"></div>
             </div>
+            <p class="text-center text-[10px] text-gray-400 dark:text-gray-500 mt-2.5 hidden sm:block">💡 Gebruik de pijltjestoetsen ← en → of veeg op mobiel om te bladeren</p>
         </div>
 
-        <div class="p-4 md:p-6 border-t border-gray-100 flex items-center justify-between gap-3 bg-white flex-shrink-0">
-            <div id="uitlegDots" class="flex gap-1.5 min-w-0 overflow-x-auto py-1"></div>
-            <div class="flex gap-2 flex-shrink-0">
-                <button id="uitlegVorigeKnop" onclick="uitlegVorige()" class="px-4 py-2.5 rounded-full text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">Vorige</button>
-                <button id="uitlegVolgendeKnop" onclick="uitlegVolgende()" class="px-5 py-2.5 rounded-full text-sm font-semibold text-white bg-[#007AFF] hover:bg-blue-600 transition-colors shadow-md">Volgende</button>
+        <div class="p-3.5 sm:p-5 border-t border-gray-100 dark:border-white/10 flex items-center justify-between gap-3 bg-white dark:bg-[#1C1C1E] flex-shrink-0">
+            <div id="uitlegDots" class="flex gap-1.5 min-w-0 overflow-x-auto py-1 no-scrollbar select-none" style="-webkit-overflow-scrolling: touch;"></div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <button id="uitlegVorigeKnop" onclick="uitlegVorige()" class="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 transition-all cursor-pointer">Vorige</button>
+                <button id="uitlegVolgendeKnop" onclick="uitlegVolgende()" class="px-4.5 sm:px-6 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white bg-[#007AFF] hover:bg-blue-600 shadow-md transition-all active:scale-95 cursor-pointer">Volgende</button>
             </div>
         </div>
     </div>
@@ -9352,20 +9375,26 @@ Bijbelliederen`;
         }
     }
 
-    // --- Scene 2: Liederen Zoeken ---
+    // --- Scene 2: Liederen Zoeken & Bibliotheek ---
     function render2(el) {
         el.innerHTML = `
-        <div class="w-full relative">
+        <div class="w-full relative flex flex-col gap-2">
+            <div class="flex items-center justify-between gap-2">
+                <span class="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">1. Liederen &amp; Psalmen</span>
+                <div id="ut-bib-knop" class="text-[10px] font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 px-2.5 py-1 rounded-lg shadow-2xs flex items-center gap-1">
+                    <span>📚 Bibliotheek</span>
+                </div>
+            </div>
             <div class="relative">
                 <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                <div id="ut-liedbox" class="uitleg-input w-full bg-white border-2 border-transparent rounded-xl py-3 pl-10 pr-4 text-[14px] font-medium text-gray-800 flex items-center h-11">
+                <div id="ut-liedbox" class="uitleg-input w-full bg-white dark:bg-[#2C2C2E] border-2 border-transparent rounded-xl py-3 pl-10 pr-4 text-[14px] font-medium text-gray-800 dark:text-white flex items-center h-11">
                     <span id="ut-liedtext" class="text-gray-400">Bijv: 'wk 15', 'psalm 23'...</span>
                 </div>
             </div>
-            <div id="ut-liedmenu" class="uitleg-dropdown absolute z-20 w-full bg-white mt-2 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-gray-100 overflow-hidden">
-                <div id="ut-liediten" class="uitleg-dropdown-item p-3 text-[13px] font-medium text-gray-800 flex justify-between items-center">
+            <div id="ut-liedmenu" class="uitleg-dropdown absolute z-20 w-full bg-white dark:bg-[#2C2C2E] top-20 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-gray-100 dark:border-white/10 overflow-hidden">
+                <div id="ut-liediten" class="uitleg-dropdown-item p-3 text-[13px] font-medium text-gray-800 dark:text-white flex justify-between items-center">
                     <span>Weerklank 14 - Groot is Uw trouw</span>
-                    <span class="text-blue-500 text-[11px] font-bold bg-blue-50 px-2 py-1 rounded-md">+ Voeg toe</span>
+                    <span class="text-blue-500 text-[11px] font-bold bg-blue-50 dark:bg-blue-950/40 px-2 py-1 rounded-md">+ Voeg toe</span>
                 </div>
             </div>
             ${uitlegCursorHtml(85, 88)}
@@ -9388,7 +9417,7 @@ Bijbelliederen`;
             await uitlegSleep(800); if (!uitlegGeldig(runId)) return;
             uitlegKlik();
             box.classList.add('focused');
-            txt.innerText = ''; txt.className = 'text-gray-800';
+            txt.innerText = ''; txt.className = 'text-gray-800 dark:text-white';
             await uitlegSleep(300); if (!uitlegGeldig(runId)) return;
             for (const ch of 'weerklank 14') {
                 if (!uitlegGeldig(runId)) return;
@@ -9398,7 +9427,7 @@ Bijbelliederen`;
             await uitlegSleep(400); if (!uitlegGeldig(runId)) return;
 
             menu.classList.add('show');
-            uitlegZetTekst("2. Kies uit de lijst", "Klik op het juiste lied in de lijst om het toe te voegen aan je liturgie.");
+            uitlegZetTekst("Kies uit de lijst", "Klik op het juiste lied in de lijst om het direct toe te voegen.");
             await uitlegSleep(700); if (!uitlegGeldig(runId)) return;
 
             uitlegMuisNaarEl('ut-liediten');
@@ -9408,10 +9437,15 @@ Bijbelliederen`;
             uitlegKlik();
             item.classList.remove('hovered'); item.classList.add('success');
             item.innerHTML = `<span>Toegevoegd aan liturgie! ✅</span>`;
-            uitlegZetTekst("Toegevoegd!", "Het lied staat nu klaar in je liturgielijst hieronder.");
-            await uitlegSleep(2200); if (!uitlegGeldig(runId)) return;
+            uitlegZetTekst("Toegevoegd!", "Het lied staat nu klaar in je liturgielijst.");
+            await uitlegSleep(1800); if (!uitlegGeldig(runId)) return;
+
+            uitlegMuisNaarEl('ut-bib-knop');
+            await uitlegSleep(750); if (!uitlegGeldig(runId)) return;
+            uitlegZetTekst("Bibliotheek & Bundels", "Via de knop '📚 Bibliotheek' beheer je de centrale database of zoek je liederen online op.");
+            await uitlegSleep(2400); if (!uitlegGeldig(runId)) return;
             uitlegMuis(85, 88);
-            await uitlegSleep(1500); if (!uitlegGeldig(runId)) return;
+            await uitlegSleep(1200); if (!uitlegGeldig(runId)) return;
         }
     }
 
@@ -9602,6 +9636,75 @@ Bijbelliederen`;
             it0.style.transform = ''; it1.style.transform = '';
             uitlegMuis(15, 30);
             await uitlegSleep(1500); if (!uitlegGeldig(runId)) return;
+        }
+    }
+
+    // --- Scene: Dia Bewerken, Coupletkiezer & Splitsen ---
+    function renderBewerkTour(el) {
+        el.innerHTML = `
+        <div class="w-full flex flex-col gap-2">
+            <div class="flex items-center justify-between bg-white dark:bg-[#2C2C2E] p-2.5 rounded-xl border border-gray-200 dark:border-white/10 shadow-xs">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-gray-500 dark:text-gray-400">Titel:</span>
+                    <span id="ut-bw-titel" class="text-xs font-bold text-[#1D1D1F] dark:text-white">Psalm 107 vers 1</span>
+                </div>
+                <div id="ut-bw-potlood" class="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-[#007AFF] flex items-center justify-center text-xs font-bold shadow-2xs">✏️</div>
+            </div>
+
+            <!-- Couplet pills balk -->
+            <div id="ut-bw-verzen" class="flex items-center gap-1.5 p-2 bg-blue-50/70 dark:bg-blue-950/40 rounded-xl border border-blue-200/60 dark:border-blue-800/40 overflow-x-auto">
+                <span class="text-[10px] font-bold text-blue-900 dark:text-blue-300 mr-1 shrink-0">Couplets:</span>
+                <span id="ut-vpill-1" class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#007AFF] text-white shadow-2xs shrink-0">✓ Vers 1</span>
+                <span id="ut-vpill-2" class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-white dark:bg-white/10 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-white/10 shrink-0">Vers 2</span>
+                <span id="ut-vpill-3" class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-white dark:bg-white/10 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-white/10 shrink-0">Vers 3</span>
+            </div>
+
+            <!-- Toolbar knoppen -->
+            <div class="flex items-center gap-2">
+                <div id="ut-bw-splits" class="px-2.5 py-1 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 rounded-lg text-[10px] font-bold border border-amber-200 dark:border-amber-800/40 flex items-center gap-1 shadow-2xs">
+                    <span>🧹 Splits</span>
+                </div>
+                <div id="ut-bw-refrein" class="px-2.5 py-1 bg-purple-50 dark:bg-purple-950/40 text-purple-900 dark:text-purple-200 rounded-lg text-[10px] font-bold border border-purple-200 dark:border-purple-800/40 flex items-center gap-1 shadow-2xs">
+                    <span>🔁 Refrein</span>
+                </div>
+                <div class="ml-auto flex items-center gap-1 text-[10px] font-semibold text-blue-900 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 px-2 py-1 rounded-lg border border-blue-200 dark:border-blue-800/40">
+                    <span>💾 In bibliotheek</span>
+                </div>
+            </div>
+
+            <div class="p-2.5 bg-white dark:bg-[#2C2C2E] rounded-xl border border-gray-200 dark:border-white/10 text-[11px] leading-relaxed text-gray-700 dark:text-gray-200 font-sans" id="ut-bw-tekstbox">
+                Looft, looft den HEER der heren,<br>Want goedertieren is zijn gunst.
+            </div>
+            ${uitlegCursorHtml(85, 20)}
+        </div>`;
+    }
+    async function animateBewerkTour(runId) {
+        while (uitlegGeldig(runId)) {
+            const v3 = document.getElementById('ut-vpill-3');
+            const splits = document.getElementById('ut-bw-splits');
+            const tb = document.getElementById('ut-bw-tekstbox');
+            if (v3) { v3.className = "px-2 py-0.5 rounded-md text-[10px] font-semibold bg-white dark:bg-white/10 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-white/10 shrink-0"; v3.innerText = "Vers 3"; }
+            if (splits) splits.style.boxShadow = '';
+            if (tb) tb.innerHTML = "Looft, looft den HEER der heren,<br>Want goedertieren is zijn gunst.";
+
+            uitlegMuis(85, 20);
+            uitlegZetTekst("Dia's direct bewerken", "Klik op het potloodje ✏️ bij een lied om de tekst, titel of weergave direct aan te passen.");
+            await uitlegSleep(2000); if (!uitlegGeldig(runId)) return;
+
+            uitlegMuisNaarEl('ut-vpill-3');
+            await uitlegSleep(800); if (!uitlegGeldig(runId)) return;
+            uitlegKlik();
+            if (v3) { v3.className = "px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#007AFF] text-white shadow-2xs shrink-0"; v3.innerText = "✓ Vers 3"; }
+            uitlegZetTekst("Slimme Versselectie", "Kies direct welke coupletten gezongen worden (bijv. vers 1 en 3) zonder overbodige tekst te wissen.");
+            await uitlegSleep(2200); if (!uitlegGeldig(runId)) return;
+
+            uitlegMuisNaarEl('ut-bw-splits');
+            await uitlegSleep(800); if (!uitlegGeldig(runId)) return;
+            uitlegKlik();
+            if (splits) splits.style.boxShadow = '0 0 0 3px rgba(245,158,11,0.3)';
+            if (tb) tb.innerHTML = "Couplet 1:<br>Looft den HEER der heren...<br><br>Couplet 3:<br>Hij redt wie tot Hem roepen...";
+            uitlegZetTekst("Automatisch opschonen & splitsen", "Kopieer je tekst vanaf internet of Word? Knop '🧹 Splits' zet automatisch nette witregels tussen de coupletten.");
+            await uitlegSleep(3000); if (!uitlegGeldig(runId)) return;
         }
     }
 
@@ -10043,15 +10146,16 @@ Bijbelliederen`;
     const uitlegScenes = [
         { titel: "Welkom!", tekst: "Deze rondleiding laat in een paar minuten zien hoe je een complete liturgie en PowerPoint maakt - inclusief slimme extra's zoals de meelees-versie, het archief en de Tikkie QR. Klik op 'Volgende' om te beginnen.", render: render0, animate: animate0 },
         { titel: "0. Dienst Gegevens", tekst: "Vul de datum en de voorganger in - deze komen op de allereerste welkomstdia te staan.", render: render1, animate: animate1 },
-        { titel: "1. Liederen Zoeken", tekst: "Typ een liednaam of afkorting zoals 'wk 14' - de AI snapt direct wat je bedoelt.", render: render2, animate: animate2 },
-        { titel: "2. Bijbel & Media", tekst: "Typ de Bijbeltekst en druk op Enter. Zo voeg je ook foto's of lege dia's toe.", render: render3, animate: animate3 },
-        { titel: "Snelkoppeling: Slim Importeren", tekst: "Plak de hele liturgie in één keer - de AI herkent zelf liederen en Schriftlezingen.", render: render4, animate: animate4 },
+        { titel: "1. Liederen & Bibliotheek", tekst: "Typ een liednaam of afkorting zoals 'wk 14' - of open direct de centrale Liederen Bibliotheek & Beheer.", render: render2, animate: animate2 },
+        { titel: "2. Bijbel & HSV Teksten", tekst: "Typ de Bijbeltekst en druk op Enter. De HSV-tekst wordt foutloos geladen, en je voegt eenvoudig foto's of lege dia's toe.", render: render3, animate: animate3 },
+        { titel: "Snelkoppeling: Slim Importeren", tekst: "Plak de hele liturgie in één keer - de AI herkent zelf alle liederen en Schriftlezingen.", render: render4, animate: animate4 },
+        { titel: "3. Jouw Liturgie", tekst: "Hier verschijnt alles wat je toevoegt. Sleep items om de volgorde direct aan te passen.", render: render5, animate: animate5 },
+        { titel: "Dia Bewerken & Slimme Verskeuze", tekst: "Klik op het potloodje ✏️ om een dia aan te passen, specifieke coupletten te kiezen ([✓ Vers 1] [✓ Vers 4]) of teksten automatisch te splitsen met [🧹 Splits].", render: renderBewerkTour, animate: animateBewerkTour },
         { titel: "Instellingen & Livestream", tekst: "Stel het lettertype en de grootte in, en kies of de dia's voor de beamer of de livestream zijn.", render: renderInstellingen, animate: animateInstellingen },
         { titel: "Live Voorbeeld & Positie", tekst: "Bekijk elke dia live en zet de tekst met dubbelklik precies op de goede plek.", render: renderPreview, animate: animatePreview },
-        { titel: "Tekstvak Formaat Aanpassen", tekst: "Pak een van de 4 hoekpunten vast om het tekstvak naar wens te vergroten of verkleinen. De aangepaste afmetingen worden automatisch bewaard in de PowerPoint-export.", render: renderResize, animate: animateResize },
+        { titel: "Tekstvak Formaat Aanpassen", tekst: "Pak een van de 4 hoekpunten vast om het tekstvak naar wens te vergroten of verkleinen. De afmetingen worden exact zo bewaard in PowerPoint.", render: renderResize, animate: animateResize },
         { titel: "Tikkie QR voor de Collecte", tekst: "Voeg met één klik een nette QR-dia toe voor de digitale collecte.", render: renderQR, animate: animateQR },
         { titel: "Meelees-versie voor de Gemeente", tekst: "Laat gemeenteleden op hun telefoon meelezen via een QR-code op de beamer.", render: renderMeeleesTour, animate: animateMeeleesTour },
-        { titel: "3. Jouw Liturgie", tekst: "Hier verschijnt alles wat je toevoegt. Sleep items om de volgorde aan te passen.", render: render5, animate: animate5 },
         { titel: "Archief: Opslaan & Herladen", tekst: "Bewaar liturgieën en zet een eerdere dienst met één klik terug.", render: renderArchiefTour, animate: animateArchiefTour },
         { titel: "Hulp Altijd Bij De Hand", tekst: "De AI hulp-assistent en de info-knop met OBS Live Regie staan altijd voor je klaar in de bedieningsbalk onderaan.", render: renderHulp, animate: animateHulp },
         { titel: "Zet op je Beginscherm", tekst: "Installeer de app als een echte app - werkt ook zonder internet.", render: renderInstall, animate: animateInstall },
@@ -10066,13 +10170,13 @@ Bijbelliederen`;
             uitlegScenes.forEach((s, i) => {
                 const d = document.createElement('button');
                 d.title = 'Stap ' + (i + 1);
-                d.className = 'h-2 rounded-full transition-all flex-shrink-0 ' + (i === uitlegHuidigeStap ? 'bg-[#007AFF] w-5' : 'bg-gray-200 w-2 hover:bg-gray-300');
+                d.className = 'h-2 rounded-full transition-all flex-shrink-0 cursor-pointer ' + (i === uitlegHuidigeStap ? 'bg-[#007AFF] w-5 shadow-xs' : 'bg-gray-200 dark:bg-white/20 w-2 hover:bg-gray-300 dark:hover:bg-white/40');
                 d.onclick = () => uitlegGaNaarStap(i);
                 dots.appendChild(d);
             });
         } else {
             Array.from(dots.children).forEach((d, i) => {
-                d.className = 'h-2 rounded-full transition-all flex-shrink-0 ' + (i === uitlegHuidigeStap ? 'bg-[#007AFF] w-5' : 'bg-gray-200 w-2 hover:bg-gray-300');
+                d.className = 'h-2 rounded-full transition-all flex-shrink-0 cursor-pointer ' + (i === uitlegHuidigeStap ? 'bg-[#007AFF] w-5 shadow-xs' : 'bg-gray-200 dark:bg-white/20 w-2 hover:bg-gray-300 dark:hover:bg-white/40');
             });
         }
         const activeDot = dots.children[uitlegHuidigeStap];
@@ -10093,8 +10197,15 @@ Bijbelliederen`;
         document.getElementById('uitlegSceneTekst').innerText = scene.tekst;
         document.getElementById('uitlegSceneTitel').style.opacity = 1;
         document.getElementById('uitlegSceneTekst').style.opacity = 1;
+        
         const teller = document.getElementById('uitlegStapTeller');
-        if (teller) teller.innerText = (index + 1) + ' / ' + uitlegScenes.length;
+        if (teller) teller.innerText = `Stap ${index + 1} van ${uitlegScenes.length}`;
+
+        const pBar = document.getElementById('uitlegProgressBar');
+        if (pBar) {
+            const pct = Math.round(((index + 1) / uitlegScenes.length) * 100);
+            pBar.style.width = pct + '%';
+        }
 
         const inner = document.getElementById('uitlegDemoInner');
         scene.render(inner);
@@ -10102,7 +10213,7 @@ Bijbelliederen`;
         const vorigeKnop = document.getElementById('uitlegVorigeKnop');
         const volgendeKnop = document.getElementById('uitlegVolgendeKnop');
         vorigeKnop.style.visibility = index === 0 ? 'hidden' : 'visible';
-        volgendeKnop.innerText = index === uitlegScenes.length - 1 ? 'Klaar' : 'Volgende';
+        volgendeKnop.innerText = index === uitlegScenes.length - 1 ? 'Aan de slag! 🚀' : 'Volgende';
 
         uitlegBouwDots();
         scene.animate(myRunId);
@@ -10125,6 +10236,7 @@ Bijbelliederen`;
         if (d) d.style.opacity = 1;
         document.getElementById('uitlegModal').classList.add('hidden');
         document.getElementById('uitlegModal').classList.remove('flex');
+        if (window.lockBodyScroll) window.lockBodyScroll(false, 'uitlegModal');
     };
 
     window.startUitleg = function() {
@@ -10134,6 +10246,7 @@ Bijbelliederen`;
 
         document.getElementById('uitlegModal').classList.remove('hidden');
         document.getElementById('uitlegModal').classList.add('flex');
+        if (window.lockBodyScroll) window.lockBodyScroll(true, 'uitlegModal');
         uitlegGaNaarStap(0);
     };
 
@@ -10142,9 +10255,35 @@ Bijbelliederen`;
         const modal = document.getElementById('uitlegModal');
         if (!modal || modal.classList.contains('hidden')) return;
         if (e.key === 'Escape') { e.preventDefault(); sluitUitleg(); }
-        else if (e.key === 'ArrowRight') { e.preventDefault(); uitlegVolgende(); }
+        else if (e.key === 'ArrowRight' || e.key === 'Space') { e.preventDefault(); uitlegVolgende(); }
         else if (e.key === 'ArrowLeft') { e.preventDefault(); uitlegVorige(); }
     });
+
+    // Touch swipe ondersteuning voor mobiel in de rondleiding
+    let _tourTouchStartX = 0;
+    let _tourTouchStartY = 0;
+    const tourModal = document.getElementById('uitlegModal');
+    if (tourModal) {
+        tourModal.addEventListener('touchstart', (e) => {
+            if (e.touches && e.touches.length === 1) {
+                _tourTouchStartX = e.touches[0].clientX;
+                _tourTouchStartY = e.touches[0].clientY;
+            }
+        }, { passive: true });
+        tourModal.addEventListener('touchend', (e) => {
+            if (e.changedTouches && e.changedTouches.length === 1) {
+                const diffX = e.changedTouches[0].clientX - _tourTouchStartX;
+                const diffY = e.changedTouches[0].clientY - _tourTouchStartY;
+                if (Math.abs(diffX) > 44 && Math.abs(diffX) > Math.abs(diffY) * 1.3) {
+                    if (diffX < 0) {
+                        uitlegVolgende();
+                    } else {
+                        uitlegVorige();
+                    }
+                }
+            }
+        }, { passive: true });
+    }
 
     // [MODULAIR: Video Uitleg Engine is verplaatst naar js/video-uitleg.js]
 
