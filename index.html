@@ -139,14 +139,23 @@
     .tab-pane-animate {
         animation: tabFadeSlideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
         will-change: opacity, transform;
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+        transform: translateZ(0);
     }
     .tab-slide-from-right {
         animation: tabSlideFromRight 0.26s cubic-bezier(0.16, 1, 0.3, 1) both;
         will-change: opacity, transform;
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+        transform: translateZ(0);
     }
     .tab-slide-from-left {
         animation: tabSlideFromLeft 0.26s cubic-bezier(0.16, 1, 0.3, 1) both;
         will-change: opacity, transform;
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+        transform: translateZ(0);
     }
     @media (max-width: 767px) {
         .mobile-tab-view {
@@ -182,10 +191,13 @@
     button:not(:disabled), [role="button"] {
         touch-action: manipulation;
         -webkit-tap-highlight-color: transparent;
+        transition: transform 0.14s cubic-bezier(0.16, 1, 0.3, 1);
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
     }
     button:active:not(:disabled):not(.no-press) {
         transform: scale(0.97);
-        transition: transform 0.1s cubic-bezier(0.2, 0, 0, 1);
+        transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1);
     }
 
     ::-webkit-scrollbar { width: 8px; }
@@ -235,7 +247,7 @@
         100% { transform: translate(-50%, -50%) scale(2.2); opacity: 0; }
     }
     .uitleg-input {
-        transition: all 0.3s;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
     .uitleg-input.focused {
         border-color: #007AFF !important;
@@ -244,11 +256,11 @@
     .uitleg-dropdown {
         opacity: 0;
         transform: translateY(-8px);
-        transition: all 0.3s;
+        transition: opacity 0.24s cubic-bezier(0.16, 1, 0.3, 1), transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
         pointer-events: none;
     }
     .uitleg-dropdown.show { opacity: 1; transform: translateY(0); }
-    .uitleg-dropdown-item { transition: background-color 0.2s, color 0.2s; }
+    .uitleg-dropdown-item { transition: background-color 0.2s ease, color 0.2s ease; }
     .uitleg-dropdown-item.hovered { background-color: #F5F5F7; }
     .uitleg-dropdown-item.success { background-color: #34C759 !important; color: white !important; font-weight: bold; }
     .uitleg-caret {
@@ -268,7 +280,7 @@
         bottom: 10px; left: 50%;
         transform: translateX(-50%) translateY(24px);
         opacity: 0;
-        transition: all 0.5s;
+        transition: transform 0.36s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.28s ease;
         background: #34C759; color: white;
         padding: 8px 18px; border-radius: 999px;
         font-size: 12px; font-weight: 600;
@@ -574,6 +586,9 @@
         background: #000000;
         border-radius: 9999px;
         box-shadow: 0 8px 24px -2px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.14);
+        contain: layout paint;
+        isolation: isolate;
+        transform: translateZ(0);
         transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1),
                     height 0.35s cubic-bezier(0.16, 1, 0.3, 1),
                     border-radius 0.35s cubic-bezier(0.16, 1, 0.3, 1),
@@ -581,6 +596,7 @@
                     box-shadow 0.3s ease,
                     background-color 0.2s ease;
         will-change: width, height, transform, border-radius;
+        -webkit-backface-visibility: hidden;
         backface-visibility: hidden;
     }
 
@@ -602,11 +618,31 @@
 
     .island-spring-pop {
         animation: islandSpringPop 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+        will-change: transform;
     }
 
     @media (prefers-reduced-motion: reduce) {
-        .modal-animate {
+        *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+        }
+        .modal-animate,
+        .tab-pane-animate,
+        .tab-slide-from-right,
+        .tab-slide-from-left,
+        .chat-window-enter,
+        .chat-window-exit,
+        .chat-bubble-animate,
+        .suggestion-dropdown-animate,
+        .island-spring-pop,
+        .uitleg-cursor,
+        .chat-highlight,
+        .uitleg-toast {
             animation: none !important;
+            transform: none !important;
+            transition: none !important;
         }
     }
 
