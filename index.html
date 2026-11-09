@@ -318,27 +318,24 @@
         0%, 100% { outline-color: #007AFF; box-shadow: 0 0 0 0 rgba(0,122,255,0.4); }
         50% { outline-color: #5AC8FA; box-shadow: 0 0 20px 4px rgba(0,122,255,0.2); }
     }
-    /* --- Modal Animatie (Vloeiend Apple Spring Popin met lichte blur dissolve) --- */
+    /* --- Modal Animatie (Vloeiend Apple Spring Popin - 120fps GPU geoptimaliseerd, ZONDER filter:blur i.v.m. Safari WebKit glitch) --- */
     @keyframes modalSpringIn {
         0% {
             opacity: 0;
-            transform: scale(0.92) translateY(14px);
-            filter: blur(4px);
+            transform: scale(0.94) translateY(12px);
         }
         65% {
-            transform: scale(1.012) translateY(-1px);
-            filter: blur(0px);
+            transform: scale(1.01) translateY(-1px);
         }
         100% {
             opacity: 1;
             transform: scale(1) translateY(0);
-            filter: blur(0px);
         }
     }
 
     .modal-animate {
-        animation: modalSpringIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
-        will-change: transform, opacity, filter;
+        animation: modalSpringIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+        will-change: transform, opacity;
         -webkit-backface-visibility: hidden;
         backface-visibility: hidden;
         max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 1.5rem);
@@ -350,38 +347,33 @@
     @keyframes chatWindowPopIn {
         0% {
             opacity: 0;
-            transform: scale(0.8) translateY(24px);
-            filter: blur(8px);
+            transform: scale(0.85) translateY(20px);
         }
         65% {
-            transform: scale(1.02) translateY(-2px);
-            filter: blur(0px);
+            transform: scale(1.015) translateY(-2px);
         }
         100% {
             opacity: 1;
             transform: scale(1) translateY(0);
-            filter: blur(0px);
         }
     }
     @keyframes chatWindowPopOut {
         0% {
             opacity: 1;
             transform: scale(1) translateY(0);
-            filter: blur(0px);
         }
         100% {
             opacity: 0;
-            transform: scale(0.85) translateY(18px);
-            filter: blur(6px);
+            transform: scale(0.9) translateY(14px);
         }
     }
     .chat-window-enter {
-        animation: chatWindowPopIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) both !important;
-        will-change: transform, opacity, filter;
+        animation: chatWindowPopIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+        will-change: transform, opacity;
     }
     .chat-window-exit {
-        animation: chatWindowPopOut 0.2s cubic-bezier(0.4, 0, 1, 1) both !important;
-        will-change: transform, opacity, filter;
+        animation: chatWindowPopOut 0.18s cubic-bezier(0.4, 0, 1, 1) both !important;
+        will-change: transform, opacity;
     }
 
     /* iMessage-stijl Chat Bubble Spring */
@@ -419,9 +411,9 @@
     }
 
     .modal-backdrop-safe {
-        isolation: isolate;
-        -webkit-backdrop-filter: blur(16px);
-        backdrop-filter: blur(16px);
+        background-color: rgba(0, 0, 0, 0.48) !important;
+        -webkit-backdrop-filter: blur(8px);
+        backdrop-filter: blur(8px);
         padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
         padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
         padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
@@ -699,14 +691,24 @@
     </div>
 </div>
 
-<div id="controleModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 modal-backdrop-safe transition-opacity">
-    <div class="bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] dark:ring-white/10 w-11/12 max-w-lg overflow-hidden flex flex-col transform transition-all modal-animate">
-        <div class="p-4 md:p-6 border-b border-gray-100 dark:border-white/10 flex justify-between items-center">
-            <h3 id="modalTitel" class="text-lg font-bold text-[#1D1D1F] dark:text-white">Controleer Tekst</h3>
-            <button onclick="sluitModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1">
+<div id="controleModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 modal-backdrop-safe transition-opacity p-2 sm:p-4">
+    <div class="bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.22)] ring-1 ring-black/[0.05] dark:ring-white/10 w-full max-w-2xl overflow-hidden flex flex-col transform transition-all modal-animate max-h-[92vh]">
+        <!-- 1. Header -->
+        <div class="p-4 sm:p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center flex-shrink-0 bg-white dark:bg-[#1C1C1E]">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-blue-500/10 dark:bg-blue-500/20 text-[#007AFF] flex items-center justify-center text-lg font-bold flex-shrink-0 shadow-xs">
+                    ✏️
+                </div>
+                <div>
+                    <h3 id="modalTitel" class="text-base sm:text-lg font-bold text-[#1D1D1F] dark:text-white">Dia &amp; Tekst Bewerken</h3>
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400">Pas de dia-titel, couplet-tekst en weergave direct aan</p>
+                </div>
+            </div>
+            <button onclick="sluitModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors" title="Sluiten">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
+
         <div id="modalTekstContainer" class="p-4 md:p-6 overflow-y-auto max-h-60 bg-gray-50 dark:bg-white/5">
             <p id="modalTekst" class="text-[14px] leading-relaxed text-gray-700 dark:text-gray-200 whitespace-pre-line"></p>
         </div>
@@ -719,25 +721,24 @@
             <button onclick="kiesHandmatig()" class="w-full py-3 rounded-xl text-sm font-semibold text-[#007AFF] bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 transition-colors">Zelf tekst typen/plakken</button>
             <button onclick="kiesLeeg()" class="w-full py-3 rounded-xl text-sm font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-white/10 hover:bg-gray-200 transition-colors">Overslaan (Lege dia voor later)</button>
         </div>
-        <div id="modalKnoppen3" class="p-4 md:p-6 hidden flex-col gap-3 bg-white dark:bg-[#1C1C1E] border-t border-gray-100 dark:border-white/10 max-h-[75vh] overflow-y-auto">
-            
-            <!-- Direct bewerkbare Titel -->
-            <div id="modalTitelVak" class="flex flex-col gap-1">
-                <div class="flex items-center justify-between">
-                    <label for="modalTitelInput" class="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Titel / Omschrijving</label>
-                    <span class="text-[10px] text-gray-400">Direct aanpasbaar</span>
-                </div>
-                <input type="text" id="modalTitelInput" class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-gray-200 dark:border-white/10 rounded-xl px-3.5 py-2 text-sm font-semibold focus:bg-white dark:focus:bg-[#1C1C1E] focus:border-[#007AFF] focus:outline-none transition-all" placeholder="Bijv. Psalm 23 of Weerklank 121"/>
-            </div>
 
-            <!-- Externe liedbundel links -->
-            <div class="flex flex-col sm:flex-row gap-2" id="modalLiedLinksBalk">
-                <a id="liedbundelKnop" href="https://www.liedbundelsonline.nl/nl/lied-zoeken" target="_blank" rel="noopener noreferrer" class="hidden flex-1 py-2 px-3 rounded-xl text-xs font-semibold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors text-center items-center justify-center gap-1.5 border border-purple-200 dark:border-purple-800/40 shadow-2xs">
-                    <span>🔗 Open Liedbundels Online (Weerklank/OTH) ↗</span>
-                </a>
-                <a id="dnpKnop" href="https://www.denieuwepsalmberijming.nl/berijmingen" target="_blank" rel="noopener noreferrer" class="hidden flex-1 py-2 px-3 rounded-xl text-xs font-semibold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/50 transition-colors text-center items-center justify-center gap-1.5 border border-teal-200 dark:border-teal-800/40 shadow-2xs">
-                    <span>🔗 De Nieuwe Psalmberijming ↗</span>
-                </a>
+        <!-- 2. Bewerkbare Body -->
+        <div id="modalKnoppen3" class="p-4 sm:p-6 hidden flex-col gap-4 bg-white dark:bg-[#1C1C1E] overflow-y-auto flex-1 min-h-0">
+            
+            <!-- Rij 1: Titel Input + Externe Zoekhulp Links (Liedbundels Online & DNP) -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gray-50/80 dark:bg-white/5 p-3 rounded-2xl border border-gray-200/70 dark:border-white/10">
+                <div class="flex-grow flex items-center gap-2">
+                    <label for="modalTitelInput" class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Titel:</label>
+                    <input type="text" id="modalTitelInput" class="flex-grow bg-white dark:bg-[#2C2C2E] dark:text-white border border-gray-200 dark:border-white/10 rounded-xl px-3 py-1.5 text-sm font-semibold focus:border-[#007AFF] focus:outline-none transition-all" placeholder="Bijv. Psalm 23 of Weerklank 121"/>
+                </div>
+                <div class="flex items-center gap-2 flex-shrink-0" id="modalLiedLinksBalk">
+                    <a id="liedbundelKnop" href="https://www.liedbundelsonline.nl/nl/lied-zoeken" target="_blank" rel="noopener noreferrer" class="hidden py-1.5 px-3 rounded-xl text-[11px] font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 dark:hover:bg-purple-900/60 transition-colors items-center gap-1 border border-purple-200 dark:border-purple-800/50 shadow-2xs">
+                        <span>🔗 Liedbundels Online ↗</span>
+                    </a>
+                    <a id="dnpKnop" href="https://www.denieuwepsalmberijming.nl/berijmingen" target="_blank" rel="noopener noreferrer" class="hidden py-1.5 px-3 rounded-xl text-[11px] font-bold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/50 hover:bg-teal-100 dark:hover:bg-teal-900/60 transition-colors items-center gap-1 border border-teal-200 dark:border-teal-800/50 shadow-2xs">
+                        <span>🔗 DNP ↗</span>
+                    </a>
+                </div>
             </div>
 
             <div id="bijbelFoutBanner" class="hidden p-3.5 rounded-2xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/40 text-amber-900 dark:text-amber-200 text-xs font-medium flex items-start gap-3">
@@ -748,61 +749,71 @@
                 </div>
             </div>
 
-            <!-- Opmaakbalk met Vet, Schoon & Splits, Refrein herhalen & Uitlijning -->
-            <div class="flex items-center justify-between mb-1 flex-wrap gap-2">
-                <div class="flex items-center gap-1.5 flex-wrap">
-                    <button type="button" onclick="maakSelectieVetInModal()" class="px-2.5 py-1 bg-[#F5F5F7] dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 border border-black/[0.06] dark:border-white/10 text-[#1D1D1F] dark:text-white text-xs font-bold rounded-lg shadow-2xs flex items-center gap-1.5 active:scale-95 transition-all" title="Geselecteerd woord vetgedrukt maken (**woord** of Ctrl+B)">
-                        <span class="font-black text-sm text-[#007AFF]">B</span>
-                        <span>Vet</span>
-                    </button>
-                    <button type="button" onclick="window.schoonEnSplitsTekstInModal()" class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 border border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-amber-200 text-xs font-bold rounded-lg shadow-2xs flex items-center gap-1 active:scale-95 transition-all cursor-pointer" title="Schoon tekst op en splits coupletten automatisch met dubbele witregels">
-                        <span>🧹</span>
-                        <span>Schoon &amp; Splits</span>
-                    </button>
-                    <button type="button" onclick="window.herhaalRefreinInModal()" class="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 dark:hover:bg-purple-900/50 border border-purple-200 dark:border-purple-800/40 text-purple-900 dark:text-purple-200 text-xs font-bold rounded-lg shadow-2xs flex items-center gap-1 active:scale-95 transition-all cursor-pointer" title="Detecteer refrein (Chorus) en herhaal automatisch na elk couplet">
-                        <span>🔁</span>
-                        <span>Refrein herhalen</span>
-                    </button>
-                </div>
-                <div class="flex items-center gap-1 bg-[#F5F5F7] dark:bg-white/5 p-0.5 rounded-lg border border-black/[0.04] dark:border-white/10">
-                    <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-1">Uitlijning:</span>
-                    <button type="button" id="modalAlignLeftBtn" onclick="kiesModalUitlijning('left')" class="px-2 py-0.5 rounded-md text-[11px] font-semibold text-gray-600 dark:text-gray-300 transition-all flex items-center gap-1" title="Links uitlijnen">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h10M4 18h14"></path></svg>
-                        <span>Links</span>
-                    </button>
-                    <button type="button" id="modalAlignCenterBtn" onclick="kiesModalUitlijning('center')" class="px-2 py-0.5 rounded-md text-[11px] font-semibold text-gray-600 dark:text-gray-300 transition-all flex items-center gap-1" title="Centreren">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M7 12h10M5 18h14"></path></svg>
-                        <span>Centreren</span>
-                    </button>
-                </div>
-            </div>
-
             <!-- SLIMME COUPLET- EN VERSKIEZER BALK (1.2) -->
-            <div id="versKiezerContainer" class="hidden mb-1 p-3 bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/50 rounded-2xl flex flex-col gap-2 shadow-xs transition-all">
+            <div id="versKiezerContainer" class="hidden p-3.5 bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/50 rounded-2xl flex flex-col gap-2 shadow-xs transition-all">
                 <div class="flex items-center justify-between">
-                    <span class="text-[11px] font-bold text-blue-900 dark:text-blue-300 flex items-center gap-1.5">
+                    <span class="text-xs font-bold text-blue-900 dark:text-blue-300 flex items-center gap-1.5">
                         <span>🎵</span> <span>Couplet / Vers selectie:</span>
                     </span>
-                    <button type="button" onclick="window.toggleAlleVerzenInModal()" id="versKiezerToggleAllesBtn" class="text-[10px] font-bold text-[#007AFF] hover:underline cursor-pointer">Alles selecteren</button>
+                    <button type="button" onclick="window.toggleAlleVerzenInModal()" id="versKiezerToggleAllesBtn" class="text-[11px] font-bold text-[#007AFF] hover:underline cursor-pointer">Alles selecteren</button>
                 </div>
                 <div id="versKiezerKnoppen" class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto pt-0.5 pr-1">
                     <!-- Dynamisch gevuld met interactieve pills [✓ Vers 1] [✓ Vers 2] -->
                 </div>
             </div>
 
-            <textarea id="handmatigeTekst" rows="6" class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-transparent rounded-xl py-3 px-4 text-[14px] apple-input transition-all resize-y"></textarea>
-            <p class="text-[10px] text-gray-400 uppercase font-bold">Tip: Gebruik een lege regel (enter) tussen verzen voor aparte dia's</p>
-
-            <!-- Optie om wijziging ook in de centrale database op te slaan bij bewerken -->
-            <div id="bewerkDatabaseOptieContainer" class="hidden p-2.5 bg-blue-50/80 dark:bg-blue-950/40 rounded-xl border border-blue-200/80 dark:border-blue-800/40 items-center justify-between gap-2">
-                <label class="flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-blue-950 dark:text-blue-200">
-                    <input type="checkbox" id="bewerkOokInDatabaseCheckbox" class="w-4 h-4 rounded text-[#007AFF] focus:ring-0 cursor-pointer"/>
-                    <span>💾 Ook permanent bijwerken in centrale Liederen Bibliotheek</span>
-                </label>
-                <span class="text-[10px] text-blue-600 dark:text-blue-400 hidden sm:inline">Werkt Cloud direct bij</span>
+            <!-- Rij 2: Toolbar met Vet, Schoon & Splits, Refrein herhalen & Uitlijning -->
+            <div class="flex items-center justify-between flex-wrap gap-2 pt-1">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button type="button" onclick="maakSelectieVetInModal()" class="px-3 py-1.5 bg-[#F5F5F7] dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 border border-black/[0.06] dark:border-white/10 text-[#1D1D1F] dark:text-white text-xs font-bold rounded-xl shadow-2xs flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer" title="Geselecteerd woord vetgedrukt maken (**woord** of Ctrl+B)">
+                        <span class="font-black text-sm text-[#007AFF]">B</span>
+                        <span>Vet</span>
+                    </button>
+                    <button type="button" onclick="window.schoonEnSplitsTekstInModal()" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 border border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-amber-200 text-xs font-bold rounded-xl shadow-2xs flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer" title="Schoon tekst op en splits coupletten automatisch met dubbele witregels">
+                        <span>🧹</span>
+                        <span>Schoon &amp; Splits</span>
+                    </button>
+                    <button type="button" onclick="window.herhaalRefreinInModal()" class="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 dark:hover:bg-purple-900/50 border border-purple-200 dark:border-purple-800/40 text-purple-900 dark:text-purple-200 text-xs font-bold rounded-xl shadow-2xs flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer" title="Detecteer refrein (Chorus) en herhaal automatisch na elk couplet">
+                        <span>🔁</span>
+                        <span>Refrein herhalen</span>
+                    </button>
+                </div>
+                <div class="flex items-center gap-1 bg-[#F5F5F7] dark:bg-white/5 p-1 rounded-xl border border-black/[0.04] dark:border-white/10">
+                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1.5">Uitlijning:</span>
+                    <button type="button" id="modalAlignLeftBtn" onclick="kiesModalUitlijning('left')" class="px-2.5 py-1 rounded-lg text-xs font-semibold text-gray-600 dark:text-gray-300 transition-all flex items-center gap-1 cursor-pointer" title="Links uitlijnen">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h10M4 18h14"></path></svg>
+                        <span>Links</span>
+                    </button>
+                    <button type="button" id="modalAlignCenterBtn" onclick="kiesModalUitlijning('center')" class="px-2.5 py-1 rounded-lg text-xs font-semibold text-gray-600 dark:text-gray-300 transition-all flex items-center gap-1 cursor-pointer" title="Centreren">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M7 12h10M5 18h14"></path></svg>
+                        <span>Centreren</span>
+                    </button>
+                </div>
             </div>
 
-            <button id="opslaanKnop" onclick="slaHandmatigOp()" class="w-full py-3 mt-1 rounded-xl text-sm font-semibold text-white bg-[#34C759] hover:bg-green-600 transition-colors shadow-md">Opslaan in Cloud &amp; Toevoegen</button>
+            <!-- Tekstvak met royale ademruimte -->
+            <div class="flex flex-col gap-1.5">
+                <textarea id="handmatigeTekst" rows="7" class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-gray-200/80 dark:border-white/10 rounded-2xl p-4 text-[15px] leading-relaxed apple-input transition-all resize-y font-normal" placeholder="Typ of plak hier de tekst..."></textarea>
+                <p class="text-[11px] text-gray-400 dark:text-gray-500 font-medium">💡 Tip: Gebruik een lege regel (dubbele enter) tussen verzen voor aparte dia's.</p>
+            </div>
+
+            <!-- Footer: Database Sync Checkbox + Actieknoppen -->
+            <div class="pt-2 border-t border-gray-100 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div id="bewerkDatabaseOptieContainer" class="hidden items-center">
+                    <label class="flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-blue-950 dark:text-blue-200 bg-blue-50/80 dark:bg-blue-950/40 px-3 py-2 rounded-xl border border-blue-200/80 dark:border-blue-800/40">
+                        <input type="checkbox" id="bewerkOokInDatabaseCheckbox" class="w-4 h-4 rounded text-[#007AFF] focus:ring-0 cursor-pointer"/>
+                        <span>💾 Ook permanent bijwerken in bibliotheek</span>
+                    </label>
+                </div>
+                <div class="flex items-center gap-2 ml-auto w-full sm:w-auto">
+                    <button type="button" onclick="sluitModal()" class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl text-xs font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 transition-all cursor-pointer">
+                        Annuleren
+                    </button>
+                    <button id="opslaanKnop" onclick="slaHandmatigOp()" class="flex-1 sm:flex-initial px-6 py-2.5 rounded-xl text-xs font-bold text-white bg-[#007AFF] hover:bg-blue-600 shadow-md transition-all active:scale-95 cursor-pointer">
+                        Wijziging Opslaan
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
