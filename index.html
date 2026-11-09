@@ -16,7 +16,7 @@
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('service-worker.js?v=9').catch(function (e) { console.warn('SW registratie mislukt:', e); });
+      navigator.serviceWorker.register('service-worker.js?v=10').catch(function (e) { console.warn('SW registratie mislukt:', e); });
     });
   }
 </script>
@@ -561,6 +561,13 @@
             animation: bottomSheetSpringUp 0.36s cubic-bezier(0.16, 1, 0.3, 1) both !important;
             box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.28), 0 -1px 0 rgba(255, 255, 255, 0.18) !important;
             padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)) !important;
+            background-color: #ffffff !important;
+        }
+        html.dark .modal-backdrop-safe > div.modal-animate,
+        html.dark .modal-animate:not(#videoModalDialog),
+        body.dark-mode .modal-backdrop-safe > div.modal-animate,
+        body.dark-mode .modal-animate:not(#videoModalDialog) {
+            background-color: #1C1C1E !important;
         }
         .modal-animate:not(#videoModalDialog)::before {
             content: '';
@@ -2843,17 +2850,10 @@
         const touchY = e.touches[0].clientY;
         const touchX = e.touches[0].clientX;
 
-        // Bovenste 56px van het paneel is de drag-zone / grab handle bar
-        const isHandleArea = (touchY - rect.top) < 56;
-        
-        // Voor bewerkings- en formuliermodals (zoals controleModal, importModal, etc.) alleen draggen vanaf de bovenste handle-bar!
-        const isEditorModal = sheet.closest('#controleModal, #importModal, #liederenBeheerModal');
-        if (isEditorModal && !isHandleArea) return;
-
-        const scrollableArea = sheet.querySelector('.overflow-y-auto') || sheet;
-
-        // Als niet in handle area en scroll-positie > 4, laat de gebruiker in de content omhoog scrollen
-        if (!isHandleArea && scrollableArea && scrollableArea.scrollTop > 4) return;
+        // Slepen van de bottom sheet is ALLEEN toegestaan vanaf de bovenste drag handle bar (bovenste 48px).
+        // Dit voorkomt 100% dat scrollen binnen instellingen, lijsten of invoervelden de sheet per ongeluk versleept of transparant maakt!
+        const isHandleArea = (touchY - rect.top) < 48;
+        if (!isHandleArea) return;
 
         _activeDragSheet = sheet;
         _activeDragBackdrop = sheet.closest('.modal-backdrop-safe, .fixed.inset-0');
@@ -2881,35 +2881,20 @@
         const diffY = touchY - _sheetTouchStartY;
         const diffX = touchX - _sheetTouchStartX;
 
-        // Controleer of er een binnenwaartse scrollarea is die nog niet op top staat
-        const scrollableArea = _activeDragSheet.querySelector('.overflow-y-auto');
-        const rect = _activeDragSheet.getBoundingClientRect();
-        const isHandleArea = (_sheetTouchStartY - rect.top) < 56;
-        if (!isHandleArea && scrollableArea && scrollableArea.scrollTop > 4) {
-            _cancelSheetDrag();
-            return;
-        }
-
-        // Alleen naar beneden slepen (pull to dismiss)
-        if (diffY > 6 && Math.abs(diffY) > Math.abs(diffX) * 1.2) {
+        // Alleen naar beneden slepen vanaf de handle bar (pull to dismiss)
+        if (diffY > 8 && Math.abs(diffY) > Math.abs(diffX) * 1.2) {
             _isSheetDragging = true;
             _sheetCurrentTouchY = touchY;
             const translateY = Math.max(0, diffY * 0.76);
             _activeDragSheet.style.transform = `translateY(${translateY}px)`;
             _activeDragSheet.style.transition = 'none';
 
-            if (_activeDragBackdrop) {
-                const fade = Math.max(0.12, 1 - (diffY / 340));
-                _activeDragBackdrop.style.opacity = fade.toFixed(3);
-                _activeDragBackdrop.style.transition = 'none';
-            }
-
             if (e.cancelable) e.preventDefault();
         }
     }, { passive: false });
 
-    document.addEventListener('touchend', () => {
-        if (_isMultiTouch || (e.touches && e.touches.length > 0)) {
+    document.addEventListener('touchend', (e) => {
+        if (_isMultiTouch || (e && e.touches && e.touches.length > 0)) {
             _cancelSheetDrag();
             return;
         }
@@ -2927,7 +2912,7 @@
         _activeDragBackdrop = null;
         _isSheetDragging = false;
 
-        if (!wasDragging || diffY <= 12) {
+        if (!wasDragging || diffY <= 15) {
             sheet.style.transform = '';
             sheet.style.transition = '';
             if (backdrop) {
@@ -2937,17 +2922,13 @@
             return;
         }
 
-        // Duidelijke drempel (120px) om accidentele sluiting tijdens scrollen of zoomen te voorkomen
-        const shouldClose = diffY > 120;
+        // Duidelijke drempel (110px) om accidentele sluiting tijdens aanraken te voorkomen
+        const shouldClose = diffY > 110;
 
         if (shouldClose) {
-            // Soepele iOS glide naar beneden met gelijktijdige backdrop fade
-            sheet.style.transition = 'transform 0.28s cubic-bezier(0.32, 0.72, 0, 1)';
+            // Soepele iOS glide naar beneden
+            sheet.style.transition = 'transform 0.26s cubic-bezier(0.32, 0.72, 0, 1)';
             sheet.style.transform = 'translateY(100%)';
-            if (backdrop) {
-                backdrop.style.transition = 'opacity 0.28s cubic-bezier(0.32, 0.72, 0, 1)';
-                backdrop.style.opacity = '0';
-            }
 
             setTimeout(() => {
                 // Sluit modal netjes via zijn functie of knop
@@ -2971,15 +2952,11 @@
                     backdrop.style.opacity = '';
                     backdrop.style.transition = '';
                 }
-            }, 280);
+            }, 260);
         } else {
-            // Veer terug naar oorspronkelijke positie
-            sheet.style.transition = 'transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1)';
+            // Terugveren naar normale positie (iOS bounce)
+            sheet.style.transition = 'transform 0.28s cubic-bezier(0.16, 1, 0.3, 1)';
             sheet.style.transform = 'translateY(0)';
-            if (backdrop) {
-                backdrop.style.transition = 'opacity 0.25s ease-out';
-                backdrop.style.opacity = '1';
-            }
             setTimeout(() => {
                 sheet.style.transform = '';
                 sheet.style.transition = '';
@@ -2987,7 +2964,7 @@
                     backdrop.style.opacity = '';
                     backdrop.style.transition = '';
                 }
-            }, 255);
+            }, 280);
         }
     }, { passive: true });
 
