@@ -210,13 +210,15 @@
   // --- 7. COMMAND PALETTE & SHORTCUTS (MacBook / Desktop) ---
   const DEFAULT_COMMANDS = [
     { id: 'export_pptx', title: 'Exporteer naar PowerPoint (.pptx)', category: 'Acties', icon: '📥', shortcut: '⌘↵', action: () => window.maakPowerPoint?.() },
+    { id: 'save_liturgy', title: 'Liturgie handmatig opslaan in archief', category: 'Acties', icon: '💾', shortcut: '⌘S', action: () => window.slaLiturgieOp?.() },
     { id: 'new_song', title: 'Nieuw lied toevoegen aan database', category: 'Liederen', icon: '➕', shortcut: '', action: () => window.openLiedEditor?.('') },
     { id: 'library', title: 'Liederen Bibliotheek & Beheer openen', category: 'Liederen', icon: '📚', shortcut: '', action: () => window.openLiederenBeheerModal?.() },
     { id: 'preflight', title: 'Kwaliteitscontrole uitvoeren (Preflight)', category: 'Controle', icon: '🛡️', shortcut: '', action: () => window.openPreflightModal?.() },
     { id: 'settings', title: 'Info, Instellingen & OBS Live openen', category: 'Beamer', icon: '⚙️', shortcut: '', action: () => window.openInfoModal?.() },
     { id: 'tour', title: 'Interactieve Rondleiding starten', category: 'Hulp', icon: '🧭', shortcut: '', action: () => window.startUitleg?.() },
     { id: 'church', title: 'Wissel van kerkelijke gemeente / beamer-thema', category: 'Gemeente', icon: '⛪', shortcut: '', action: () => window.openGemeenteModal?.() },
-    { id: 'meelees', title: 'Meelees-link & QR-code delen', category: 'Delen', icon: '📱', shortcut: '', action: () => window.openMeeleesModal?.() }
+    { id: 'meelees', title: 'Meelees-link & QR-code delen', category: 'Delen', icon: '📱', shortcut: '', action: () => window.toonDeelModal?.() },
+    { id: 'tikkie', title: 'Week-Tikkie QR instellen of bewerken', category: 'Collecte', icon: '💳', shortcut: '', action: () => window.openTikkieModal?.() }
   ];
 
   let selectedCommandIndex = 0;
@@ -235,27 +237,58 @@
 
     // 2. Als gebruiker een lied zoekt (bijv. 'psalm 23', 'wk 15', 'oth 314')
     let songMatches = [];
-    if (q.length >= 2 && typeof window.alleLiederen !== 'undefined' && Array.isArray(window.alleLiederen)) {
-      songMatches = window.alleLiederen
-        .filter(l => (l.titel || '').toLowerCase().includes(q))
-        .slice(0, 8)
-        .map(l => ({
-          id: `song_${l.titel}`,
-          title: `Lied: ${l.titel}`,
-          category: 'Database Liederen',
-          icon: '🎵',
-          shortcut: '↵ Toevoegen',
-          action: () => {
-            const inp = document.getElementById('liedInput');
-            if (inp) {
-              inp.value = l.titel;
-              if (typeof window.kiesLied === 'function') window.kiesLied(l.titel);
-            }
-          }
-        }));
+    let songList = [];
+    if (typeof window.bouwZoekLijst === 'function') {
+      try { songList = window.bouwZoekLijst(); } catch (e) {}
+    } else if (window.liederenDatabase) {
+      songList = Object.keys(window.liederenDatabase);
     }
 
-    filteredCommands = [...actions, ...songMatches];
+    if (q.length >= 2 && Array.isArray(songList) && songList.length > 0) {
+      const matchedTitles = songList.filter(t => t.toLowerCase().includes(q)).slice(0, 8);
+      songMatches = matchedTitles.map(titel => ({
+        id: `song_${titel}`,
+        title: titel,
+        category: 'Database Liederen',
+        icon: '🎵',
+        shortcut: '↵ Selecteer',
+        action: () => {
+          if (typeof window.handleLiedSelectie === 'function') {
+            window.handleLiedSelectie(titel);
+          } else {
+            const inp = document.getElementById('liedInput');
+            if (inp) {
+              inp.value = titel;
+              inp.focus();
+            }
+          }
+        }
+      }));
+    }
+
+    // 3. Als gebruiker een bijbeltekst zoekt (bijv. 'Genesis 1:1-5' of 'Joh 3:16')
+    let bibleMatches = [];
+    const bibleRegex = /^([1-3]?\s*[a-zA-Z\u00C0-\u017E]+)\s+(\d+)(?::(\d+)(?:-(\d+))?)?$/i;
+    if (bibleRegex.test(q)) {
+      bibleMatches.push({
+        id: `bible_${q}`,
+        title: `Bijbeltekst opvragen: ${query.trim()}`,
+        category: 'Bijbel (HSV)',
+        icon: '📖',
+        shortcut: '↵ Ophalen',
+        action: () => {
+          const inp = document.getElementById('bijbelInput');
+          if (inp) {
+            inp.value = query.trim();
+            if (typeof window.haalBijbelTekstOp === 'function') {
+              window.haalBijbelTekstOp(query.trim());
+            }
+          }
+        }
+      });
+    }
+
+    filteredCommands = [...bibleMatches, ...actions, ...songMatches];
     selectedCommandIndex = Math.min(selectedCommandIndex, Math.max(0, filteredCommands.length - 1));
 
     if (filteredCommands.length === 0) {
@@ -352,9 +385,10 @@
       // Cmd+S of Ctrl+S: Sla liturgie op
       if (cmdOrCtrl && (e.key === 's' || e.key === 'S')) {
         e.preventDefault();
-        if (typeof window.bewaarLiturgie === 'function') {
+        if (typeof window.slaLiturgieOp === 'function') {
+          window.slaLiturgieOp();
+        } else if (typeof window.bewaarLiturgie === 'function') {
           window.bewaarLiturgie();
-          if (typeof window.toonToast === 'function') window.toonToast('💾 Liturgie opgeslagen!', 'success');
         }
         return;
       }
@@ -402,13 +436,10 @@
 
       const files = e.dataTransfer?.files;
       if (files && files.length > 0) {
-        const file = files[0];
-        if (file.name.endsWith('.pptx') || file.name.endsWith('.txt')) {
-          if (typeof window.verwerkGeuploadBestand === 'function') {
-            window.verwerkGeuploadBestand(file);
-          } else if (typeof window.toonToast === 'function') {
-            window.toonToast(`Bestand '${file.name}' ontvangen!`, 'info');
-          }
+        if (typeof window.verwerkArchiefBestanden === 'function') {
+          window.verwerkArchiefBestanden(files);
+        } else if (typeof window.toonToast === 'function') {
+          window.toonToast(`Bestand '${files[0].name}' ontvangen!`, 'info');
         }
       }
     });
