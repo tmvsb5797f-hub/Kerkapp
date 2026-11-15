@@ -16,7 +16,7 @@
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('service-worker.js?v=14').catch(function (e) { console.warn('SW registratie mislukt:', e); });
+      navigator.serviceWorker.register('service-worker.js?v=15').catch(function (e) { console.warn('SW registratie mislukt:', e); });
     });
   }
 </script>
@@ -636,9 +636,11 @@
     html.engine-phone body {
         padding-bottom: max(4.5rem, calc(env(safe-area-inset-bottom, 0px) + 3.8rem)) !important;
         overflow-x: hidden !important;
+        overscroll-behavior-y: none !important;
     }
     html.engine-phone main {
         padding-bottom: 0 !important;
+        overscroll-behavior-y: contain !important;
     }
     /* iOS Auto-zoom preventie: 16px font-size op mobiele inputs voorkomt dat Safari geforceerd inzoomt */
     html.engine-phone input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]),
@@ -646,14 +648,33 @@
     html.engine-phone select {
         font-size: 16px !important;
     }
-    /* Zorg voor 100% dekkende, haarscherpe modale achtergrond zonder bleed-through */
+    /* Zorg voor 100% dekkende backdrop zonder bleed-through op iPhone:
+       Vervang blur-doorschijn door solide zwarte overlay */
+    html.engine-phone .modal-backdrop-safe {
+        background-color: rgba(0, 0, 0, 0.72) !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+    }
+    /* Modal-sheet zelf: volledig wit, geen transparantie, eigen stacking context */
     html.engine-phone .modal-backdrop-safe > div.modal-animate {
         background-color: #ffffff !important;
         isolation: isolate !important;
+        -webkit-transform: translateZ(0) !important;
+        transform: translateZ(0) !important;
     }
     html.dark.engine-phone .modal-backdrop-safe > div.modal-animate,
     body.dark-mode.engine-phone .modal-backdrop-safe > div.modal-animate {
         background-color: #1C1C1E !important;
+    }
+    /* Verberg ook eventuele glazen sub-secties in modalen op iPhone (geen bleed) */
+    html.engine-phone .modal-animate .apple-liquid-glass {
+        background: #f2f2f7 !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+    }
+    html.dark.engine-phone .modal-animate .apple-liquid-glass,
+    body.dark-mode.engine-phone .modal-animate .apple-liquid-glass {
+        background: #2C2C2E !important;
     }
     html.engine-phone.keyboard-open #unifiedControlDock {
         transform: translate(-50%, 150%) scale(0.9) !important;
@@ -663,6 +684,10 @@
     html.engine-phone.keyboard-open .modal-backdrop-safe > div.modal-animate {
         max-height: calc(100vh - var(--keyboard-height, 0px) - 16px) !important;
         overflow-y: auto !important;
+    }
+    /* Compact iPhone layout: minder padding in liquid cards */
+    html.engine-phone .apple-liquid-card {
+        padding: 0.625rem !important;
     }
 
     /* --- ADAPTIVE ENGINE: IPAD SPECIES (.engine-tablet) --- */
