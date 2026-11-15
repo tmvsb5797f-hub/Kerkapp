@@ -423,6 +423,7 @@ async function haalBijbelTekst(refStr, parsed, env) {
               .replace(/(\d+)([A-Za-z\u00C0-\u017E])/g, "$1 $2")
               .replace(/([,;:.!?])([A-Za-z\u00C0-\u017E])/g, "$1 $2")
               .replace(/([a-z\u00C0-\u017E])([A-Z])/g, "$1 $2")
+              .replace(/([A-Za-z\u00C0-\u017E])\s+([ëïüöä])/g, "$1$2")
               .replace(/\s+/g, " ")
               .trim();
             return `${v.verse} ${schoneTekst}`;
