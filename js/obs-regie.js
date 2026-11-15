@@ -79,14 +79,14 @@
                     : [{ regels: (item.tekst || '').split('\n').filter(r => r.trim()), fontSize: 36 }];
                 
                 subSlides.forEach((sub, subIdx) => {
-                    const subtitel = (subSlides.length > 1) 
+                    const subtitel = sub.diaTitel || ((subSlides.length > 1) 
                         ? `${item.titel} (${subIdx + 1}/${subSlides.length})` 
-                        : item.titel;
+                        : item.titel);
                     slides.push({
                         id: `item-${itemIdx}-sub-${subIdx}`,
                         itemIndex: itemIdx,
                         type: 'Schriftlezing',
-                        titel: item.titel,
+                        titel: sub.diaTitel || item.titel,
                         basisTitel: basisTitel,
                         subtitel: subtitel,
                         regels: sub.regels || [],
@@ -2396,17 +2396,17 @@ Van harte Gods zegen toegewenst!`;
         if (slide.type === 'Foto') return `<div style="position:absolute;inset:0;background:#000000;display:flex;align-items:center;justify-content:center;"><img src="${slide.fotoUrl}" style="max-width:100%;max-height:100%;object-fit:contain;" /></div>`;
         if (slide.type === 'QR') return renderQrSlideHtml(slide, isMini, false);
 
-        // Exacte coördinaten uit slide preview
-        const tLeft = (slide.tekstX ?? 0.4) / 10 * 100;
+        // Exacte coördinaten uit slide preview (16:9 Zaalbeamer gebruikt 0.6" links en 8.8" breedte)
+        const tLeft = (slide.tekstX ?? 0.6) / 10 * 100;
         const tTop = (slide.tekstY ?? 0.9) / 5.625 * 100;
-        const tWidth = (slide.tekstW ?? 6.6) / 10 * 100;
+        const tWidth = (slide.tekstW ?? 8.8) / 10 * 100;
         const tHeight = (slide.tekstH ?? 4.4) / 5.625 * 100;
         const titleLeft = tLeft;
         const titleTop = (0.3 / 5.625) * 100;
         const align = slide.align || 'left';
         const isBold = !!slide.bold;
         const tekst = (slide.regels || []).join('\n');
-        const titelTekst = slide.basisTitel || slide.titel || '';
+        const titelTekst = slide.subtitel || slide.titel || slide.basisTitel || '';
 
         const titleStyle = isMini 
             ? `position:absolute;left:${titleLeft}%;top:${titleTop}%;width:${tWidth}%;font-size:9.5px;font-weight:700;color:#ffffff;opacity:0.72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;`
@@ -2469,7 +2469,7 @@ Van harte Gods zegen toegewenst!`;
             const align = slide.align || 'left';
             const isBold = !!slide.bold;
             const tekst = (slide.regels || []).join('\n');
-            const titelTekst = slide.basisTitel || slide.titel || '';
+            const titelTekst = slide.subtitel || slide.titel || slide.basisTitel || '';
 
             if (isMini) {
                 return `
@@ -2502,7 +2502,7 @@ Van harte Gods zegen toegewenst!`;
         if (slide.type === 'Foto') return `<div class="${isMini ? '' : 'kerkapp-stream-anim'}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><img src="${slide.fotoUrl}" style="max-width:100%;max-height:100%;object-fit:contain;" /></div>`;
         if (slide.type === 'QR') return renderQrSlideHtml(slide, isMini, true);
 
-        // Exacte coördinaten en uitlijning identiek aan Beamer, met broadcast schaduw en contrast
+        // Exacte coördinaten en uitlijning voor Stream (links 0.4", breedte 6.6" zodat rechts ruimte is voor PiP)
         const tLeft = (slide.tekstX ?? 0.4) / 10 * 100;
         const tTop = (slide.tekstY ?? 0.9) / 5.625 * 100;
         const tWidth = (slide.tekstW ?? 6.6) / 10 * 100;
@@ -2512,7 +2512,7 @@ Van harte Gods zegen toegewenst!`;
         const align = slide.align || 'left';
         const isBold = !!slide.bold;
         const tekst = (slide.regels || []).join('\n');
-        const titelTekst = slide.basisTitel || slide.titel || '';
+        const titelTekst = slide.subtitel || slide.titel || slide.basisTitel || '';
 
         const titleStyle = isMini 
             ? `position:absolute;left:${titleLeft}%;top:${titleTop}%;width:${tWidth}%;font-size:9.5px;font-weight:700;color:#ffffff;opacity:0.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;text-shadow:0 1px 4px rgba(0,0,0,0.9);`

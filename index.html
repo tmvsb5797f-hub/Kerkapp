@@ -13642,6 +13642,16 @@ Antwoord UITSLUITEND in valide JSON:
         return localStorage.getItem('presentatieModus') === 'livestream';
     };
 
+    // Modus-bewuste standaard tekstvak-afmetingen:
+    // - Livestream (OBS): X = 0.4", W = 6.6" (houdt rechts ruimte vrij voor camera/voorganger PiP)
+    // - Beamer (Zaal 16:9): X = 0.6", W = 8.8" (symmetrische 16:9 breedbeeldmarges, 100% gecentreerd)
+    window.getDefTekstX = function() {
+        return window.isLivestream() ? 0.4 : 0.6;
+    };
+    window.getDefTekstW = function() {
+        return window.isLivestream() ? 6.6 : 8.8;
+    };
+
     window.zetPresentatieModus = function(isStream) {
         const toggle = document.getElementById('livestreamToggle');
         if (toggle && toggle.checked !== isStream) {
@@ -13649,6 +13659,9 @@ Antwoord UITSLUITEND in valide JSON:
         }
         localStorage.setItem('presentatieModus', isStream ? 'livestream' : 'beamer');
         window.updatePresentatieModusUI();
+        if (typeof previewItemIdx === 'number' && previewItemIdx >= 0 && previewItemIdx < liturgieVolgorde.length) {
+            previewSubSlides = berekenSubSlidesVoorItem(liturgieVolgorde[previewItemIdx]);
+        }
         if (typeof tekenSlidePreview === 'function') tekenSlidePreview();
         if (typeof updateWelkomstdiaPreview === 'function') updateWelkomstdiaPreview();
         if (window.toonToast) {
@@ -13736,7 +13749,10 @@ Antwoord UITSLUITEND in valide JSON:
     document.getElementById('livestreamToggle')?.addEventListener('change', function() {
         window.zetPresentatieModus(this.checked);
     });
-    document.getElementById('fontFaceSelect').addEventListener('change', () => tekenSlidePreview());
+    document.getElementById('fontFaceSelect').addEventListener('change', () => {
+        if (previewItemIdx >= 0) renderSlidePreview(previewItemIdx);
+        else tekenSlidePreview();
+    });
     document.getElementById('fontSizeSelect')?.addEventListener('change', () => { if (previewItemIdx >= 0) renderSlidePreview(previewItemIdx); });
     document.getElementById('linesSelect')?.addEventListener('change', () => { if (previewItemIdx >= 0) renderSlidePreview(previewItemIdx); });
 
@@ -13749,6 +13765,9 @@ Antwoord UITSLUITEND in valide JSON:
         const nieuw = !window.isBold();
         localStorage.setItem('tekstBold', nieuw ? '1' : '0');
         updateBoldKnopUI();
+        if (typeof previewItemIdx === 'number' && previewItemIdx >= 0 && previewItemIdx < liturgieVolgorde.length) {
+            previewSubSlides = berekenSubSlidesVoorItem(liturgieVolgorde[previewItemIdx]);
+        }
         if (typeof tekenSlidePreview === 'function') tekenSlidePreview();
         if (window.toonToast) window.toonToast(`Tekststijl: ${nieuw ? 'Dikgedrukt (vet)' : 'Normaal'}`, "info");
     };
@@ -13847,80 +13866,173 @@ Antwoord UITSLUITEND in valide JSON:
     let sleepOffsetX = 0, sleepOffsetY = 0;
 
     // Meet de werkelijke hoogte van de tekst in een verborgen vak met exact dezelfde
-    // breedte, lettertype en regelhoogte als het tekstvak op de dia. Zo weten we
+    // breedte, lettertype, dikte en regelhoogte als het tekstvak op de dia. Zo weten we
     // zeker of iets past (i.p.v. het aantal regels te schatten).
     let _pptMeetVak = null;
-    function pptMeetHoogte(regelsArr, fontSizePt, font, boxW) {
+    function pptMeetHoogte(regelsArr, fontSizePt, font, boxW, isBoldItem) {
         if (!_pptMeetVak) {
             _pptMeetVak = document.createElement('div');
             _pptMeetVak.style.cssText = 'position:absolute;left:-99999px;top:0;visibility:hidden;white-space:pre-wrap;overflow-wrap:break-word;padding:0;margin:0;border:0;box-sizing:border-box;';
             document.body.appendChild(_pptMeetVak);
         }
         const PPI = 96; // pixels per inch
-        const w = boxW || TEKST_DEF_W;
+        const defW = (typeof window.getDefTekstW === 'function') ? window.getDefTekstW() : TEKST_DEF_W;
+        const w = boxW || defW;
+        const boldActief = (isBoldItem !== undefined) ? Boolean(isBoldItem) : Boolean(window.isBold && window.isBold());
         _pptMeetVak.style.width = (w * PPI) + 'px';
         _pptMeetVak.style.fontFamily = font || 'Arial';
         _pptMeetVak.style.fontSize = (fontSizePt * 4 / 3) + 'px'; // pt → px
-        _pptMeetVak.style.fontWeight = (window.isBold && window.isBold()) ? 'bold' : 'normal';
+        _pptMeetVak.style.fontWeight = boldActief ? 'bold' : 'normal';
         _pptMeetVak.style.lineHeight = '1.2';                     // = lineSpacing fontSize*1.2
         _pptMeetVak.innerHTML = formatteerMarkdownVoorHtml(regelsArr.join('\n'));
         return _pptMeetVak.scrollHeight;
     }
-    function pptPastInVak(regelsArr, fontSizePt, font, boxW, boxH) {
+    function pptPastInVak(regelsArr, fontSizePt, font, boxW, boxH, isBoldItem) {
         const h = boxH || TEKST_DEF_H;
-        const vakHoogtePx = h * 96 * 0.92; // kleine veiligheidsmarge
-        return pptMeetHoogte(regelsArr, fontSizePt, font, boxW) <= vakHoogtePx;
+        const vakHoogtePx = h * 96 * 0.90; // veiligheidsmarge inclusief PowerPoint interne cel-padding
+        return pptMeetHoogte(regelsArr, fontSizePt, font, boxW, isBoldItem) <= vakHoogtePx;
     }
-    // Geeft één of meer sub-dia's terug die gegarandeerd passen: eerst zo groot
-    // mogelijk lettertype (tot PREVIEW_MIN_FONT); past het dan nog niet, dan splitsen.
-    function pptFitBlok(regelsArr, gewenstFS, font, boxW, boxH) {
-        for (let fs = gewenstFS; fs >= PREVIEW_MIN_FONT; fs--) {
-            if (pptPastInVak(regelsArr, fs, font, boxW, boxH)) return [{ regels: regelsArr, fontSize: fs }];
+
+    // Hulpfunctie: zoek het beste splits-punt in een woorden-array (bij voorkeur na leesteken rond het midden)
+    function vindSlimWoordSplitsPunt(woorden) {
+        const len = woorden.length;
+        const mid = Math.ceil(len / 2);
+        if (len < 6) return mid;
+        const minIdx = Math.max(2, Math.floor(len * 0.32));
+        const maxIdx = Math.min(len - 2, Math.ceil(len * 0.68));
+        let besteIdx = -1;
+        let besteScore = -Infinity;
+        for (let i = minIdx; i <= maxIdx; i++) {
+            const w = woorden[i - 1] || '';
+            let bonus = 0;
+            if (/[.!?;:]$/.test(w)) bonus = 100;
+            else if (/[,—–\-]$/.test(w)) bonus = 60;
+            if (bonus > 0) {
+                const afstandStraf = Math.abs(i - mid) * 4;
+                const score = bonus - afstandStraf;
+                if (score > besteScore) {
+                    besteScore = score;
+                    besteIdx = i;
+                }
+            }
         }
-        // Past niet bij het minimum → opsplitsen over meerdere dia's.
+        return besteIdx > 0 ? besteIdx : mid;
+    }
+
+    // Geeft één of meer sub-dia's terug die gegarandeerd passen.
+    // Bij lange coupletten (>= 6 regels) verkleinen we het lettertype maximaal 4pt;
+    // past het dan nog niet, dan splitsen we het couplet direct symmetrisch (bijv. 4 + 4 op volle grootte).
+    function pptFitBlok(regelsArr, gewenstFS, font, boxW, boxH, isBoldItem) {
+        const minFS = (regelsArr.length >= 6)
+            ? Math.max(PREVIEW_MIN_FONT, gewenstFS - 4)
+            : PREVIEW_MIN_FONT;
+
+        for (let fs = gewenstFS; fs >= minFS; fs--) {
+            if (pptPastInVak(regelsArr, fs, font, boxW, boxH, isBoldItem)) {
+                return [{ regels: regelsArr, fontSize: fs }];
+            }
+        }
+        // Past niet binnen de toegestane krimp → symmetrisch opsplitsen over meerdere dia's op volle grootte.
         if (regelsArr.length >= 2) {
             const mid = Math.ceil(regelsArr.length / 2);
-            return pptFitBlok(regelsArr.slice(0, mid), gewenstFS, font, boxW, boxH)
-                .concat(pptFitBlok(regelsArr.slice(mid), gewenstFS, font, boxW, boxH));
+            return pptFitBlok(regelsArr.slice(0, mid), gewenstFS, font, boxW, boxH, isBoldItem)
+                .concat(pptFitBlok(regelsArr.slice(mid), gewenstFS, font, boxW, boxH, isBoldItem));
         }
-        // Eén te lange regel/alinea: hak 'm in twee helften op woordgrens.
-        const woorden = (regelsArr[0] || '').split(' ');
+        // Eén te lange regel/alinea (bijv. lang bijbelvers): breek bij voorkeur op een leesteken rond het midden.
+        const woorden = (regelsArr[0] || '').split(/\s+/).filter(Boolean);
         if (woorden.length >= 2) {
-            const mid = Math.ceil(woorden.length / 2);
-            return pptFitBlok([woorden.slice(0, mid).join(' ')], gewenstFS, font, boxW, boxH)
-                .concat(pptFitBlok([woorden.slice(mid).join(' ')], gewenstFS, font, boxW, boxH));
+            const splitIdx = vindSlimWoordSplitsPunt(woorden);
+            return pptFitBlok([woorden.slice(0, splitIdx).join(' ')], gewenstFS, font, boxW, boxH, isBoldItem)
+                .concat(pptFitBlok([woorden.slice(splitIdx).join(' ')], gewenstFS, font, boxW, boxH, isBoldItem));
         }
         // Onsplitsbaar (één enorm woord): forceer het minimum.
         return [{ regels: regelsArr, fontSize: PREVIEW_MIN_FONT }];
     }
 
+    // Verdeel een array van regels binnen één couplet gelijkmatig in stukken van maximaal maxPerDia regels
+    // (bijv. 6 regels met max 4 → 3 + 3 i.p.v. 4 + 2).
+    function verdeelCoupletEvenwichtig(regels, maxPerDia) {
+        if (!regels || !regels.length) return [];
+        if (regels.length <= maxPerDia) return [regels];
+        const aantalDelen = Math.ceil(regels.length / maxPerDia);
+        const delen = [];
+        let start = 0;
+        for (let d = 0; d < aantalDelen; d++) {
+            const resterend = regels.length - start;
+            const resterendeDelen = aantalDelen - d;
+            const grootte = Math.ceil(resterend / resterendeDelen);
+            delen.push(regels.slice(start, start + grootte));
+            start += grootte;
+        }
+        return delen;
+    }
+
+    // Extraheer alle versnummers die op een dia voorkomen (voor Schriftlezing & Liederen)
+    function detecteerVersBereikOpDia(regelsArr, fallbackVers) {
+        const gevonden = [];
+        (regelsArr || []).forEach(r => {
+            const tekst = (r || '').trim();
+            // Match begin van regel ("12 En God zei...") én midden in regel na leesteken
+            const regex = /(?:^|(?<=[.!?“"‘'’\s]))\[?(\d{1,3})\]?(?:\.)?\s+(?=[A-Za-z\u00C0-\u017E“"‘'„])/g;
+            let m;
+            while ((m = regex.exec(tekst)) !== null) {
+                const nr = parseInt(m[1], 10);
+                if (!isNaN(nr) && nr > 0 && nr < 200 && !gevonden.includes(nr)) {
+                    gevonden.push(nr);
+                }
+            }
+        });
+        if (gevonden.length === 0) {
+            return {
+                eerste: fallbackVers ?? null,
+                laatste: fallbackVers ?? null,
+                label: fallbackVers != null ? String(fallbackVers) : null
+            };
+        }
+        const eerste = gevonden[0];
+        const laatste = gevonden[gevonden.length - 1];
+        return {
+            eerste,
+            laatste,
+            label: (eerste === laatste) ? String(eerste) : `${eerste}–${laatste}`
+        };
+    }
+
     function berekenSubSlidesVoorItem(item) {
-        const fSize = parseInt(document.getElementById('fontSizeSelect').value) || 40;
-        const splitMethod = document.getElementById('linesSelect').value;
+        const fSize = parseInt(document.getElementById('fontSizeSelect')?.value) || 40;
+        const splitMethod = document.getElementById('linesSelect')?.value || 'auto';
         if (!item.tekst || item.tekst.trim() === '' || item.type === 'Foto' || item.type === 'Leeg' || item.type === 'QR') {
             return [{ regels: [], fontSize: fSize }];
         }
+
+        const font = getFont();
+        const defW = (typeof window.getDefTekstW === 'function') ? window.getDefTekstW() : TEKST_DEF_W;
+        const tw = item.tekstW ?? defW;
+        const th = item.tekstH ?? TEKST_DEF_H;
+        const isBoldItem = (item.bold !== undefined) ? Boolean(item.bold) : Boolean(window.isBold && window.isBold());
 
         const schoneItemTekst = (typeof window.decodeerHtmlEntiteiten === 'function')
             ? window.decodeerHtmlEntiteiten(item.tekst)
             : item.tekst;
 
-        let blokken = [];
+        let result = [];
+
         if (item.type === "Schriftlezing") {
-            const MAX_CHAR = 180;
-            // Als de geplakte tekst per ongeluk begint met een referentie zoals 'Leviticus 7:11-17 Dit nu is...',
-            // zetten we die netjes om naar het startvers (bijv. '11 Dit nu is...')
+            // Dynamische karakter-doelgrootte op basis van tekstvakbreedte (Beamer 8.8" vs Livestream 6.6") en lettergrootte
+            const MAX_CHAR = Math.max(175, Math.min(340, Math.round(255 * (tw / 8.8) * Math.pow(40 / fSize, 1.3))));
+
             let verwerkteTekst = (typeof window.normaliseerBijbelTekst === 'function')
                 ? window.normaliseerBijbelTekst(schoneItemTekst)
                 : schoneItemTekst;
             verwerkteTekst = verwerkteTekst.replace(/^([A-Za-z0-9\s]+?\s+\d+:(\d+)(?:-\d+)?)\s+(?=[A-Za-z])/i, '$2 ');
-            // Herstel eventuele komma aan het einde van de schriftlezing naar een punt
             verwerkteTekst = verwerkteTekst.replace(/,\s*$/, '.');
 
             let bron = verwerkteTekst
                 .replace(/(?<=[.!?])\s+(?=\d+\s+[A-Za-z\u00C0-\u017E])/g, '\n')
                 .replace(/(?=\[\d+\]|\b\d+\.\s|^\d+\s|\n\d+\s)/gm, '\n')
                 .split('\n').map(r => r.trim()).filter(r => r);
+
+            let blokken = [];
             let tot = bron.reduce((s, r) => s + r.length, 0);
             let nd = Math.max(1, Math.ceil(tot / MAX_CHAR)), doel = tot / nd;
             let hb = [], hc = 0;
@@ -13931,34 +14043,64 @@ Antwoord UITSLUITEND in valide JSON:
                 hb.push(r); hc += r.length;
             });
             if (hb.length) blokken.push(hb);
-        } else {
-            if (splitMethod === "auto") {
-                if (schoneItemTekst.includes("\n\n")) {
-                    blokken = schoneItemTekst.split(/\n[ \t]*\n/).filter(v => v.trim()).map(b => b.split('\n').filter(l => l.trim()));
+
+            blokken.forEach(regelsArr => {
+                regelsArr = regelsArr.filter(r => !/^\d+\s*:\s*\d+\.?$/.test(r.trim()));
+                if (!regelsArr.length) return;
+                const subBlokken = pptFitBlok(regelsArr, fSize, font, tw, th, isBoldItem);
+                subBlokken.forEach(sb => result.push(sb));
+            });
+
+            // Punt 5: Bepaal per dia exact het versbereik (bijv. "Genesis 1 : 1–3 (1/5)") én nummer pas ná alle subBlokken
+            const schoneBijbelTitel = (item.titel || 'Schriftlezing')
+                .replace(/\s*\((?:HSV|NBV21|NBV|SV|BGT|NBG51|Naardense)\)\s*/gi, '')
+                .trim();
+            const hoofdstukMatch = schoneBijbelTitel.match(/^(.+?\s+\d+)\s*:\s*(\d+)/);
+            const hoofdstukPrefix = hoofdstukMatch ? hoofdstukMatch[1].trim() : schoneBijbelTitel;
+            let laatstGezienVers = hoofdstukMatch ? parseInt(hoofdstukMatch[2], 10) : null;
+
+            const totaalDias = result.length;
+            result.forEach((sb, diaIdx) => {
+                const bereik = detecteerVersBereikOpDia(sb.regels, laatstGezienVers);
+                if (bereik.laatste != null) laatstGezienVers = bereik.laatste;
+
+                const tellerStr = totaalDias > 1 ? ` (${diaIdx + 1}/${totaalDias})` : '';
+                if (hoofdstukMatch && bereik.label) {
+                    sb.diaTitel = `${hoofdstukPrefix} : ${bereik.label}${tellerStr}`;
+                    sb.versNr = bereik.label;
                 } else {
-                    let regels = schoneItemTekst.split('\n').filter(l => l.trim());
-                    for (let i = 0; i < regels.length; i += 4) blokken.push(regels.slice(i, i + 4));
+                    sb.diaTitel = `${schoneBijbelTitel}${tellerStr}`;
+                    sb.versNr = bereik.label;
                 }
-            } else {
-                let n = parseInt(splitMethod);
-                let regels = schoneItemTekst.split('\n').filter(l => l.trim());
-                for (let i = 0; i < regels.length; i += n) blokken.push(regels.slice(i, i + n));
-            }
-            if (blokken.length >= 2) {
-                let l = blokken[blokken.length - 1].length, vl = blokken[blokken.length - 2].length;
-                if (l <= 1 && vl >= 3) {
-                    let all = blokken[blokken.length - 2].concat(blokken[blokken.length - 1]);
-                    let m = Math.ceil(all.length / 2);
-                    blokken[blokken.length - 2] = all.slice(0, m);
-                    blokken[blokken.length - 1] = all.slice(m);
-                }
-            }
+            });
+
+            window.berekenSubSlidesVoorItem = berekenSubSlidesVoorItem;
+            return result.length ? result : [{ regels: [], fontSize: fSize }];
         }
 
-        const font = getFont();
-        const tw = item.tekstW ?? TEKST_DEF_W;
-        const th = item.tekstH ?? TEKST_DEF_H;
-        let result = [];
+        // --- ZANG & OVERIGE TEKST-ITEMS ---
+        // 1. Splits altijd eerst op couplet-grenzen (\n\n of expliciete Vers/Refrein-kopregels),
+        //    zodat regels van twee verschillende coupletten NOOIT op dezelfde dia belanden.
+        let ruweCoupletten = [];
+        if (schoneItemTekst.includes("\n\n")) {
+            ruweCoupletten = schoneItemTekst
+                .split(/\n[ \t]*\n/)
+                .map(b => b.split('\n').map(l => l.trim()).filter(Boolean))
+                .filter(b => b.length > 0);
+        } else {
+            const alleRegels = schoneItemTekst.split('\n').map(l => l.trim()).filter(Boolean);
+            let huidigCouplet = [];
+            alleRegels.forEach(regel => {
+                const isNieuwCoupletKop = /^(?:vers|couplet|vs\.?|refrein|koor|chorus|keervers|bridge|slot|coda)\b(?:\s*\d+)?\s*[:.\]\)]?$/i.test(regel);
+                if (isNieuwCoupletKop && huidigCouplet.length > 0) {
+                    ruweCoupletten.push(huidigCouplet);
+                    huidigCouplet = [regel];
+                } else {
+                    huidigCouplet.push(regel);
+                }
+            });
+            if (huidigCouplet.length > 0) ruweCoupletten.push(huidigCouplet);
+        }
 
         const versInfo = (typeof window.extractVersInfoVanItem === 'function')
             ? window.extractVersInfoVanItem(item)
@@ -13973,58 +14115,125 @@ Antwoord UITSLUITEND in valide JSON:
                     : (typeof window.extractVersNummers === 'function' ? window.extractVersNummers(item.titel) : [])
             };
 
-        let basisTitel = (item.type === "Zang" && typeof window.expandeerLiedAfkorting === 'function')
-            ? window.expandeerLiedAfkorting(versInfo.basisTitel)
-            : versInfo.basisTitel;
-        const bekendeVerzen = versInfo.versNummers;
+        // Punt 6: Kort liedtitel strak in zonder dubbele eerste liedregel achter ' - '
+        let ruweBasisTitel = (versInfo.basisTitel || item.titel || '').trim();
+        if (item.type === "Zang") {
+            ruweBasisTitel = ruweBasisTitel.split(/\s+[-–—]\s+/)[0].trim();
+            if (typeof window.expandeerLiedAfkorting === 'function') {
+                ruweBasisTitel = window.expandeerLiedAfkorting(ruweBasisTitel);
+            }
+        }
+        const basisTitel = ruweBasisTitel;
+        const bekendeVerzen = versInfo.versNummers || [];
 
-        blokken.forEach((regelsArr, blokIdx) => {
-            regelsArr = regelsArr.filter(r => !/^\d+\s*:\s*\d+\.?$/.test(r.trim()));
-            if (!regelsArr.length) return;
+        const maxRegelsPerDia = (splitMethod === "auto") ? null : (parseInt(splitMethod, 10) || 4);
+        let echteCoupletIdx = 0;
 
-            let versNr = null;
+        // Tel hoeveel "echte" coupletten (niet-refrein) er zijn
+        const aantalEchteCoupletten = ruweCoupletten.filter(c => {
+            const eerste = (c[0] || '').trim();
+            return !/^(?:\[|\()?\s*(refrein|koor|chorus|keervers|bridge|slot|coda|tussenspel)\b/i.test(eerste);
+        }).length;
+
+        ruweCoupletten.forEach((coupletRegels) => {
+            coupletRegels = coupletRegels.filter(r => !/^\d+\s*:\s*\d+\.?$/.test(r.trim()));
+            if (!coupletRegels.length) return;
+
+            let versLabel = null;
+            let isSpeciaalBlok = false;
+
             if (item.type === "Zang") {
-                // 1. Matchen via bekende verzen array
-                if (bekendeVerzen && bekendeVerzen[blokIdx] != null) {
-                    versNr = bekendeVerzen[blokIdx];
-                }
-                // 2. Extraheer uit couplet-tekst indien de eerste regel een versindicator is (bijv. "Vers 4" of "4.")
-                if (versNr == null && regelsArr.length > 0) {
-                    const firstL = regelsArr[0].trim();
-                    const m = firstL.match(/^(?:vers|couplet|vs\.?|\[)?\s*(\d+)(?:[.:\]\)]|\s+|$)/i);
-                    if (m) {
-                        versNr = parseInt(m[1], 10);
-                        if (/^(?:vers|couplet|vs\.?|\[)?\s*\d+[.:\]\)]?$/i.test(firstL)) {
-                            regelsArr.shift();
+                const eersteRegel = coupletRegels[0].trim();
+
+                // Punt 4: Herken Refrein / Koor / Bridge / Slot zonder de vers-teller te verschuiven
+                const speciaalMatch = eersteRegel.match(/^(?:\[|\()?\s*(refrein|koor|chorus|keervers|bridge|slot|coda|tussenspel)\b(?:\s*[:.\]\)\-–—])?\s*(.*)$/i);
+                if (speciaalMatch) {
+                    isSpeciaalBlok = true;
+                    const rauwType = speciaalMatch[1].toLowerCase();
+                    versLabel = (rauwType === 'chorus' || rauwType === 'keervers')
+                        ? 'Refrein'
+                        : rauwType.charAt(0).toUpperCase() + rauwType.slice(1);
+                    const restVanEersteRegel = (speciaalMatch[2] || '').trim();
+                    if (restVanEersteRegel) {
+                        coupletRegels[0] = restVanEersteRegel;
+                    } else {
+                        coupletRegels.shift();
+                    }
+                } else {
+                    // Regulier couplet:
+                    // 1. Check of de eerste regel een expliciete vers-aanduiding heeft ("Vers 4", "4.", "4 Tekst...")
+                    const versKopMatch = eersteRegel.match(/^(?:vers|couplet|vs\.?|\[)?\s*(\d+)(?:[.:\]\)]|\s+|$)(.*)$/i);
+                    if (versKopMatch) {
+                        versLabel = String(parseInt(versKopMatch[1], 10));
+                        const restTekst = (versKopMatch[2] || '').trim();
+                        if (!restTekst) {
+                            coupletRegels.shift();
+                        } else if (/^(?:vers|couplet|vs\.?)\s*\d+/i.test(eersteRegel) || /^\d+[.:\]\)]\s+/.test(eersteRegel)) {
+                            coupletRegels[0] = restTekst;
                         }
                     }
-                }
-                // 3. Eén enkel vers
-                if (versNr == null && bekendeVerzen && bekendeVerzen.length === 1) {
-                    versNr = bekendeVerzen[0];
-                }
-                // 4. Fallback bij meerdere strofen
-                if (versNr == null && blokken.length > 1) {
-                    versNr = blokIdx + 1;
+                    // 2. Matchen via geselecteerde verzen array (op basis van echteCoupletIdx!)
+                    if (versLabel == null && bekendeVerzen[echteCoupletIdx] != null) {
+                        versLabel = String(bekendeVerzen[echteCoupletIdx]);
+                    }
+                    // 3. Eén enkel bekend vers
+                    if (versLabel == null && bekendeVerzen.length === 1) {
+                        versLabel = String(bekendeVerzen[0]);
+                    }
+                    // 4. Fallback bij meerdere coupletten
+                    if (versLabel == null && (aantalEchteCoupletten > 1 || ruweCoupletten.length > 1)) {
+                        versLabel = String(echteCoupletIdx + 1);
+                    }
+                    echteCoupletIdx++;
                 }
             }
 
-            const subBlokken = pptFitBlok(regelsArr, fSize, font, tw, th);
-            subBlokken.forEach((sb, sIdx) => {
-                let diaTitel = (item.type === "Zang" && typeof window.expandeerLiedAfkorting === 'function')
-                    ? window.expandeerLiedAfkorting(item.titel)
-                    : item.titel;
-                if (item.type === "Zang" && versNr != null) {
-                    const deelStr = subBlokken.length > 1 ? ` (${sIdx + 1}/${subBlokken.length})` : '';
-                    diaTitel = `${basisTitel} : ${versNr}${deelStr}`;
-                } else if (item.type === "Schriftlezing" && blokken.length > 1) {
-                    diaTitel = `${item.titel} (${blokIdx + 1}/${blokken.length})`;
-                }
-                sb.diaTitel = diaTitel;
-                sb.versNr = versNr;
-                result.push(sb);
+            if (!coupletRegels.length) return;
+
+            // Punt 2: Splits binnen het couplet evenwichtig (bijv. 6 regels met limiet 4 → 3 + 3 i.p.v. 4 + 2)
+            let coupletDeelBlokken = [];
+            if (maxRegelsPerDia != null) {
+                coupletDeelBlokken = verdeelCoupletEvenwichtig(coupletRegels, maxRegelsPerDia);
+            } else if (!schoneItemTekst.includes("\n\n") && ruweCoupletten.length === 1 && coupletRegels.length > 6) {
+                coupletDeelBlokken = verdeelCoupletEvenwichtig(coupletRegels, 4);
+            } else {
+                coupletDeelBlokken = [coupletRegels];
+            }
+
+            coupletDeelBlokken.forEach(deelRegels => {
+                const subBlokken = pptFitBlok(deelRegels, fSize, font, tw, th, isBoldItem);
+                subBlokken.forEach(sb => {
+                    sb.versNr = versLabel;
+                    sb.isSpeciaalBlok = isSpeciaalBlok;
+                    result.push(sb);
+                });
             });
         });
+
+        // Punt 5 (ook voor Liederen!): Nummer alle sub-dia's pas nádat het totaal bekend is,
+        // en toon zowel het versnummer (of versbereik op die dia) als de dia-voortgang (bijv. "Psalm 23 : 1 (1/5)")
+        const totaalDias = result.length;
+        result.forEach((sb, diaIdx) => {
+            const tellerStr = totaalDias > 1 ? ` (${diaIdx + 1}/${totaalDias})` : '';
+            if (item.type === "Zang") {
+                let actiefVersLabel = sb.versNr;
+                if (!sb.isSpeciaalBlok) {
+                    const inlineBereik = detecteerVersBereikOpDia(sb.regels, null);
+                    if (inlineBereik.label && (actiefVersLabel == null || inlineBereik.eerste !== inlineBereik.laatste)) {
+                        actiefVersLabel = inlineBereik.label;
+                    }
+                }
+                if (actiefVersLabel != null && String(actiefVersLabel).trim() !== '') {
+                    sb.diaTitel = `${basisTitel} : ${actiefVersLabel}${tellerStr}`;
+                    sb.versNr = actiefVersLabel;
+                } else {
+                    sb.diaTitel = `${basisTitel}${tellerStr}`;
+                }
+            } else {
+                sb.diaTitel = `${item.titel || basisTitel}${tellerStr}`;
+            }
+        });
+
         window.berekenSubSlidesVoorItem = berekenSubSlidesVoorItem;
         return result.length ? result : [{ regels: [], fontSize: fSize }];
     }
@@ -14315,9 +14524,11 @@ Antwoord UITSLUITEND in valide JSON:
             }
             const previewFS = Math.max(6, cSlide.fontSize * scale);
             const titleFS = Math.max(5, 18 * scale);
-            const tLeftPct = (TEKST_DEF_X / SLIDE_W * 100).toFixed(2);
+            const defX = window.getDefTekstX ? window.getDefTekstX() : TEKST_DEF_X;
+            const defW = window.getDefTekstW ? window.getDefTekstW() : TEKST_DEF_W;
+            const tLeftPct = (defX / SLIDE_W * 100).toFixed(2);
             const tTopPct = (TEKST_DEF_Y / SLIDE_H * 100).toFixed(2);
-            const tWidthPct = (TEKST_DEF_W / SLIDE_W * 100).toFixed(2);
+            const tWidthPct = (defW / SLIDE_W * 100).toFixed(2);
             const tHeightPct = (TEKST_DEF_H / SLIDE_H * 100).toFixed(2);
             const titleTopPct = (TITEL_Y / SLIDE_H * 100).toFixed(2);
             const tekstAlign = window.getAlign ? window.getAlign() : 'center';
@@ -14403,9 +14614,11 @@ Antwoord UITSLUITEND in valide JSON:
             const qrLeftPct = (qrX / SLIDE_W * 100).toFixed(2);
             const qrTopPct = (qrY / SLIDE_H * 100).toFixed(2);
 
-            const titelLeftPct = ((item.tekstX ?? TEKST_DEF_X) / SLIDE_W * 100).toFixed(2);
+            const defX = window.getDefTekstX ? window.getDefTekstX() : TEKST_DEF_X;
+            const defW = window.getDefTekstW ? window.getDefTekstW() : TEKST_DEF_W;
+            const titelLeftPct = ((item.tekstX ?? defX) / SLIDE_W * 100).toFixed(2);
             const titelTopPct = (TITEL_Y / SLIDE_H * 100).toFixed(2);
-            const titelW = ((item.tekstW ?? TEKST_DEF_W) / SLIDE_W * 100).toFixed(2);
+            const titelW = ((item.tekstW ?? defW) / SLIDE_W * 100).toFixed(2);
             const fontFamily = (item.font || document.getElementById('fontSelect')?.value || 'Calibri') + ', sans-serif';
 
             preview.innerHTML = `
@@ -14495,9 +14708,11 @@ Antwoord UITSLUITEND in valide JSON:
         if (previewSubSlide >= previewSubSlides.length) previewSubSlide = 0;
         const slide = previewSubSlides[previewSubSlide];
 
-        const tx = item.tekstX ?? TEKST_DEF_X;
+        const defX = window.getDefTekstX ? window.getDefTekstX() : TEKST_DEF_X;
+        const defW = window.getDefTekstW ? window.getDefTekstW() : TEKST_DEF_W;
+        const tx = item.tekstX ?? defX;
         const ty = item.tekstY ?? TEKST_DEF_Y;
-        const tw = item.tekstW ?? TEKST_DEF_W;
+        const tw = item.tekstW ?? defW;
         const th = item.tekstH ?? TEKST_DEF_H;
         const tLeftPct = (tx / SLIDE_W * 100).toFixed(2);
         const tTopPct = (ty / SLIDE_H * 100).toFixed(2);
@@ -15712,12 +15927,14 @@ window.bouwPowerPointPresentatie = async function(customOpties = null) {
             let slide = pres.addSlide();
             slide.background = pptBg;
             const diaTitel = "Collecte";
+            const defX = window.getDefTekstX ? window.getDefTekstX() : TEKST_DEF_X;
+            const defW = window.getDefTekstW ? window.getDefTekstW() : TEKST_DEF_W;
             slide.addText(diaTitel, { 
-                x: TEKST_DEF_X, 
+                x: defX, 
                 y: TITEL_Y, 
-                w: TEKST_DEF_W, 
+                w: defW, 
                 h: 0.4, 
-                color: "AAAAAA", // Lichtgrijs exact zoals de liedtitels 
+                color: "BBBBBB", // Subtiel lichtgrijs exact zoals de liedtitels 
                 fontSize: 18, 
                 bold: true, 
                 fontFace: pptFont, 
@@ -15735,14 +15952,16 @@ window.bouwPowerPointPresentatie = async function(customOpties = null) {
         if (!item.tekst || item.tekst.trim() === "") {
             let slide = pres.addSlide();
             slide.background = pptBg;
-            slide.addText(item.titel || "", { x: 0.5, y: 0.3, w: 9, h: 0.4, color: "AAAAAA", fontSize: 18, fontFace: pptFont, align: "left" });
-            slide.addText("⚠️ Tekst nog niet ingevuld", { x: 0.5, y: 2, w: 9, h: 1, color: "FF3B30", fontSize: 32, fontFace: pptFont, align: "center", bold: true });
+            slide.addText(item.titel || "", { x: 0.6, y: 0.3, w: 8.8, h: 0.4, color: "BBBBBB", fontSize: 18, fontFace: pptFont, align: "left" });
+            slide.addText("⚠️ Tekst nog niet ingevuld", { x: 0.6, y: 2, w: 8.8, h: 1, color: "FF3B30", fontSize: 32, fontFace: pptFont, align: "center", bold: true });
             return;
         }
 
-        const tx = item.tekstX ?? TEKST_DEF_X;
+        const defX = window.getDefTekstX ? window.getDefTekstX() : TEKST_DEF_X;
+        const defW = window.getDefTekstW ? window.getDefTekstW() : TEKST_DEF_W;
+        const tx = item.tekstX ?? defX;
         const ty = item.tekstY ?? TEKST_DEF_Y;
-        const tw = item.tekstW ?? TEKST_DEF_W;
+        const tw = item.tekstW ?? defW;
         const th = item.tekstH ?? TEKST_DEF_H;
         const subSlides = berekenSubSlidesVoorItem(item);
         const isTekstBold = (item.bold !== undefined) ? item.bold : (window.isBold ? window.isBold() : false);
@@ -15756,7 +15975,7 @@ window.bouwPowerPointPresentatie = async function(customOpties = null) {
             if (item.type === "Zang" && typeof window.expandeerLiedAfkorting === 'function') {
                 diaTitel = window.expandeerLiedAfkorting(diaTitel);
             }
-            slide.addText(diaTitel, { x: tx, y: TITEL_Y, w: tw, h: 0.4, color: "FFFFFF", fontSize: 18, bold: true, fontFace: pptFont, align: "left", valign: "top" });
+            slide.addText(diaTitel, { x: tx, y: TITEL_Y, w: tw, h: 0.4, color: "BBBBBB", fontSize: 18, bold: true, fontFace: pptFont, align: "left", valign: "top" });
 
             const heeftVetOpmaak = sub.regels.some(r => /\*\*.*?\*\*|<b>.*?<\/b>/i.test(r));
             if (heeftVetOpmaak) {
