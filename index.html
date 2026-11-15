@@ -16,7 +16,7 @@
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('service-worker.js?v=13').catch(function (e) { console.warn('SW registratie mislukt:', e); });
+      navigator.serviceWorker.register('service-worker.js?v=14').catch(function (e) { console.warn('SW registratie mislukt:', e); });
     });
   }
 </script>
@@ -37,7 +37,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
 
-<!-- MODULAIRE ONDERDELEN: IndexedDB & Verskiezer -->
+<!-- ADAPTIVE DEVICE ENGINE & MODULAIRE ONDERDELEN -->
+<script src="js/device-engine.js"></script>
 <script src="js/kerkdb.js"></script>
 <script src="js/vers-kiezer.js"></script>
 
@@ -631,6 +632,77 @@
         }
     }
 
+    /* --- ADAPTIVE ENGINE: IPHONE SPECIES (.engine-phone) --- */
+    html.engine-phone body {
+        padding-bottom: max(4.5rem, calc(env(safe-area-inset-bottom, 0px) + 3.8rem)) !important;
+        overflow-x: hidden !important;
+    }
+    html.engine-phone main {
+        padding-bottom: 0 !important;
+    }
+    /* iOS Auto-zoom preventie: 16px font-size op mobiele inputs voorkomt dat Safari geforceerd inzoomt */
+    html.engine-phone input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]),
+    html.engine-phone textarea,
+    html.engine-phone select {
+        font-size: 16px !important;
+    }
+    /* Zorg voor 100% dekkende, haarscherpe modale achtergrond zonder bleed-through */
+    html.engine-phone .modal-backdrop-safe > div.modal-animate {
+        background-color: #ffffff !important;
+        isolation: isolate !important;
+    }
+    html.dark.engine-phone .modal-backdrop-safe > div.modal-animate,
+    body.dark-mode.engine-phone .modal-backdrop-safe > div.modal-animate {
+        background-color: #1C1C1E !important;
+    }
+    html.engine-phone.keyboard-open #unifiedControlDock {
+        transform: translate(-50%, 150%) scale(0.9) !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+    html.engine-phone.keyboard-open .modal-backdrop-safe > div.modal-animate {
+        max-height: calc(100vh - var(--keyboard-height, 0px) - 16px) !important;
+        overflow-y: auto !important;
+    }
+
+    /* --- ADAPTIVE ENGINE: IPAD SPECIES (.engine-tablet) --- */
+    @keyframes ipadSpringPop {
+        0% { transform: scale(0.94); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    html.engine-tablet .modal-backdrop-safe {
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 1.5rem !important;
+    }
+    html.engine-tablet .modal-backdrop-safe > div.modal-animate {
+        border-radius: 28px !important;
+        max-width: 640px !important;
+        width: 90% !important;
+        max-height: 88vh !important;
+        margin: auto !important;
+        animation: ipadSpringPop 0.28s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+        box-shadow: 0 24px 64px -12px rgba(0, 0, 0, 0.3) !important;
+    }
+    html.engine-tablet .modal-animate:not(#videoModalDialog)::before {
+        display: none !important;
+    }
+
+    /* --- ADAPTIVE ENGINE: MACBOOK / LAPTOP SPECIES (.engine-desktop) --- */
+    html.engine-desktop .modal-backdrop-safe {
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 2rem !important;
+    }
+    html.engine-desktop .modal-backdrop-safe > div.modal-animate {
+        border-radius: 28px !important;
+        max-height: 90vh !important;
+        margin: auto !important;
+    }
+    html.engine-desktop .modal-animate:not(#videoModalDialog)::before {
+        display: none !important;
+    }
+
     /* APPLE DYNAMIC ISLAND COMPONENT */
     .apple-dynamic-island {
         background: #000000;
@@ -746,6 +818,35 @@
         <svg class="w-20 h-20 text-[#007AFF] mx-auto mb-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
         <h2 onclick="checkOnderhoudCode()" class="text-3xl font-bold text-gray-900 mb-3 cursor-default select-none">Onderhoud</h2>
         <p class="text-gray-500 text-[15px] max-w-sm mx-auto leading-relaxed">De Liturgie Assistent wordt momenteel bijgewerkt met nieuwe functies. Probeer het over een paar minuutjes nog eens!</p>
+    </div>
+</div>
+
+<!-- DESKTOP SPOTLIGHT COMMAND PALETTE (⌘K / Ctrl+K) -->
+<div id="desktopCommandPalette" class="fixed inset-0 z-[250] hidden flex items-start justify-center pt-[12vh] sm:pt-[15vh] px-4 bg-black/40 backdrop-blur-md transition-opacity" onclick="if(event.target === this) window.DeviceEngine.toggleCommandPalette(false)">
+    <div class="bg-white/95 dark:bg-[#1C1C1E]/95 dark:text-white rounded-2xl shadow-[0_24px_70px_rgba(0,0,0,0.35)] border border-gray-200/80 dark:border-white/15 w-full max-w-xl overflow-hidden flex flex-col transform transition-all backdrop-blur-2xl">
+        <div class="p-3.5 sm:p-4 border-b border-gray-100 dark:border-white/10 flex items-center gap-3">
+            <svg class="w-5 h-5 text-gray-400 dark:text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <input type="text" id="commandPaletteInput" oninput="window.DeviceEngine.renderCommandResults(this.value)" placeholder="Typ een lied (bijv. 'psalm 23', 'wk 15') of actie..." class="w-full bg-transparent text-sm sm:text-base font-medium placeholder-gray-400 focus:outline-none dark:text-white" autocomplete="off"/>
+            <kbd class="hidden sm:inline-block text-[10px] font-mono px-2 py-1 rounded bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-white/10">ESC</kbd>
+        </div>
+        <div id="commandPaletteResults" class="p-2 overflow-y-auto max-h-[60vh] flex flex-col gap-0.5"></div>
+        <div class="px-4 py-2 bg-gray-50/80 dark:bg-white/5 border-t border-gray-100 dark:border-white/10 flex items-center justify-between text-[11px] text-gray-400 dark:text-gray-500">
+            <span class="flex items-center gap-2">
+                <span><kbd class="font-mono bg-white dark:bg-white/10 px-1 py-0.5 rounded border border-gray-200 dark:border-white/10">↑</kbd><kbd class="font-mono bg-white dark:bg-white/10 px-1 py-0.5 rounded border border-gray-200 dark:border-white/10">↓</kbd> Navigeer</span>
+                <span>·</span>
+                <span><kbd class="font-mono bg-white dark:bg-white/10 px-1 py-0.5 rounded border border-gray-200 dark:border-white/10">↵</kbd> Selecteer</span>
+            </span>
+            <span class="font-medium text-[#007AFF]">Liturgie Assistent Pro Engine</span>
+        </div>
+    </div>
+</div>
+
+<!-- DESKTOP FILE DROP OVERLAY -->
+<div id="desktopDropOverlay" class="fixed inset-0 z-[300] hidden flex flex-col items-center justify-center bg-[#007AFF]/20 backdrop-blur-md pointer-events-none transition-all">
+    <div class="p-8 rounded-3xl bg-white/95 dark:bg-[#1C1C1E]/95 shadow-2xl border-2 border-dashed border-[#007AFF] flex flex-col items-center justify-center gap-3 text-center max-w-sm">
+        <div class="w-16 h-16 rounded-2xl bg-blue-500/10 text-[#007AFF] flex items-center justify-center text-3xl font-bold animate-bounce">📥</div>
+        <h3 class="text-base font-bold text-gray-900 dark:text-white">Laat bestand hier los</h3>
+        <p class="text-xs text-gray-500 dark:text-gray-400">Sleep een PowerPoint (.pptx) of liedbundel (.txt) bestand direct in de app om automatisch te verwerken.</p>
     </div>
 </div>
 
@@ -1560,6 +1661,13 @@
                 <svg class="w-3 h-3 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
             </button>
         </div>
+
+        <!-- Midden/Rechts op desktop: Spotlight Command Palette Trigger -->
+        <button type="button" onclick="window.DeviceEngine?.toggleCommandPalette()" class="hidden md:inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gray-100/80 hover:bg-gray-200/80 dark:bg-white/10 dark:hover:bg-white/15 text-gray-500 dark:text-gray-300 border border-gray-200/60 dark:border-white/10 text-xs font-medium transition-all cursor-pointer shadow-2xs active:scale-95" title="Open Spotlight Zoeken (⌘K of Ctrl+K)">
+            <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <span>Zoeken of actie...</span>
+            <kbd class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white dark:bg-black/30 border border-gray-200 dark:border-white/15 text-gray-400">⌘K</kbd>
+        </button>
 
         <!-- Rechts op desktop: Status-pill -->
         <div class="flex items-center justify-end gap-2">
@@ -14413,6 +14521,7 @@ window.addEventListener('keydown', (e) => {
             return false;
         };
 
+        if (checkModal('desktopCommandPalette', () => window.DeviceEngine?.toggleCommandPalette(false))) return;
         if (checkModal('welkomstdiaModal', sluitWelkomstdiaModal)) return;
         if (checkModal('preflightModal', window.sluitPreflightModal)) return;
         if (checkModal('tikkieModal', window.sluitTikkieModal)) return;
