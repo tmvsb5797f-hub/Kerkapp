@@ -16,7 +16,7 @@
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('service-worker.js?v=16').catch(function (e) { console.warn('SW registratie mislukt:', e); });
+      navigator.serviceWorker.register('service-worker.js?v=17').catch(function (e) { console.warn('SW registratie mislukt:', e); });
     });
   }
 </script>
@@ -760,6 +760,85 @@
     }
     html.engine-desktop .modal-animate:not(#videoModalDialog)::before {
         display: none !important;
+    }
+
+    /* --- FASE 3: IPAD SPLIT-VIEW (2-KOLOMS) & DESKTOP STUDIO (3-KOLOMS) LAYOUT --- */
+    @media (min-width: 768px) {
+        html.layout-cols-2 #desktopHeader,
+        html.layout-cols-2 main {
+            max-width: 1480px !important;
+        }
+        html.layout-cols-3 #desktopHeader,
+        html.layout-cols-3 main {
+            max-width: 1760px !important;
+        }
+
+        #mainWorkspaceGrid {
+            display: grid !important;
+            grid-template-columns: minmax(320px, 5fr) minmax(360px, 6fr);
+            grid-template-areas:
+                "invoer preview"
+                "invoer volgorde";
+            column-gap: 1.75rem;
+            row-gap: 1.5rem;
+            align-items: start;
+        }
+
+        #sectieInvoerContainer {
+            grid-area: invoer;
+            position: sticky;
+            top: 1.25rem;
+            z-index: 30;
+            min-width: 0;
+        }
+        #sectiePreviewContainer {
+            grid-area: preview;
+            min-width: 0;
+        }
+        #sectieVolgordeContainer {
+            grid-area: volgorde;
+            min-width: 0;
+        }
+
+        /* In Split-View & Studio-View staan Liederen & Bijbel strak onder elkaar in de linker Invoer-kolom */
+        #invoerLiedBijbelGrid {
+            grid-template-columns: 1fr !important;
+            gap: 0.875rem !important;
+        }
+        #invoerActieKnoppenGrid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 0.5rem !important;
+        }
+        #sectieInvoerContainer .apple-liquid-card {
+            padding: 1rem !important;
+        }
+    }
+
+    @media (min-width: 980px) {
+        html.layout-cols-3 #mainWorkspaceGrid {
+            grid-template-columns: minmax(330px, 3.8fr) minmax(350px, 4.3fr) minmax(380px, 4.4fr) !important;
+            grid-template-areas:
+                "invoer volgorde preview" !important;
+            column-gap: 1.75rem !important;
+            align-items: start !important;
+        }
+        html.layout-cols-3 #sectiePreviewContainer {
+            position: sticky;
+            top: 1.25rem;
+            z-index: 20;
+        }
+    }
+
+    /* Live Dia-Strip (Mini-Slide Thumbnails onder het preview canvas) */
+    #liveSlideStrip {
+        scrollbar-width: thin;
+        -webkit-overflow-scrolling: touch;
+    }
+    .mini-slide-card {
+        transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .mini-slide-card:hover {
+        transform: translateY(-1px);
     }
 
     /* APPLE DYNAMIC ISLAND COMPONENT */
@@ -1813,15 +1892,28 @@
                 </label>
                 <span class="text-xs text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">Livestream</span>
             </div>
+
+            <!-- Fase 3: iPad Split-View (2-koloms) & Desktop Studio (3-koloms) Layout Switcher -->
+            <div class="hidden md:flex items-center gap-1 bg-white dark:bg-[#2C2C2E] border border-gray-200 dark:border-gray-700 rounded-lg p-0.5 shadow-xs ml-auto" title="Wissel tussen 2-koloms Split-View en 3-koloms Studio Layout (Sneltoets: ⌘\)">
+                <button type="button" id="layoutBtn2Cols" onclick="window.DeviceEngine?.setLayoutColumns(2)" class="px-2 py-1 rounded-md text-[11px] font-semibold text-gray-600 dark:text-gray-300 hover:text-[#007AFF] transition-all flex items-center gap-1 cursor-pointer active:scale-95">
+                    <span>◫</span>
+                    <span>Split-View (2)</span>
+                </button>
+                <button type="button" id="layoutBtn3Cols" onclick="window.DeviceEngine?.setLayoutColumns(3)" class="px-2 py-1 rounded-md text-[11px] font-bold bg-[#007AFF] text-white shadow-2xs transition-all flex items-center gap-1 cursor-pointer active:scale-95">
+                    <span>⫴</span>
+                    <span>Studio (3)</span>
+                </button>
+            </div>
         </div>
     </div>
 </header>
 
-<main class="flex-grow px-3 sm:px-4 md:px-8 lg:px-12 max-w-[1400px] mx-auto w-full pb-16 md:pb-36">
+<main class="flex-grow px-3 sm:px-4 md:px-8 lg:px-10 max-w-[1400px] mx-auto w-full pb-16 md:pb-36">
+    <div id="mainWorkspaceGrid" class="workspace-grid">
 
     <!-- SECTIE 1: INVOER (Dienst gegevens, liederen & bijbel, snelle knoppen) -->
     <div id="sectieInvoerContainer" class="mobile-tab-view">
-        <section class="mb-2.5 sm:mb-4 relative z-30">
+        <section class="mb-2.5 sm:mb-3.5 relative z-30">
             <h2 class="text-[10px] sm:text-[11px] font-bold text-[#86868B] uppercase tracking-wider mb-1 sm:mb-2 ml-1">0. Dienst Gegevens (Voor Welkomst Dia)</h2>
             <div class="apple-liquid-card p-2 sm:p-3 md:p-4 rounded-xl sm:rounded-2xl flex flex-row gap-2 relative z-30">
                 <div class="flex-1 min-w-0 relative z-40">
@@ -1848,7 +1940,7 @@
                 </div>
             </div>
         </section>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-4 md:gap-8 items-stretch relative z-20">
+        <div id="invoerLiedBijbelGrid" class="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-4 md:gap-8 items-stretch relative z-20">
             <section class="relative z-20">
                 <div class="flex items-center justify-between mb-1 sm:mb-2 ml-1 flex-nowrap gap-1.5">
                     <h2 class="text-[10px] sm:text-[11px] font-bold text-[#86868B] uppercase tracking-wider shrink-0">1. Liederen &amp; Psalmen</h2>
@@ -1889,7 +1981,7 @@
                         <input id="liedInput" autocomplete="off" class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-transparent rounded-lg sm:rounded-xl py-2 sm:py-3.5 pl-9 sm:pl-12 pr-3.5 text-base md:text-[15px] font-medium placeholder-gray-400 apple-input transition-all" placeholder="Bijv: 'wk 15', 'oth 314' of 'psalm 23'..." type="text"/>
                     </div>
                     <p class="hidden sm:block text-[11px] text-gray-400 mt-2 ml-1 leading-snug" id="liedZoekTipTekst">Tip: Afkortingen zoals 'wk' of 'oth' werken ook! Filter hierboven op bundel om direct het juiste lied te vinden.</p>
-                    <div id="suggestieLied" class="absolute z-50 w-[calc(100%-2rem)] md:w-[calc(100%-3rem)] bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-xl mt-2 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-gray-100 dark:border-white/10 hidden max-h-72 overflow-y-auto suggestion-dropdown-animate"></div>
+                    <div id="suggestieLied" class="absolute z-50 w-[calc(100%-2rem)] md:w-[calc(100%-2rem)] bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-xl mt-2 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-gray-100 dark:border-white/10 hidden max-h-72 overflow-y-auto suggestion-dropdown-animate"></div>
                 </div>
             </section>
 
@@ -1902,30 +1994,30 @@
                         <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477-4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
                         <input id="bijbelInput" autocomplete="off" class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-transparent rounded-lg sm:rounded-xl py-2 sm:py-3.5 pl-9 sm:pl-12 pr-3.5 text-base md:text-[15px] font-medium placeholder-gray-400 apple-input transition-all" placeholder="Bijv: Genesis 1:1-15" type="text"/>
                     </div>
-                    <div id="suggestieBijbel" class="absolute z-50 w-[calc(100%-2rem)] md:w-[calc(100%-3rem)] bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-xl mt-2 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-gray-100 dark:border-white/10 hidden max-h-64 overflow-y-auto suggestion-dropdown-animate"></div>
+                    <div id="suggestieBijbel" class="absolute z-50 w-[calc(100%-2rem)] md:w-[calc(100%-2rem)] bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-xl mt-2 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-gray-100 dark:border-white/10 hidden max-h-64 overflow-y-auto suggestion-dropdown-animate"></div>
                 </div>
             </section>
         </div>
 
-        <!-- Snelle actieknoppen: 4 compacte knoppen op 1 strakke rij op mobiel (nooit overlap met de dock) -->
+        <!-- Snelle actieknoppen: 4 compacte knoppen op 1 strakke rij op mobiel, 2x2 op iPad/Desktop Split-View -->
         <section class="mt-2.5 sm:mt-3.5 mb-1 sm:mb-2 relative z-0">
-            <div class="grid grid-cols-4 gap-1.5 sm:gap-2.5">
-                <button id="plakLiturgieKnop" onclick="openImportModal()" class="w-full bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 py-2 sm:py-2.5 px-0.5 sm:px-1 rounded-xl text-[10px] sm:text-[11px] md:text-sm font-semibold flex flex-col md:flex-row items-center justify-center gap-0.5 sm:gap-1 md:gap-2 hover:bg-purple-100 dark:hover:bg-purple-900/60 transition-all shadow-xs border border-purple-200/80 dark:border-purple-800/60 active:scale-95 cursor-pointer" title="Plak een complete liturgie">
-                    <svg class="w-3.5 h-3.5 md:w-5 md:h-5 text-purple-600 dark:text-purple-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            <div id="invoerActieKnoppenGrid" class="grid grid-cols-4 gap-1.5 sm:gap-2.5">
+                <button id="plakLiturgieKnop" onclick="openImportModal()" class="w-full bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 py-2 sm:py-2.5 px-0.5 sm:px-2 rounded-xl text-[10px] sm:text-[11px] md:text-xs font-semibold flex flex-col md:flex-row items-center justify-center gap-0.5 sm:gap-1 md:gap-1.5 hover:bg-purple-100 dark:hover:bg-purple-900/60 transition-all shadow-xs border border-purple-200/80 dark:border-purple-800/60 active:scale-95 cursor-pointer" title="Plak een complete liturgie">
+                    <svg class="w-3.5 h-3.5 md:w-4 md:h-4 text-purple-600 dark:text-purple-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                     <span class="truncate">Plak Liturgie</span>
                 </button>
-                <button id="fotoDiaKnop" onclick="document.getElementById('imageFile').click()" class="w-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 py-2 sm:py-2.5 px-0.5 sm:px-1 rounded-xl text-[10px] sm:text-[11px] md:text-sm font-semibold flex flex-col md:flex-row items-center justify-center gap-0.5 sm:gap-1 md:gap-2 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-all shadow-xs border border-blue-200/80 dark:border-blue-800/60 active:scale-95 cursor-pointer" title="Afbeelding toevoegen als dia">
-                    <svg class="w-3.5 h-3.5 md:w-5 md:h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                <button id="fotoDiaKnop" onclick="document.getElementById('imageFile').click()" class="w-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 py-2 sm:py-2.5 px-0.5 sm:px-2 rounded-xl text-[10px] sm:text-[11px] md:text-xs font-semibold flex flex-col md:flex-row items-center justify-center gap-0.5 sm:gap-1 md:gap-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-all shadow-xs border border-blue-200/80 dark:border-blue-800/60 active:scale-95 cursor-pointer" title="Afbeelding toevoegen als dia">
+                    <svg class="w-3.5 h-3.5 md:w-4 md:h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                     <span class="truncate">Foto Dia</span>
                 </button>
                 <input id="imageFile" type="file" class="hidden" accept="image/*" onchange="uploadFoto(event)"/>
-                <button id="legeDiaKnop" onclick="voegLegeDiaToe()" class="w-full bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 py-2 sm:py-2.5 px-0.5 sm:px-1 rounded-xl text-[10px] sm:text-[11px] md:text-sm font-semibold flex flex-col md:flex-row items-center justify-center gap-0.5 sm:gap-1 md:gap-2 hover:bg-gray-200 dark:hover:bg-white/15 transition-all shadow-xs border border-gray-200 dark:border-white/10 active:scale-95 cursor-pointer" title="Lege zwarte dia toevoegen">
-                    <svg class="w-3.5 h-3.5 md:w-5 md:h-5 text-gray-500 dark:text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
+                <button id="legeDiaKnop" onclick="voegLegeDiaToe()" class="w-full bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 py-2 sm:py-2.5 px-0.5 sm:px-2 rounded-xl text-[10px] sm:text-[11px] md:text-xs font-semibold flex flex-col md:flex-row items-center justify-center gap-0.5 sm:gap-1 md:gap-1.5 hover:bg-gray-200 dark:hover:bg-white/15 transition-all shadow-xs border border-gray-200 dark:border-white/10 active:scale-95 cursor-pointer" title="Lege zwarte dia toevoegen">
+                    <svg class="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
                     <span class="truncate">Lege Dia</span>
                 </button>
                 <div class="w-full flex items-stretch rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 shadow-xs overflow-hidden group">
-                    <button id="tikkieDiaKnop" type="button" onclick="window.klikTikkieKnop()" class="flex-1 py-2 sm:py-2.5 px-0.5 sm:px-2.5 text-[10px] sm:text-[11px] md:text-sm font-semibold text-emerald-900 dark:text-emerald-200 flex flex-col md:flex-row items-center justify-center gap-0.5 sm:gap-1 md:gap-1.5 hover:bg-emerald-100/60 dark:hover:bg-emerald-900/40 transition-colors active:scale-95 cursor-pointer min-w-0" title="Voeg actieve week-Tikkie toe aan de liturgie">
-                        <svg class="w-3.5 h-3.5 md:w-5 md:h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="3" height="3"></rect></svg>
+                    <button id="tikkieDiaKnop" type="button" onclick="window.klikTikkieKnop()" class="flex-1 py-2 sm:py-2.5 px-0.5 sm:px-2 text-[10px] sm:text-[11px] md:text-xs font-semibold text-emerald-900 dark:text-emerald-200 flex flex-col md:flex-row items-center justify-center gap-0.5 sm:gap-1 md:gap-1.5 hover:bg-emerald-100/60 dark:hover:bg-emerald-900/40 transition-colors active:scale-95 cursor-pointer min-w-0" title="Voeg actieve week-Tikkie toe aan de liturgie">
+                        <svg class="w-3.5 h-3.5 md:w-4 md:h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="3" height="3"></rect></svg>
                         <span class="truncate font-bold">Tikkie</span>
                     </button>
                     <button type="button" onclick="event.stopPropagation(); window.openTikkieModal();" class="px-1 sm:px-1.5 md:px-2 border-l border-emerald-200/80 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors active:scale-95 flex items-center justify-center flex-shrink-0" title="Beheer & instellingen week-Tikkie">
@@ -1937,15 +2029,18 @@
         </section>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-start mt-4 md:mt-6 mb-6">
-        <!-- SECTIE 2: SLIDE PREVIEW -->
+        <!-- SECTIE 2: SLIDE PREVIEW (Met Live Dia-Preview & Interactieve Dia-Strip) -->
         <section id="sectiePreviewContainer" class="mobile-tab-view">
-            <div class="flex items-center justify-between mb-2 md:mb-3 ml-2 pr-1 flex-wrap gap-2">
-                <div class="flex items-center gap-2">
-                    <h2 class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider">Slide Preview</h2>
-                    <button type="button" id="previewModusToggleBtn" onclick="window.togglePresentatieModus()" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-bold transition-all border shadow-xs bg-black text-white border-gray-800 hover:border-gray-600 active:scale-95 cursor-pointer" title="Klik om te wisselen tussen Beamer en Livestream modus">
+            <div class="flex items-center justify-between mb-2 md:mb-3 ml-1 pr-1 flex-wrap gap-1.5">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <h2 class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider">Live Dia-Preview</h2>
+                    <button type="button" id="previewModusToggleBtn" onclick="window.togglePresentatieModus()" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all border shadow-xs bg-black text-white border-gray-800 hover:border-gray-600 active:scale-95 cursor-pointer" title="Klik om te wisselen tussen Beamer en Livestream modus">
                         <span id="previewModusIcon">📽️</span>
                         <span id="previewModusText">Beamer</span>
+                    </button>
+                    <button type="button" id="previewWelkomstdiaBtn" onclick="window.selecteerWelkomstdiaPreview()" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all border shadow-xs bg-blue-50 dark:bg-blue-950/50 text-[#007AFF] dark:text-blue-300 border-blue-200 dark:border-blue-800/60 hover:bg-blue-100 active:scale-95 cursor-pointer" title="Bekijk live de Welkomstdia op het scherm">
+                        <span>👋</span>
+                        <span>Welkomstdia</span>
                     </button>
                 </div>
                 <div id="slideAlignGroup" class="flex items-center gap-1 bg-[#F5F5F7] dark:bg-[#2C2C2E] p-0.5 rounded-lg border border-black/[0.04]">
@@ -1970,8 +2065,8 @@
                     ‹
                 </button>
                 <div class="text-center min-w-0 flex-1 px-1">
-                    <div id="previewItemTitel" class="text-xs sm:text-sm font-bold text-[#1D1D1F] dark:text-white truncate">Geen item geselecteerd</div>
-                    <div id="previewItemTeller" class="text-[10px] text-gray-500 dark:text-gray-400 font-medium">Item 0 van 0</div>
+                    <div id="previewItemTitel" class="text-xs sm:text-sm font-bold text-[#1D1D1F] dark:text-white truncate">👋 Welkomstdia (Live)</div>
+                    <div id="previewItemTeller" class="text-[10px] text-gray-500 dark:text-gray-400 font-medium">Startdia · Dienst Gegevens</div>
                 </div>
                 <button type="button" onclick="previewStapItem(1)" class="w-10 h-10 min-w-[40px] flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 font-bold transition-all cursor-pointer text-base" title="Volgend liturgie-item">
                     ›
@@ -1981,6 +2076,7 @@
             <div class="relative">
                 <div id="slideCanvas" class="aspect-video bg-black rounded-xl relative overflow-hidden shadow-inner border border-gray-800">
                     <div class="absolute top-2 left-3 text-[8px] text-gray-500 uppercase tracking-widest font-bold z-20 pointer-events-none">Slide Preview</div>
+                    <div id="liveConceptBadge" class="absolute top-2 left-3 z-20 text-[9px] font-bold px-2 py-0.5 rounded-full pointer-events-none bg-[#007AFF]/90 text-white shadow-sm hidden"></div>
                     <div id="fitIndicator" class="absolute top-2 right-3 z-20 text-[9px] font-bold px-2 py-0.5 rounded-full pointer-events-none hidden"></div>
                     <div id="previewVak" class="w-full h-full relative"></div>
                 </div>
@@ -1991,6 +2087,17 @@
                         <span id="slideCounter" class="text-xs font-semibold text-gray-500 dark:text-gray-400 tabular-nums px-1">1/1</span>
                         <button onclick="navigeerSlide(1)" aria-label="Volgende dia" class="w-11 h-11 md:w-8 md:h-8 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center justify-center text-base md:text-xs text-gray-700 dark:text-gray-200 font-bold active:scale-95 shadow-xs cursor-pointer">›</button>
                     </div>
+                </div>
+
+                <!-- Fase 3: Interactieve Live Dia-Strip (Mini-Slide Navigator voor alle coupletten/dia's) -->
+                <div id="liveSlideStripContainer" class="mt-2.5 pt-2 border-t border-gray-200/60 dark:border-white/10">
+                    <div class="flex items-center justify-between mb-1.5 px-0.5">
+                        <span id="liveSlideStripLabel" class="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Dia-overzicht (Klik om direct te tonen)</span>
+                        <button type="button" onclick="openWelkomstdiaModal()" class="text-[10px] font-semibold text-[#007AFF] hover:underline cursor-pointer flex items-center gap-1" title="Welkomstdia indeling &amp; liederen aanpassen">
+                            <span>✏️ Welkomstdia opmaken</span>
+                        </button>
+                    </div>
+                    <div id="liveSlideStrip" class="flex items-center gap-2 overflow-x-auto pb-1.5 no-scrollbar select-none"></div>
                 </div>
             </div>
         </section>
@@ -7053,9 +7160,19 @@ Retourneer UITSLUITEND een valide JSON object:
                     } catch(e) {}
                 }
                 planAutoArchief();
+                if (window.innerWidth >= 768 && typeof window.renderSlidePreview === 'function') {
+                    window.renderSlidePreview(-1);
+                } else if (typeof window.tekenSlidePreview === 'function') {
+                    window.tekenSlidePreview();
+                }
             };
             dIn.addEventListener('input', onDatumInput);
             dIn.addEventListener('change', onDatumInput);
+            dIn.addEventListener('focus', () => {
+                if (window.innerWidth >= 768 && typeof window.renderSlidePreview === 'function') {
+                    window.renderSlidePreview(-1);
+                }
+            });
         }
         if (vIn) {
             const onVoorgangerInput = () => {
@@ -7063,9 +7180,19 @@ Retourneer UITSLUITEND een valide JSON object:
                 if (val) localStorage.setItem('opgeslagenDienstVoorganger', val);
                 else localStorage.removeItem('opgeslagenDienstVoorganger');
                 planAutoArchief();
+                if (window.innerWidth >= 768 && typeof window.renderSlidePreview === 'function') {
+                    window.renderSlidePreview(-1);
+                } else if (typeof window.tekenSlidePreview === 'function') {
+                    window.tekenSlidePreview();
+                }
             };
             vIn.addEventListener('input', onVoorgangerInput);
             vIn.addEventListener('change', onVoorgangerInput);
+            vIn.addEventListener('focus', () => {
+                if (window.innerWidth >= 768 && typeof window.renderSlidePreview === 'function') {
+                    window.renderSlidePreview(-1);
+                }
+            });
         }
     }, 500);
 
@@ -7827,6 +7954,9 @@ Bijbelliederen`;
         document.addEventListener('click', (e) => {
             if (!container.contains(e.target) && e.target !== input) {
                 container.classList.add('hidden');
+                if (inputId === 'liedInput' && typeof window.sluitLiveConceptPreview === 'function') {
+                    window.sluitLiveConceptPreview();
+                }
             }
         });
 
@@ -7834,7 +7964,13 @@ Bijbelliederen`;
             const rawTerm = input.value;
             let term = rawTerm.trim().toLowerCase();
             container.innerHTML = '';
-            if (!term) { container.classList.add('hidden'); return; }
+            if (!term) {
+                container.classList.add('hidden');
+                if (inputId === 'liedInput' && typeof window.sluitLiveConceptPreview === 'function') {
+                    window.sluitLiveConceptPreview();
+                }
+                return;
+            }
             
             // Haal de meest actuele lijst op als het een functie is
             const dataLijst = typeof dataLijstOfFunctie === 'function' ? dataLijstOfFunctie() : dataLijstOfFunctie;
@@ -7916,9 +8052,19 @@ Bijbelliederen`;
             if (toonMatches.length > 0) {
                 hasItems = true;
                 container.classList.remove('hidden');
+                if (isLiedSearch && typeof window.toonLiveConceptLiedPreview === 'function') {
+                    window.toonLiveConceptLiedPreview(toonMatches[0]);
+                }
                 toonMatches.forEach((m, index) => {
                     const d = document.createElement('div');
                     d.className = `p-3 flex justify-between items-center hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] transition-colors ${index !== toonMatches.length - 1 ? 'border-b border-gray-100 dark:border-white/5' : ''}`;
+                    if (isLiedSearch) {
+                        d.addEventListener('mouseenter', () => {
+                            if (typeof window.toonLiveConceptLiedPreview === 'function') {
+                                window.toonLiveConceptLiedPreview(m);
+                            }
+                        });
+                    }
 
                     const textWrap = document.createElement('div');
                     textWrap.className = 'flex items-center gap-2 cursor-pointer flex-grow py-1 min-w-0 pr-2';
@@ -13514,6 +13660,7 @@ Antwoord UITSLUITEND in valide JSON:
     window.berekenSubSlidesVoorItem = berekenSubSlidesVoorItem;
 
     function renderSlidePreview(idx) {
+        window._liveConceptItem = null;
         previewItemIdx = idx;
         previewSubSlide = 0;
         window._slideBoxWasActive = false;
@@ -13533,14 +13680,74 @@ Antwoord UITSLUITEND in valide JSON:
             }
         });
 
-        if (typeof autoSyncObsSlideIndex === 'function') autoSyncObsSlideIndex(idx);
+        if (typeof autoSyncObsSlideIndex === 'function' && idx >= 0) autoSyncObsSlideIndex(idx);
     }
+    window.renderSlidePreview = renderSlidePreview;
+
+    window.selecteerWelkomstdiaPreview = function() {
+        window._liveConceptItem = null;
+        renderSlidePreview(-1);
+        if (window.innerWidth < 768 && typeof window.schakelMobieleTab === 'function') {
+            window.schakelMobieleTab('preview', true);
+        }
+    };
+
+    window.selecteerSubSlidePreview = function(subIdx) {
+        window._liveConceptItem = null;
+        if (subIdx >= 0 && subIdx < previewSubSlides.length) {
+            previewSubSlide = subIdx;
+            tekenSlidePreview();
+        }
+    };
+
+    window.toonLiveConceptLiedPreview = function(liedTitel) {
+        if (window.innerWidth < 768) return;
+        if (!liedTitel || !window.liederenDatabase) return;
+        const liedData = window.liederenDatabase[liedTitel];
+        if (!liedData) return;
+
+        let eersteVersTekst = '';
+        let versLabel = '1';
+        if (typeof liedData === 'string') {
+            eersteVersTekst = liedData.split(/\n\s*\n/)[0] || liedData;
+        } else if (typeof liedData === 'object') {
+            const sleutels = Object.keys(liedData).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+            if (sleutels.length > 0) {
+                versLabel = sleutels[0];
+                eersteVersTekst = liedData[versLabel] || '';
+            }
+        }
+        if (!eersteVersTekst.trim()) return;
+
+        window._liveConceptItem = {
+            type: 'Zang',
+            titel: `${liedTitel} : ${versLabel}`,
+            basisTitel: liedTitel,
+            geselecteerdeVerzen: [versLabel],
+            tekst: eersteVersTekst.trim()
+        };
+        tekenSlidePreview();
+    };
+
+    window.sluitLiveConceptPreview = function() {
+        if (window._liveConceptItem) {
+            window._liveConceptItem = null;
+            tekenSlidePreview();
+        }
+    };
 
     window.previewStapItem = function(delta) {
-        if (!liturgieVolgorde || liturgieVolgorde.length === 0) return;
-        let nieuwIdx = (typeof previewItemIdx === 'number' && previewItemIdx >= 0) ? (previewItemIdx + delta) : 0;
-        if (nieuwIdx < 0) nieuwIdx = liturgieVolgorde.length - 1;
-        if (nieuwIdx >= liturgieVolgorde.length) nieuwIdx = 0;
+        window._liveConceptItem = null;
+        const len = (liturgieVolgorde || []).length;
+        if (len === 0) {
+            renderSlidePreview(-1);
+            return;
+        }
+        // Laat index -1 (Welkomstdia) meedraaien als startpunt voor item 0
+        let cur = (typeof previewItemIdx === 'number') ? previewItemIdx : -1;
+        let nieuwIdx = cur + delta;
+        if (nieuwIdx < -1) nieuwIdx = len - 1;
+        if (nieuwIdx >= len) nieuwIdx = -1;
         renderSlidePreview(nieuwIdx);
     };
 
@@ -13550,49 +13757,249 @@ Antwoord UITSLUITEND in valide JSON:
         tekenSlidePreview();
     };
 
+    function tekenWelkomstdiaOpHoofdCanvas(preview, canvas, scale) {
+        if (!preview || !canvas) return;
+        if (isLivestream()) {
+            canvas.style.backgroundImage = `url('${LIVESTREAM_BG}')`;
+            canvas.style.backgroundSize = 'cover';
+            canvas.style.backgroundPosition = 'center';
+            canvas.style.backgroundColor = 'transparent';
+        } else {
+            canvas.style.backgroundImage = 'none';
+            canvas.style.backgroundColor = '#000000';
+        }
+
+        const font = typeof getFont === 'function' ? getFont() : 'Arial, sans-serif';
+        const titelTekst = (document.getElementById('welkomTitelInput')?.value || 'Welkom').trim();
+        const gemeenteTekst = window.getActieveGemeente ? window.getActieveGemeente() : 'Bethelkerk Maassluis';
+        const datum = (document.getElementById('datumInput')?.value || '').trim();
+        const voorganger = (document.getElementById('voorgangerInput')?.value || '').trim();
+        const liederenRegels = (typeof genereerStandaardZangLijst === 'function') ? genereerStandaardZangLijst('afkorting') : [];
+        const bijbelLijst = (liturgieVolgorde || []).filter(it => it.type === 'Schriftlezing').map(it => (it.titel || '').replace(' (HSV)', ''));
+
+        let html = '';
+        const titleFS = Math.max(12, Math.round(48 * scale));
+        html += `<div class="absolute text-white font-bold leading-tight select-none pointer-events-none" style="left:5%;top:12.0%;max-width:48%;font-size:${titleFS}px;font-family:${font};">${escapeHtml(titelTekst)}</div>`;
+
+        if (gemeenteTekst) {
+            const gemFS = Math.max(9, Math.round(19 * scale));
+            html += `<div class="absolute text-white font-semibold select-none pointer-events-none flex items-center gap-1.5" style="left:5%;top:28.0%;max-width:48%;font-size:${gemFS}px;font-family:${font};"><span class="truncate">${escapeHtml(gemeenteTekst)}</span></div>`;
+        }
+
+        const datumFS = Math.max(8, Math.round(17 * scale));
+        if (datum) {
+            html += `<div class="absolute text-[#CCCCCC] font-normal select-none pointer-events-none" style="left:5%;top:37.5%;max-width:48%;font-size:${datumFS}px;font-family:${font};">${escapeHtml(datum)}</div>`;
+        } else {
+            html += `<div class="absolute text-white/35 italic font-normal select-none pointer-events-none" style="left:5%;top:37.5%;max-width:48%;font-size:${datumFS}px;font-family:${font};">Kies een datum...</div>`;
+        }
+
+        const voorgangerFS = Math.max(8, Math.round(20 * scale));
+        const iconSize = Math.max(10, Math.round(26 * scale));
+        if (voorganger) {
+            html += `
+            <div class="absolute flex items-center gap-1.5 select-none pointer-events-none" style="left:54%;top:21.3%;width:42%;">
+                <img src="data:image/svg+xml;base64,${PPT_BASE64_VOORGANGER}" style="width:${iconSize}px;height:${iconSize}px;flex-shrink:0;" alt="" />
+                <span class="text-white truncate" style="font-size:${voorgangerFS}px;font-family:${font};">${escapeHtml(voorganger)}</span>
+            </div>`;
+        } else {
+            html += `
+            <div class="absolute flex items-center gap-1.5 select-none pointer-events-none opacity-35" style="left:54%;top:21.3%;width:42%;">
+                <img src="data:image/svg+xml;base64,${PPT_BASE64_VOORGANGER}" style="width:${iconSize}px;height:${iconSize}px;flex-shrink:0;" alt="" />
+                <span class="text-white italic truncate" style="font-size:${ Math.max(8, Math.round(16 * scale)) }px;font-family:${font};">Voorganger...</span>
+            </div>`;
+        }
+
+        if (liederenRegels.length > 0) {
+            const liedFS = Math.max(7, Math.round(17 * scale));
+            html += `
+            <div class="absolute flex items-start gap-1.5 select-none pointer-events-none" style="left:54%;top:37.3%;width:42%;max-height:42%;overflow:hidden;">
+                <img src="data:image/svg+xml;base64,${PPT_BASE64_MUZIEK}" style="width:${iconSize}px;height:${iconSize}px;flex-shrink:0;margin-top:2px;" alt="" />
+                <div class="text-white whitespace-pre-line" style="font-size:${liedFS}px;font-family:${font};line-height:1.5;">${escapeHtml(liederenRegels.join('\n'))}</div>
+            </div>`;
+        }
+
+        if (bijbelLijst.length > 0) {
+            const bijbelFS = Math.max(8, Math.round(19 * scale));
+            html += `
+            <div class="absolute flex items-center gap-1.5 select-none pointer-events-none" style="left:5%;top:81.7%;width:88%;">
+                <img src="data:image/svg+xml;base64,${PPT_BASE64_BOEK}" style="width:${iconSize}px;height:${iconSize}px;flex-shrink:0;" alt="" />
+                <span class="text-white font-bold truncate" style="font-size:${bijbelFS}px;font-family:${font};">${escapeHtml(bijbelLijst.join(' & '))}</span>
+            </div>`;
+        }
+
+        preview.innerHTML = html;
+    }
+
+    function tekenLiveSlideStrip() {
+        const strip = document.getElementById('liveSlideStrip');
+        const label = document.getElementById('liveSlideStripLabel');
+        const welkomBtn = document.getElementById('previewWelkomstdiaBtn');
+        if (!strip) return;
+
+        const isWelkomActive = (previewItemIdx < 0 || previewItemIdx >= (liturgieVolgorde || []).length) && !window._liveConceptItem;
+        if (welkomBtn) {
+            if (isWelkomActive) {
+                welkomBtn.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all border shadow-xs bg-[#007AFF] text-white border-[#007AFF] active:scale-95 cursor-pointer';
+            } else {
+                welkomBtn.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all border shadow-xs bg-blue-50 dark:bg-blue-950/50 text-[#007AFF] dark:text-blue-300 border-blue-200 dark:border-blue-800/60 hover:bg-blue-100 active:scale-95 cursor-pointer';
+            }
+        }
+
+        let html = '';
+        const datumKort = (document.getElementById('datumInput')?.value || 'Startdia').trim();
+
+        // 1. Altijd de Welkomstdia als eerste mini-kaartje
+        html += `
+            <button type="button" onclick="window.selecteerWelkomstdiaPreview()" class="mini-slide-card flex-shrink-0 w-28 p-2 rounded-xl border text-left cursor-pointer active:scale-95 ${isWelkomActive ? 'bg-blue-50/90 dark:bg-blue-950/60 border-[#007AFF] ring-2 ring-[#007AFF]/30 shadow-xs' : 'bg-white dark:bg-[#1C1C1E] border-gray-200/80 dark:border-white/10 hover:border-gray-300'}">
+                <div class="flex items-center justify-between gap-1 mb-0.5">
+                    <span class="text-[9px] font-bold uppercase tracking-wider ${isWelkomActive ? 'text-[#007AFF] dark:text-blue-300' : 'text-gray-400'}">👋 Welkom</span>
+                    <span class="text-[8px] font-semibold px-1 rounded bg-black/5 dark:bg-white/10 text-gray-500">Dia 0</span>
+                </div>
+                <div class="text-[10px] font-semibold text-[#1D1D1F] dark:text-gray-200 truncate">${escapeHtml(datumKort)}</div>
+            </button>`;
+
+        // 2. Als een specifiek liturgie-item actief is met sub-slides: toon alle sub-slides (coupletten/dia's) van dit item
+        if (!isWelkomActive && previewItemIdx >= 0 && previewItemIdx < liturgieVolgorde.length && previewSubSlides.length > 0) {
+            const curItem = liturgieVolgorde[previewItemIdx];
+            if (label) {
+                label.textContent = `Dia's van ${curItem.titel || 'dit onderdeel'} (${previewSubSlides.length} ${previewSubSlides.length === 1 ? 'dia' : "dia's"})`;
+            }
+            previewSubSlides.forEach((sub, sIdx) => {
+                const isSubActive = (sIdx === previewSubSlide) && !window._liveConceptItem;
+                const badgeTekst = sub.versNr != null ? `Vers ${sub.versNr}` : `Dia ${sIdx + 1}/${previewSubSlides.length}`;
+                const eersteRegel = (sub.regels && sub.regels[0]) ? sub.regels[0].replace(/\*\*/g, '').replace(/<\/?b>/gi, '') : (curItem.titel || 'Dia');
+                html += `
+                    <button type="button" onclick="window.selecteerSubSlidePreview(${sIdx})" class="mini-slide-card flex-shrink-0 w-32 p-2 rounded-xl border text-left cursor-pointer active:scale-95 ${isSubActive ? 'bg-blue-50/90 dark:bg-blue-950/60 border-[#007AFF] ring-2 ring-[#007AFF]/30 shadow-xs' : 'bg-white dark:bg-[#1C1C1E] border-gray-200/80 dark:border-white/10 hover:border-gray-300'}">
+                        <div class="flex items-center justify-between gap-1 mb-0.5">
+                            <span class="text-[9px] font-bold uppercase tracking-wider ${isSubActive ? 'text-[#007AFF] dark:text-blue-300' : 'text-gray-400'}">${escapeHtml(badgeTekst)}</span>
+                            <span class="text-[8px] font-mono text-gray-400">#${sIdx + 1}</span>
+                        </div>
+                        <div class="text-[10px] font-medium text-[#1D1D1F] dark:text-gray-200 truncate">${escapeHtml(eersteRegel)}</div>
+                    </button>`;
+            });
+        } else if ((liturgieVolgorde || []).length > 0) {
+            if (label) {
+                label.textContent = `Dienst-overzicht (Welkomstdia + ${liturgieVolgorde.length} onderdelen)`;
+            }
+            liturgieVolgorde.forEach((it, idx) => {
+                const isItemActive = (idx === previewItemIdx) && !window._liveConceptItem;
+                html += `
+                    <button type="button" onclick="window.kiesItemEnPreview(${idx})" class="mini-slide-card flex-shrink-0 w-32 p-2 rounded-xl border text-left cursor-pointer active:scale-95 ${isItemActive ? 'bg-blue-50/90 dark:bg-blue-950/60 border-[#007AFF] ring-2 ring-[#007AFF]/30 shadow-xs' : 'bg-white dark:bg-[#1C1C1E] border-gray-200/80 dark:border-white/10 hover:border-gray-300'}">
+                        <div class="flex items-center justify-between gap-1 mb-0.5">
+                            <span class="text-[9px] font-bold uppercase tracking-wider text-gray-400">${escapeHtml(it.type || 'Item')}</span>
+                            <span class="text-[8px] font-mono text-gray-400">${idx + 1}</span>
+                        </div>
+                        <div class="text-[10px] font-semibold text-[#1D1D1F] dark:text-gray-200 truncate">${escapeHtml(it.titel || 'Zonder titel')}</div>
+                    </button>`;
+            });
+        } else {
+            if (label) {
+                label.textContent = 'Dia-overzicht (Live Welkomstdia actief)';
+            }
+        }
+
+        strip.innerHTML = html;
+    }
+
     function tekenSlidePreview() {
         const preview = document.getElementById('previewVak');
         const fitInd = document.getElementById('fitIndicator');
+        const conceptBadge = document.getElementById('liveConceptBadge');
         const nav = document.getElementById('slideNav');
         const hint = document.getElementById('dragHint');
         const titelEl = document.getElementById('previewItemTitel');
         const tellerEl = document.getElementById('previewItemTeller');
+        const canvas = document.getElementById('slideCanvas');
+        if (!preview || !canvas) return;
+
+        // 0. Als er een tijdelijke Live Zoek-Voorvertoning actief is (tijdens typen/hoveren in Lied zoeken)
+        if (window._liveConceptItem) {
+            const cItem = window._liveConceptItem;
+            const cSlides = berekenSubSlidesVoorItem(cItem);
+            const cSlide = cSlides[0] || { regels: [cItem.tekst || ''], fontSize: 40, diaTitel: cItem.titel };
+            const canvasW = canvas.clientWidth || 400;
+            const scale = canvasW / 720;
+            const font = getFont();
+            if (isLivestream()) {
+                canvas.style.backgroundImage = `url('${LIVESTREAM_BG}')`;
+                canvas.style.backgroundSize = 'cover';
+                canvas.style.backgroundPosition = 'center';
+                canvas.style.backgroundColor = 'transparent';
+            } else {
+                canvas.style.backgroundImage = 'none';
+                canvas.style.backgroundColor = 'black';
+            }
+            const previewFS = Math.max(6, cSlide.fontSize * scale);
+            const titleFS = Math.max(5, 18 * scale);
+            const tLeftPct = (TEKST_DEF_X / SLIDE_W * 100).toFixed(2);
+            const tTopPct = (TEKST_DEF_Y / SLIDE_H * 100).toFixed(2);
+            const tWidthPct = (TEKST_DEF_W / SLIDE_W * 100).toFixed(2);
+            const tHeightPct = (TEKST_DEF_H / SLIDE_H * 100).toFixed(2);
+            const titleTopPct = (TITEL_Y / SLIDE_H * 100).toFixed(2);
+            const tekstAlign = window.getAlign ? window.getAlign() : 'center';
+            const isTekstBold = window.isBold ? window.isBold() : false;
+
+            preview.innerHTML = `
+                <div class="absolute text-white font-bold truncate pointer-events-none" style="left:${tLeftPct}%;top:${titleTopPct}%;width:${tWidthPct}%;font-size:${titleFS}px;font-family:${font};opacity:0.75">
+                    ${escapeHtml(cSlide.diaTitel || cItem.titel)}
+                </div>
+                <div class="absolute text-white flex items-center ${tekstAlign === 'left' ? 'justify-start' : 'justify-center'} select-none pointer-events-none"
+                     style="left:${tLeftPct}%;top:${tTopPct}%;width:${tWidthPct}%;height:${tHeightPct}%;font-size:${previewFS}px;font-family:${font};font-weight:${isTekstBold ? 'bold' : 'normal'};line-height:${previewFS * 1.2}px;text-align:${tekstAlign}">
+                    <div class="whitespace-pre-line w-full px-1" style="text-align:${tekstAlign}">${formatteerMarkdownVoorHtml(cSlide.regels.join('\n'))}</div>
+                </div>`;
+            if (conceptBadge) {
+                conceptBadge.textContent = `⚡ Live Voorvertoning: ${cItem.basisTitel || cItem.titel}`;
+                conceptBadge.classList.remove('hidden');
+            }
+            if (titelEl) titelEl.textContent = `⚡ Voorvertoning: ${cItem.titel}`;
+            if (tellerEl) tellerEl.textContent = 'Klik op het lied om verzen te kiezen';
+            fitInd.classList.add('hidden');
+            nav.classList.add('hidden');
+            hint.classList.add('hidden');
+            tekenLiveSlideStrip();
+            return;
+        }
+
+        if (conceptBadge) conceptBadge.classList.add('hidden');
 
         if (titelEl) {
             if (previewItemIdx >= 0 && previewItemIdx < liturgieVolgorde.length) {
                 const cur = liturgieVolgorde[previewItemIdx];
                 titelEl.textContent = (cur.type ? cur.type + ': ' : '') + (cur.titel || 'Zonder titel');
             } else {
-                titelEl.textContent = 'Geen item geselecteerd';
+                titelEl.textContent = '👋 Welkomstdia (Live)';
             }
         }
         if (tellerEl) {
             if (previewItemIdx >= 0 && previewItemIdx < liturgieVolgorde.length) {
-                tellerEl.textContent = `Item ${previewItemIdx + 1} van ${liturgieVolgorde.length}`;
+                tellerEl.textContent = `Item ${previewItemIdx + 1} van ${liturgieVolgorde.length} · Klik op 👋 Welkomstdia voor startdia`;
             } else {
-                tellerEl.textContent = 'Item 0 van 0';
+                tellerEl.textContent = `Startdia · ${(liturgieVolgorde || []).length} onderdelen in dienst`;
             }
         }
 
+        const canvasW = canvas.clientWidth || 400;
+        const scale = canvasW / 720;
+
         if (previewItemIdx < 0 || previewItemIdx >= liturgieVolgorde.length) {
-            preview.innerHTML = '<div class="w-full h-full flex items-center justify-center text-white text-[12px] italic opacity-40">Typ of selecteer een lied, bijbeltekst of media</div>';
+            tekenWelkomstdiaOpHoofdCanvas(preview, canvas, scale);
             fitInd.classList.add('hidden');
             nav.classList.add('hidden');
-            hint.classList.add('hidden');
+            hint.innerHTML = 'Live Welkomstdia · Wijzig datum of voorganger om direct resultaat te zien';
+            hint.classList.remove('hidden');
             updateSlideAlignKnoppenUI();
+            tekenLiveSlideStrip();
             return;
         }
 
         const item = liturgieVolgorde[previewItemIdx];
-        const canvas = document.getElementById('slideCanvas');
         if (canvas) canvas.onwheel = null;
-        const canvasW = canvas.clientWidth || 400;
-        const scale = canvasW / 720;
         const gewenstFS = parseInt(document.getElementById('fontSizeSelect').value) || 40;
 
         if (item.type === 'Foto') {
             preview.innerHTML = `<img src="${item.tekst}" class="w-full h-full object-contain"/>`;
             fitInd.classList.add('hidden'); nav.classList.add('hidden'); hint.classList.add('hidden');
+            tekenLiveSlideStrip();
             return;
         }
         if (item.type === 'QR') {
@@ -13679,6 +14086,7 @@ Antwoord UITSLUITEND in valide JSON:
                     tekenSlidePreview();
                 };
             }
+            tekenLiveSlideStrip();
             return;
         }
         if (item.type === 'Leeg' || !item.tekst || item.tekst.trim() === '' || item.tekst === ' ') {
@@ -13688,6 +14096,7 @@ Antwoord UITSLUITEND in valide JSON:
                     <span class="text-[11px] font-semibold tracking-wider uppercase">Lege Zwarte Dia</span>
                 </div>`;
             fitInd.classList.add('hidden'); nav.classList.add('hidden'); hint.classList.add('hidden');
+            tekenLiveSlideStrip();
             return;
         }
 
@@ -13959,7 +14368,9 @@ Antwoord UITSLUITEND in valide JSON:
                 }
             };
         }
+        tekenLiveSlideStrip();
     }
+    window.tekenSlidePreview = tekenSlidePreview;
 
     window.tekenVolgorde = function() {
         bewaarLiturgie();

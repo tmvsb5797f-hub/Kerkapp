@@ -21,6 +21,8 @@
     type: 'desktop',        // 'phone' | 'tablet' | 'desktop'
     os: 'other',            // 'ios' | 'ipados' | 'macos' | 'windows' | 'android' | 'other'
     input: 'pointer',       // 'touch' | 'pointer' | 'hybrid'
+    columns: 1,             // 1 (Mobiel) | 2 (iPad Split-View) | 3 (Desktop Widescreen Studio)
+    userColumnPref: null,   // null (auto) | 2 | 3
     viewport: {
       width: window.innerWidth,
       height: window.innerHeight,
@@ -92,6 +94,61 @@
     return 'desktop';
   }
 
+  function detectColumns(type, width) {
+    if (type === 'phone' || width < 768) return 1;
+
+    // Respecteer handmatige voorkeur van de gebruiker als het scherm breed genoeg is (>= 980px)
+    if (state.userColumnPref === 2) return 2;
+    if (state.userColumnPref === 3 && width >= 980) return 3;
+
+    // Automatische adaptieve kolomkeuze:
+    // - iPad / Split-View (768px - 1239px): 2 kolommen (Links: Invoer, Rechts: Live Preview + Volgorde)
+    // - MacBook / Widescreen Desktop (>= 1240px): 3 kolommen (Links: Invoer, Midden: Volgorde, Rechts: Live Preview)
+    if (width >= 1240 && type === 'desktop') return 3;
+    return 2;
+  }
+
+  function updateLayoutButtonsUI() {
+    const btn2 = document.getElementById('layoutBtn2Cols');
+    const btn3 = document.getElementById('layoutBtn3Cols');
+    if (!btn2 || !btn3) return;
+
+    const activeCls = 'px-2 py-1 rounded-md text-[11px] font-bold bg-[#007AFF] text-white shadow-2xs transition-all flex items-center gap-1 cursor-pointer active:scale-95';
+    const inactiveCls = 'px-2 py-1 rounded-md text-[11px] font-semibold text-gray-600 dark:text-gray-300 hover:text-[#007AFF] dark:hover:text-white transition-all flex items-center gap-1 cursor-pointer active:scale-95';
+
+    btn2.className = (state.columns === 2) ? activeCls : inactiveCls;
+    btn3.className = (state.columns === 3) ? activeCls : inactiveCls;
+  }
+
+  function setLayoutColumns(cols) {
+    if (cols === 2 || cols === 3) {
+      state.userColumnPref = cols;
+      try { localStorage.setItem('liturgieLayoutColumns', String(cols)); } catch (e) {}
+    } else {
+      state.userColumnPref = null;
+      try { localStorage.removeItem('liturgieLayoutColumns'); } catch (e) {}
+    }
+    state.columns = detectColumns(state.type, state.viewport.width);
+    applyToDOM();
+    if (typeof window.tekenSlidePreview === 'function') {
+      requestAnimationFrame(() => setTimeout(() => window.tekenSlidePreview(), 40));
+    }
+    if (typeof window.toonToast === 'function') {
+      window.toonToast(
+        state.columns === 3
+          ? '🖥️ 3-Koloms Studio Layout actief (Invoer · Volgorde · Live Preview)'
+          : '📱 2-Koloms Split-View actief (Invoer · Live Preview + Volgorde)',
+        'info'
+      );
+    }
+  }
+
+  function toggleLayoutColumns() {
+    if (state.viewport.width < 768) return;
+    const nextCols = state.columns === 3 ? 2 : 3;
+    setLayoutColumns(nextCols);
+  }
+
   // --- 3. DOM & CSS SYNCHRONISATIE ---
   function applyToDOM() {
     const root = document.documentElement;
@@ -99,10 +156,14 @@
     root.setAttribute('data-device', state.type);
     root.setAttribute('data-os', state.os);
     root.setAttribute('data-input', state.input);
+    root.setAttribute('data-cols', String(state.columns));
     root.setAttribute('data-orientation', state.viewport.isLandscape ? 'landscape' : 'portrait');
 
     root.classList.remove('engine-phone', 'engine-tablet', 'engine-desktop');
     root.classList.add(`engine-${state.type}`);
+
+    root.classList.remove('layout-cols-1', 'layout-cols-2', 'layout-cols-3');
+    root.classList.add(`layout-cols-${state.columns}`);
 
     root.classList.remove('os-ios', 'os-ipados', 'os-macos', 'os-windows', 'os-android');
     root.classList.add(`os-${state.os}`);
@@ -111,8 +172,11 @@
     root.classList.toggle('has-pointer', state.input === 'pointer' || state.input === 'hybrid');
 
     root.style.setProperty('--engine-device-type', `"${state.type}"`);
+    root.style.setProperty('--engine-cols', String(state.columns));
     root.style.setProperty('--engine-vw', `${state.viewport.width}px`);
     root.style.setProperty('--engine-vh', `${state.viewport.height}px`);
+
+    updateLayoutButtonsUI();
   }
 
   // --- 4. VIRTUAL KEYBOARD SYNC (iOS / Android) ---
@@ -161,8 +225,9 @@
       const width = window.innerWidth;
       const height = window.innerHeight;
       const newType = detectDeviceType(state.os, state.input, width, height);
+      const newCols = detectColumns(newType, width);
 
-      const typeChanged = newType !== state.type;
+      const typeChanged = newType !== state.type || newCols !== state.columns;
       const isLandscape = width > height;
 
       state.viewport = {
@@ -179,10 +244,14 @@
       }
 
       state.type = newType;
+      state.columns = newCols;
       applyToDOM();
 
       if (typeChanged) {
-        console.log(`[DeviceEngine] 🔄 Schakel naar: ${state.type.toUpperCase()} (OS: ${state.os}, ${width}x${height})`);
+        console.log(`[DeviceEngine] 🔄 Schakel naar: ${state.type.toUpperCase()} (${state.columns} kolommen, OS: ${state.os}, ${width}x${height})`);
+        if (typeof window.tekenSlidePreview === 'function') {
+          requestAnimationFrame(() => window.tekenSlidePreview());
+        }
         listeners.change.forEach(fn => {
           try { fn({ ...state }); } catch (e) { console.warn('[DeviceEngine] change listener error:', e); }
         });
@@ -211,6 +280,8 @@
   const DEFAULT_COMMANDS = [
     { id: 'export_pptx', title: 'Exporteer naar PowerPoint (.pptx)', category: 'Acties', icon: '📥', shortcut: '⌘↵', action: () => window.maakPowerPoint?.() },
     { id: 'save_liturgy', title: 'Liturgie handmatig opslaan in archief', category: 'Acties', icon: '💾', shortcut: '⌘S', action: () => window.slaLiturgieOp?.() },
+    { id: 'toggle_cols', title: 'Wissel tussen 2-koloms Split-View en 3-koloms Studio Layout', category: 'Weergave', icon: '🖥️', shortcut: '⌘\\', action: () => toggleLayoutColumns() },
+    { id: 'welcome_slide', title: 'Live Welkomstdia bekijken op preview-scherm', category: 'Weergave', icon: '👋', shortcut: '', action: () => window.selecteerWelkomstdiaPreview?.() },
     { id: 'new_song', title: 'Nieuw lied toevoegen aan database', category: 'Liederen', icon: '➕', shortcut: '', action: () => window.openLiedEditor?.('') },
     { id: 'library', title: 'Liederen Bibliotheek & Beheer openen', category: 'Liederen', icon: '📚', shortcut: '', action: () => window.openLiederenBeheerModal?.() },
     { id: 'preflight', title: 'Kwaliteitscontrole uitvoeren (Preflight)', category: 'Controle', icon: '🛡️', shortcut: '', action: () => window.openPreflightModal?.() },
@@ -393,6 +464,13 @@
         return;
       }
 
+      // Cmd+\ of Ctrl+\: Wissel tussen 2-koloms en 3-koloms layout
+      if (cmdOrCtrl && e.key === '\\') {
+        e.preventDefault();
+        toggleLayoutColumns();
+        return;
+      }
+
       // Cmd+Enter of Ctrl+Enter: Exporteer PowerPoint
       if (cmdOrCtrl && e.key === 'Enter') {
         const isEditing = document.getElementById('controleModal') && !document.getElementById('controleModal').classList.contains('hidden');
@@ -450,6 +528,11 @@
     if (state.initialized) return;
     state.initialized = true;
 
+    try {
+      const savedCols = parseInt(localStorage.getItem('liturgieLayoutColumns'), 10);
+      if (savedCols === 2 || savedCols === 3) state.userColumnPref = savedCols;
+    } catch (e) {}
+
     state.os = detectOS();
     state.input = detectInput();
     state.viewport.width = window.innerWidth;
@@ -457,15 +540,19 @@
     state.viewport.aspectRatio = window.innerWidth / (window.innerHeight || 1);
     state.viewport.isLandscape = window.innerWidth > window.innerHeight;
     state.type = detectDeviceType(state.os, state.input, state.viewport.width, state.viewport.height);
+    state.columns = detectColumns(state.type, state.viewport.width);
 
     applyToDOM();
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', updateLayoutButtonsUI, { once: true });
+    }
     setupVirtualKeyboardWatcher();
     setupDesktopShortcuts();
 
     window.addEventListener('resize', handleResize, { passive: true });
     window.addEventListener('orientationchange', handleResize, { passive: true });
 
-    console.log(`[DeviceEngine] 🚀 Actief: ${state.type.toUpperCase()} | OS: ${state.os} | Input: ${state.input} | Resolutie: ${state.viewport.width}x${state.viewport.height}`);
+    console.log(`[DeviceEngine] 🚀 Actief: ${state.type.toUpperCase()} (${state.columns} kolommen) | OS: ${state.os} | Input: ${state.input} | Resolutie: ${state.viewport.width}x${state.viewport.height}`);
   }
 
   if (document.readyState === 'loading') {
@@ -480,12 +567,16 @@
     get type() { return state.type; },
     get os() { return state.os; },
     get input() { return state.input; },
+    get columns() { return state.columns; },
     get isPhone() { return state.type === 'phone'; },
     get isTablet() { return state.type === 'tablet'; },
     get isDesktop() { return state.type === 'desktop'; },
     get isApple() { return state.os === 'ios' || state.os === 'ipados' || state.os === 'macos'; },
 
     haptic,
+    setLayoutColumns,
+    toggleLayoutColumns,
+    updateLayoutButtonsUI,
     renderCommandResults,
 
     on(event, callback) {
