@@ -16,7 +16,7 @@
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('service-worker.js?v=20').catch(function (e) { console.warn('SW registratie mislukt:', e); });
+      navigator.serviceWorker.register('service-worker.js?v=21').catch(function (e) { console.warn('SW registratie mislukt:', e); });
     });
   }
 </script>
@@ -1810,9 +1810,8 @@
 <div id="mobileStickyHeaderWrapper" class="md:hidden sticky top-0 z-30 w-full apple-liquid-glass px-3 pb-2.5 mb-3" style="padding-top: max(0.65rem, env(safe-area-inset-top, 0px));">
     <!-- Rij 1: Titel links, Kerk-keuze rechts (animeert soepel via GPU zonder reflow) -->
     <div id="mobileHeaderTopRow" class="flex items-center justify-between gap-2 h-8">
-        <h1 id="mobileHeaderTitle" onclick="window.scrollTo({top: 0, behavior: 'smooth'}); checkOnderhoudCode();" class="text-base sm:text-lg font-bold tracking-tight text-[#1D1D1F] dark:text-white truncate cursor-pointer select-none origin-left flex items-center gap-1">
+        <h1 id="mobileHeaderTitle" onclick="window.scrollTo({top: 0, behavior: 'smooth'}); checkOnderhoudCode();" class="text-base sm:text-lg font-bold tracking-tight text-[#1D1D1F] dark:text-white truncate cursor-pointer select-none origin-left flex items-center gap-1.5">
             <span>Liturgie Assistent</span>
-            <span class="text-[#007AFF]">Pro</span>
         </h1>
         <button type="button" onclick="openGemeenteModal()" id="mobileGemeenteBadgeBtn" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-50/90 dark:bg-blue-950/70 text-[#007AFF] hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-100 dark:border-blue-900/40 shadow-xs cursor-pointer active:scale-95 flex-shrink-0 origin-right">
             <span>⛪</span>
@@ -1843,12 +1842,12 @@
 </div>
 
 <!-- DESKTOP HEADER (100% zichtbaar voor computer, laptop & desktop) -->
-<header id="desktopHeader" class="flex mb-6 md:mb-10 px-3 sm:px-4 md:px-12 max-w-[1400px] mx-auto w-full flex-col gap-2.5 md:gap-4 !pt-8">
+<header id="desktopHeader" class="flex mb-5 md:mb-6 px-3 sm:px-4 md:px-10 max-w-[1400px] mx-auto w-full flex-col gap-2.5 md:gap-3.5 !pt-6">
     <!-- Bovenste rij: Titel + Gemeente links, Status-pill rechts op desktop -->
     <div id="largeTitleRow" class="flex items-center justify-between gap-2.5 w-full">
         <!-- Links: Titel & Gemeente-knop -->
         <div class="flex items-center gap-3">
-            <h1 onclick="checkOnderhoudCode()" class="text-2xl md:text-3xl font-bold tracking-tight cursor-default select-none text-[#1D1D1F] dark:text-white truncate">Liturgie Assistent <span class="text-[#007AFF]">Pro</span></h1>
+            <h1 onclick="checkOnderhoudCode()" class="text-2xl md:text-[28px] font-bold tracking-tight cursor-default select-none text-[#1D1D1F] dark:text-white truncate">Liturgie Assistent</h1>
             <button type="button" onclick="openGemeenteModal()" id="gemeenteBadgeBtn" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-950/40 text-[#007AFF] hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors border border-blue-100 dark:border-blue-900/40 shadow-xs cursor-pointer active:scale-95 flex-shrink-0" title="Klik om van gemeente te wisselen of een nieuwe toe te voegen">
                 <span>⛪</span>
                 <span id="headerGemeenteNaam" class="truncate">Bethelkerk Maassluis</span>
@@ -1904,11 +1903,7 @@
 
     <!-- Onderste rij: Instellingen Toolbar (Desktop) -->
     <div class="w-full">
-        <div id="instellingenBalk" class="flex items-center gap-2.5 flex-wrap">
-            <div class="flex items-center gap-1.5 text-[#86868B] text-xs font-semibold uppercase tracking-wider mr-0.5">
-                <svg class="w-3.5 h-3.5 text-[#007AFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
-                <span>Instellingen:</span>
-            </div>
+        <div id="instellingenBalk" class="flex items-center gap-2 flex-wrap">
             <select id="fontFaceSelect" class="bg-white dark:bg-[#2C2C2E] border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 text-xs rounded-lg pl-2.5 pr-7 py-1.5 focus:ring-[#007AFF] focus:border-[#007AFF] outline-none shadow-xs cursor-pointer apple-select">
                 <option value="Arial" selected>Font: Arial</option>
                 <option value="Georgia">Font: Georgia</option>
@@ -1971,7 +1966,7 @@
     <div id="sectieInvoerContainer" class="mobile-tab-view">
         <section class="mb-2.5 sm:mb-3.5 relative z-30">
             <div class="min-h-[30px] flex items-center justify-between mb-1.5 sm:mb-2 ml-1 pr-1">
-                <h2 class="text-[10px] sm:text-[11px] font-bold text-[#86868B] uppercase tracking-wider">0. Dienst Gegevens (Voor Welkomst Dia)</h2>
+                <h2 class="text-xs sm:text-[13px] font-semibold text-[#1D1D1F]/80 dark:text-white/80 tracking-tight">Dienst &amp; Welkomstdia</h2>
             </div>
             <div class="apple-liquid-card p-2 sm:p-3 md:p-4 rounded-xl sm:rounded-2xl flex flex-row gap-2 relative z-30">
                 <div class="w-[136px] sm:w-[146px] shrink-0 relative z-40">
@@ -2001,7 +1996,7 @@
         <div id="invoerLiedBijbelGrid" class="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-4 md:gap-8 items-stretch relative z-20">
             <section class="relative z-20">
                 <div class="flex items-center justify-between mb-1 sm:mb-2 ml-1 flex-nowrap gap-1.5">
-                    <h2 class="text-[10px] sm:text-[11px] font-bold text-[#86868B] uppercase tracking-wider shrink-0">1. Liederen &amp; Psalmen</h2>
+                    <h2 class="text-xs sm:text-[13px] font-semibold text-[#1D1D1F]/80 dark:text-white/80 tracking-tight shrink-0">Liederen &amp; Psalmen</h2>
                     <div class="flex items-center gap-1 sm:gap-1.5 shrink-0">
                         <button type="button" onclick="window.openLiedbundelOnline('')" class="text-[10px] sm:text-[11px] font-semibold text-purple-700 dark:text-purple-300 hover:text-purple-900 dark:hover:text-purple-100 flex items-center gap-1 bg-purple-50 dark:bg-purple-950/40 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg sm:rounded-xl border border-purple-200 dark:border-purple-800/40 hover:bg-purple-100 dark:hover:bg-purple-900/60 transition-all cursor-pointer active:scale-95 shadow-2xs whitespace-nowrap" title="Zoek en blader op Liedbundels Online (Weerklank, Op Toonhoogte)">
                             <span>🔗 Bundels ↗</span>
@@ -2045,7 +2040,7 @@
 
             <section class="relative z-10">
                 <div class="flex items-center justify-between mb-1 sm:mb-2 ml-1">
-                    <h2 class="text-[10px] sm:text-[11px] font-bold text-[#86868B] uppercase tracking-wider">2. Bijbel (HSV)</h2>
+                    <h2 class="text-xs sm:text-[13px] font-semibold text-[#1D1D1F]/80 dark:text-white/80 tracking-tight">Schriftlezing (HSV)</h2>
                 </div>
                 <div class="apple-liquid-card p-2 sm:p-3.5 md:p-6 rounded-xl sm:rounded-2xl relative z-10 flex flex-col gap-2 sm:gap-4">
                     <div class="relative">
@@ -2090,7 +2085,7 @@
         <!-- SECTIE 2: SLIDE PREVIEW (Met Live Dia-Preview & Interactieve Dia-Strip) -->
         <section id="sectiePreviewContainer" class="mobile-tab-view">
             <div class="min-h-[30px] flex items-center justify-between mb-1.5 sm:mb-2 ml-1 pr-1 flex-wrap gap-1.5">
-                <h2 class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider">Live Dia-Preview</h2>
+                <h2 class="text-xs sm:text-[13px] font-semibold text-[#1D1D1F]/80 dark:text-white/80 tracking-tight">Beamer Preview</h2>
                 <div class="flex items-center gap-1.5">
                     <button type="button" id="previewModusToggleBtn" onclick="window.togglePresentatieModus()" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border shadow-2xs bg-black text-white border-gray-800 hover:border-gray-600 active:scale-95 cursor-pointer" title="Klik om te wisselen tussen Beamer en Livestream modus">
                         <span id="previewModusIcon">📽️</span>
@@ -2155,7 +2150,7 @@
                     <!-- Fase 3: Interactieve Live Dia-Strip (Mini-Slide Navigator voor alle coupletten/dia's) -->
                     <div id="liveSlideStripContainer" class="mt-2 pt-2 border-t border-gray-200/60 dark:border-white/10">
                         <div class="flex items-center justify-between mb-1.5 px-0.5">
-                            <span id="liveSlideStripLabel" class="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Dia-overzicht (Klik om direct te tonen)</span>
+                            <span id="liveSlideStripLabel" class="text-[11px] font-semibold text-[#86868B] tracking-tight">Dia's in deze dienst</span>
                             <button type="button" onclick="openWelkomstdiaModal()" class="text-[10px] font-semibold text-[#007AFF] hover:underline cursor-pointer flex items-center gap-1" title="Welkomstdia indeling &amp; liederen aanpassen">
                                 <span>✏️ Welkomstdia opmaken</span>
                             </button>
@@ -2169,8 +2164,8 @@
         <!-- SECTIE 3: VOLGORDE -->
         <section id="sectieVolgordeContainer" class="mobile-tab-view">
             <div class="min-h-[30px] flex items-center justify-between mb-1.5 sm:mb-2 ml-1 pr-1">
-                <h2 class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider flex items-center gap-2">
-                    <span>3. Volgorde</span>
+                <h2 class="text-xs sm:text-[13px] font-semibold text-[#1D1D1F]/80 dark:text-white/80 tracking-tight flex items-center gap-2">
+                    <span>Orde van Dienst</span>
                     <span id="liturgieDiaTotaalBadge" class="hidden text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 text-[#007AFF] dark:text-blue-300 border border-blue-200/50 dark:border-blue-800/40 normal-case">0 dia's</span>
                 </h2>
                 <div class="flex items-center gap-1 sm:gap-1.5">
