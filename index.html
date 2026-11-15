@@ -16,7 +16,7 @@
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('service-worker.js?v=18').catch(function (e) { console.warn('SW registratie mislukt:', e); });
+      navigator.serviceWorker.register('service-worker.js?v=19').catch(function (e) { console.warn('SW registratie mislukt:', e); });
     });
   }
 </script>
@@ -1446,7 +1446,44 @@
                 </div>
             </div>
             
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-1.5 sm:gap-2">
+                <!-- Download Database Menu -->
+                <div class="relative" id="dbDownloadMenuWrapper">
+                    <button type="button" onclick="window.toggleDbDownloadMenu(event)" class="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50 text-xs font-bold transition-all active:scale-95 shadow-2xs flex items-center gap-1.5 cursor-pointer" title="Download de volledige liederen database (JSON, TXT of Excel CSV)">
+                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        <span class="hidden sm:inline">Download DB</span>
+                    </button>
+                    <div id="dbDownloadDropdown" class="hidden absolute right-0 mt-2 w-64 rounded-2xl bg-white dark:bg-[#2C2C2E] shadow-[0_16px_40px_rgba(0,0,0,0.22)] ring-1 ring-black/10 dark:ring-white/15 p-2 z-[140] flex flex-col gap-1">
+                        <div class="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-gray-400">Volledige Database Downloaden</div>
+                        <button type="button" onclick="window.downloadLiederenDatabase('json', false)" class="w-full text-left px-3 py-2 rounded-xl hover:bg-blue-50 dark:hover:bg-white/10 transition-colors flex items-center justify-between gap-2 cursor-pointer">
+                            <div class="flex flex-col">
+                                <span class="text-xs font-bold text-[#1D1D1F] dark:text-white">📦 JSON Backup (.json)</span>
+                                <span class="text-[10px] text-gray-500 dark:text-gray-400">Compleet bestand om te bewaren of terug te zetten</span>
+                            </div>
+                        </button>
+                        <button type="button" onclick="window.downloadLiederenDatabase('txt', false)" class="w-full text-left px-3 py-2 rounded-xl hover:bg-blue-50 dark:hover:bg-white/10 transition-colors flex items-center justify-between gap-2 cursor-pointer">
+                            <div class="flex flex-col">
+                                <span class="text-xs font-bold text-[#1D1D1F] dark:text-white">📄 Leesbaar Liedboek (.txt)</span>
+                                <span class="text-[10px] text-gray-500 dark:text-gray-400">Alle teksten en coupletten netjes onder elkaar</span>
+                            </div>
+                        </button>
+                        <button type="button" onclick="window.downloadLiederenDatabase('csv', false)" class="w-full text-left px-3 py-2 rounded-xl hover:bg-blue-50 dark:hover:bg-white/10 transition-colors flex items-center justify-between gap-2 cursor-pointer">
+                            <div class="flex flex-col">
+                                <span class="text-xs font-bold text-[#1D1D1F] dark:text-white">📊 Excel / Tabel (.csv)</span>
+                                <span class="text-[10px] text-gray-500 dark:text-gray-400">Geordend per bundel, titel en aantal verzen</span>
+                            </div>
+                        </button>
+                        <div class="border-t border-gray-100 dark:border-white/10 my-1"></div>
+                        <button type="button" onclick="window.downloadLiederenDatabase('txt', true)" class="w-full text-left px-3 py-1.5 rounded-xl hover:bg-purple-50 dark:hover:bg-white/10 transition-colors flex items-center justify-between gap-2 cursor-pointer">
+                            <span class="text-[11px] font-semibold text-purple-600 dark:text-purple-300">🔍 Alleen huidige filter-selectie (.txt)</span>
+                        </button>
+                        <label class="w-full text-left px-3 py-1.5 rounded-xl hover:bg-emerald-50 dark:hover:bg-white/10 transition-colors flex items-center justify-between gap-2 cursor-pointer">
+                            <span class="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">📂 JSON Backup inladen / herstellen...</span>
+                            <input type="file" accept=".json" class="hidden" onchange="window.importeerDatabaseBackup(this)" />
+                        </label>
+                    </div>
+                </div>
+
                 <button type="button" onclick="window.openLiedEditor('')" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold transition-all active:scale-95 shadow-xs flex items-center gap-1.5 cursor-pointer">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
                     <span class="hidden sm:inline">Nieuw Lied</span>
@@ -2569,14 +2606,18 @@
                         <span class="truncate">Liederen Beheer &amp; Bibliotheek</span>
                     </button>
 
-                    <div class="flex gap-2 w-full mt-1">
-                        <button onclick="window.forceerCloudRefresh()" class="flex-1 py-1.5 rounded-xl text-[11px] font-semibold text-[#007AFF] bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                            Liederen vernieuwen
+                    <div class="grid grid-cols-3 gap-1.5 w-full mt-1">
+                        <button onclick="window.forceerCloudRefresh()" class="py-1.5 px-2 rounded-xl text-[11px] font-semibold text-[#007AFF] bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 transition-colors flex items-center justify-center gap-1 cursor-pointer">
+                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            <span class="truncate">Vernieuwen</span>
                         </button>
-                        <a href="import_tool.html" target="_blank" class="flex-1 py-1.5 rounded-xl text-[11px] font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 transition-colors flex items-center justify-center gap-1.5 text-center">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                            Bulk Importer
+                        <button type="button" onclick="window.downloadLiederenDatabase('json', false)" class="py-1.5 px-2 rounded-xl text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 transition-colors flex items-center justify-center gap-1 cursor-pointer" title="Download een volledige backup van de Liederen Database (.json)">
+                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            <span class="truncate">Download DB</span>
+                        </button>
+                        <a href="import_tool.html" target="_blank" class="py-1.5 px-2 rounded-xl text-[11px] font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 transition-colors flex items-center justify-center gap-1 text-center">
+                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                            <span class="truncate">Bulk Import</span>
                         </a>
                     </div>
                 </div>
@@ -13232,6 +13273,202 @@ Antwoord UITSLUITEND in valide JSON:
         window.toonToast("Liederen vernieuwen uit Cloud...", "info");
         await window.forceerCloudRefresh();
         window.renderLiederenBeheerLijst();
+    };
+
+    // --- LIEDEREN DATABASE DOWNLOAD & BACKUP/HERSTEL ---
+    window.toggleDbDownloadMenu = function(e) {
+        if (e) e.stopPropagation();
+        const menu = document.getElementById('dbDownloadDropdown');
+        if (!menu) return;
+        menu.classList.toggle('hidden');
+    };
+
+    document.addEventListener('click', (e) => {
+        const wrapper = document.getElementById('dbDownloadMenuWrapper');
+        const menu = document.getElementById('dbDownloadDropdown');
+        if (menu && !menu.classList.contains('hidden') && wrapper && !wrapper.contains(e.target)) {
+            menu.classList.add('hidden');
+        }
+    });
+
+    window.downloadLiederenDatabase = async function(formaat = 'json', alleenGefilterd = false) {
+        const menu = document.getElementById('dbDownloadDropdown');
+        if (menu) menu.classList.add('hidden');
+
+        if (!window.liederenDatabase || Object.keys(window.liederenDatabase).length === 0) {
+            if (typeof laadCloudDatabase === 'function') {
+                window.toonToast("Database ophalen uit Cloud...", "info");
+                await laadCloudDatabase();
+            }
+        }
+
+        const db = window.liederenDatabase || {};
+        const alleKeys = Object.keys(db);
+        const basisTitelsMap = new Map();
+
+        alleKeys.forEach(k => {
+            if (k.startsWith('__')) return;
+            const versMatch = k.match(/^(.+?)\s+vers\s+\d+$/i);
+            const basis = versMatch ? versMatch[1].trim() : k.trim();
+            if (!basisTitelsMap.has(basis.toLowerCase())) {
+                basisTitelsMap.set(basis.toLowerCase(), basis);
+            }
+        });
+
+        let titels = Array.from(basisTitelsMap.values());
+
+        if (alleenGefilterd) {
+            const zoekInp = document.getElementById('liedBeheerZoekInput');
+            const filterSelect = document.getElementById('liedBeheerBundelFilter');
+            const zoekTerm = (zoekInp ? zoekInp.value : '').trim().toLowerCase();
+            const actieveBundel = filterSelect ? filterSelect.value : 'alle';
+
+            titels = titels.filter(titel => {
+                const bundel = window.bepaalLiedBundel(titel);
+                if (actieveBundel !== 'alle' && bundel !== actieveBundel) return false;
+                if (!zoekTerm) return true;
+                const lowerT = titel.toLowerCase();
+                const words = zoekTerm.split(/\s+/).filter(Boolean);
+                const matchesWords = words.every(w => lowerT.includes(w));
+                if (matchesWords) return true;
+                const tekst = window.haalLiedTekstUitDatabase(titel).toLowerCase();
+                return words.every(w => tekst.includes(w));
+            });
+        }
+
+        titels.sort((a, b) => {
+            const numA = (a.match(/\d+/) || [0])[0];
+            const numB = (b.match(/\d+/) || [0])[0];
+            const prefixA = a.replace(/\d+/g, '').trim();
+            const prefixB = b.replace(/\d+/g, '').trim();
+            if (prefixA === prefixB && numA && numB) {
+                return parseInt(numA, 10) - parseInt(numB, 10);
+            }
+            return a.localeCompare(b, 'nl', { numeric: true });
+        });
+
+        if (titels.length === 0) {
+            window.toonToast("Geen liederen gevonden om te downloaden", "warning");
+            return;
+        }
+
+        const datumStr = new Date().toISOString().slice(0, 10);
+        const suffix = alleenGefilterd ? '_Selectie' : '';
+        let blobContent = '';
+        let mimeType = 'application/json;charset=utf-8';
+        let ext = 'json';
+
+        if (formaat === 'json') {
+            const exportObj = {};
+            titels.forEach(titel => {
+                exportObj[titel] = window.haalLiedTekstUitDatabase(titel);
+            });
+            blobContent = JSON.stringify(exportObj, null, 2);
+            mimeType = 'application/json;charset=utf-8';
+            ext = 'json';
+        } else if (formaat === 'txt') {
+            const lines = [
+                `============================================================`,
+                `KERKAPP LIEDEREN DATABASE OVERZICHT`,
+                `Datum: ${datumStr} · Aantal liederen: ${titels.length}`,
+                `============================================================`,
+                ``
+            ];
+            titels.forEach(titel => {
+                const bundel = window.bepaalLiedBundel(titel);
+                const badgeInfo = window.getBundelBadgeInfo(bundel);
+                const tekst = window.haalLiedTekstUitDatabase(titel);
+                const verzen = tekst ? tekst.split(/\n[ \t]*\n/).filter(v => v.trim() !== '') : [];
+                lines.push(`------------------------------------------------------------`);
+                lines.push(`${titel}  [${badgeInfo.label} · ${verzen.length} ${verzen.length === 1 ? 'vers' : 'verzen'}]`);
+                lines.push(`------------------------------------------------------------`);
+                lines.push(tekst || '(Geen tekst)');
+                lines.push(``);
+                lines.push(``);
+            });
+            blobContent = lines.join('\n');
+            mimeType = 'text/plain;charset=utf-8';
+            ext = 'txt';
+        } else if (formaat === 'csv') {
+            const escapeCsv = (val) => `"${String(val || '').replace(/"/g, '""')}"`;
+            const rows = ['\uFEFFBundel;Titel;Aantal Verzen;Tekst'];
+            titels.forEach(titel => {
+                const bundel = window.bepaalLiedBundel(titel);
+                const badgeInfo = window.getBundelBadgeInfo(bundel);
+                const tekst = window.haalLiedTekstUitDatabase(titel);
+                const verzen = tekst ? tekst.split(/\n[ \t]*\n/).filter(v => v.trim() !== '') : [];
+                rows.push([
+                    escapeCsv(badgeInfo.label),
+                    escapeCsv(titel),
+                    verzen.length,
+                    escapeCsv(tekst)
+                ].join(';'));
+            });
+            blobContent = rows.join('\r\n');
+            mimeType = 'text/csv;charset=utf-8';
+            ext = 'csv';
+        }
+
+        const bestandsNaam = `Kerkapp_Liederen_Database${suffix}_${datumStr}.${ext}`;
+        const blob = new Blob([blobContent], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = bestandsNaam;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 200);
+
+        window.toonToast(`⬇️ ${titels.length} liederen gedownload als .${ext.toUpperCase()}!`, "success");
+    };
+
+    window.importeerDatabaseBackup = async function(inputEl) {
+        const menu = document.getElementById('dbDownloadDropdown');
+        if (menu) menu.classList.add('hidden');
+
+        const file = inputEl?.files?.[0];
+        if (!file) return;
+
+        try {
+            const raw = await file.text();
+            const parsed = JSON.parse(raw);
+            if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+                throw new Error('Ongeldig JSON-formaat');
+            }
+            const entries = Object.entries(parsed).filter(([k, v]) => !k.startsWith('__') && typeof v === 'string' && v.trim() !== '');
+            if (entries.length === 0) {
+                window.toonToast("Geen geldige liederen gevonden in dit JSON-bestand", "warning");
+                inputEl.value = '';
+                return;
+            }
+            if (!confirm(`Wil je ${entries.length} liederen uit '${file.name}' inladen in de lokale database en synchroniseren met de Cloud?`)) {
+                inputEl.value = '';
+                return;
+            }
+
+            if (!window.liederenDatabase) window.liederenDatabase = {};
+            let aantal = 0;
+            for (const [titel, tekst] of entries) {
+                window.liederenDatabase[titel.trim()] = tekst.trim();
+                aantal++;
+            }
+            try {
+                localStorage.setItem('liederenCache', JSON.stringify(window.liederenDatabase));
+                localStorage.setItem('liederenCacheTijd', String(Date.now()));
+            } catch (e) {}
+
+            if (typeof bouwZoekLijst === 'function') bouwZoekLijst();
+            window.renderLiederenBeheerLijst();
+            window.toonToast(`✅ ${aantal} liederen ingeladen uit backup!`, "success");
+        } catch (err) {
+            console.error('Database backup import fout:', err);
+            window.toonToast("Fout bij inlezen van JSON-backup", "error");
+        } finally {
+            inputEl.value = '';
+        }
     };
 
     // Oude compatibiliteit
