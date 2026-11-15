@@ -279,6 +279,9 @@
   // --- 7. COMMAND PALETTE & SHORTCUTS (MacBook / Desktop) ---
   const DEFAULT_COMMANDS = [
     { id: 'export_pptx', title: 'Exporteer naar PowerPoint (.pptx)', category: 'Acties', icon: '📥', shortcut: '⌘↵', action: () => window.maakPowerPoint?.() },
+    { id: 'live_beamer_win', title: 'Open Tweede-Scherm Live Beamer Venster', category: 'Beamer & Regie', icon: '🖥️', shortcut: '', action: () => window.obsOpenVenster?.('beamer') },
+    { id: 'blackout_toggle', title: 'Schakel Beamer Zwart Scherm (Blackout)', category: 'Beamer & Regie', icon: '⚫', shortcut: 'B', action: () => window.obsLiveToggleBlackout?.() },
+    { id: 'undo_action', title: 'Laatste wijziging ongedaan maken (Undo)', category: 'Acties', icon: '↩️', shortcut: '⌘Z', action: () => window.undoLaatsteLiturgieActie?.() },
     { id: 'save_liturgy', title: 'Liturgie handmatig opslaan in archief', category: 'Acties', icon: '💾', shortcut: '⌘S', action: () => window.slaLiturgieOp?.() },
     { id: 'toggle_cols', title: 'Wissel tussen 2-koloms Split-View en 3-koloms Studio Layout', category: 'Weergave', icon: '🖥️', shortcut: '⌘\\', action: () => toggleLayoutColumns() },
     { id: 'welcome_slide', title: 'Live Welkomstdia bekijken op preview-scherm', category: 'Weergave', icon: '👋', shortcut: '', action: () => window.selecteerWelkomstdiaPreview?.() },
@@ -484,15 +487,48 @@
         return;
       }
 
-      // Pijltje Links / Rechts: Blader door sub-dia's op het Live Dia-Canvas als er geen invoerveld actief is
-      if (!cmdOrCtrl && !e.altKey && !e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+      // Cmd+Z of Ctrl+Z: Laatste liturgie-actie ongedaan maken (als geen tekstvak actief is)
+      if (cmdOrCtrl && !e.shiftKey && (e.key === 'z' || e.key === 'Z')) {
+        const tag = (document.activeElement?.tagName || '').toUpperCase();
+        const isInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || document.activeElement?.isContentEditable;
+        if (!isInput && typeof window.undoLaatsteLiturgieActie === 'function') {
+          e.preventDefault();
+          window.undoLaatsteLiturgieActie();
+          return;
+        }
+      }
+
+      // Pijltjes & sneltoetsen op het werkblad (alleen als geen invoerveld of modal actief is)
+      if (!cmdOrCtrl && !e.altKey && !e.shiftKey) {
         const tag = (document.activeElement?.tagName || '').toUpperCase();
         const isInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || document.activeElement?.isContentEditable;
         const openModal = document.querySelector('.modal-backdrop-safe:not(.hidden)');
         const cmdOpen = document.getElementById('desktopCommandPalette') && !document.getElementById('desktopCommandPalette').classList.contains('hidden');
-        if (!isInput && !openModal && !cmdOpen && typeof window.navigeerSlide === 'function') {
-          e.preventDefault();
-          window.navigeerSlide(e.key === 'ArrowRight' ? 1 : -1);
+        if (!isInput && !openModal && !cmdOpen) {
+          if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && typeof window.navigeerSlide === 'function') {
+            e.preventDefault();
+            window.navigeerSlide(e.key === 'ArrowRight' ? 1 : -1);
+            return;
+          }
+          if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && typeof window.previewStapItem === 'function') {
+            e.preventDefault();
+            window.previewStapItem(e.key === 'ArrowDown' ? 1 : -1);
+            return;
+          }
+          if ((e.key === 'b' || e.key === 'B') && typeof window.obsLiveToggleBlackout === 'function') {
+            e.preventDefault();
+            window.obsLiveToggleBlackout();
+            if (typeof window.toonToast === 'function') {
+              const st = typeof window.getObsLiveState === 'function' ? window.getObsLiveState() : null;
+              window.toonToast(st && st.isBlackout ? '⚫ Live Beamer op zwart gezet (druk B om te herstellen)' : '🟢 Live Beamer weer zichtbaar', 'info');
+            }
+            return;
+          }
+          if ((e.key === 'w' || e.key === 'W') && typeof window.selecteerWelkomstdiaPreview === 'function') {
+            e.preventDefault();
+            window.selecteerWelkomstdiaPreview();
+            return;
+          }
         }
       }
     });

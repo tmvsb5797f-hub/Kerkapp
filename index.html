@@ -16,7 +16,7 @@
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('service-worker.js?v=22').catch(function (e) { console.warn('SW registratie mislukt:', e); });
+      navigator.serviceWorker.register('service-worker.js?v=23').catch(function (e) { console.warn('SW registratie mislukt:', e); });
     });
   }
 </script>
@@ -1073,18 +1073,23 @@
             </div>
 
             <!-- SLIMME COUPLET- EN VERSKIEZER BALK (1.2) -->
-            <div id="versKiezerContainer" class="hidden p-1.5 sm:p-3 bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/50 rounded-xl sm:rounded-2xl flex flex-col gap-1 sm:gap-1.5 shadow-xs transition-all w-full min-w-0 max-w-full box-border">
+            <div id="versKiezerContainer" class="hidden p-2 sm:p-3 bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/50 rounded-xl sm:rounded-2xl flex flex-col gap-1.5 shadow-xs transition-all w-full min-w-0 max-w-full box-border">
                 <div class="flex items-center justify-between gap-2">
                     <span class="text-[10px] sm:text-xs font-bold text-blue-900 dark:text-blue-300 flex items-center gap-1 min-w-0 truncate">
-                        <span>🎵</span> <span>Couplet / Vers selectie:</span>
+                        <span>🎵</span> <span>Couplet / Vers selectie (klik op een vers):</span>
                     </span>
                     <button type="button" onclick="window.toggleAlleVerzenInModal()" id="versKiezerToggleAllesBtn" class="text-[10px] sm:text-[11px] font-bold text-[#007AFF] hover:underline cursor-pointer shrink-0">Alles selecteren</button>
                 </div>
-                <div id="versKiezerKnoppen" class="flex flex-wrap gap-1 sm:gap-1.5 overflow-y-auto max-h-24 py-0.5 pr-1 w-full min-w-0 box-border no-scrollbar">
-                    <!-- Dynamisch gevuld met interactieve pills [✓ Vers 1] [✓ Vers 2] -->
+                <div id="versKiezerKnoppen" class="flex flex-wrap gap-1.5 overflow-y-auto max-h-40 sm:max-h-36 py-0.5 pr-1 w-full min-w-0 box-border no-scrollbar">
+                    <!-- Dynamisch gevuld met interactieve pills [✓ Vers 1 + eerste regel] -->
                 </div>
+                <button type="button" id="mobielTekstEditorToggleBtn" onclick="window.toggleMobielHandmatigeTekstEditor()" class="hidden sm:hidden mt-1 w-full py-1.5 px-3 rounded-xl bg-white/90 dark:bg-white/10 border border-blue-200/70 dark:border-white/15 text-[11px] font-semibold text-[#007AFF] dark:text-blue-300 items-center justify-center gap-1.5 shadow-2xs active:scale-95 transition-all cursor-pointer flex">
+                    <span>✏️</span><span>Liedtekst handmatig aanpassen (optioneel)</span>
+                </button>
             </div>
 
+            <!-- Inklapbare Tekst-editor Sectie (op iPhone standaard ingeklapt bij bestaande database-liederen) -->
+            <div id="handmatigeTekstEditorSectie" class="flex flex-col gap-2 w-full min-w-0 max-w-full box-border">
             <!-- Rij 2: Toolbar met Vet, Schoon & Splits, Refrein herhalen & Uitlijning -->
             <div class="flex flex-wrap items-center justify-between gap-1 sm:gap-2 pt-0.5 sm:pt-1 w-full min-w-0 max-w-full box-border">
                 <div class="flex items-center gap-1 sm:gap-2 shrink-0">
@@ -1122,6 +1127,7 @@
                     <span class="shrink-0 text-sm">💡</span>
                     <p class="leading-snug"><strong class="font-bold">Vul het complete lied in:</strong> Typ of plak altijd <u>alle verzen</u> (gescheiden door een witregel), niet alleen wat je vandaag zingt. Het lied staat dan direct compleet in de centrale bibliotheek, zodat je het in de toekomst nooit meer opnieuw hoeft op te vragen! Kies daarna eenvoudig de gewenste verzen via de versknoppen hierboven.</p>
                 </div>
+            </div>
             </div>
 
             <!-- Footer: Database Sync Checkbox + Actieknoppen op 1 enkele rij -->
@@ -2099,9 +2105,13 @@
                         <span id="previewModusIcon">📽️</span>
                         <span id="previewModusText">Beamer</span>
                     </button>
-                    <button type="button" id="previewWelkomstdiaBtn" onclick="window.selecteerWelkomstdiaPreview()" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border shadow-2xs bg-blue-50 dark:bg-blue-950/50 text-[#007AFF] dark:text-blue-300 border-blue-200 dark:border-blue-800/60 hover:bg-blue-100 active:scale-95 cursor-pointer" title="Bekijk live de Welkomstdia op het scherm">
+                    <button type="button" id="previewWelkomstdiaBtn" onclick="window.selecteerWelkomstdiaPreview()" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border shadow-2xs bg-blue-50 dark:bg-blue-950/50 text-[#007AFF] dark:text-blue-300 border-blue-200 dark:border-blue-800/60 hover:bg-blue-100 active:scale-95 cursor-pointer" title="Bekijk live de Welkomstdia op het scherm (Sneltoets: W)">
                         <span>👋</span>
                         <span>Welkomstdia</span>
+                    </button>
+                    <button type="button" onclick="window.obsOpenVenster ? window.obsOpenVenster('beamer') : null" class="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border shadow-2xs bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800/60 hover:bg-purple-100 active:scale-95 cursor-pointer" title="Open een direct gekoppeld 2e-scherm Beamer Venster (voor HDMI-beamer zonder PowerPoint)">
+                        <span>🖥️</span>
+                        <span>2e Scherm</span>
                     </button>
                 </div>
             </div>
@@ -2178,6 +2188,10 @@
                 </h2>
                 <div class="flex items-center gap-1 sm:gap-1.5">
                     <span id="autoArchiefIndicator" class="text-[10px] text-gray-400 font-medium hidden sm:inline"></span>
+                    <button type="button" id="undoLiturgieBtn" onclick="window.undoLaatsteLiturgieActie()" class="hidden px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-[11px] font-semibold text-amber-800 dark:text-amber-300 border border-amber-200/70 dark:border-amber-800/50 hover:bg-amber-100 transition-colors items-center gap-1 active:scale-95 cursor-pointer" title="Laatste wijziging ongedaan maken (⌘Z)">
+                        <span>↩️</span>
+                        <span>Herstel</span>
+                    </button>
                     <button onclick="slaLiturgieOp()" class="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-[11px] font-semibold text-[#007AFF] hover:bg-blue-100 transition-colors flex items-center gap-1 active:scale-95 cursor-pointer" title="Liturgie direct handmatig opslaan in archief">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
                         <span>Opslaan</span>
@@ -2207,6 +2221,20 @@
                             <span>📂</span><span>Archief</span>
                         </button>
                     </div>
+                </div>
+            </div>
+            <!-- iPhone Sticky Mini-Preview Balk (alleen op <768px zichtbaar in Orde van Dienst) -->
+            <div id="mobileMiniPreviewBar" class="md:hidden hidden sticky bottom-[72px] z-30 mt-3 p-2.5 rounded-2xl apple-liquid-glass flex items-center justify-between gap-2.5 shadow-lg border border-blue-200/60 dark:border-white/15">
+                <div onclick="window.schakelMobieleTab('preview', true)" class="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer">
+                    <div class="w-11 h-7 rounded-lg bg-black border border-gray-700 flex items-center justify-center text-[9px] font-bold text-white shrink-0 shadow-inner">16:9</div>
+                    <div class="min-w-0 flex-1">
+                        <div id="mobileMiniPreviewTitle" class="text-xs font-bold text-[#1D1D1F] dark:text-white truncate">👋 Welkomstdia</div>
+                        <div id="mobileMiniPreviewSub" class="text-[10px] text-[#007AFF] dark:text-blue-300 font-medium truncate">Tik voor grote dia-preview</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1 shrink-0">
+                    <button type="button" onclick="event.stopPropagation(); window.previewStapItem(-1)" class="w-8 h-8 rounded-xl bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white font-bold text-sm flex items-center justify-center active:scale-90 cursor-pointer">‹</button>
+                    <button type="button" onclick="event.stopPropagation(); window.previewStapItem(1)" class="w-8 h-8 rounded-xl bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white font-bold text-sm flex items-center justify-center active:scale-90 cursor-pointer">›</button>
                 </div>
             </div>
         </section>
@@ -6563,6 +6591,9 @@ Retourneer UITSLUITEND een valide JSON object:
     window.wisLiturgie = function() {
         if (liturgieVolgorde.length === 0) return;
         if (!confirm("Weet je zeker dat je de hele liturgielijst wilt leegmaken?")) return;
+        if (typeof window.pushLiturgieUndoState === 'function') {
+            window.pushLiturgieUndoState("Hele liturgie gewist");
+        }
         liturgieVolgorde = [];
 
         // Genereer direct een nieuw, uniek archief-ID voor de volgende dienst,
@@ -14020,6 +14051,19 @@ Antwoord UITSLUITEND in valide JSON:
             }
         });
 
+        const mTitle = document.getElementById('mobileMiniPreviewTitle');
+        const mSub = document.getElementById('mobileMiniPreviewSub');
+        if (mTitle && mSub) {
+            if (idx >= 0 && idx < liturgieVolgorde.length) {
+                const cur = liturgieVolgorde[idx];
+                mTitle.textContent = cur.titel || 'Onderdeel';
+                mSub.textContent = `Item ${idx + 1}/${liturgieVolgorde.length} · Tik voor grote dia-preview`;
+            } else {
+                mTitle.textContent = '👋 Welkomstdia (Live)';
+                mSub.textContent = `${liturgieVolgorde.length} onderdelen · Tik voor grote dia-preview`;
+            }
+        }
+
         if (typeof autoSyncObsSlideIndex === 'function' && idx >= 0) autoSyncObsSlideIndex(idx);
     }
     window.renderSlidePreview = renderSlidePreview;
@@ -14571,6 +14615,22 @@ Antwoord UITSLUITEND in valide JSON:
                 sleepOffsetX = cx - box.getBoundingClientRect().left;
                 sleepOffsetY = cy - box.getBoundingClientRect().top;
 
+                // Magnetische middenlijnen (Snap Guides) op het 16:9 canvas
+                let snapGuideV = canvas.querySelector('#snapGuideVert');
+                let snapGuideH = canvas.querySelector('#snapGuideHoriz');
+                if (!snapGuideV) {
+                    snapGuideV = document.createElement('div');
+                    snapGuideV.id = 'snapGuideVert';
+                    snapGuideV.style.cssText = 'position:absolute;left:50%;top:0;bottom:0;width:1.5px;background:rgba(0,199,255,0.85);box-shadow:0 0 6px rgba(0,199,255,0.8);z-index:30;pointer-events:none;display:none;';
+                    canvas.appendChild(snapGuideV);
+                }
+                if (!snapGuideH) {
+                    snapGuideH = document.createElement('div');
+                    snapGuideH.id = 'snapGuideHoriz';
+                    snapGuideH.style.cssText = 'position:absolute;top:50%;left:0;right:0;height:1.5px;background:rgba(0,199,255,0.85);box-shadow:0 0 6px rgba(0,199,255,0.8);z-index:30;pointer-events:none;display:none;';
+                    canvas.appendChild(snapGuideH);
+                }
+
                 function beweeg(me) {
                     if (!sleepActief) return;
                     me.preventDefault();
@@ -14582,6 +14642,25 @@ Antwoord UITSLUITEND in valide JSON:
                     const curH = parseFloat(box.style.height);
                     nx = Math.max(0, Math.min(nx, 100 - curW));
                     ny = Math.max(0, Math.min(ny, 100 - curH));
+
+                    // Snap naar horizontaal midden (50%) of standaard marge (6.25%)
+                    const centerTargetX = (100 - curW) / 2;
+                    if (Math.abs(nx - centerTargetX) < 1.8) {
+                        nx = centerTargetX;
+                        snapGuideV.style.display = 'block';
+                    } else {
+                        snapGuideV.style.display = 'none';
+                    }
+
+                    // Snap naar verticaal midden (50%)
+                    const centerTargetY = (100 - curH) / 2;
+                    if (Math.abs(ny - centerTargetY) < 1.8) {
+                        ny = centerTargetY;
+                        snapGuideH.style.display = 'block';
+                    } else {
+                        snapGuideH.style.display = 'none';
+                    }
+
                     box.style.left = nx.toFixed(2) + '%';
                     box.style.top = ny.toFixed(2) + '%';
                     if (titleEl) titleEl.style.left = nx.toFixed(2) + '%';
@@ -14591,6 +14670,8 @@ Antwoord UITSLUITEND in valide JSON:
                     sleepActief = false;
                     document.body.style.cursor = '';
                     box.style.cursor = 'grab';
+                    if (snapGuideV) snapGuideV.style.display = 'none';
+                    if (snapGuideH) snapGuideH.style.display = 'none';
                     const newLeftPct = parseFloat(box.style.left);
                     const newTopPct = parseFloat(box.style.top);
                     item.tekstX = parseFloat((newLeftPct / 100 * SLIDE_W).toFixed(2));
@@ -14718,8 +14799,10 @@ Antwoord UITSLUITEND in valide JSON:
         const mobielTeller = document.getElementById('mobielVolgordeTeller');
         if (mobielTeller) mobielTeller.textContent = liturgieVolgorde.length;
 
+        const miniBar = document.getElementById('mobileMiniPreviewBar');
         if (liturgieVolgorde.length === 0) {
             previewItemIdx = -1;
+            if (miniBar) miniBar.classList.add('hidden');
             lijst.innerHTML = `
                 <div class="apple-liquid-card rounded-2xl p-6 sm:p-7 text-center flex flex-col items-center justify-center gap-3 border border-dashed border-gray-200/80 dark:border-white/10">
                     <div class="w-11 h-11 rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-[#007AFF] flex items-center justify-center text-xl shadow-2xs">📋</div>
@@ -14788,9 +14871,12 @@ Antwoord UITSLUITEND in valide JSON:
 
             const isActive = index === previewItemIdx;
             const aantalDias = diasPerItem[index] || 1;
+            const inlineVersChips = (typeof window.bouwInlineVersChipsHtml === 'function')
+                ? window.bouwInlineVersChipsHtml(item, index)
+                : '';
 
             lijst.innerHTML += `
-            <div ${window.innerWidth >= 768 ? 'draggable="true"' : ''} data-index="${index}" onclick="kiesItemEnPreview(${index})" class="volgorde-item bg-white flex items-center gap-3 p-3.5 md:p-4 rounded-[18px] shadow-[0_2px_12px_rgba(0,0,0,0.03)] border ${isActive ? 'ring-2 ring-[#007AFF] border-transparent' : 'border-black/[0.04]'} group transition-all duration-150 ease-out select-none md:active:scale-[0.99] hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] cursor-pointer">
+            <div ${window.innerWidth >= 768 ? 'draggable="true"' : ''} data-index="${index}" onclick="kiesItemEnPreview(${index})" class="volgorde-item bg-white dark:bg-[#1C1C1E] flex items-center gap-3 p-3.5 md:p-4 rounded-[18px] shadow-[0_2px_12px_rgba(0,0,0,0.03)] border ${isActive ? 'ring-2 ring-[#007AFF] border-transparent' : 'border-black/[0.04] dark:border-white/10'} group transition-all duration-150 ease-out select-none md:active:scale-[0.99] hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] cursor-pointer">
                 <div class="drag-handle text-gray-300 group-hover:text-gray-400 transition-colors p-2.5 -m-1 flex items-center justify-center touch-manipulation"
                      ontouchstart="touchDragStart(event, ${index})" ontouchmove="touchDragMove(event)" ontouchend="touchDragEnd(event)" title="Sleep om positie te wijzigen">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
@@ -14800,7 +14886,8 @@ Antwoord UITSLUITEND in valide JSON:
                         <span class="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider">${icon}${escapeHtml(item.type)}</span>
                         <span class="text-[9px] md:text-[10px] font-bold px-1.5 py-0.2 rounded-md ${aantalDias > 1 ? 'bg-blue-50 text-[#007AFF] border border-blue-200/60 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/40' : 'bg-gray-100 text-gray-500 dark:bg-white/10 dark:text-gray-400'}">${aantalDias} ${aantalDias === 1 ? 'dia' : 'dia\'s'}</span>
                     </div>
-                    <h3 class="font-semibold text-[#1D1D1F] text-[13px] md:text-[14px] truncate mt-0.5">${escapeHtml(item.titel)}</h3>
+                    <h3 class="font-semibold text-[#1D1D1F] dark:text-white text-[13px] md:text-[14px] truncate mt-0.5">${escapeHtml(item.titel)}</h3>
+                    ${inlineVersChips}
                 </div>
 
                 <button onclick="event.stopPropagation(); openBewerkScherm(${index})" aria-label="Tekst bewerken van ${escapeHtml(item.titel)}" class="w-11 h-11 md:w-9 md:h-9 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center text-[#007AFF] bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 rounded-full transition-all flex-shrink-0 active:scale-95 ${item.type === 'Foto' || item.type === 'Leeg' || item.type === 'QR' ? 'hidden' : ''}" title="Tekst bewerken">
@@ -14814,10 +14901,61 @@ Antwoord UITSLUITEND in valide JSON:
         });
 
         renderSlidePreview(previewItemIdx);
+        if (miniBar) {
+            miniBar.classList.remove('hidden');
+            const mTitle = document.getElementById('mobileMiniPreviewTitle');
+            const mSub = document.getElementById('mobileMiniPreviewSub');
+            if (previewItemIdx >= 0 && previewItemIdx < liturgieVolgorde.length) {
+                const cur = liturgieVolgorde[previewItemIdx];
+                if (mTitle) mTitle.textContent = cur.titel || 'Onderdeel';
+                if (mSub) mSub.textContent = `Item ${previewItemIdx + 1}/${liturgieVolgorde.length} · Tik voor grote dia-preview`;
+            } else {
+                if (mTitle) mTitle.textContent = '👋 Welkomstdia (Live)';
+                if (mSub) mSub.textContent = `${liturgieVolgorde.length} onderdelen · Tik voor grote dia-preview`;
+            }
+        }
         if (window.updatePreflightBadge) window.updatePreflightBadge();
     }
 
+    // --- UNDO / HERSTEL GESCHIEDENIS STACK (⌘Z) ---
+    const _liturgieUndoStack = [];
+    window.pushLiturgieUndoState = function(label = 'Wijziging') {
+        try {
+            const snapshot = JSON.parse(JSON.stringify(liturgieVolgorde || []));
+            _liturgieUndoStack.push({ snapshot, label, timestamp: Date.now() });
+            if (_liturgieUndoStack.length > 15) _liturgieUndoStack.shift();
+            const undoBtn = document.getElementById('undoLiturgieBtn');
+            if (undoBtn) {
+                undoBtn.classList.remove('hidden');
+                undoBtn.classList.add('flex');
+                undoBtn.title = `Ongedaan maken: ${label} (⌘Z)`;
+            }
+        } catch (e) {}
+    };
+
+    window.undoLaatsteLiturgieActie = function() {
+        if (!_liturgieUndoStack.length) {
+            if (window.toonToast) window.toonToast("Geen eerdere wijziging om ongedaan te maken.", "info");
+            return;
+        }
+        const entry = _liturgieUndoStack.pop();
+        liturgieVolgorde = entry.snapshot || [];
+        const undoBtn = document.getElementById('undoLiturgieBtn');
+        if (undoBtn && _liturgieUndoStack.length === 0) {
+            undoBtn.classList.add('hidden');
+            undoBtn.classList.remove('flex');
+        }
+        window.tekenVolgorde();
+        if (window.toonToast) {
+            window.toonToast(`↩️ Hersteld: ${entry.label}`, "success");
+        }
+    };
+
     window.verwijder = function(i) {
+        const teVerwijderen = liturgieVolgorde[i];
+        if (teVerwijderen && typeof window.pushLiturgieUndoState === 'function') {
+            window.pushLiturgieUndoState(`'${teVerwijderen.titel}' verwijderd`);
+        }
         liturgieVolgorde.splice(i, 1);
         if (previewItemIdx === i) {
             if (previewItemIdx >= liturgieVolgorde.length) {
@@ -14827,6 +14965,9 @@ Antwoord UITSLUITEND in valide JSON:
             previewItemIdx--;
         }
         window.tekenVolgorde();
+        if (teVerwijderen && window.toonToast) {
+            window.toonToast(`🗑️ '${teVerwijderen.titel}' verwijderd (klik ↩️ Herstel of ⌘Z voor ongedaan maken)`, "info");
+        }
     };
 
     // --- DRAG AND DROP (Desktop) ---
