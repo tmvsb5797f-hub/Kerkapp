@@ -480,6 +480,18 @@
         }
         return;
       }
+
+      // Pijltje Links / Rechts: Blader door sub-dia's op het Live Dia-Canvas als er geen invoerveld actief is
+      if (!cmdOrCtrl && !e.altKey && !e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+        const tag = (document.activeElement?.tagName || '').toUpperCase();
+        const isInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || document.activeElement?.isContentEditable;
+        const openModal = document.querySelector('.modal-backdrop-safe:not(.hidden)');
+        const cmdOpen = document.getElementById('desktopCommandPalette') && !document.getElementById('desktopCommandPalette').classList.contains('hidden');
+        if (!isInput && !openModal && !cmdOpen && typeof window.navigeerSlide === 'function') {
+          e.preventDefault();
+          window.navigeerSlide(e.key === 'ArrowRight' ? 1 : -1);
+        }
+      }
     });
 
     // Desktop Drag-and-Drop Handler voor .pptx en .txt bestanden
