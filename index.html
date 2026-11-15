@@ -16,7 +16,7 @@
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('service-worker.js?v=15').catch(function (e) { console.warn('SW registratie mislukt:', e); });
+      navigator.serviceWorker.register('service-worker.js?v=16').catch(function (e) { console.warn('SW registratie mislukt:', e); });
     });
   }
 </script>
@@ -695,11 +695,16 @@
         0% { transform: scale(0.94); opacity: 0; }
         100% { transform: scale(1); opacity: 1; }
     }
+    /* iPad backdrop: solide overlay, geen blur-doorschijn */
     html.engine-tablet .modal-backdrop-safe {
         align-items: center !important;
         justify-content: center !important;
         padding: 1.5rem !important;
+        background-color: rgba(0, 0, 0, 0.60) !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
     }
+    /* iPad modal: centered popover, volledig dekkend, eigen stacking context */
     html.engine-tablet .modal-backdrop-safe > div.modal-animate {
         border-radius: 28px !important;
         max-width: 640px !important;
@@ -708,21 +713,50 @@
         margin: auto !important;
         animation: ipadSpringPop 0.28s cubic-bezier(0.16, 1, 0.3, 1) both !important;
         box-shadow: 0 24px 64px -12px rgba(0, 0, 0, 0.3) !important;
+        background-color: #ffffff !important;
+        isolation: isolate !important;
+        -webkit-transform: translateZ(0) !important;
+        transform: translateZ(0) !important;
+    }
+    html.dark.engine-tablet .modal-backdrop-safe > div.modal-animate,
+    body.dark-mode.engine-tablet .modal-backdrop-safe > div.modal-animate {
+        background-color: #1C1C1E !important;
+    }
+    /* Verberg glazen sub-secties in modalen op iPad (geen bleed) */
+    html.engine-tablet .modal-animate .apple-liquid-glass {
+        background: #f2f2f7 !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+    }
+    html.dark.engine-tablet .modal-animate .apple-liquid-glass,
+    body.dark-mode.engine-tablet .modal-animate .apple-liquid-glass {
+        background: #2C2C2E !important;
     }
     html.engine-tablet .modal-animate:not(#videoModalDialog)::before {
         display: none !important;
     }
 
     /* --- ADAPTIVE ENGINE: MACBOOK / LAPTOP SPECIES (.engine-desktop) --- */
+    /* Desktop backdrop: lichte frosted-glass look is OK op Mac, maar wel ondoorzichtig genoeg */
     html.engine-desktop .modal-backdrop-safe {
         align-items: center !important;
         justify-content: center !important;
         padding: 2rem !important;
+        background-color: rgba(0, 0, 0, 0.55) !important;
+        -webkit-backdrop-filter: blur(4px) !important;
+        backdrop-filter: blur(4px) !important;
     }
     html.engine-desktop .modal-backdrop-safe > div.modal-animate {
         border-radius: 28px !important;
         max-height: 90vh !important;
         margin: auto !important;
+        background-color: #ffffff !important;
+        isolation: isolate !important;
+        transform: translateZ(0) !important;
+    }
+    html.dark.engine-desktop .modal-backdrop-safe > div.modal-animate,
+    body.dark-mode.engine-desktop .modal-backdrop-safe > div.modal-animate {
+        background-color: #1C1C1E !important;
     }
     html.engine-desktop .modal-animate:not(#videoModalDialog)::before {
         display: none !important;
