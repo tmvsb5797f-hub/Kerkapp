@@ -147,6 +147,12 @@ test('index.html bevat touch drag/resize voor tekstvak en QR-code + modulaire im
     assert.ok(html.includes('window.pasUitlijningToeOpAlles'), 'pasUitlijningToeOpAlles functie ontbreekt');
 });
 
+test('device-engine.js negeert interne drag-and-drop bij file drop overlay', () => {
+    const js = fs.readFileSync(path.join(ROOT, 'js', 'device-engine.js'), 'utf8');
+    assert.ok(js.includes('isBestandSleep'), 'isBestandSleep check ontbreekt');
+    assert.ok(js.includes("includes('Files')"), 'Files dataTransfer check ontbreekt');
+});
+
 test('import_tool.html bevat timeout, retries, stop-knop en live parsePreview', () => {
     const html = fs.readFileSync(path.join(ROOT, 'import_tool.html'), 'utf8');
     assert.ok(html.includes('REQUEST_TIMEOUT_MS'), 'REQUEST_TIMEOUT_MS ontbreekt');

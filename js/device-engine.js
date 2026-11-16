@@ -533,17 +533,24 @@
       }
     });
 
-    // Desktop Drag-and-Drop Handler voor .pptx en .txt bestanden
+    // Desktop Drag-and-Drop Handler voor .pptx en .txt bestanden (negeer interne volgorde-items)
     let dragCounter = 0;
+    function isBestandSleep(e) {
+      if (document.querySelector('.volgorde-item.dragging')) return false;
+      const types = e && e.dataTransfer && e.dataTransfer.types;
+      if (!types) return false;
+      return Array.from(types).includes('Files');
+    }
+
     window.addEventListener('dragenter', (e) => {
-      if (state.type !== 'desktop') return;
+      if (state.type !== 'desktop' || !isBestandSleep(e)) return;
       dragCounter++;
       const overlay = document.getElementById('desktopDropOverlay');
       if (overlay) overlay.classList.remove('hidden');
     });
 
     window.addEventListener('dragleave', (e) => {
-      if (state.type !== 'desktop') return;
+      if (state.type !== 'desktop' || !isBestandSleep(e)) return;
       dragCounter--;
       if (dragCounter <= 0) {
         dragCounter = 0;
@@ -553,11 +560,17 @@
     });
 
     window.addEventListener('dragover', (e) => {
-      if (state.type === 'desktop') e.preventDefault();
+      if (state.type === 'desktop' && isBestandSleep(e)) e.preventDefault();
+    });
+
+    window.addEventListener('dragend', () => {
+      dragCounter = 0;
+      const overlay = document.getElementById('desktopDropOverlay');
+      if (overlay) overlay.classList.add('hidden');
     });
 
     window.addEventListener('drop', (e) => {
-      if (state.type !== 'desktop') return;
+      if (state.type !== 'desktop' || !isBestandSleep(e)) return;
       e.preventDefault();
       dragCounter = 0;
       const overlay = document.getElementById('desktopDropOverlay');
