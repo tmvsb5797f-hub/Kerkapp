@@ -1822,6 +1822,29 @@
     </div>
 </div>
 
+<!-- SCHRIFTLEZING KEUZE VOOR WELKOMSTDIA MODAL -->
+<div id="schriftlezingKeuzeModal" class="fixed inset-0 z-[255] hidden items-center justify-center bg-black/50 modal-backdrop-safe transition-opacity p-3 sm:p-4" onclick="if(event.target === this && typeof window.sluitSchriftlezingKeuzeModal === 'function') window.sluitSchriftlezingKeuzeModal()">
+    <div class="bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[24px] sm:rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.3)] ring-1 ring-black/[0.06] dark:ring-white/10 w-full max-w-md overflow-hidden flex flex-col transform transition-all modal-animate">
+        <div class="p-5 sm:p-6 flex flex-col gap-3.5">
+            <div class="flex items-start justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-[#007AFF] flex items-center justify-center text-xl shadow-2xs flex-shrink-0">📖</div>
+                    <div>
+                        <h3 class="text-base font-bold text-[#1D1D1F] dark:text-white">Welke tekst is de Schriftlezing?</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Kies welke Bijbeltekst(en) op de welkomstdia komen.</p>
+                    </div>
+                </div>
+                <button type="button" onclick="window.sluitSchriftlezingKeuzeModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded-full cursor-pointer" title="Sluiten">✕</button>
+            </div>
+            <div id="schriftlezingKeuzeLijst" class="flex flex-col gap-2 max-h-[45dvh] overflow-y-auto pr-1"></div>
+            <div class="flex flex-col sm:flex-row gap-2 pt-1">
+                <button type="button" onclick="window.bevestigSchriftlezingKeuze(false)" class="flex-1 py-3 px-4 rounded-2xl text-xs sm:text-sm font-semibold text-white bg-[#007AFF] hover:bg-blue-600 active:scale-98 transition-all shadow-md cursor-pointer">Bevestig &amp; Exporteer</button>
+                <button type="button" onclick="window.bevestigSchriftlezingKeuze(true)" class="py-3 px-4 rounded-2xl text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 active:scale-98 transition-all cursor-pointer">Allemaal tonen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- EERSTE-BEZOEK LICENTIE MELDING MODAL -->
 <div id="licentieMeldingModal" class="fixed inset-0 z-[260] hidden items-center justify-center bg-black/50 modal-backdrop-safe transition-opacity p-3 sm:p-4">
     <div class="bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[24px] sm:rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.3)] ring-1 ring-black/[0.06] dark:ring-white/10 w-full max-w-md overflow-hidden flex flex-col transform transition-all modal-animate">
@@ -14801,7 +14824,9 @@ Antwoord UITSLUITEND in valide JSON:
         const datum = (document.getElementById('datumInput')?.value || '').trim();
         const voorganger = (document.getElementById('voorgangerInput')?.value || '').trim();
         const liederenRegels = (typeof genereerStandaardZangLijst === 'function') ? genereerStandaardZangLijst('afkorting') : [];
-        const bijbelLijst = (liturgieVolgorde || []).filter(it => it.type === 'Schriftlezing').map(it => (it.titel || '').replace(' (HSV)', ''));
+        const bijbelLijst = (typeof window.getWelkomstdiaBijbelLijst === 'function')
+            ? window.getWelkomstdiaBijbelLijst()
+            : (liturgieVolgorde || []).filter(it => it.type === 'Schriftlezing').map(it => (it.titel || '').replace(' (HSV)', ''));
 
         let html = '';
         const titleFS = Math.max(12, Math.round(48 * scale));
@@ -15870,6 +15895,18 @@ Antwoord UITSLUITEND in valide JSON:
 
             const isEerste = (index === 0);
             const isLaatste = (index === liturgieVolgorde.length - 1);
+            let schriftlezingWelkomBtn = '';
+            if (item.type === 'Schriftlezing') {
+                const isAan = item.opWelkomstdia === true;
+                const isUit = item.opWelkomstdia === false;
+                const btnClass = isAan
+                    ? 'bg-blue-50 text-[#007AFF] border-blue-200/70 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800/60'
+                    : (isUit
+                        ? 'bg-gray-100 text-gray-400 border-gray-200/60 dark:bg-white/5 dark:text-gray-500 dark:border-white/10 line-through'
+                        : 'bg-gray-100/90 text-gray-500 border-gray-200/70 hover:border-blue-300 hover:text-[#007AFF] dark:bg-white/10 dark:text-gray-300 dark:border-white/10');
+                const btnLabel = isAan ? '✓ Op welkomstdia' : (isUit ? 'Niet op welkomstdia' : '📖 Welkomstdia');
+                schriftlezingWelkomBtn = `<button type="button" onclick="event.stopPropagation(); window.toggleSchriftlezingWelkomstdia(${index})" class="text-[9px] md:text-[10px] font-bold px-1.5 py-0.5 rounded-md border transition-all active:scale-95 cursor-pointer ${btnClass}" title="Kies of deze tekst als Schriftlezing op de welkomstdia komt">${btnLabel}</button>`;
+            }
 
             lijst.innerHTML += `
             <div data-index="${index}" onclick="kiesItemEnPreview(${index})" class="volgorde-item bg-white dark:bg-[#1C1C1E] flex items-center gap-2.5 sm:gap-3 p-3 md:p-4 rounded-[18px] shadow-[0_2px_12px_rgba(0,0,0,0.03)] border ${isActive ? 'ring-2 ring-[#007AFF] border-transparent' : 'border-black/[0.04] dark:border-white/10'} group transition-all duration-150 ease-out select-none md:active:scale-[0.99] hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] cursor-pointer">
@@ -15893,6 +15930,7 @@ Antwoord UITSLUITEND in valide JSON:
                     <div class="flex items-center gap-1.5 flex-wrap">
                         <span class="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider">${icon}${escapeHtml(item.type)}</span>
                         <span class="text-[9px] md:text-[10px] font-bold px-1.5 py-0.2 rounded-md ${aantalDias > 1 ? 'bg-blue-50 text-[#007AFF] border border-blue-200/60 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/40' : 'bg-gray-100 text-gray-500 dark:bg-white/10 dark:text-gray-400'}">${aantalDias} ${aantalDias === 1 ? 'dia' : 'dia\'s'}</span>
+                        ${schriftlezingWelkomBtn}
                     </div>
                     <h3 class="font-semibold text-[#1D1D1F] dark:text-white text-[13px] md:text-[14px] truncate mt-0.5">${escapeHtml(item.titel)}</h3>
                     ${inlineVersChips}
@@ -16415,6 +16453,37 @@ const PPT_BASE64_MUZIEK = "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KP
 const PPT_BASE64_BOEK = "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iOTYiIGhlaWdodD0iOTciIHhtbDpzcGFjZT0icHJlc2VydmUiIG92ZXJmbG93PSJoaWRkZW4iPgogIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKC03MiAtMzU2KSI+CiAgICA8Zz4KICAgICAgPGc+CiAgICAgICAgPGc+CiAgICAgICAgICA8Zz4KICAgICAgICAgICAgPHBhdGggZD0iTTEyOCAzODkgMTQzIDM4OSAxNDMgMzkxIDEyOCAzOTFaIiBmaWxsPSIjRkZGRkZGIiBmaWxsLXJ1bGU9Im5vbnplcm8iIGZpbGwtb3BhY2l0eT0iMSI+PC9wYXRoPgogICAgICAgICAgICA8cGF0aCBkPSJNMTI4IDM5NSAxNDMgMzk1IDE0MyAzOTcgMTI4IDM5N1oiIGZpbGw9IiNGRkZGRkYiIGZpbGwtcnVsZT0ibm9uemVybyIgZmlsbC1vcGFjaXR5PSIxIj48L3BhdGg+CiAgICAgICAgICAgIDxwYXRoIGQ9Ik0xMjggNDAxIDEzOCA0MDEgMTM4IDQwMyAxMjggNDAzWiIgZmlsbD0iI0ZGRkZGRiIgZmlsbC1ydWxlPSJub256ZXJvIiBmaWxsLW9wYWNpdHk9IjEiPjwvcGF0aD4KICAgICAgICAgICAgPHBhdGggZD0iTTE1OSAzODEgMTUzIDM4MSAxNTMgMzc2LjZDMTUzIDM3Ni4xNzMgMTUyLjcyOSAzNzUuNzkzIDE1Mi4zMjUgMzc1LjY1NCAxNDEuODQgMzcyLjE1NCAxMzAuNTA4IDM3Mi4xMTUgMTIwIDM3NS41NDQgMTA5LjQ5MiAzNzIuMTE1IDk4LjE1OTkgMzcyLjE1MyA4Ny42NzUgMzc1LjY1MyA4Ny4yNzA3IDM3NS43OTIgODYuOTk5NCAzNzYuMTcyIDg3IDM3Ni42TDg3IDM4MSA4MSAzODFDODAuNDQ3NyAzODEgODAgMzgxLjQ0OCA4MCAzODJMODAgNDMwQzgwIDQzMC41NTIgODAuNDQ3NyA0MzEgODEgNDMxTDExMy4xIDQzMUMxMTMuNTIgNDMyLjc1OSAxMTUuMDkyIDQzNCAxMTYuOSA0MzRMMTIzLjEgNDM0QzEyNC45MDggNDM0IDEyNi40IDQzMi43NTkgMTI2LjkgNDMxTDE1OSA0MzFDMTU5LjU1MiA0MzEgMTYwIDQzMC41NTIgMTYwIDQzMEwxNjAgMzgyQzE2MCAzODEuNDQ4IDE1OS41NTIgMzgxIDE1OSAzODFaTTE1MSAzNzcuMzIgMTUxIDQyMy4yMkMxNDEuMjIgNDIwLjI1NiAxMzAuNzggNDIwLjI1NiAxMjEgNDIzLjIyTDEyMSAzNzcuMzJDMTMwLjc2MSAzNzQuMjI3IDE0MS4yMzkgMzc0LjIyNyAxNTEgMzc3LjMyWk04OSAzNzcuMzJDOTguNzYwOCAzNzQuMjI3IDEwOS4yMzkgMzc0LjIyNyAxMTkgMzc3LjMyTDExOSA0MjMuMjJDMTA5LjIyIDQyMC4yNTYgOTguNzgwNCA0MjAuMjU2IDg5IDQyMy4yMlpNMTU4IDQyOSAxMjYgNDI5QzEyNS40NDggNDI5IDEyNSA0MjkuNDQ4IDEyNSA0MzBMMTI1IDQzMC4xQzEyNSA0MzEuMTQ5IDEyNC4xNDkgNDMyIDEyMy4xIDQzMkwxMTYuOSA0MzJDMTE1Ljg1MSA0MzIgMTE1IDQzMS4xNDkgMTE1IDQzMC4xTDExNSA0MzBDMTE1IDQyOS40NDggMTE0LjU1MiA0MjkgMTE0IDQyOUw4MiA0MjkgODIgMzgzIDg3IDM4MyA4NyA0MjQuNls4Ni45OTk4IDQyNS4xNTIgODcuNDQ3NCA0MjUuNiA4Ny45OTk3IDQyNS42IDg4LjExMDQgNDI1LjYgODguMjIwMyA0MjUuNTgyIDg4LjMyNSA0MjUuNTQ2IDk4LjQ5OTUgNDIyLjE1MyAxMDkuNTAxIDQyMi4xNTMgMTE5LjY3NSA0MjUuNTQ2IDExOS42OTEgNDI1LjU1IDExOS43MDggNDI1LjU1MiAxMTkuNzI1IDQyNS41NTQgMTE5LjY3OSA0MjUuNTc2IDExOS44NzUgNDI1LjU4OSAxMTkuOTUyIDQyNS41OTIgMTE5Ljk2OCA0MjUuNTkyIDExOS45ODQgNDI1LjYgMTIwIDQyNS42IDEyMC4wMTYgNDI1LjYgMTIwLjAyNSA0MjUuNTk1IDEyMC4wMzcgNDI1LjU5NCAxMjAuMTEzIDQyNS41OTIgMTIwLjE4OSA0MjUuNTggMTIwLjI2MiA0MjUuNTYgMTIwLjI3OCA0MjUuNTYgMTIwLjI5NSA0MjUuNTU0IDEyMC4zMTIgNDI1LjU0OUwxMjAuMzI1IDQyNS41NDlDMTMwLjQ5OSA0MjIuMTU2IDE0MS41MDEgNDIyLjE1NiAxNTEuNjc1IDQyNS41NDkgMTUxLjc4IDQyNS41ODQgMTUxLjg5IDQyNS42MDEgMTUyIDQyNS42IDE1Mi41NTIgNDI1LjYgMTUzIDQyNS4xNTIgMTUzIDQyNC42TDE1MyAzODMgMTU4IDM4M1oiIGZpbGw9IiNGRkZGRkYiIGZpbGwtcnVsZT0ibm9uemVybyIgZmlsbC1vcGFjaXR5PSIxIj48L3BhdGg+CiAgICAgICAgICA8L2c+CiAgICAgICAgPC9nPgogICAgICA8L2c+CiAgICA8L2c+CiAgPC9nPgo8L3N2Zz4K";
 
 // --- WELKOMSTDIA CUSTOMIZER LOGICA ---
+window.isHeleLiedOpWelkomstdia = function(basisNaam, uniekeVerzen, fallbackTekst = '') {
+    if (!Array.isArray(uniekeVerzen) || uniekeVerzen.length === 0) return true;
+    const dbTekst = (window.liederenDatabase && window.liederenDatabase[basisNaam]) || fallbackTekst || '';
+    if (!dbTekst || typeof window.haalLiedVerzenOp !== 'function') {
+        return false;
+    }
+    const alleVerzen = window.haalLiedVerzenOp(basisNaam, dbTekst);
+    return alleVerzen.length > 0 && uniekeVerzen.length >= alleVerzen.length;
+};
+
+window.getWelkomstdiaBijbelLijst = function() {
+    const alle = (liturgieVolgorde || []).filter(it => it && it.type === 'Schriftlezing');
+    if (alle.length === 0) return [];
+    const explicietAan = alle.filter(it => it.opWelkomstdia === true);
+    const bron = explicietAan.length > 0 ? explicietAan : alle.filter(it => it.opWelkomstdia !== false);
+    return bron.map(it => (it.titel || '').replace(' (HSV)', ''));
+};
+
+window.toggleSchriftlezingWelkomstdia = function(index) {
+    const item = liturgieVolgorde[index];
+    if (!item || item.type !== 'Schriftlezing') return;
+    if (item.opWelkomstdia === true) {
+        item.opWelkomstdia = false;
+    } else {
+        item.opWelkomstdia = true;
+    }
+    bewaarLiturgie();
+    window.tekenVolgorde();
+    if (typeof updateWelkomstdiaPreview === 'function') updateWelkomstdiaPreview();
+};
+
 function genereerStandaardZangLijst(formaat = 'afkorting') {
     // Groepeer liederen op basisnaam en samenvoeg versnummers
     const gegroepeerd = [];
@@ -16441,7 +16510,7 @@ function genereerStandaardZangLijst(formaat = 'afkorting') {
             }
         } else {
             gezieneBasisTitels.set(basisNaam, gegroepeerd.length);
-            gegroepeerd.push({ basisNaam, versNummers: versNummers ? [...versNummers] : null });
+            gegroepeerd.push({ basisNaam, versNummers: versNummers ? [...versNummers] : null, fallbackTekst: item.tekst || '' });
         }
     });
 
@@ -16463,6 +16532,9 @@ function genereerStandaardZangLijst(formaat = 'afkorting') {
         }
         if (g.versNummers && g.versNummers.length > 0) {
             const unique = [...new Set(g.versNummers.map(n => parseInt(n, 10)).filter(n => !isNaN(n)))].sort((a,b) => a - b);
+            if (window.isHeleLiedOpWelkomstdia(g.basisNaam, unique, g.fallbackTekst)) {
+                return label;
+            }
             return label + ' : ' + unique.join(', ');
         }
         return label;
@@ -16565,7 +16637,9 @@ function updateWelkomstdiaPreview() {
 
     const datum = document.getElementById('datumInput') ? document.getElementById('datumInput').value.trim() : "";
     const voorganger = document.getElementById('voorgangerInput') ? document.getElementById('voorgangerInput').value.trim() : "";
-    const bijbelLijst = liturgieVolgorde.filter(item => item.type === "Schriftlezing").map(item => item.titel.replace(" (HSV)", ""));
+    const bijbelLijst = (typeof window.getWelkomstdiaBijbelLijst === 'function')
+        ? window.getWelkomstdiaBijbelLijst()
+        : liturgieVolgorde.filter(item => item.type === "Schriftlezing").map(item => item.titel.replace(" (HSV)", ""));
 
     let html = '';
 
@@ -16815,49 +16889,7 @@ window.bouwPowerPointPresentatie = async function(customOpties = null) {
             zangLijst = customOpties.zangLijst;
         }
     } else {
-        // Groepeer liederen: samenvoegen tot één regel met compacte versnummers
-        const gegroepeerd = [];
-        const gezieneBasisTitels = new Map();
-
-        liturgieVolgorde.filter(item => item.type === "Zang").forEach(item => {
-            const info = (typeof window.extractVersInfoVanItem === 'function')
-                ? window.extractVersInfoVanItem(item)
-                : {
-                    basisTitel: (item.basisTitel || item.titel || '').replace(/\s+(?:vers(?:en)?|vs\.?|couplet(?:ten)?)\s+[\d,\s\-–—en&]+$/i, '').trim(),
-                    versNummers: (item.geselecteerdeVerzen && item.geselecteerdeVerzen.length > 0)
-                        ? item.geselecteerdeVerzen
-                        : (typeof window.extractVersNummers === 'function' ? window.extractVersNummers(item.titel) : [])
-                };
-            const basisNaam = info.basisTitel;
-            const versNummers = info.versNummers && info.versNummers.length > 0 ? info.versNummers.map(String) : null;
-
-            if (gezieneBasisTitels.has(basisNaam)) {
-                const bestaand = gegroepeerd[gezieneBasisTitels.get(basisNaam)];
-                if (versNummers && bestaand.versNummers) {
-                    bestaand.versNummers = bestaand.versNummers.concat(versNummers);
-                } else if (versNummers) {
-                    bestaand.versNummers = [...versNummers];
-                }
-            } else {
-                gezieneBasisTitels.set(basisNaam, gegroepeerd.length);
-                gegroepeerd.push({ basisNaam, versNummers: versNummers ? [...versNummers] : null });
-            }
-        });
-
-        zangLijst = gegroepeerd.map(g => {
-            let t = g.basisNaam.split(' - ')[0].trim();
-            const afk = t.replace(/Weerklank Lied/i, "Lw")
-                         .replace(/Weerklank Psalm/i, "Pw")
-                         .replace(/Op Toonhoogte/i, "OTH")
-                         .replace(/DNP Psalm/i, "Ps DNP")
-                         .replace(/Psalm/i, "Ps")
-                         .replace(/Opwekking/i, "Opw").trim();
-            if (g.versNummers && g.versNummers.length > 0) {
-                const unique = [...new Set(g.versNummers.map(n => parseInt(n, 10)).filter(n => !isNaN(n)))].sort((a,b) => a - b);
-                return afk + ' : ' + unique.join(', ');
-            }
-            return afk;
-        });
+        zangLijst = genereerStandaardZangLijst('afkorting');
     }
 
     if (zangLijst.length > 0) {
@@ -16865,7 +16897,9 @@ window.bouwPowerPointPresentatie = async function(customOpties = null) {
         welcomeSlide.addText(zangLijst.join('\n'), { x: 6.0, y: 2.1, w: 3.5, h: 2.5, color: "FFFFFF", fontSize: 18, fontFace: pptFont, align: "left", valign: "top", lineSpacing: 23 });
     }
 
-    const bijbelLijst = liturgieVolgorde.filter(item => item.type === "Schriftlezing").map(item => item.titel.replace(" (HSV)", ""));
+    const bijbelLijst = (typeof window.getWelkomstdiaBijbelLijst === 'function')
+        ? window.getWelkomstdiaBijbelLijst()
+        : liturgieVolgorde.filter(item => item.type === "Schriftlezing").map(item => item.titel.replace(" (HSV)", ""));
     if (bijbelLijst.length > 0) {
         welcomeSlide.addImage({ data: "data:image/svg+xml;base64," + base64Boek, x: 0.5, y: 4.7, w: 0.4, h: 0.4 });
         welcomeSlide.addText(bijbelLijst.join(' & '), { x: 1.1, y: 4.6, w: 8.5, h: 0.6, color: "FFFFFF", fontSize: 20, fontFace: pptFont, bold: true, align: "left" });
@@ -16981,8 +17015,74 @@ window.bouwPowerPointPresentatie = async function(customOpties = null) {
     return pres;
 };
 
-window.maakPowerPoint = async function(customOpties = null, forceExport = false) {
+let _pendingExportOpties = null;
+let _pendingExportForce = false;
+
+window.openSchriftlezingKeuzeModal = function(customOpties = null, forceExport = false) {
+    _pendingExportOpties = customOpties;
+    _pendingExportForce = forceExport;
+    const modal = document.getElementById('schriftlezingKeuzeModal');
+    const lijstEl = document.getElementById('schriftlezingKeuzeLijst');
+    if (!modal || !lijstEl) return;
+
+    const schriftItems = liturgieVolgorde
+        .map((item, idx) => ({ item, idx }))
+        .filter(x => x.item && x.item.type === 'Schriftlezing');
+
+    lijstEl.innerHTML = schriftItems.map((entry, pos) => {
+        const schoneTitel = escapeHtml((entry.item.titel || '').replace(' (HSV)', ''));
+        const checked = pos === 0 ? 'checked' : '';
+        return `
+        <label class="flex items-center gap-3 p-3 rounded-2xl bg-[#F5F5F7] dark:bg-[#2C2C2E] border border-black/[0.04] dark:border-white/10 cursor-pointer hover:border-[#007AFF]/50 transition-all">
+            <input type="checkbox" class="schriftlezing-keuze-cb w-5 h-5 rounded-md text-[#007AFF] border-gray-300 focus:ring-[#007AFF] cursor-pointer" data-volgorde-idx="${entry.idx}" ${checked}>
+            <span class="text-sm font-semibold text-[#1D1D1F] dark:text-white">${schoneTitel}</span>
+        </label>`;
+    }).join('');
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+};
+
+window.sluitSchriftlezingKeuzeModal = function() {
+    const modal = document.getElementById('schriftlezingKeuzeModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+};
+
+window.bevestigSchriftlezingKeuze = function(allemaalAan = false) {
+    const checkboxes = document.querySelectorAll('#schriftlezingKeuzeLijst .schriftlezing-keuze-cb');
+    checkboxes.forEach(cb => {
+        const idx = parseInt(cb.dataset.volgordeIdx, 10);
+        const item = liturgieVolgorde[idx];
+        if (item && item.type === 'Schriftlezing') {
+            item.opWelkomstdia = allemaalAan ? true : cb.checked;
+        }
+    });
+    bewaarLiturgie();
+    window.tekenVolgorde();
+    if (typeof updateWelkomstdiaPreview === 'function') updateWelkomstdiaPreview();
+    window.sluitSchriftlezingKeuzeModal();
+
+    const opt = _pendingExportOpties;
+    const frc = _pendingExportForce;
+    _pendingExportOpties = null;
+    _pendingExportForce = false;
+    window.maakPowerPoint(opt, frc, true);
+};
+
+window.maakPowerPoint = async function(customOpties = null, forceExport = false, skipSchriftlezingCheck = false) {
     if (liturgieVolgorde.length === 0) { window.toonToast("Voeg eerst een item toe aan de volgorde.", "error"); return; }
+
+    // Als er >= 2 Bijbelteksten zijn en nog niet gekozen is welke de Schriftlezing voor de welkomstdia is: vraag eerst netjes
+    if (!skipSchriftlezingCheck) {
+        const schriftlezingen = liturgieVolgorde.filter(it => it && it.type === 'Schriftlezing');
+        if (schriftlezingen.length >= 2 && schriftlezingen.every(it => it.opWelkomstdia === undefined)) {
+            window.openSchriftlezingKeuzeModal(customOpties, forceExport);
+            return;
+        }
+    }
     
     // Automatische Pre-Flight Zero-Defect Kwaliteitscontrole vóór export
     if (!forceExport && window.voerPreflightControleUit) {

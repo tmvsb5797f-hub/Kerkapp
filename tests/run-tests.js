@@ -152,6 +152,9 @@ test('index.html bevat touch drag/resize voor tekstvak en QR-code + modulaire im
     assert.ok(html.includes('touchcancel'), 'touchcancel cleanup ontbreekt');
     assert.ok(html.includes('id="slideAlignAllBtn"'), 'Alles-uitlijnen knop ontbreekt');
     assert.ok(html.includes('window.pasUitlijningToeOpAlles'), 'pasUitlijningToeOpAlles functie ontbreekt');
+    assert.ok(html.includes('window.isHeleLiedOpWelkomstdia'), 'Hele lied welkomstdia helper ontbreekt');
+    assert.ok(html.includes('id="schriftlezingKeuzeModal"'), 'Schriftlezing keuze modal ontbreekt');
+    assert.ok(html.includes('window.toggleSchriftlezingWelkomstdia'), 'toggleSchriftlezingWelkomstdia ontbreekt');
 });
 
 test('device-engine.js negeert interne drag-and-drop bij file drop overlay', () => {
