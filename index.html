@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <meta name="format-detection" content="telephone=no, date=no, address=no, email=no"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <title>Liturgie Assistent Pro</title>
@@ -16,7 +16,7 @@
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('service-worker.js?v=23').catch(function (e) { console.warn('SW registratie mislukt:', e); });
+      navigator.serviceWorker.register('service-worker.js?v=28').catch(function (e) { console.warn('SW registratie mislukt:', e); });
     });
   }
 </script>
@@ -535,26 +535,28 @@
                     inset 0 1px 1px 0 rgba(255, 255, 255, 0.16);
     }
 
-    /* --- Apple Collapsing Header Animation op Mobiel (GPU-accelerated, 0 layout reflow) --- */
-    #mobileHeaderTitle {
-        transform-origin: left center;
-        transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
-        will-change: transform;
+    /* --- Solide, haarscherpe Mobiele Header zonder Safari status-bar waas --- */
+    #mobileStickyHeaderWrapper {
+        background: #F5F5F7 !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+        border: none !important;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04) !important;
     }
+    html.dark #mobileStickyHeaderWrapper,
+    body.dark-mode #mobileStickyHeaderWrapper {
+        background: #1C1C1E !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+        border: none !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35) !important;
+    }
+    #mobileHeaderTitle,
     #mobileGemeenteBadgeBtn {
-        transform-origin: right center;
-        transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
-        will-change: transform, opacity;
-    }
-
-    /* Scrolled state: titel wordt subtiel compacter in de linkerhoek, kerkkeuze schuift weg naar rechts */
-    .mobile-header-scrolled #mobileHeaderTitle {
-        transform: scale(0.85);
-    }
-    .mobile-header-scrolled #mobileGemeenteBadgeBtn {
-        opacity: 0 !important;
-        transform: scale(0.8) translateX(20px) !important;
-        pointer-events: none !important;
+        opacity: 1 !important;
+        transform: none !important;
     }
 
     /* Header weergave: desktop vs mobiel strikt gescheiden */
@@ -1838,8 +1840,8 @@
     </div>
 </div>
 
-<!-- MOBIELE UNIFIED STICKY LIQUID GLASS HEADER (Titel + Kerkkeuze + Tabs gestackt: stabiele hoogte, geen layout-sprongen!) -->
-<div id="mobileStickyHeaderWrapper" class="md:hidden sticky top-0 z-30 w-full apple-liquid-glass px-3 pb-2.5 mb-3" style="padding-top: max(0.65rem, env(safe-area-inset-top, 0px));">
+<!-- MOBIELE UNIFIED STICKY HEADER (Solide, scherp, zonder blur-waas over de statusbalk) -->
+<div id="mobileStickyHeaderWrapper" class="md:hidden sticky top-0 z-30 w-full px-3 pb-2.5 mb-3" style="padding-top: max(0.75rem, env(safe-area-inset-top, 0px));">
     <!-- Rij 1: Titel links, Kerk-keuze rechts (animeert soepel via GPU zonder reflow) -->
     <div id="mobileHeaderTopRow" class="flex items-center justify-between gap-2 h-8">
         <h1 id="mobileHeaderTitle" onclick="window.scrollTo({top: 0, behavior: 'smooth'}); checkOnderhoudCode();" class="text-base sm:text-lg font-bold tracking-tight text-[#1D1D1F] dark:text-white truncate cursor-pointer select-none origin-left flex items-center gap-1.5">
