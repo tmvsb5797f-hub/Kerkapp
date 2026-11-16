@@ -404,7 +404,7 @@
     .drag-handle:active { cursor: grabbing; }
     .volgorde-move-btn { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
     .touch-ghost { position: fixed; z-index: 9999; pointer-events: none; opacity: 0.96; box-shadow: 0 18px 44px rgba(0, 0, 0, 0.24), 0 0 0 2px #007AFF !important; border-radius: 18px; transform: scale(1.025); transition: none !important; }
-    #slideTextBox.slide-box-active { touch-action: none !important; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+    #slideTextBox.slide-box-active, #qrPreviewBox.slide-box-active { touch-action: none !important; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
     .resize-handle { touch-action: none !important; }
     .resize-handle::after { content: ''; position: absolute; inset: -13px; }
 
@@ -3244,7 +3244,7 @@
         // Negeer tijdens slepen of tikken op volgorde drag-handle / verplaats-knopjes / actief tekstvak / modals
         if (typeof touchDragIdx !== 'undefined' && touchDragIdx !== null) return;
         if (typeof sleepActief !== 'undefined' && sleepActief) return;
-        if (e.target.closest('.drag-handle, .volgorde-move-btn, .modal-animate, #unifiedControlDock, input[type="range"], select, #slideTextBox.slide-box-active, .resize-handle')) return;
+        if (e.target.closest('.drag-handle, .volgorde-move-btn, .modal-animate, #unifiedControlDock, input[type="range"], select, #slideTextBox.slide-box-active, #qrPreviewBox.slide-box-active, .resize-handle')) return;
         if (e.target.closest('input:not([type="button"]):not([type="submit"]):not([type="checkbox"]), textarea, [contenteditable="true"]')) return;
 
         // CRUCIAAL: Negeer wanneer de touch plaatsvindt binnen een horizontaal scrollbare balk of container (zoals het liedboek filter)
@@ -14952,63 +14952,237 @@ Antwoord UITSLUITEND in valide JSON:
 
             preview.innerHTML = `
                 <div class="absolute font-bold tracking-wide select-none pointer-events-none" style="left:${titelLeftPct}%;top:${titelTopPct}%;width:${titelW}%;font-size:${18 * scale}px;font-family:${fontFamily};color:#AAAAAA;opacity:0.75">${escapeHtml(diaTitel)}</div>
-                <div id="qrPreviewBox" class="absolute cursor-default" style="left:${qrLeftPct}%;top:${qrTopPct}%;width:${qrSizePct}%;border:1px dashed transparent;border-radius:6px">
+                <div id="qrPreviewBox" class="absolute cursor-default select-none" style="left:${qrLeftPct}%;top:${qrTopPct}%;width:${qrSizePct}%;border:1px dashed transparent;border-radius:6px">
                     <img src="${item.tekst}" class="w-full h-auto rounded-lg shadow-lg" style="pointer-events:none"/>
+                    <div class="resize-handle" data-handle="tl" style="position:absolute;top:-5px;left:-5px;width:10px;height:10px;background:#ffffff;border:2px solid #34C759;border-radius:2px;cursor:nwse-resize;display:none;z-index:20;box-shadow:0 1px 3px rgba(0,0,0,0.3);box-sizing:border-box;"></div>
+                    <div class="resize-handle" data-handle="tr" style="position:absolute;top:-5px;right:-5px;width:10px;height:10px;background:#ffffff;border:2px solid #34C759;border-radius:2px;cursor:nesw-resize;display:none;z-index:20;box-shadow:0 1px 3px rgba(0,0,0,0.3);box-sizing:border-box;"></div>
+                    <div class="resize-handle" data-handle="bl" style="position:absolute;bottom:-5px;left:-5px;width:10px;height:10px;background:#ffffff;border:2px solid #34C759;border-radius:2px;cursor:nesw-resize;display:none;z-index:20;box-shadow:0 1px 3px rgba(0,0,0,0.3);box-sizing:border-box;"></div>
+                    <div class="resize-handle" data-handle="br" style="position:absolute;bottom:-5px;right:-5px;width:10px;height:10px;background:#ffffff;border:2px solid #34C759;border-radius:2px;cursor:nwse-resize;display:none;z-index:20;box-shadow:0 1px 3px rgba(0,0,0,0.3);box-sizing:border-box;"></div>
                 </div>`;
             fitInd.classList.add('hidden'); nav.classList.add('hidden');
-            hint.innerHTML = 'Dubbelklik om te verplaatsen · Scrollwiel om te schalen';
+            hint.innerHTML = 'Dubbelklik/tap of tik op 📐 Tekstvak om te verplaatsen · Hoekpunten om te schalen';
             hint.classList.remove('hidden');
 
             const qrBox = document.getElementById('qrPreviewBox');
+            const editBtnQr = document.getElementById('slideEditBoxBtn');
+            const setQrEditBtnState = (actief) => {
+                if (!editBtnQr) return;
+                editBtnQr.classList.toggle('bg-[#007AFF]/15', actief);
+                editBtnQr.classList.toggle('text-[#007AFF]', actief);
+                editBtnQr.classList.toggle('dark:text-[#64D2FF]', actief);
+            };
             if (qrBox) {
-                qrBox.addEventListener('dblclick', (e) => {
-                    e.preventDefault();
+                let qrBoxActief = false;
+                let qrResizeActief = false;
+
+                function activeerQrBox() {
+                    qrBoxActief = true;
+                    qrBox.classList.add('slide-box-active');
                     qrBox.style.borderColor = '#34C759';
                     qrBox.style.cursor = 'grab';
                     qrBox.style.boxShadow = '0 0 0 1px rgba(52,199,89,0.4)';
+                    qrBox.querySelectorAll('.resize-handle').forEach(h => h.style.display = 'block');
+                    qrBox.onmousedown = onQrPointerDown;
+                    qrBox.removeEventListener('touchstart', onQrPointerDown);
+                    qrBox.addEventListener('touchstart', onQrPointerDown, { passive: false });
+                    setQrEditBtnState(true);
+                }
 
-                    function startDrag(ev) {
+                function deactiveerQrBox() {
+                    qrBoxActief = false;
+                    qrBox.classList.remove('slide-box-active');
+                    qrBox.style.borderColor = 'transparent';
+                    qrBox.style.cursor = 'default';
+                    qrBox.style.boxShadow = 'none';
+                    qrBox.querySelectorAll('.resize-handle').forEach(h => h.style.display = 'none');
+                    qrBox.onmousedown = null;
+                    qrBox.removeEventListener('touchstart', onQrPointerDown);
+                    document.body.style.cursor = '';
+                    setQrEditBtnState(false);
+                }
+
+                window._toggleSlideTextBox = function(forceState) {
+                    const target = (typeof forceState === 'boolean') ? forceState : !qrBoxActief;
+                    if (target) activeerQrBox();
+                    else deactiveerQrBox();
+                };
+
+                function onQrPointerDown(ev) {
+                    if (!qrBoxActief) return;
+                    if (ev.touches && ev.touches.length > 1) return;
+                    const handle = ev.target.closest('.resize-handle');
+                    if (handle) {
+                        ev.stopPropagation();
                         ev.preventDefault();
-                        qrBox.style.cursor = 'grabbing';
-                        const rect = canvas.getBoundingClientRect();
-                        const ox = (ev.touches ? ev.touches[0].clientX : ev.clientX) - qrBox.getBoundingClientRect().left;
-                        const oy = (ev.touches ? ev.touches[0].clientY : ev.clientY) - qrBox.getBoundingClientRect().top;
-                        function move(me) {
-                            me.preventDefault();
-                            const mx = (me.touches ? me.touches[0].clientX : me.clientX);
-                            const my = (me.touches ? me.touches[0].clientY : me.clientY);
-                            let nx = (mx - ox - rect.left) / rect.width * 100;
-                            let ny = (my - oy - rect.top) / rect.height * 100;
-                            nx = Math.max(0, Math.min(nx, 100 - parseFloat(qrSizePct)));
-                            ny = Math.max(0, Math.min(ny, 100 - parseFloat(qrSizePct)));
-                            qrBox.style.left = nx + '%'; qrBox.style.top = ny + '%';
-                        }
-                        function stop() {
-                            qrBox.style.cursor = 'grab';
-                            item.tekstX = parseFloat((parseFloat(qrBox.style.left) / 100 * SLIDE_W).toFixed(2));
-                            item.tekstY = parseFloat((parseFloat(qrBox.style.top) / 100 * SLIDE_H).toFixed(2));
-                            bewaarLiturgie();
-                            document.removeEventListener('mousemove', move);
-                            document.removeEventListener('mouseup', stop);
-                            document.removeEventListener('touchmove', move);
-                            document.removeEventListener('touchend', stop);
-                        }
-                        document.addEventListener('mousemove', move);
-                        document.addEventListener('mouseup', stop);
-                        document.addEventListener('touchmove', move, { passive: false });
-                        document.addEventListener('touchend', stop);
+                        startQrResize(ev, handle.dataset.handle);
+                    } else {
+                        startDrag(ev);
                     }
-                    qrBox.onmousedown = startDrag;
-                    qrBox.ontouchstart = startDrag;
+                }
+
+                qrBox.addEventListener('dblclick', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    activeerQrBox();
                 });
+
+                let _lastQrTapTime = 0;
+                let _lastQrTapX = 0;
+                let _lastQrTapY = 0;
+                qrBox.addEventListener('touchend', (e) => {
+                    if (qrBoxActief || sleepActief || qrResizeActief) return;
+                    if (!e.changedTouches || e.changedTouches.length !== 1) return;
+                    const t = e.changedTouches[0];
+                    const now = Date.now();
+                    if (now - _lastQrTapTime < 340 && Math.hypot(t.clientX - _lastQrTapX, t.clientY - _lastQrTapY) < 28) {
+                        _lastQrTapTime = 0;
+                        e.preventDefault();
+                        e.stopPropagation();
+                        activeerQrBox();
+                    } else {
+                        _lastQrTapTime = now;
+                        _lastQrTapX = t.clientX;
+                        _lastQrTapY = t.clientY;
+                    }
+                }, { passive: false });
+
+                if (window._qrBoxWasActive) {
+                    activeerQrBox();
+                    window._qrBoxWasActive = false;
+                } else {
+                    setQrEditBtnState(false);
+                }
+
+                function startDrag(ev) {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    sleepActief = true;
+                    qrBox.style.cursor = 'grabbing';
+                    document.body.style.cursor = 'grabbing';
+                    const rect = canvas.getBoundingClientRect();
+                    const pt = (ev.touches && ev.touches[0]) || (ev.changedTouches && ev.changedTouches[0]) || ev;
+                    const boxRect = qrBox.getBoundingClientRect();
+                    const ox = pt.clientX - boxRect.left;
+                    const oy = pt.clientY - boxRect.top;
+                    const boxWPct = (boxRect.width / rect.width) * 100;
+                    const boxHPct = (boxRect.height / rect.height) * 100;
+                    function move(me) {
+                        if (!sleepActief) return;
+                        me.preventDefault();
+                        const mpt = (me.touches && me.touches[0]) || (me.changedTouches && me.changedTouches[0]) || me;
+                        let nx = (mpt.clientX - ox - rect.left) / rect.width * 100;
+                        let ny = (mpt.clientY - oy - rect.top) / rect.height * 100;
+                        nx = Math.max(0, Math.min(nx, 100 - boxWPct));
+                        ny = Math.max(0, Math.min(ny, 100 - boxHPct));
+                        qrBox.style.left = nx.toFixed(2) + '%';
+                        qrBox.style.top = ny.toFixed(2) + '%';
+                    }
+                    function stop() {
+                        sleepActief = false;
+                        document.body.style.cursor = '';
+                        qrBox.style.cursor = 'grab';
+                        item.tekstX = parseFloat((parseFloat(qrBox.style.left) / 100 * SLIDE_W).toFixed(2));
+                        item.tekstY = parseFloat((parseFloat(qrBox.style.top) / 100 * SLIDE_H).toFixed(2));
+                        bewaarLiturgie();
+                        document.removeEventListener('mousemove', move);
+                        document.removeEventListener('mouseup', stop);
+                        document.removeEventListener('touchmove', move);
+                        document.removeEventListener('touchend', stop);
+                        document.removeEventListener('touchcancel', stop);
+                    }
+                    document.addEventListener('mousemove', move);
+                    document.addEventListener('mouseup', stop);
+                    document.addEventListener('touchmove', move, { passive: false });
+                    document.addEventListener('touchend', stop);
+                    document.addEventListener('touchcancel', stop);
+                }
+
+                function startQrResize(ev, handleType) {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    qrResizeActief = true;
+                    document.body.style.cursor = (handleType === 'tl' || handleType === 'br') ? 'nwse-resize' : 'nesw-resize';
+                    const ptStart = (ev.touches && ev.touches[0]) || (ev.changedTouches && ev.changedTouches[0]) || ev;
+                    const startX = ptStart.clientX;
+                    const initLeft = parseFloat(qrBox.style.left);
+                    const initTop = parseFloat(qrBox.style.top);
+                    const initWidth = parseFloat(qrBox.style.width);
+                    const rect = canvas.getBoundingClientRect();
+                    const boxRect = qrBox.getBoundingClientRect();
+                    const aspect = boxRect.height / Math.max(1, boxRect.width);
+                    const minWPct = (1 / SLIDE_W) * 100;
+                    const maxWPct = (8 / SLIDE_W) * 100;
+
+                    function resizeMove(me) {
+                        if (!qrResizeActief) return;
+                        me.preventDefault();
+                        const ptCur = (me.touches && me.touches[0]) || (me.changedTouches && me.changedTouches[0]) || me;
+                        const deltaX = (ptCur.clientX - startX) / rect.width * 100;
+                        let newLeft = initLeft;
+                        let newTop = initTop;
+                        let newWidth = initWidth;
+
+                        if (handleType === 'br' || handleType === 'tr') {
+                            newWidth = Math.min(maxWPct, 100 - initLeft, Math.max(minWPct, initWidth + deltaX));
+                            if (handleType === 'tr') {
+                                const dH = (newWidth - initWidth) * aspect * (rect.width / rect.height);
+                                newTop = Math.max(0, initTop - dH);
+                            }
+                        } else {
+                            const maxShrink = initWidth - minWPct;
+                            const minDelta = Math.max(-initLeft, initWidth - maxWPct);
+                            const clampedDelta = Math.max(minDelta, Math.min(maxShrink, deltaX));
+                            newLeft = initLeft + clampedDelta;
+                            newWidth = initWidth - clampedDelta;
+                            if (handleType === 'tl') {
+                                const dH = (newWidth - initWidth) * aspect * (rect.width / rect.height);
+                                newTop = Math.max(0, initTop - dH);
+                            }
+                        }
+                        qrBox.style.left = newLeft.toFixed(2) + '%';
+                        qrBox.style.top = newTop.toFixed(2) + '%';
+                        qrBox.style.width = newWidth.toFixed(2) + '%';
+                    }
+
+                    function resizeStop() {
+                        qrResizeActief = false;
+                        document.body.style.cursor = '';
+                        qrBox.style.cursor = 'grab';
+                        const finalWPct = parseFloat(qrBox.style.width);
+                        item.tekstX = parseFloat((parseFloat(qrBox.style.left) / 100 * SLIDE_W).toFixed(2));
+                        item.tekstY = parseFloat((parseFloat(qrBox.style.top) / 100 * SLIDE_H).toFixed(2));
+                        item.qrSize = parseFloat(Math.max(1, Math.min(8, finalWPct / 100 * SLIDE_W)).toFixed(2));
+                        bewaarLiturgie();
+                        document.removeEventListener('mousemove', resizeMove);
+                        document.removeEventListener('mouseup', resizeStop);
+                        document.removeEventListener('touchmove', resizeMove);
+                        document.removeEventListener('touchend', resizeStop);
+                        document.removeEventListener('touchcancel', resizeStop);
+                        window._qrBoxWasActive = true;
+                        tekenSlidePreview();
+                    }
+
+                    document.addEventListener('mousemove', resizeMove);
+                    document.addEventListener('mouseup', resizeStop);
+                    document.addEventListener('touchmove', resizeMove, { passive: false });
+                    document.addEventListener('touchend', resizeStop);
+                    document.addEventListener('touchcancel', resizeStop);
+                }
+
+                canvas.onclick = (e) => {
+                    if (!qrBox.contains(e.target)) {
+                        deactiveerQrBox();
+                    }
+                };
 
                 // Voorkom exponentiële event listener stapeling door direct onwheel toe te wijzen
                 canvas.onwheel = (e) => {
-                    if (!document.querySelector('#qrPreviewBox[style*="border-color"]')) return;
+                    if (!qrBoxActief) return;
                     e.preventDefault();
                     const delta = e.deltaY > 0 ? -0.25 : 0.25;
                     item.qrSize = Math.max(1, Math.min(8, (item.qrSize || 3.5) + delta));
                     bewaarLiturgie();
+                    window._qrBoxWasActive = true;
                     tekenSlidePreview();
                 };
             }
