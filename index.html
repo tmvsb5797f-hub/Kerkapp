@@ -357,13 +357,15 @@
         display: none;
     }
 
-    /* --- Drag-and-Drop Volgorde --- */
-    .volgorde-item { transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; }
-    .volgorde-item.dragging { opacity: 0.4; transform: scale(0.97); }
+    /* --- Drag-and-Drop Volgorde & iPhone Touch Scroll --- */
+    #volgordeLijst { touch-action: pan-y; -webkit-overflow-scrolling: touch; }
+    .volgorde-item { transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; touch-action: pan-y; }
+    .volgorde-item.dragging { opacity: 0.35; transform: scale(0.98); border: 2px dashed #007AFF !important; background: rgba(0, 122, 255, 0.04) !important; }
     .volgorde-item.drag-over { border-color: #007AFF !important; box-shadow: 0 -3px 0 0 #007AFF, 0 4px 16px rgba(0,0,0,0.06); }
-    .drag-handle { cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none; }
+    .drag-handle { cursor: grab; touch-action: none !important; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
     .drag-handle:active { cursor: grabbing; }
-    .touch-ghost { position: fixed; z-index: 9999; pointer-events: none; opacity: 0.85; box-shadow: 0 12px 40px rgba(0,0,0,0.18); border-radius: 18px; transform: scale(1.03); }
+    .volgorde-move-btn { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    .touch-ghost { position: fixed; z-index: 9999; pointer-events: none; opacity: 0.96; box-shadow: 0 18px 44px rgba(0, 0, 0, 0.24), 0 0 0 2px #007AFF !important; border-radius: 18px; transform: scale(1.025); transition: none !important; }
 
     /* --- Chat Highlight Animatie --- */
     .chat-highlight {
@@ -644,11 +646,11 @@
     html.engine-phone body {
         padding-bottom: max(4.5rem, calc(env(safe-area-inset-bottom, 0px) + 3.8rem)) !important;
         overflow-x: hidden !important;
-        overscroll-behavior-y: none !important;
+        overscroll-behavior-y: auto !important;
+        -webkit-overflow-scrolling: touch;
     }
     html.engine-phone main {
         padding-bottom: 0 !important;
-        overscroll-behavior-y: contain !important;
     }
     /* iOS Auto-zoom preventie: 16px font-size op bewerkbare mobiele inputs voorkomt dat Safari geforceerd inzoomt (readonly inputs openen geen toetsenbord en behouden hun compacte schaal) */
     html.engine-phone input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]):not([readonly]),
@@ -2493,7 +2495,7 @@
                                 <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#34C759]"></div>
                             </label>
                         </div>
-                        <button type="button" onclick="document.getElementById('infoModal').classList.add('hidden'); window.openMeeleesModal();" class="w-full py-1.5 px-3 rounded-xl bg-white dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-[#007AFF] dark:text-blue-300 text-[11px] font-semibold transition-all border border-gray-200 dark:border-gray-600 flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer shadow-xs">
+                        <button type="button" onclick="window.sluitInfoModal(); window.openMeeleesModal();" class="w-full py-1.5 px-3 rounded-xl bg-white dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-[#007AFF] dark:text-blue-300 text-[11px] font-semibold transition-all border border-gray-200 dark:border-gray-600 flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer shadow-xs">
                             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="3" height="3"></rect><line x1="21" y1="14" x2="21" y2="14.01"></line><line x1="21" y1="21" x2="21" y2="21.01"></line><line x1="14" y1="21" x2="14" y2="21.01"></line></svg>
                             <span>Bekijk Meelees QR &amp; Geschiedenis</span>
                         </button>
@@ -2598,7 +2600,7 @@
                             <p class="text-[11px] text-gray-500 dark:text-gray-400 truncate">Beamer, livestream &amp; klikker bediening</p>
                         </div>
                     </div>
-                    <button type="button" onclick="document.getElementById('infoModal').classList.add('hidden'); openObsTestModal();" class="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all active:scale-95 shadow-xs flex-shrink-0 flex items-center gap-1 cursor-pointer">
+                    <button type="button" onclick="window.sluitInfoModal(); openObsTestModal();" class="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all active:scale-95 shadow-xs flex-shrink-0 flex items-center gap-1 cursor-pointer">
                         <span>Open</span>
                         <span>➔</span>
                     </button>
@@ -2643,7 +2645,7 @@
                                 <p class="text-[10px] text-gray-500 dark:text-gray-400 truncate">Met stem &amp; effecten</p>
                             </div>
                         </div>
-                        <button type="button" onclick="document.getElementById('infoModal').classList.add('hidden'); openVideoUitlegModal(true);" class="px-3 py-1.5 rounded-xl bg-[#007AFF] hover:bg-blue-600 text-white text-xs font-bold transition-all active:scale-95 shadow-xs flex-shrink-0 flex items-center gap-1 cursor-pointer">
+                        <button type="button" onclick="window.sluitInfoModal(); openVideoUitlegModal(true);" class="px-3 py-1.5 rounded-xl bg-[#007AFF] hover:bg-blue-600 text-white text-xs font-bold transition-all active:scale-95 shadow-xs flex-shrink-0 flex items-center gap-1 cursor-pointer">
                             <span>▶</span>
                         </button>
                     </div>
@@ -2659,7 +2661,7 @@
                                 <p class="text-[10px] text-gray-500 dark:text-gray-400 truncate">Interactieve tour</p>
                             </div>
                         </div>
-                        <button type="button" onclick="document.getElementById('infoModal').classList.add('hidden'); startUitleg();" class="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all active:scale-95 shadow-xs flex-shrink-0 flex items-center gap-1 cursor-pointer">
+                        <button type="button" onclick="window.sluitInfoModal(); startUitleg();" class="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all active:scale-95 shadow-xs flex-shrink-0 flex items-center gap-1 cursor-pointer">
                             <span>Start</span>
                         </button>
                     </div>
@@ -2693,7 +2695,7 @@
                         <p id="grafiekLeeg" class="hidden text-center text-[11px] text-gray-400 py-4">Nog geen data beschikbaar. Kom morgen terug!</p>
                     </div>
                     
-                    <button type="button" onclick="document.getElementById('infoModal').classList.add('hidden'); window.openLiederenBeheerModal();" class="w-full mt-1 py-2 px-3 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all flex items-center justify-center gap-2 shadow-xs active:scale-95 cursor-pointer">
+                    <button type="button" onclick="window.sluitInfoModal(); window.openLiederenBeheerModal();" class="w-full mt-1 py-2 px-3 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all flex items-center justify-center gap-2 shadow-xs active:scale-95 cursor-pointer">
                         <svg class="w-4 h-4 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477-4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
                         <span class="truncate">Liederen Beheer &amp; Bibliotheek</span>
                     </button>
@@ -2949,6 +2951,11 @@
             if (hasOpenModal) {
                 window.lockBodyScroll(true, 'observer');
             } else {
+                const chatWin = document.getElementById('chatWindow');
+                const chatOpen = chatWin && !chatWin.classList.contains('hidden');
+                if (!chatOpen && typeof _activeModalLocks !== 'undefined') {
+                    _activeModalLocks.clear();
+                }
                 window.lockBodyScroll(false, 'observer');
             }
         });
@@ -3007,10 +3014,19 @@
 
         function wisselPaneel(el, actief) {
             if (!el) return;
+            if (el._animEndTimer) {
+                clearTimeout(el._animEndTimer);
+                el._animEndTimer = null;
+            }
             if (actief) {
                 el.classList.remove('hidden', 'tab-pane-animate', 'tab-slide-from-right', 'tab-slide-from-left');
                 void el.offsetWidth;
                 el.classList.add(animatieKlasse);
+                // Verwijder animatieklasse zodra de animatie klaar is: voorkomt permanente GPU/transform layer die iOS Safari scroll/sticky blokkeert
+                el._animEndTimer = setTimeout(() => {
+                    el.classList.remove('tab-pane-animate', 'tab-slide-from-right', 'tab-slide-from-left');
+                    el._animEndTimer = null;
+                }, 290);
             } else {
                 el.classList.add('hidden');
                 el.classList.remove('tab-pane-animate', 'tab-slide-from-right', 'tab-slide-from-left');
@@ -3149,8 +3165,9 @@
         // Negeer te dicht bij schermranden (om iOS Safari geschiedenis-terug/vooruit te sparen)
         if (touch.clientX < 16 || touch.clientX > window.innerWidth - 16) return;
 
-        // Negeer wanneer een modal sheet openstaat of bij typen in tekstvelden
-        if (e.target.closest('.modal-animate, #unifiedControlDock, input[type="range"], select')) return;
+        // Negeer tijdens slepen of tikken op volgorde drag-handle / verplaats-knopjes / modals
+        if (typeof touchDragIdx !== 'undefined' && touchDragIdx !== null) return;
+        if (e.target.closest('.drag-handle, .volgorde-move-btn, .modal-animate, #unifiedControlDock, input[type="range"], select')) return;
         if (e.target.closest('input:not([type="button"]):not([type="submit"]):not([type="checkbox"]), textarea, [contenteditable="true"]')) return;
 
         // CRUCIAAL: Negeer wanneer de touch plaatsvindt binnen een horizontaal scrollbare balk of container (zoals het liedboek filter)
@@ -3214,7 +3231,17 @@
         _swipeInitialTarget = null;
 
         if (isHorizontal && Math.abs(dx) > 48 && duration < 550) {
-            // A. Preview Tab Slide Navigatie: swipe op de preview dia bladert door dia's
+            // A. Mini-Preview Balk in Orde van Dienst: swipe op balk bladert direct door onderdelen
+            const isMiniBarArea = initialTarget && initialTarget.closest('#mobileMiniPreviewBar');
+            if (isMiniBarArea && window.huidigeMobieleTab === 'volgorde') {
+                if (typeof window.previewStapItem === 'function') {
+                    window.previewStapItem(dx < 0 ? 1 : -1);
+                }
+                if (navigator.vibrate) try { navigator.vibrate(10); } catch(err){}
+                return;
+            }
+
+            // B. Preview Tab Slide Navigatie: swipe op de preview dia bladert door dia's
             const isSlideArea = initialTarget && initialTarget.closest('#previewVak, #slideCanvas, #slideTextBox, .aspect-video');
             if (isSlideArea && window.huidigeMobieleTab === 'preview') {
                 if (dx < 0) {
@@ -15316,13 +15343,28 @@ Antwoord UITSLUITEND in valide JSON:
                 ? window.bouwInlineVersChipsHtml(item, index)
                 : '';
 
+            const isEerste = (index === 0);
+            const isLaatste = (index === liturgieVolgorde.length - 1);
+
             lijst.innerHTML += `
-            <div ${window.innerWidth >= 768 ? 'draggable="true"' : ''} data-index="${index}" onclick="kiesItemEnPreview(${index})" class="volgorde-item bg-white dark:bg-[#1C1C1E] flex items-center gap-3 p-3.5 md:p-4 rounded-[18px] shadow-[0_2px_12px_rgba(0,0,0,0.03)] border ${isActive ? 'ring-2 ring-[#007AFF] border-transparent' : 'border-black/[0.04] dark:border-white/10'} group transition-all duration-150 ease-out select-none md:active:scale-[0.99] hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] cursor-pointer">
-                <div class="drag-handle text-gray-300 group-hover:text-gray-400 transition-colors p-2.5 -m-1 flex items-center justify-center touch-manipulation"
-                     ontouchstart="touchDragStart(event, ${index})" ontouchmove="touchDragMove(event)" ontouchend="touchDragEnd(event)" title="Sleep om positie te wijzigen">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            <div ${window.innerWidth >= 768 ? 'draggable="true"' : ''} data-index="${index}" onclick="kiesItemEnPreview(${index})" class="volgorde-item bg-white dark:bg-[#1C1C1E] flex items-center gap-2.5 sm:gap-3 p-3 md:p-4 rounded-[18px] shadow-[0_2px_12px_rgba(0,0,0,0.03)] border ${isActive ? 'ring-2 ring-[#007AFF] border-transparent' : 'border-black/[0.04] dark:border-white/10'} group transition-all duration-150 ease-out select-none md:active:scale-[0.99] hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] cursor-pointer">
+                <div class="flex items-center gap-1 flex-shrink-0">
+                    ${liturgieVolgorde.length > 1 ? `
+                    <div class="flex flex-col gap-0.5 mr-0.5">
+                        <button type="button" onclick="event.stopPropagation(); window.verplaatsLiturgieItem(${index}, -1)" aria-label="Zet ${escapeHtml(item.titel)} één plek omhoog" title="Zet omhoog" ${isEerste ? 'disabled' : ''} class="volgorde-move-btn w-7 h-6 rounded-md bg-gray-100/90 dark:bg-white/10 hover:bg-blue-50 dark:hover:bg-blue-950/50 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] flex items-center justify-center transition-colors active:scale-90 cursor-pointer ${isEerste ? 'opacity-25 pointer-events-none' : ''}">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"></path></svg>
+                        </button>
+                        <button type="button" onclick="event.stopPropagation(); window.verplaatsLiturgieItem(${index}, 1)" aria-label="Zet ${escapeHtml(item.titel)} één plek omlaag" title="Zet omlaag" ${isLaatste ? 'disabled' : ''} class="volgorde-move-btn w-7 h-6 rounded-md bg-gray-100/90 dark:bg-white/10 hover:bg-blue-50 dark:hover:bg-blue-950/50 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] flex items-center justify-center transition-colors active:scale-90 cursor-pointer ${isLaatste ? 'opacity-25 pointer-events-none' : ''}">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                    </div>` : ''}
+                    <div class="drag-handle text-gray-400 dark:text-gray-500 group-hover:text-[#007AFF] transition-colors min-w-[36px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-gray-100/70 dark:hover:bg-white/5"
+                         onclick="event.stopPropagation()"
+                         ontouchstart="touchDragStart(event, ${index})" ontouchmove="touchDragMove(event)" ontouchend="touchDragEnd(event)" ontouchcancel="touchDragEnd(event)" title="Houd vast en sleep om positie te wijzigen">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>
+                    </div>
                 </div>
-                <div class="flex-grow overflow-hidden pl-1 md:pl-2">
+                <div class="flex-grow overflow-hidden pl-0.5 md:pl-1">
                     <div class="flex items-center gap-1.5 flex-wrap">
                         <span class="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider">${icon}${escapeHtml(item.type)}</span>
                         <span class="text-[9px] md:text-[10px] font-bold px-1.5 py-0.2 rounded-md ${aantalDias > 1 ? 'bg-blue-50 text-[#007AFF] border border-blue-200/60 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/40' : 'bg-gray-100 text-gray-500 dark:bg-white/10 dark:text-gray-400'}">${aantalDias} ${aantalDias === 1 ? 'dia' : 'dia\'s'}</span>
@@ -15392,6 +15434,30 @@ Antwoord UITSLUITEND in valide JSON:
         }
     };
 
+    // Direct één positie omhoog (-1) of omlaag (+1) verplaatsen — ideaal voor iPhone & één-hand bediening
+    window.verplaatsLiturgieItem = function(index, richting) {
+        if (!Array.isArray(liturgieVolgorde) || liturgieVolgorde.length < 2) return;
+        const doelIndex = index + richting;
+        if (doelIndex < 0 || doelIndex >= liturgieVolgorde.length) return;
+
+        const item = liturgieVolgorde[index];
+        if (typeof window.pushLiturgieUndoState === 'function') {
+            window.pushLiturgieUndoState(`'${item ? item.titel : 'Onderdeel'}' verplaatst`);
+        }
+
+        const [moved] = liturgieVolgorde.splice(index, 1);
+        liturgieVolgorde.splice(doelIndex, 0, moved);
+
+        if (previewItemIdx === index) {
+            previewItemIdx = doelIndex;
+        } else if (previewItemIdx === doelIndex) {
+            previewItemIdx = index;
+        }
+
+        window.tekenVolgorde();
+        if (navigator.vibrate) try { navigator.vibrate(10); } catch (e) {}
+    };
+
     window.verwijder = function(i) {
         const teVerwijderen = liturgieVolgorde[i];
         if (teVerwijderen && typeof window.pushLiturgieUndoState === 'function') {
@@ -15440,6 +15506,9 @@ Antwoord UITSLUITEND in valide JSON:
             if (!item || dragSrcIndex === null) return;
             const dropIndex = parseInt(item.dataset.index);
             if (dropIndex === dragSrcIndex) return;
+            if (typeof window.pushLiturgieUndoState === 'function') {
+                window.pushLiturgieUndoState('Volgorde aangepast');
+            }
             const [moved] = liturgieVolgorde.splice(dragSrcIndex, 1);
             liturgieVolgorde.splice(dropIndex, 0, moved);
             if (previewItemIdx === dragSrcIndex) {
@@ -15457,39 +15526,113 @@ Antwoord UITSLUITEND in valide JSON:
         });
     })();
 
-    // --- DRAG AND DROP (Touch / Mobiel) ---
+    // --- DRAG AND DROP (Touch / Mobiel met live-wissel, behoud van kaartopmaak & auto-scroll) ---
     let touchDragIdx = null;
+    let touchDragEl = null;
     let touchGhost = null;
+    let touchDragOffsetY = 28;
+    let touchDragLastY = 0;
+    let touchAutoScrollTimer = null;
+
+    function _updateTouchLiveOrder(clientY) {
+        const lijst = document.getElementById('volgordeLijst');
+        if (!lijst || !touchDragEl) return;
+        const siblings = Array.from(lijst.querySelectorAll('.volgorde-item')).filter(el => el !== touchDragEl);
+        let targetEl = null;
+        for (const el of siblings) {
+            const r = el.getBoundingClientRect();
+            const mid = r.top + r.height / 2;
+            if (clientY < mid) {
+                targetEl = el;
+                break;
+            }
+        }
+        const changed = targetEl ? (touchDragEl.nextElementSibling !== targetEl) : (lijst.lastElementChild !== touchDragEl);
+        if (changed) {
+            if (targetEl) {
+                lijst.insertBefore(touchDragEl, targetEl);
+            } else {
+                lijst.appendChild(touchDragEl);
+            }
+            if (navigator.vibrate) try { navigator.vibrate(8); } catch (err) {}
+        }
+    }
+
+    function _stopTouchAutoScroll() {
+        if (touchAutoScrollTimer) {
+            clearInterval(touchAutoScrollTimer);
+            touchAutoScrollTimer = null;
+        }
+    }
+
     window.touchDragStart = function(e, index) {
-        touchDragIdx = index;
+        if (!e.touches || !e.touches.length) return;
         const item = e.target.closest('.volgorde-item');
         if (!item) return;
+
         e.preventDefault();
+        e.stopPropagation();
+
+        touchDragIdx = index;
+        touchDragEl = item;
+        const rect = item.getBoundingClientRect();
+        const clientY = e.touches[0].clientY;
+        touchDragLastY = clientY;
+        touchDragOffsetY = Math.max(12, Math.min(rect.height - 12, clientY - rect.top));
+
         item.classList.add('dragging');
+        if (navigator.vibrate) try { navigator.vibrate(14); } catch (err) {}
+
         touchGhost = item.cloneNode(true);
-        touchGhost.className = 'touch-ghost';
-        touchGhost.style.width = item.offsetWidth + 'px';
-        touchGhost.style.left = item.getBoundingClientRect().left + 'px';
-        touchGhost.style.top = (e.touches[0].clientY - 30) + 'px';
+        touchGhost.className = item.className.replace(/\bdragging\b/g, '') + ' touch-ghost';
+        touchGhost.style.width = rect.width + 'px';
+        touchGhost.style.height = rect.height + 'px';
+        touchGhost.style.left = rect.left + 'px';
+        touchGhost.style.top = (clientY - touchDragOffsetY) + 'px';
         document.body.appendChild(touchGhost);
+
+        _stopTouchAutoScroll();
+        touchAutoScrollTimer = setInterval(() => {
+            if (touchDragIdx === null || !touchGhost) {
+                _stopTouchAutoScroll();
+                return;
+            }
+            const y = touchDragLastY;
+            const vh = window.innerHeight || 800;
+            if (y < 120) {
+                window.scrollBy(0, -10);
+                _updateTouchLiveOrder(y);
+            } else if (y > vh - 130) {
+                window.scrollBy(0, 10);
+                _updateTouchLiveOrder(y);
+            }
+        }, 25);
     };
     window.touchDragMove = function(e) {
-        if (touchDragIdx === null || !touchGhost) return;
+        if (touchDragIdx === null || !touchGhost || !e.touches || !e.touches.length) return;
         e.preventDefault();
+        e.stopPropagation();
         const y = e.touches[0].clientY;
-        touchGhost.style.top = (y - 30) + 'px';
-        document.querySelectorAll('.volgorde-item').forEach(el => {
-            el.classList.remove('drag-over');
-            const r = el.getBoundingClientRect();
-            const i = parseInt(el.dataset.index);
-            if (i !== touchDragIdx && y > r.top && y < r.bottom) el.classList.add('drag-over');
-        });
+        touchDragLastY = y;
+        touchGhost.style.top = (y - touchDragOffsetY) + 'px';
+        _updateTouchLiveOrder(y);
     };
     window.touchDragEnd = function(e) {
+        _stopTouchAutoScroll();
         if (touchDragIdx === null) return;
+
+        const lijst = document.getElementById('volgordeLijst');
         let dropIdx = touchDragIdx;
-        document.querySelectorAll('.volgorde-item.drag-over').forEach(el => { dropIdx = parseInt(el.dataset.index); });
+        if (lijst && touchDragEl) {
+            const alleKaarten = Array.from(lijst.querySelectorAll('.volgorde-item'));
+            const gevondenIdx = alleKaarten.indexOf(touchDragEl);
+            if (gevondenIdx >= 0) dropIdx = gevondenIdx;
+        }
+
         if (dropIdx !== touchDragIdx) {
+            if (typeof window.pushLiturgieUndoState === 'function') {
+                window.pushLiturgieUndoState('Volgorde aangepast');
+            }
             const [moved] = liturgieVolgorde.splice(touchDragIdx, 1);
             liturgieVolgorde.splice(dropIdx, 0, moved);
             if (previewItemIdx === touchDragIdx) {
@@ -15503,6 +15646,7 @@ Antwoord UITSLUITEND in valide JSON:
         if (touchGhost) { touchGhost.remove(); touchGhost = null; }
         document.querySelectorAll('.volgorde-item').forEach(el => el.classList.remove('dragging', 'drag-over'));
         touchDragIdx = null;
+        touchDragEl = null;
         window.tekenVolgorde();
     };
 
