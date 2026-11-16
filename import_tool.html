@@ -16,7 +16,7 @@
 
         <div class="mb-4">
             <label class="block font-bold mb-1.5 text-gray-700">Om welke bundel gaat het?</label>
-            <select id="bundelPrefix" class="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-[#007AFF] outline-none transition-all">
+            <select id="bundelPrefix" onchange="updateParsePreview()" class="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-[#007AFF] outline-none transition-all">
                 <option value="Weerklank Lied ">Weerklank Lied</option>
                 <option value="Weerklank Psalm ">Weerklank Psalm</option>
                 <option value="Op Toonhoogte ">Op Toonhoogte</option>
@@ -30,7 +30,8 @@
 
         <div class="mb-4">
             <label class="block font-bold mb-1.5 text-gray-700">Plak de tekst hier:</label>
-            <textarea id="inputText" rows="12" class="w-full p-4 border border-gray-300 rounded-lg bg-gray-50 font-mono text-sm focus:ring-2 focus:ring-[#007AFF] outline-none transition-all resize-y shadow-inner" placeholder="Voorbeeld:&#10;&#10;260:1&#10;&#10;God maakt ons dienstbaar aan zijn werk,&#10;roept ons tot taken in zijn kerk.&#10;&#10;260:2&#10;&#10;Hij die het van de Heer verwacht..."></textarea>
+            <textarea id="inputText" oninput="updateParsePreview()" rows="12" class="w-full p-4 border border-gray-300 rounded-lg bg-gray-50 font-mono text-sm focus:ring-2 focus:ring-[#007AFF] outline-none transition-all resize-y shadow-inner" placeholder="Voorbeeld:&#10;&#10;260:1&#10;&#10;God maakt ons dienstbaar aan zijn werk,&#10;roept ons tot taken in zijn kerk.&#10;&#10;260:2&#10;&#10;Hij die het van de Heer verwacht..."></textarea>
+            <div id="parsePreview" class="hidden mt-2 px-3 py-2 rounded-lg text-xs font-semibold"></div>
         </div>
 
         <div class="flex flex-col sm:flex-row gap-3">
@@ -290,6 +291,28 @@
             const opnieuw = [...mislukteItems];
             log(`\n▶ Opnieuw proberen voor ${opnieuw.length} mislukte liederen...\n`, 'text-white font-bold');
             await runBatch(opnieuw);
+        }
+
+        function updateParsePreview() {
+            const box = document.getElementById('parsePreview');
+            const raw = document.getElementById('inputText').value.trim();
+            if (!raw) {
+                box.className = 'hidden mt-2 px-3 py-2 rounded-lg text-xs font-semibold';
+                box.textContent = '';
+                return;
+            }
+            const prefix = document.getElementById('bundelPrefix').value;
+            const songs = parseLiederen(raw);
+            const keys = Object.keys(songs);
+            if (keys.length === 0) {
+                box.className = 'mt-2 px-3 py-2 rounded-lg text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200';
+                box.textContent = '⚠️ Nog geen liederen herkend — controleer of regels beginnen met bijv. "260:1".';
+                return;
+            }
+            const totaalCoupletten = keys.reduce((sum, k) => sum + songs[k].length, 0);
+            const voorbeelden = keys.slice(0, 3).map(k => prefix + k).join(', ') + (keys.length > 3 ? ', ...' : '');
+            box.className = 'mt-2 px-3 py-2 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200';
+            box.textContent = `✅ ${keys.length} ${keys.length === 1 ? 'lied' : 'liederen'} herkend (${totaalCoupletten} ${totaalCoupletten === 1 ? 'couplet' : 'coupletten'}) — ${voorbeelden}`;
         }
     </script>
 </body>
