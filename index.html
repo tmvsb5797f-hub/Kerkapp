@@ -16004,31 +16004,40 @@ Antwoord UITSLUITEND in valide JSON:
     let dragSrcIndex = null;
     (function() {
         const lijst = document.getElementById('volgordeLijst');
+        if (!lijst) return;
         lijst.addEventListener('dragstart', e => {
             const item = e.target.closest('.volgorde-item');
             if (!item) return;
-            dragSrcIndex = parseInt(item.dataset.index);
-            item.classList.add('dragging');
-            e.dataTransfer.effectAllowed = 'move';
+            dragSrcIndex = parseInt(item.dataset.index, 10);
+            if (e.dataTransfer) {
+                e.dataTransfer.effectAllowed = 'move';
+                try { e.dataTransfer.setData('text/plain', String(dragSrcIndex)); } catch (err) {}
+            }
+            requestAnimationFrame(() => {
+                if (dragSrcIndex !== null) item.classList.add('dragging');
+            });
         });
         lijst.addEventListener('dragover', e => {
+            if (dragSrcIndex === null) return;
             e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
+            if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
             const item = e.target.closest('.volgorde-item');
             if (!item) return;
             document.querySelectorAll('.volgorde-item').forEach(el => el.classList.remove('drag-over'));
-            if (parseInt(item.dataset.index) !== dragSrcIndex) item.classList.add('drag-over');
+            if (parseInt(item.dataset.index, 10) !== dragSrcIndex) item.classList.add('drag-over');
         });
         lijst.addEventListener('dragleave', e => {
             const item = e.target.closest('.volgorde-item');
             if (item) item.classList.remove('drag-over');
         });
         lijst.addEventListener('drop', e => {
+            if (dragSrcIndex === null) return;
             e.preventDefault();
+            e.stopPropagation();
             const item = e.target.closest('.volgorde-item');
-            if (!item || dragSrcIndex === null) return;
-            const dropIndex = parseInt(item.dataset.index);
-            if (dropIndex === dragSrcIndex) return;
+            if (!item) return;
+            const dropIndex = parseInt(item.dataset.index, 10);
+            if (isNaN(dropIndex) || dropIndex === dragSrcIndex) return;
             if (typeof window.pushLiturgieUndoState === 'function') {
                 window.pushLiturgieUndoState('Volgorde aangepast');
             }
@@ -16041,6 +16050,7 @@ Antwoord UITSLUITEND in valide JSON:
             } else if (dragSrcIndex > previewItemIdx && dropIndex <= previewItemIdx) {
                 previewItemIdx++;
             }
+            dragSrcIndex = null;
             window.tekenVolgorde();
         });
         lijst.addEventListener('dragend', () => {
