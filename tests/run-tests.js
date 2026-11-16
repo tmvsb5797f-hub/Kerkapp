@@ -143,6 +143,8 @@ test('index.html bevat touch drag/resize voor tekstvak en QR-code + modulaire im
     assert.ok(html.includes('.resize-handle::after'), 'grotere touch hitbox ontbreekt');
     assert.ok(html.includes('window._toggleSlideTextBox'), '_toggleSlideTextBox koppeling ontbreekt');
     assert.ok(html.includes('touchcancel'), 'touchcancel cleanup ontbreekt');
+    assert.ok(html.includes('id="slideAlignAllBtn"'), 'Alles-uitlijnen knop ontbreekt');
+    assert.ok(html.includes('window.pasUitlijningToeOpAlles'), 'pasUitlijningToeOpAlles functie ontbreekt');
 });
 
 test('import_tool.html bevat timeout, retries, stop-knop en live parsePreview', () => {

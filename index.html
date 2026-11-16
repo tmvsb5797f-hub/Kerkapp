@@ -2242,6 +2242,9 @@
                             <button type="button" id="slideEditBoxBtn" onclick="toggleSlideTextBoxActive()" class="px-2 py-1 rounded-md text-[10px] font-semibold text-gray-600 dark:text-gray-300 hover:text-gray-900 transition-all flex items-center gap-1 active:scale-95 cursor-pointer" title="Tekstpositie en afmetingen aanpassen">
                                 <span>📐 Tekstvak</span>
                             </button>
+                            <button type="button" id="slideAlignAllBtn" onclick="pasUitlijningToeOpAlles()" class="px-2 py-1 rounded-md text-[10px] font-semibold text-[#007AFF] hover:bg-white dark:hover:bg-white/10 transition-all flex items-center gap-1 active:scale-95 cursor-pointer" title="Pas uitlijning en tekstvak van deze dia toe op alle dia's">
+                                <span>✨ Alles</span>
+                            </button>
                         </div>
 
                         <div id="slideNav" class="flex items-center gap-1.5 hidden ml-auto">
@@ -14211,6 +14214,45 @@ Antwoord UITSLUITEND in valide JSON:
         updateSlideAlignKnoppenUI();
         tekenSlidePreview();
         window.toonToast(`Dia uitlijning: ${align === 'left' ? 'Links uitgelijnd' : 'Gecentreerd'}`, "info");
+    };
+
+    window.pasUitlijningToeOpAlles = function() {
+        if (previewItemIdx < 0 || previewItemIdx >= liturgieVolgorde.length) {
+            window.toonToast("Selecteer eerst een dia als voorbeeld.", "info");
+            return;
+        }
+        const bronItem = liturgieVolgorde[previewItemIdx];
+        if (!bronItem || bronItem.type === 'QR') {
+            window.toonToast("Selecteer een tekst-dia (geen QR-dia) om op alles toe te passen.", "info");
+            return;
+        }
+
+        if (typeof window.pushLiturgieUndoState === 'function') {
+            window.pushLiturgieUndoState('Alles uitgelijnd zoals huidige dia');
+        }
+
+        const doelAlign = window.getDiaAlign(bronItem, previewSubSlide);
+        const posKeys = ['tekstX', 'tekstY', 'tekstW', 'tekstH'];
+        let bijgewerkt = 0;
+
+        liturgieVolgorde.forEach((doel) => {
+            if (!doel || doel.type === 'QR') return;
+            doel.align = doelAlign;
+            if (doel.subSlideAlign) delete doel.subSlideAlign;
+            posKeys.forEach((k) => {
+                if (bronItem[k] !== undefined) {
+                    doel[k] = bronItem[k];
+                } else {
+                    delete doel[k];
+                }
+            });
+            bijgewerkt++;
+        });
+
+        bewaarLiturgie();
+        updateSlideAlignKnoppenUI();
+        tekenSlidePreview();
+        window.toonToast(`Uitlijning en tekstvak van deze dia toegepast op ${bijgewerkt} onderdeel${bijgewerkt === 1 ? '' : 'en'}!`, "success");
     };
 
     function updateSlideAlignKnoppenUI() {
