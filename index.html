@@ -8572,14 +8572,16 @@ Bijbelliederen`;
     }
 
   async function slaLiedOpInCloud(titel, tekst, stil = false) {
-        // Zorg dat opmaaktekens (** of <b>) nooit in de database terechtkomen; database blijft schone platte tekst
-        const schoneTekst = (tekst || "").replace(/\*\*/g, '').replace(/<\/?b>/gi, '').trim();
+        // Interne systeemsleutels (zoals __meelees_geschiedenis...__ en __week_tikkie...__) bevatten JSON en mogen nooit als liedtekst worden genormaliseerd of een toast triggeren
+        const isSysteemSleutel = typeof titel === 'string' && (titel.startsWith('__') || titel.startsWith('_'));
+        // Zorg dat opmaaktekens (** of <b>) nooit in de database terechtkomen; trek coupletkopjes (zoals "Psalm 102:1") automatisch recht naar "1."
+        let schoneTekst = (tekst || "").replace(/\*\*/g, '').replace(/<\/?b>/gi, '').trim();
+        if (!isSysteemSleutel && typeof window.normaliseerLiedTekstKopjes === 'function') {
+            schoneTekst = window.normaliseerLiedTekstKopjes(schoneTekst);
+        }
         window.liederenDatabase[titel] = schoneTekst;
         // Lokale cache meteen bijwerken zodat het nieuwe lied direct beschikbaar is.
         try { localStorage.setItem('liederenCache', JSON.stringify(window.liederenDatabase)); } catch (e) {}
-        
-        // Interne systeemsleutels (zoals __meelees_geschiedenis...__ en __week_tikkie...__) mogen NOOIT een toast-melding triggeren!
-        const isSysteemSleutel = typeof titel === 'string' && (titel.startsWith('__') || titel.startsWith('_'));
         
         try {
             const huidigeGem = window.getActieveGemeente ? window.getActieveGemeente() : "Bethelkerk Maassluis";
@@ -15047,9 +15049,9 @@ Antwoord UITSLUITEND in valide JSON:
 
             const defX = window.getDefTekstX ? window.getDefTekstX() : TEKST_DEF_X;
             const defW = window.getDefTekstW ? window.getDefTekstW() : TEKST_DEF_W;
-            const titelLeftPct = ((item.tekstX ?? defX) / SLIDE_W * 100).toFixed(2);
+            const titelLeftPct = (defX / SLIDE_W * 100).toFixed(2);
             const titelTopPct = (TITEL_Y / SLIDE_H * 100).toFixed(2);
-            const titelW = ((item.tekstW ?? defW) / SLIDE_W * 100).toFixed(2);
+            const titelW = (defW / SLIDE_W * 100).toFixed(2);
             const fontFamily = (item.font || document.getElementById('fontSelect')?.value || 'Calibri') + ', sans-serif';
 
             preview.innerHTML = `

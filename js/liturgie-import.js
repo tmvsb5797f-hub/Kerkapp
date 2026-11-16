@@ -198,7 +198,68 @@
     }
 
     /**
-     * Parser voor bulk-liederen in liedbundelsonline-formaat (bijv. "260:1").
+     * Trekt foutieve coupletkopjes in een losse liedtekst automatisch recht naar "1.\n...", "2.\n...".
+     * Herkent o.a. "Psalm 102:1", "Weerklank 260:1", "102:1", "Vers 1", "Couplet 2", "1:", "1)".
+     */
+    function normaliseerLiedTekstKopjes(rawTekst) {
+        if (!rawTekst || typeof rawTekst !== 'string') return '';
+        const cleaned = rawTekst.replace(/\u00A0/g, ' ').replace(/\r\n?/g, '\n').trim();
+        if (!cleaned) return '';
+
+        const regels = cleaned.split('\n');
+        const out = [];
+
+        const bundelPrefixRe = /^(?:(?:DNP\s*)?(?:Psalm(?:en)?|Ps\.?|Weerklank(?:\s+Lied)?|Op\s+Toonhoogte|OTH|Opwekking|Opw\.?|Liedboek|Lied|Gezang|Gez\.?|Hemelhoog|HH|ELB|JdH)\s+)?\d+[a-zA-Z]?\s*:\s*(\d{1,2})\.?\.?(?:\s+(.*))?$/i;
+        const versWoordRe = /^(?:Vers|Couplet|Strofe)\s+(\d{1,2})\s*[:.]?(?:\s+(.*))?$/i;
+        const losNummerRe = /^(\d{1,2})\s*[:)]\s*(.*)$/;
+        const inlinePuntRe = /^(\d{1,2})\.\s+(.+)$/;
+
+        for (let i = 0; i < regels.length; i++) {
+            const trimmed = regels[i].trim();
+            if (!trimmed) {
+                if (out.length > 0 && out[out.length - 1] !== '') {
+                    out.push('');
+                }
+                continue;
+            }
+
+            let versNr = null;
+            let restTekst = '';
+
+            let m = trimmed.match(bundelPrefixRe);
+            if (m) {
+                versNr = parseInt(m[1], 10);
+                restTekst = (m[2] || '').trim();
+            } else if ((m = trimmed.match(versWoordRe))) {
+                versNr = parseInt(m[1], 10);
+                restTekst = (m[2] || '').trim();
+            } else if ((m = trimmed.match(losNummerRe))) {
+                versNr = parseInt(m[1], 10);
+                restTekst = (m[2] || '').trim();
+            } else if ((m = trimmed.match(inlinePuntRe))) {
+                versNr = parseInt(m[1], 10);
+                restTekst = (m[2] || '').trim();
+            }
+
+            if (versNr !== null && versNr >= 1 && versNr <= 99) {
+                if (out.length > 0 && out[out.length - 1] !== '') {
+                    out.push('');
+                }
+                out.push(`${versNr}.`);
+                if (restTekst) {
+                    out.push(restTekst);
+                }
+            } else {
+                out.push(trimmed);
+            }
+        }
+
+        while (out.length > 0 && out[out.length - 1] === '') out.pop();
+        return out.join('\n');
+    }
+
+    /**
+     * Parser voor bulk-liederen in liedbundelsonline-formaat (bijv. "260:1" of "Psalm 102:1").
      */
     function parseBulkLiederenTekst(rawText) {
         if (!rawText || typeof rawText !== 'string') return {};
@@ -219,14 +280,19 @@
             }
         }
 
+        const headerRe = /^(?:(?:DNP\s*)?(?:Psalm(?:en)?|Ps\.?|Weerklank(?:\s+Lied)?|Op\s+Toonhoogte|OTH|Opwekking|Opw\.?|Liedboek|Lied|Gezang|Gez\.?|Hemelhoog|HH|ELB|JdH)\s+)?([A-Za-z0-9]+)\s*:\s*(\d+)\.?(?:\s+(.*))?$/i;
+
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i].trim();
-            const match = line.match(/^([A-Za-z0-9]+)\s*:\s*(\d+)\.?$/);
-            if (match) {
+            const match = line.match(headerRe);
+            if (match && /\d/.test(match[1])) {
                 saveCurrent();
                 currentSong = match[1];
                 currentVerse = match[2];
                 currentText = [];
+                if (match[3] && match[3].trim()) {
+                    currentText.push(match[3].trim());
+                }
             } else if (line === '') {
                 if (currentText.length > 0 && currentText[currentText.length - 1] !== '') {
                     currentText.push(line);
@@ -243,6 +309,7 @@
         filterPastoraleGevoeligeGegevens,
         parseJsonArraySafe,
         parseLiturgieLokaal,
+        normaliseerLiedTekstKopjes,
         parseBulkLiederenTekst
     };
 

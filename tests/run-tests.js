@@ -125,13 +125,20 @@ test('parseLiturgieLokaal herkent psalmen, liederen en Bijbelteksten (ook afgeko
 });
 
 test('parseBulkLiederenTekst verwerkt liedbundelsonline-formaat, spaties en CRLF', () => {
-    const raw = '260:1\r\nGod maakt ons dienstbaar\u00A0aan zijn werk.\r\n\r\n260 : 2.\r\nTweede couplet regel 1\r\nTweede couplet regel 2\r\n\r\n12a:1\r\nLied 12a vers 1';
+    const raw = '260:1\r\nGod maakt ons dienstbaar\u00A0aan zijn werk.\r\n\r\n260 : 2.\r\nTweede couplet regel 1\r\nTweede couplet regel 2\r\n\r\nPsalm 102:1 Hoor, o HEERE\r\n\r\n12a:1\r\nLied 12a vers 1';
     const songs = liturgieImport.parseBulkLiederenTekst(raw);
-    assert.deepStrictEqual(Object.keys(songs), ['260', '12a']);
+    assert.deepStrictEqual(Object.keys(songs), ['102', '260', '12a']);
     assert.strictEqual(songs['260'].length, 2);
     assert.ok(songs['260'][0].startsWith('1.\nGod maakt ons dienstbaar'));
     assert.ok(songs['260'][1].startsWith('2.\nTweede couplet regel 1'));
+    assert.ok(songs['102'][0].startsWith('1.\nHoor, o HEERE'));
     assert.strictEqual(songs['12a'].length, 1);
+});
+
+test('normaliseerLiedTekstKopjes trekt Psalm 102:1 en Vers 2 recht naar 1. / 2.', () => {
+    const input = 'Psalm 102:1 Hoor, o HEERE, mijn gebed\nEn laat mijn hulpgeroep tot U komen.\nPsalm 102:2\nVerberg Uw aangezicht niet voor mij\n\nVers 3:\nWant mijn dagen zijn verdwenen';
+    const expected = '1.\nHoor, o HEERE, mijn gebed\nEn laat mijn hulpgeroep tot U komen.\n\n2.\nVerberg Uw aangezicht niet voor mij\n\n3.\nWant mijn dagen zijn verdwenen';
+    assert.strictEqual(liturgieImport.normaliseerLiedTekstKopjes(input), expected);
 });
 
 console.log('\n4. Regressietests: iPad/iPhone touch & Bulk Importer');
