@@ -2,16 +2,17 @@
 <html lang="nl">
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bulk Importer - Liturgie Assistent</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 p-8 font-sans text-gray-800">
-    <div class="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-200">
+<body class="bg-gray-100 p-4 sm:p-8 font-sans text-gray-800">
+    <div class="max-w-4xl mx-auto bg-white p-5 sm:p-8 rounded-xl shadow-lg border border-gray-200">
         <div class="flex items-center gap-3 mb-2">
-            <svg class="w-8 h-8 text-[#007AFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-            <h1 class="text-3xl font-bold">Liederen Bulk Importer</h1>
+            <svg class="w-8 h-8 text-[#007AFF] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+            <h1 class="text-2xl sm:text-3xl font-bold">Liederen Bulk Importer</h1>
         </div>
-        <p class="mb-6 text-gray-600">Kopieer de tekst direct vanuit liedbundelsonline.nl in het tekstvak hieronder. Het script herkent automatisch de opmaak (bijv. <code>260:1</code>) en voegt de coupletten per lied netjes samen voordat het ze naar Cloudflare D1 stuurt.</p>
+        <p class="mb-6 text-sm sm:text-base text-gray-600">Kopieer de tekst direct vanuit liedbundelsonline.nl in het tekstvak hieronder. Het script herkent automatisch de opmaak (bijv. <code>260:1</code>) en voegt de coupletten per lied netjes samen voordat het ze naar Cloudflare D1 stuurt.</p>
 
         <div class="mb-4">
             <label class="block font-bold mb-1.5 text-gray-700">Om welke bundel gaat het?</label>
@@ -22,6 +23,8 @@
                 <option value="DNP Psalm ">De Nieuwe Psalmberijming (DNP)</option>
                 <option value="Psalm ">Traditionele Psalm (Berijming 1773)</option>
                 <option value="Opwekking ">Opwekking</option>
+                <option value="Liedboek ">Liedboek</option>
+                <option value="Hemelhoog ">Hemelhoog</option>
             </select>
         </div>
 
@@ -30,49 +33,72 @@
             <textarea id="inputText" rows="12" class="w-full p-4 border border-gray-300 rounded-lg bg-gray-50 font-mono text-sm focus:ring-2 focus:ring-[#007AFF] outline-none transition-all resize-y shadow-inner" placeholder="Voorbeeld:&#10;&#10;260:1&#10;&#10;God maakt ons dienstbaar aan zijn werk,&#10;roept ons tot taken in zijn kerk.&#10;&#10;260:2&#10;&#10;Hij die het van de Heer verwacht..."></textarea>
         </div>
 
-        <button onclick="verwerkEnUpload()" id="uploadBtn" class="bg-[#007AFF] text-white px-6 py-4 rounded-xl font-bold hover:bg-blue-600 w-full transition-colors flex items-center justify-center gap-2 shadow-md">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-            Start Bulk Upload naar Cloudflare D1
-        </button>
+        <div class="flex flex-col sm:flex-row gap-3">
+            <button onclick="verwerkEnUpload()" id="uploadBtn" class="bg-[#007AFF] text-white px-6 py-4 rounded-xl font-bold hover:bg-blue-600 flex-1 transition-colors flex items-center justify-center gap-2 shadow-md">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                <span>Start Bulk Upload naar Cloudflare D1</span>
+            </button>
+            <button onclick="stopUpload()" id="stopBtn" class="hidden bg-red-500 text-white px-5 py-4 rounded-xl font-bold hover:bg-red-600 transition-colors flex items-center justify-center gap-2 shadow-md">
+                <span>Stop</span>
+            </button>
+            <button onclick="hervatMislukte()" id="retryFailedBtn" class="hidden bg-amber-500 text-white px-5 py-4 rounded-xl font-bold hover:bg-amber-600 transition-colors flex items-center justify-center gap-2 shadow-md">
+                <span>Mislukte opnieuw</span>
+            </button>
+        </div>
 
         <div class="mt-8">
             <div class="flex justify-between items-end mb-2">
                 <label class="block font-bold text-gray-700">Upload Logboek</label>
-                <span id="progressIndicator" class="text-xs font-bold text-gray-400 uppercase tracking-wider hidden">Bezig...</span>
+                <span id="progressIndicator" class="text-xs font-bold text-[#007AFF] uppercase tracking-wider hidden">0 / 0</span>
+            </div>
+            <div id="progressBarWrap" class="w-full h-2 bg-gray-200 rounded-full overflow-hidden mb-3 hidden">
+                <div id="progressBar" class="h-full bg-[#007AFF] transition-all duration-200" style="width: 0%"></div>
             </div>
             <div id="log" class="bg-[#1D1D1F] text-[#34C759] p-4 rounded-xl h-64 overflow-y-auto font-mono text-[13px] whitespace-pre-wrap shadow-inner leading-relaxed">Wacht op invoer...</div>
         </div>
     </div>
 
     <script>
+        const WORKER_URL = "https://kerkdata.kerkapp.workers.dev/liederen";
+        const REQUEST_TIMEOUT_MS = 10000;
+        const MAX_RETRIES = 2;
+
+        let uploadBezig = false;
+        let stopAangevraagd = false;
+        let actieveAbortController = null;
+        let mislukteItems = [];
+
         function log(msg, colorClass = '') {
             const l = document.getElementById('log');
             if (l.textContent === 'Wacht op invoer...') l.textContent = '';
-            
+
             const span = document.createElement('span');
             span.textContent = msg + '\n';
             if (colorClass) span.className = colorClass;
-            
+
             l.appendChild(span);
             l.scrollTop = l.scrollHeight;
         }
 
-        async function verwerkEnUpload() {
-            const text = document.getElementById('inputText').value.trim();
-            if (!text) { alert("Plak eerst wat tekst!"); return; }
-            
-            const prefix = document.getElementById('bundelPrefix').value;
-            const btn = document.getElementById('uploadBtn');
+        function setProgress(done, total, failedCount) {
             const indicator = document.getElementById('progressIndicator');
-            
-            btn.disabled = true;
-            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            const wrap = document.getElementById('progressBarWrap');
+            const bar = document.getElementById('progressBar');
+            if (total <= 0) {
+                indicator.classList.add('hidden');
+                wrap.classList.add('hidden');
+                return;
+            }
             indicator.classList.remove('hidden');
-            
-            document.getElementById('log').innerHTML = '';
-            log(`▶ Starten met verwerken van tekst...`, 'text-white font-bold');
+            wrap.classList.remove('hidden');
+            const pct = Math.round((done / total) * 100);
+            bar.style.width = pct + '%';
+            indicator.textContent = `${done} / ${total} (${pct}%)${failedCount > 0 ? ` · ${failedCount} mislukt` : ''}`;
+        }
 
-            const lines = text.split('\n');
+        function parseLiederen(rawText) {
+            const cleaned = rawText.replace(/\u00A0/g, ' ').replace(/\r\n?/g, '\n');
+            const lines = cleaned.split('\n');
             const songs = {};
             let currentSong = null;
             let currentVerse = null;
@@ -90,16 +116,15 @@
 
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i].trim();
-                // We zoeken naar bijv. '260:1' of '12a:3'
-                const match = line.match(/^([A-Za-z0-9]+):(\d+)$/);
+                // Herkent bijv. '260:1', '12a:3', '260 : 1', '260:1.'
+                const match = line.match(/^([A-Za-z0-9]+)\s*:\s*(\d+)\.?$/);
                 if (match) {
                     saveCurrent();
                     currentSong = match[1];
                     currentVerse = match[2];
                     currentText = [];
                 } else if (line === '') {
-                    // Alleen lege regels toevoegen als we al ín een couplet zitten
-                    if (currentText.length > 0 && currentText[currentText.length-1] !== '') {
+                    if (currentText.length > 0 && currentText[currentText.length - 1] !== '') {
                         currentText.push(line);
                     }
                 } else {
@@ -107,42 +132,164 @@
                 }
             }
             saveCurrent();
+            return songs;
+        }
 
+        async function uploadMetRetry(item) {
+            let laatsteFout = null;
+            for (let poging = 0; poging <= MAX_RETRIES; poging++) {
+                if (stopAangevraagd) throw new Error('Gestopt door gebruiker');
+
+                const controller = new AbortController();
+                actieveAbortController = controller;
+                const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+                try {
+                    const res = await fetch(WORKER_URL, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        signal: controller.signal,
+                        body: JSON.stringify({
+                            id: item.titel,
+                            tekst: item.tekst
+                        })
+                    });
+                    clearTimeout(timer);
+                    actieveAbortController = null;
+
+                    if (res.ok) return true;
+
+                    // Retry bij rate-limit (429) of tijdelijke serverfout (5xx)
+                    if ((res.status === 429 || res.status >= 500) && poging < MAX_RETRIES) {
+                        const wachtMs = 600 * (poging + 1);
+                        log(`[WAIT] ${item.titel}: status ${res.status}, nieuwe poging over ${wachtMs}ms...`, 'text-amber-400');
+                        await new Promise(r => setTimeout(r, wachtMs));
+                        continue;
+                    }
+                    throw new Error(`Server status ${res.status}`);
+                } catch (err) {
+                    clearTimeout(timer);
+                    actieveAbortController = null;
+                    if (stopAangevraagd) throw new Error('Gestopt door gebruiker');
+
+                    laatsteFout = err.name === 'AbortError'
+                        ? new Error(`Time-out na ${REQUEST_TIMEOUT_MS / 1000}s`)
+                        : err;
+
+                    if (poging < MAX_RETRIES) {
+                        const wachtMs = 600 * (poging + 1);
+                        log(`[WAIT] ${item.titel}: ${laatsteFout.message}, nieuwe poging...`, 'text-amber-400');
+                        await new Promise(r => setTimeout(r, wachtMs));
+                        continue;
+                    }
+                }
+            }
+            throw laatsteFout || new Error('Onbekende uploadfout');
+        }
+
+        async function runBatch(items) {
+            if (uploadBezig) return;
+            uploadBezig = true;
+            stopAangevraagd = false;
+            mislukteItems = [];
+
+            const btn = document.getElementById('uploadBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            const retryBtn = document.getElementById('retryFailedBtn');
+
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            stopBtn.classList.remove('hidden');
+            retryBtn.classList.add('hidden');
+
+            let klaar = 0;
+            setProgress(0, items.length, 0);
+
+            try {
+                for (const item of items) {
+                    if (stopAangevraagd) {
+                        log(`\n⏹ Upload handmatig gestopt na ${klaar} van ${items.length} liederen.`, 'text-amber-400 font-bold');
+                        break;
+                    }
+
+                    try {
+                        await uploadMetRetry(item);
+                        log(`[ OK ] ${item.titel} geüpload! (${item.coupletAantal} coupletten)`);
+                    } catch (err) {
+                        if (stopAangevraagd) {
+                            log(`\n⏹ Upload handmatig gestopt.`, 'text-amber-400 font-bold');
+                            break;
+                        }
+                        mislukteItems.push(item);
+                        log(`[FAIL] Fout bij ${item.titel}: ${err.message}`, 'text-[#FF3B30]');
+                    }
+
+                    klaar++;
+                    setProgress(klaar, items.length, mislukteItems.length);
+
+                    if (!stopAangevraagd && klaar < items.length) {
+                        await new Promise(r => setTimeout(r, 250));
+                    }
+                }
+
+                if (!stopAangevraagd) {
+                    if (mislukteItems.length === 0) {
+                        log(`\n▶ ALLES KLAAR! (${items.length} liederen geüpload)`, 'text-blue-400 font-bold');
+                    } else {
+                        log(`\n⚠ Klaar met ${mislukteItems.length} mislukte upload(s). Klik op 'Mislukte opnieuw' om alleen die opnieuw te sturen.`, 'text-amber-400 font-bold');
+                        retryBtn.classList.remove('hidden');
+                    }
+                }
+            } finally {
+                uploadBezig = false;
+                actieveAbortController = null;
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                stopBtn.classList.add('hidden');
+            }
+        }
+
+        function stopUpload() {
+            if (!uploadBezig) return;
+            stopAangevraagd = true;
+            if (actieveAbortController) {
+                try { actieveAbortController.abort(); } catch (e) {}
+            }
+        }
+
+        async function verwerkEnUpload() {
+            if (uploadBezig) return;
+            const text = document.getElementById('inputText').value.trim();
+            if (!text) { alert("Plak eerst wat tekst!"); return; }
+
+            const prefix = document.getElementById('bundelPrefix').value;
+            document.getElementById('log').innerHTML = '';
+            log(`▶ Starten met verwerken van tekst...`, 'text-white font-bold');
+
+            const songs = parseLiederen(text);
             const songKeys = Object.keys(songs);
             log(`▶ Verwerking klaar. Gevonden liederen: ${songKeys.length}\n`, 'text-white font-bold');
 
-            for (const songNum of songKeys) {
-                const titel = prefix + songNum;
-                // Coupletten scheiden door een dubbele enter (\n\n) zodat de Kerkapp ze goed inlaadt
-                const tekst = songs[songNum].join('\n\n');
-
-                try {
-                    const res = await fetch("https://kerkdata.kerkapp.workers.dev/liederen", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            id: titel, // MOET 'id' ZIJN VOOR DE WORKER!
-                            tekst: tekst
-                        })
-                    });
-
-                    if (res.ok) {
-                        log(`[ OK ] ${titel} geüpload! (${songs[songNum].length} coupletten)`);
-                    } else {
-                        log(`[FAIL] Fout bij ${titel}: Server status ${res.status}`, 'text-[#FF3B30]');
-                    }
-                } catch (err) {
-                    log(`[FAIL] Fout bij ${titel}: ${err.message}`, 'text-[#FF3B30]');
-                }
-
-                // Wacht een kwart seconde om de Cloudflare Worker niet te overbelasten (Rate Limiting)
-                await new Promise(r => setTimeout(r, 250));
+            if (songKeys.length === 0) {
+                log(`[WARN] Geen liederen gevonden. Controleer of regels beginnen met bijv. "260:1".`, 'text-amber-400');
+                setProgress(0, 0, 0);
+                return;
             }
 
-            log(`\n▶ ALLES KLAAR! Je kunt dit tabblad sluiten.`, 'text-blue-400 font-bold');
-            btn.disabled = false;
-            btn.classList.remove('opacity-50', 'cursor-not-allowed');
-            indicator.classList.add('hidden');
+            const items = songKeys.map(songNum => ({
+                titel: prefix + songNum,
+                tekst: songs[songNum].join('\n\n'),
+                coupletAantal: songs[songNum].length
+            }));
+
+            await runBatch(items);
+        }
+
+        async function hervatMislukte() {
+            if (uploadBezig || mislukteItems.length === 0) return;
+            const opnieuw = [...mislukteItems];
+            log(`\n▶ Opnieuw proberen voor ${opnieuw.length} mislukte liederen...\n`, 'text-white font-bold');
+            await runBatch(opnieuw);
         }
     </script>
 </body>
