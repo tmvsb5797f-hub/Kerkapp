@@ -54,7 +54,7 @@
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('service-worker.js?v=30').catch(function (e) { console.warn('SW registratie mislukt:', e); });
+      navigator.serviceWorker.register('service-worker.js?v=31').catch(function (e) { console.warn('SW registratie mislukt:', e); });
     });
   }
 </script>
@@ -1818,6 +1818,30 @@
     </div>
 </div>
 
+<!-- EERSTE-BEZOEK LICENTIE MELDING MODAL -->
+<div id="licentieMeldingModal" class="fixed inset-0 z-[260] hidden items-center justify-center bg-black/50 modal-backdrop-safe transition-opacity p-3 sm:p-4">
+    <div class="bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[24px] sm:rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.3)] ring-1 ring-black/[0.06] dark:ring-white/10 w-full max-w-md overflow-hidden flex flex-col transform transition-all modal-animate">
+        <div class="p-5 sm:p-6 flex flex-col items-center text-center gap-3.5">
+            <div class="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-[#007AFF] flex items-center justify-center text-2xl shadow-2xs">
+                📜
+            </div>
+            <div>
+                <h3 class="text-base sm:text-lg font-bold text-[#1D1D1F] dark:text-white">Welkom bij Liturgie Assistent Pro</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Belangrijke melding bij uw eerste bezoek</p>
+            </div>
+            <div class="w-full text-left bg-[#F5F5F7] dark:bg-white/[0.06] rounded-2xl p-3.5 sm:p-4 border border-gray-200/70 dark:border-white/10 text-xs sm:text-[13px] text-gray-700 dark:text-gray-200 leading-relaxed space-y-2">
+                <p>Met deze app stelt u snel en eenvoudig een complete liturgie, PowerPoint-presentatie of live beamer-uitzending samen.</p>
+                <p class="font-semibold text-[#1D1D1F] dark:text-white">
+                    Voor het hebben en gebruiken van de benodigde lied- en bijbellicenties (zoals CCLI of bundel-licenties voor projectie en livestream) bent u zelf verantwoordelijk.
+                </p>
+            </div>
+            <button type="button" onclick="window.bevestigLicentieMelding()" class="w-full py-3 px-4 rounded-xl bg-[#007AFF] hover:bg-blue-600 text-white text-sm font-bold shadow-md transition-all active:scale-95 cursor-pointer">
+                Begrepen &amp; Doorgaan
+            </button>
+        </div>
+    </div>
+</div>
+
 <div id="uitlegModal" class="fixed inset-0 z-[200] hidden items-center justify-center bg-black/40 modal-backdrop-safe transition-opacity p-2 sm:p-4" onclick="if(event.target === this) sluitUitleg()">
     <div class="bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[24px] sm:rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.05] dark:ring-white/10 w-full max-w-2xl overflow-hidden flex flex-col transform transition-all modal-animate max-h-[94dvh] sm:max-h-[92vh]">
         <!-- Progress Bar aan de bovenkant -->
@@ -2770,7 +2794,10 @@
                     <div id="feedbackLijst" class="mt-2 hidden flex-col gap-1.5 max-h-40 overflow-y-auto"></div>
                 </div>
 
-                <div class="text-center pt-1">
+                <div class="text-center pt-1 flex flex-col items-center gap-1.5">
+                    <a href="over.html" target="_blank" class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#007AFF] hover:underline">
+                        <span>📖</span><span>Over Liturgie Assistent Pro &amp; FAQ</span>
+                    </a>
                     <p class="text-xs font-semibold text-[#1D1D1F] dark:text-white">Gemaakt door Sem</p>
                     <p class="text-[10px] text-gray-400">met hulp van AI · "Techniek in dienst van de eredienst"</p>
                 </div>
@@ -3376,6 +3403,7 @@
             exportFeedbackModal: () => window.sluitExportFeedback && window.sluitExportFeedback(),
             obsTestModal: () => window.sluitObsTestModal && window.sluitObsTestModal(),
             videoUitlegModal: () => window.sluitVideoUitleg && window.sluitVideoUitleg(),
+            licentieMeldingModal: () => window.bevestigLicentieMelding && window.bevestigLicentieMelding(),
             archiefModal: () => backdrop.classList.add('hidden')
         };
         if (backdrop && closeMap[backdrop.id]) {
@@ -9849,32 +9877,48 @@ Bijbelliederen`;
         checkBijbelAPI();
         ontdekAI().then(() => { console.log("AI Modellen geladen."); });
 
-        // Eerste bezoek? Start direct met het "In 3 stappen klaar" overzicht in de Rondleiding (zonder dubbele video-popup overlap).
-        // Terugkerende bezoekers kunnen de rondleiding altijd openen via de dockknop of Video Uitleg.
-        let isEersteBezoek = false;
+        // Eerste bezoek? Toon eerst netjes de eenmalige licentie-melding; daarna start de "In 3 stappen klaar" rondleiding.
+        let wachtOpLicentie = false;
         try {
-            if (!localStorage.getItem('liturgieAssistentTourGezien')) {
-                isEersteBezoek = true;
-                const pulse = document.getElementById('rondleidingPulse');
-                if (pulse) pulse.classList.remove('hidden');
+            if (!localStorage.getItem('liturgieAssistentLicentieGezien')) {
+                wachtOpLicentie = true;
                 setTimeout(() => {
-                    if (!localStorage.getItem('liturgieAssistentTourGezien')) window.startUitleg();
-                }, 700);
+                    const m = document.getElementById('licentieMeldingModal');
+                    if (m) {
+                        m.classList.remove('hidden');
+                        m.classList.add('flex');
+                    }
+                }, 450);
             }
         } catch(e) {}
 
-        // Alleen voor terugkerende gebruikers die de video nog niet hebben uitgezet (geen dubbele modal bij allereerste bezoek)
-        if (!isEersteBezoek) {
+        // Rondleiding & Video starten alleen direct als de licentie-melding al eerder is geaccepteerd (geen dubbele pop-ups over elkaar)
+        let isEersteBezoek = false;
+        if (!wachtOpLicentie) {
             try {
-                const nietMeerTonen = localStorage.getItem('liturgieAssistentVideoNietAutomatisch');
-                if (!nietMeerTonen) {
+                if (!localStorage.getItem('liturgieAssistentTourGezien')) {
+                    isEersteBezoek = true;
+                    const pulse = document.getElementById('rondleidingPulse');
+                    if (pulse) pulse.classList.remove('hidden');
                     setTimeout(() => {
-                        if (typeof window.openVideoUitlegModal === 'function') {
-                            window.openVideoUitlegModal(false);
-                        }
-                    }, 850);
+                        if (!localStorage.getItem('liturgieAssistentTourGezien')) window.startUitleg();
+                    }, 700);
                 }
             } catch(e) {}
+
+            // Alleen voor terugkerende gebruikers die de video nog niet hebben uitgezet
+            if (!isEersteBezoek) {
+                try {
+                    const nietMeerTonen = localStorage.getItem('liturgieAssistentVideoNietAutomatisch');
+                    if (!nietMeerTonen) {
+                        setTimeout(() => {
+                            if (typeof window.openVideoUitlegModal === 'function') {
+                                window.openVideoUitlegModal(false);
+                            }
+                        }, 850);
+                    }
+                } catch(e) {}
+            }
         }
                 
         laadCloudDatabase().then(() => {
@@ -11058,6 +11102,26 @@ Bijbelliederen`;
         document.getElementById('uitlegModal').classList.add('hidden');
         document.getElementById('uitlegModal').classList.remove('flex');
         if (window.lockBodyScroll) window.lockBodyScroll(false, 'uitlegModal');
+    };
+
+    window.bevestigLicentieMelding = function() {
+        try { localStorage.setItem('liturgieAssistentLicentieGezien', '1'); } catch(e) {}
+        const m = document.getElementById('licentieMeldingModal');
+        if (m) {
+            m.classList.add('hidden');
+            m.classList.remove('flex');
+        }
+        try {
+            if (!localStorage.getItem('liturgieAssistentTourGezien')) {
+                const pulse = document.getElementById('rondleidingPulse');
+                if (pulse) pulse.classList.remove('hidden');
+                setTimeout(() => {
+                    if (!localStorage.getItem('liturgieAssistentTourGezien') && typeof window.startUitleg === 'function') {
+                        window.startUitleg();
+                    }
+                }, 250);
+            }
+        } catch(e) {}
     };
 
     window.startUitleg = function() {
