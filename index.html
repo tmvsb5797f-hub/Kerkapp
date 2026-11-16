@@ -1777,7 +1777,7 @@
 </div>
 
 <div id="uitlegModal" class="fixed inset-0 z-[200] hidden items-center justify-center bg-black/40 modal-backdrop-safe transition-opacity p-2 sm:p-4" onclick="if(event.target === this) sluitUitleg()">
-    <div class="bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[24px] sm:rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.05] dark:ring-white/10 w-full max-w-xl overflow-hidden flex flex-col transform transition-all modal-animate max-h-[94dvh] sm:max-h-[92vh]">
+    <div class="bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[24px] sm:rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.05] dark:ring-white/10 w-full max-w-2xl overflow-hidden flex flex-col transform transition-all modal-animate max-h-[94dvh] sm:max-h-[92vh]">
         <!-- Progress Bar aan de bovenkant -->
         <div class="h-1 w-full bg-gray-100 dark:bg-white/10 overflow-hidden flex-shrink-0">
             <div id="uitlegProgressBar" class="h-full bg-gradient-to-r from-[#007AFF] to-[#5856D6] transition-all duration-300" style="width: 6%;"></div>
@@ -1787,30 +1787,47 @@
             <div class="flex items-center gap-2">
                 <span class="w-6 h-6 rounded-lg bg-blue-500/10 dark:bg-blue-500/20 text-[#007AFF] flex items-center justify-center text-xs font-bold shadow-2xs">✨</span>
                 <span class="text-[11px] font-bold text-[#86868B] dark:text-gray-400 uppercase tracking-wider">Interactieve Rondleiding</span>
-                <span id="uitlegStapTeller" class="text-[10px] font-bold text-[#007AFF] dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 border border-blue-200/50 dark:border-blue-800/40 px-2 py-0.5 rounded-full tabular-nums">Stap 1 van 15</span>
+                <span id="uitlegStapTeller" class="text-[10px] font-bold text-[#007AFF] dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 border border-blue-200/50 dark:border-blue-800/40 px-2 py-0.5 rounded-full tabular-nums">Stap 1 van 16</span>
             </div>
             <div class="flex items-center gap-1">
-                <button onclick="sluitUitleg()" class="text-[11px] sm:text-[12px] font-semibold text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 px-2.5 sm:px-3 py-1 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer">Sla over</button>
-                <button onclick="sluitUitleg()" title="Sluiten" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 sm:p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer">
+                <button type="button" onclick="sluitUitleg()" class="text-[11px] sm:text-[12px] font-semibold text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 px-2.5 sm:px-3 py-1 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer">Sla over</button>
+                <button type="button" onclick="sluitUitleg()" title="Sluiten" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 sm:p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer">
                     <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
         </div>
 
-        <div class="p-4 sm:p-6 md:p-8 overflow-y-auto flex-1 min-h-0 bg-white dark:bg-[#1C1C1E]">
+        <!-- Snel-kiezer Hoofdstukken Balk -->
+        <div id="uitlegHoofdstukkenBalk" class="px-3.5 sm:px-5 py-2 border-b border-gray-100 dark:border-white/10 bg-gray-50/80 dark:bg-white/[0.03] flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-shrink-0">
+            <button type="button" data-step="0" onclick="uitlegGaNaarStap(0)" class="uitleg-chap-btn px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap transition-all cursor-pointer">👋 Overzicht</button>
+            <button type="button" data-step="1" onclick="uitlegGaNaarStap(1)" class="uitleg-chap-btn px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap transition-all cursor-pointer">📅 Datum &amp; Welkom</button>
+            <button type="button" data-step="2" onclick="uitlegGaNaarStap(2)" class="uitleg-chap-btn px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap transition-all cursor-pointer">🎵 Liederen &amp; Verzen</button>
+            <button type="button" data-step="3" onclick="uitlegGaNaarStap(3)" class="uitleg-chap-btn px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap transition-all cursor-pointer">📖 Bijbel &amp; Plakken</button>
+            <button type="button" data-step="5" onclick="uitlegGaNaarStap(5)" class="uitleg-chap-btn px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap transition-all cursor-pointer">📋 Volgorde &amp; Undo</button>
+            <button type="button" data-step="8" onclick="uitlegGaNaarStap(8)" class="uitleg-chap-btn px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap transition-all cursor-pointer">🖥️ Preview &amp; 2e Scherm</button>
+            <button type="button" data-step="10" onclick="uitlegGaNaarStap(10)" class="uitleg-chap-btn px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap transition-all cursor-pointer">📱 QR &amp; Meelezen</button>
+            <button type="button" data-step="15" onclick="uitlegGaNaarStap(15)" class="uitleg-chap-btn px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap transition-all cursor-pointer">📥 Exporteer</button>
+        </div>
+
+        <div class="p-4 sm:p-6 md:p-7 overflow-y-auto flex-1 min-h-0 bg-white dark:bg-[#1C1C1E]">
             <div class="text-center mb-4 sm:mb-5 min-h-[64px] sm:min-h-[70px]">
                 <h3 id="uitlegSceneTitel" class="text-lg sm:text-xl md:text-2xl font-bold text-[#1D1D1F] dark:text-white transition-opacity duration-300">Welkom!</h3>
                 <p id="uitlegSceneTekst" class="text-gray-500 dark:text-gray-400 mt-1.5 sm:mt-2 text-xs sm:text-[14px] md:text-[15px] leading-relaxed transition-opacity duration-300">&nbsp;</p>
             </div>
 
             <div class="relative bg-[#F5F5F7] dark:bg-white/5 rounded-[20px] border border-gray-100 dark:border-white/10 overflow-hidden shadow-inner touch-pan-x" style="min-height: 240px;">
-                <div id="uitlegDemoInner" class="relative p-4 sm:p-6 md:p-8 select-none" style="min-height: 240px;"></div>
+                <div id="uitlegDemoInner" class="relative p-4 sm:p-6 md:p-7 select-none" style="min-height: 240px;"></div>
             </div>
-            <p class="text-center text-[10px] text-gray-400 dark:text-gray-500 mt-2.5 hidden sm:block">💡 Gebruik de pijltjestoetsen ← en → of veeg op mobiel om te bladeren</p>
+            <p class="text-center text-[10px] text-gray-400 dark:text-gray-500 mt-2.5 hidden sm:block">💡 Gebruik de pijltjestoetsen ← en → of klik bovenaan direct op een hoofdstuk</p>
         </div>
 
-        <div class="p-3.5 sm:p-5 border-t border-gray-100 dark:border-white/10 flex items-center justify-between gap-3 bg-white dark:bg-[#1C1C1E] flex-shrink-0">
-            <div id="uitlegDots" class="flex gap-1.5 min-w-0 overflow-x-auto py-1 no-scrollbar select-none" style="-webkit-overflow-scrolling: touch;"></div>
+        <div class="p-3.5 sm:p-5 border-t border-gray-100 dark:border-white/10 flex items-center justify-between gap-2 sm:gap-3 bg-white dark:bg-[#1C1C1E] flex-shrink-0">
+            <div class="flex items-center gap-2 min-w-0">
+                <div id="uitlegDots" class="flex gap-1.5 min-w-0 overflow-x-auto py-1 no-scrollbar select-none" style="-webkit-overflow-scrolling: touch;"></div>
+                <button type="button" onclick="sluitUitleg(); if(typeof openVideoUitlegModal==='function') openVideoUitlegModal(true);" class="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-gray-100 dark:bg-white/10 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-gray-600 dark:text-gray-300 hover:text-[#007AFF] transition-colors flex-shrink-0 cursor-pointer" title="Liever kijken &amp; luisteren? Open de gesproken video-uitleg">
+                    <span>🎬</span><span>Video (4:06)</span>
+                </button>
+            </div>
             <div class="flex items-center gap-2 flex-shrink-0">
                 <button id="uitlegVorigeKnop" onclick="uitlegVorige()" class="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 transition-all cursor-pointer">Vorige</button>
                 <button id="uitlegVolgendeKnop" onclick="uitlegVolgende()" class="px-4.5 sm:px-6 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white bg-[#007AFF] hover:bg-blue-600 shadow-md transition-all active:scale-95 cursor-pointer">Volgende</button>
@@ -2807,11 +2824,19 @@
 
     <div id="chatMessages" class="flex-grow p-4 overflow-y-auto bg-gray-50 dark:bg-[#2C2C2E] flex flex-col gap-3 text-sm">
         <div class="chat-bubble-animate bg-white dark:bg-[#1C1C1E] p-3 rounded-xl rounded-tl-none shadow-sm border border-gray-100 dark:border-white/10 text-gray-700 dark:text-gray-200 self-start max-w-[90%] leading-relaxed text-[13px]">
-            Hallo! Ik help je met de Liturgie app. Vraag me bijvoorbeeld:
-            <ul class="mt-2 space-y-1 text-[12px] text-gray-500 dark:text-gray-400">
-                <li class="cursor-pointer hover:text-[#007AFF]" onclick="document.getElementById('chatInput').value='Hoe voeg ik een lied toe?'; stuurChatBericht();">• "Hoe voeg ik een lied toe?"</li>
-                <li class="cursor-pointer hover:text-[#007AFF]" onclick="document.getElementById('chatInput').value='Waar kan ik de volgorde aanpassen?'; stuurChatBericht();">• "Waar pas ik de volgorde aan?"</li>
-                <li class="cursor-pointer hover:text-[#007AFF]" onclick="document.getElementById('chatInput').value='Hoe exporteer ik naar PowerPoint?'; stuurChatBericht();">• "Hoe exporteer ik naar PowerPoint?"</li>
+            Hallo! Ik help je met <b>Liturgie Assistent Pro</b>. Nieuw hier of even zoeken? Kies een snelle actie of stel je vraag:
+            <div class="mt-2.5 flex flex-wrap gap-1.5">
+                <button type="button" onclick="toggleChat(); startUitleg();" class="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 text-[#007AFF] dark:text-blue-300 text-[11px] font-bold border border-blue-200/60 dark:border-blue-800/60 transition-all cursor-pointer flex items-center gap-1">
+                    <span>🧭</span><span>Start interactieve uitleg</span>
+                </button>
+                <button type="button" onclick="toggleChat(); if(typeof window.laadVoorbeeldLiturgie==='function') window.laadVoorbeeldLiturgie();" class="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300 text-[11px] font-bold border border-indigo-200/60 dark:border-indigo-800/60 transition-all cursor-pointer flex items-center gap-1">
+                    <span>✨</span><span>Laad voorbeeld-dienst</span>
+                </button>
+            </div>
+            <ul class="mt-2.5 space-y-1 text-[12px] text-gray-500 dark:text-gray-400">
+                <li class="cursor-pointer hover:text-[#007AFF]" onclick="document.getElementById('chatInput').value='Hoe voeg ik een lied of losse verzen toe?'; stuurChatBericht();">• "Hoe voeg ik een lied of losse verzen toe?"</li>
+                <li class="cursor-pointer hover:text-[#007AFF]" onclick="document.getElementById('chatInput').value='Waar pas ik de volgorde en verzen aan?'; stuurChatBericht();">• "Waar pas ik de volgorde en verzen aan?"</li>
+                <li class="cursor-pointer hover:text-[#007AFF]" onclick="document.getElementById('chatInput').value='Hoe werkt Exporteer PowerPoint of 2e Scherm?'; stuurChatBericht();">• "Hoe werkt Exporteer PowerPoint of 2e Scherm?"</li>
             </ul>
         </div>
     </div>
@@ -9676,28 +9701,33 @@ Bijbelliederen`;
         checkBijbelAPI();
         ontdekAI().then(() => { console.log("AI Modellen geladen."); });
 
-        // Video uitleg pop-up bij opstarten voor iedereen die de app opent (tenzij 'niet meer tonen')
-        try {
-            const nietMeerTonen = localStorage.getItem('liturgieAssistentVideoNietAutomatisch');
-            if (!nietMeerTonen) {
-                setTimeout(() => {
-                    if (typeof window.openVideoUitlegModal === 'function') {
-                        window.openVideoUitlegModal(false);
-                    }
-                }, 850);
-            }
-        } catch(e) {}
-
-        // Eerste bezoek? Start de rondleiding automatisch en toon een zachte hint op de knop.
+        // Eerste bezoek? Start direct met het "In 3 stappen klaar" overzicht in de Rondleiding (zonder dubbele video-popup overlap).
+        // Terugkerende bezoekers kunnen de rondleiding altijd openen via de dockknop of Video Uitleg.
+        let isEersteBezoek = false;
         try {
             if (!localStorage.getItem('liturgieAssistentTourGezien')) {
+                isEersteBezoek = true;
                 const pulse = document.getElementById('rondleidingPulse');
                 if (pulse) pulse.classList.remove('hidden');
                 setTimeout(() => {
                     if (!localStorage.getItem('liturgieAssistentTourGezien')) window.startUitleg();
-                }, 1200);
+                }, 700);
             }
         } catch(e) {}
+
+        // Alleen voor terugkerende gebruikers die de video nog niet hebben uitgezet (geen dubbele modal bij allereerste bezoek)
+        if (!isEersteBezoek) {
+            try {
+                const nietMeerTonen = localStorage.getItem('liturgieAssistentVideoNietAutomatisch');
+                if (!nietMeerTonen) {
+                    setTimeout(() => {
+                        if (typeof window.openVideoUitlegModal === 'function') {
+                            window.openVideoUitlegModal(false);
+                        }
+                    }, 850);
+                }
+            } catch(e) {}
+        }
                 
         laadCloudDatabase().then(() => {
             // Geef de referentie naar bouwZoekLijst mee, zodat de zoeklijst altijd up-to-date is
@@ -9838,20 +9868,44 @@ Bijbelliederen`;
         }
     }
 
-    // --- Scene 0: Welkom ---
+    // --- Scene 0: Welkom (In 3 simpele stappen + Direct proberen) ---
     function render0(el) {
         el.innerHTML = `
-        <div class="w-full h-full flex flex-col items-center justify-center gap-4 py-4">
-            <div class="relative w-20 h-20 flex items-center justify-center">
-                <span class="absolute inset-0 rounded-full bg-[#007AFF] opacity-30 animate-ping"></span>
-                <div class="relative bg-[#007AFF] w-16 h-16 rounded-full flex items-center justify-center shadow-lg">
-                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z"></path></svg>
+        <div class="w-full flex flex-col gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div class="bg-white dark:bg-[#2C2C2E] rounded-2xl p-3 border border-gray-200/80 dark:border-white/10 shadow-2xs flex sm:flex-col items-center sm:items-start gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-[#007AFF] flex items-center justify-center text-sm font-black flex-shrink-0">1</div>
+                    <div class="min-w-0">
+                        <div class="text-xs font-bold text-[#1D1D1F] dark:text-white">Kies of Plak</div>
+                        <div class="text-[11px] text-gray-500 dark:text-gray-400 leading-snug mt-0.5">Typ een lied (<span class="font-mono text-[10px] text-[#007AFF]">ps 23:1,3</span>), bijbeltekst of plak de mail van de dominee.</div>
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-[#2C2C2E] rounded-2xl p-3 border border-gray-200/80 dark:border-white/10 shadow-2xs flex sm:flex-col items-center sm:items-start gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-sm font-black flex-shrink-0">2</div>
+                    <div class="min-w-0">
+                        <div class="text-xs font-bold text-[#1D1D1F] dark:text-white">Verzen &amp; Volgorde</div>
+                        <div class="text-[11px] text-gray-500 dark:text-gray-400 leading-snug mt-0.5">Tik verzen <span class="font-bold text-[#007AFF]">[1] [2] [3]</span> op de kaart aan/uit, sleep items of gebruik <span class="font-semibold">↩️ Herstel</span>.</div>
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-[#2C2C2E] rounded-2xl p-3 border border-gray-200/80 dark:border-white/10 shadow-2xs flex sm:flex-col items-center sm:items-start gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-sm font-black flex-shrink-0">3</div>
+                    <div class="min-w-0">
+                        <div class="text-xs font-bold text-[#1D1D1F] dark:text-white">Preview &amp; Beamer</div>
+                        <div class="text-[11px] text-gray-500 dark:text-gray-400 leading-snug mt-0.5">Controleer live elke dia en klik op <span class="font-bold text-[#007AFF]">Exporteer PowerPoint</span> of <span class="font-semibold">🖥️ 2e Scherm</span>.</div>
+                    </div>
                 </div>
             </div>
-            <p class="text-[13px] text-gray-400 font-medium text-center">Liturgie Assistent Pro</p>
+            <div class="flex flex-wrap items-center justify-center gap-2 pt-1">
+                <button type="button" onclick="sluitUitleg(); if(typeof window.laadVoorbeeldLiturgie==='function') window.laadVoorbeeldLiturgie();" class="px-3.5 py-2 rounded-xl bg-[#007AFF] hover:bg-blue-600 text-white text-xs font-bold shadow-sm transition-all active:scale-95 cursor-pointer flex items-center gap-1.5">
+                    <span>✨</span><span>Laad Voorbeeld-dienst (probeer direct)</span>
+                </button>
+                <button type="button" onclick="sluitUitleg(); if(typeof openVideoUitlegModal==='function') openVideoUitlegModal(true);" class="px-3.5 py-2 rounded-xl bg-white dark:bg-[#2C2C2E] hover:bg-gray-100 dark:hover:bg-white/15 text-gray-700 dark:text-gray-200 text-xs font-semibold border border-gray-200 dark:border-white/10 shadow-2xs transition-all active:scale-95 cursor-pointer flex items-center gap-1.5">
+                    <span>🎬</span><span>Bekijk Video met Stem (4:06)</span>
+                </button>
+            </div>
         </div>`;
     }
-    async function animate0(runId) { /* rustige puls, verder geen JS-animatie nodig */ }
+    async function animate0(runId) { /* rustig welkomstoverzicht, gebruiker kiest zelf */ }
 
     // --- Scene 1: Dienst Gegevens ---
     function render1(el) {
@@ -10152,60 +10206,81 @@ Bijbelliederen`;
         }
     }
 
-    // --- Scene 5: Jouw Liturgie (Volgorde) ---
+    // --- Scene 5: Jouw Liturgie (Volgorde, Inline Vers-knopjes & Herstel) ---
     function render5(el) {
         el.innerHTML = `
         <div class="w-full flex flex-col gap-2" id="ut-lijst">
-            <div id="ut-item-0" class="uitleg-item-move bg-white rounded-xl px-3 py-2.5 flex items-center gap-2 shadow-sm text-[12px] font-medium text-gray-700">
+            <div class="flex items-center justify-between px-1 mb-0.5">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">3. Volgorde</span>
+                <div id="ut-undo-btn" class="px-2 py-0.5 rounded-lg bg-white border border-gray-200 text-[10px] font-semibold text-gray-600 shadow-2xs flex items-center gap-1">
+                    <span>↩️</span><span>Herstel (⌘Z)</span>
+                </div>
+            </div>
+            <div id="ut-item-0" class="uitleg-item-move bg-white rounded-xl px-3 py-2 flex items-center gap-2 shadow-sm text-[12px] font-medium text-gray-700">
                 <svg class="w-4 h-4 text-gray-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg>
-                <span class="flex-grow">1. Votum & Groet</span>
+                <span class="flex-grow">1. Votum &amp; Groet</span>
                 <svg class="w-3.5 h-3.5 text-[#007AFF] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828z"></path></svg>
             </div>
-            <div id="ut-item-1" class="uitleg-item-move bg-white rounded-xl px-3 py-2.5 flex items-center gap-2 shadow-sm text-[12px] font-medium text-gray-700">
+            <div id="ut-item-1" class="uitleg-item-move bg-white rounded-xl px-3 py-2 flex flex-col gap-1.5 shadow-sm text-[12px] font-medium text-gray-700">
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-gray-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg>
+                    <span id="ut-ps100-titel" class="flex-grow font-semibold">2. Psalm 100 vers 1, 4</span>
+                    <svg class="w-3.5 h-3.5 text-[#007AFF] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828z"></path></svg>
+                </div>
+                <div class="flex items-center gap-1 pl-6">
+                    <span class="text-[9px] text-gray-400 mr-0.5">Verzen:</span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#007AFF] text-white">1</span>
+                    <span id="ut-chip-v2" class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gray-100 text-gray-600 transition-colors">2</span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gray-100 text-gray-600">3</span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#007AFF] text-white">4</span>
+                </div>
+            </div>
+            <div id="ut-item-2" class="uitleg-item-move bg-white rounded-xl px-3 py-2 flex items-center gap-2 shadow-sm text-[12px] font-medium text-gray-700">
                 <svg class="w-4 h-4 text-gray-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg>
-                <span class="flex-grow">2. Psalm 100: 1, 4</span>
+                <span class="flex-grow">3. Schriftlezing: Johannes 3:16-18</span>
                 <svg class="w-3.5 h-3.5 text-[#007AFF] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828z"></path></svg>
             </div>
-            <div id="ut-item-2" class="uitleg-item-move bg-white rounded-xl px-3 py-2.5 flex items-center gap-2 shadow-sm text-[12px] font-medium text-gray-700">
-                <svg class="w-4 h-4 text-gray-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg>
-                <span class="flex-grow">3. Schriftlezing: Joh. 3</span>
-                <svg class="w-3.5 h-3.5 text-[#007AFF] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828z"></path></svg>
-            </div>
-            ${uitlegCursorHtml(15, 30)}
+            ${uitlegCursorHtml(15, 36)}
         </div>`;
     }
     async function animate5(runId) {
         while (uitlegGeldig(runId)) {
             const it0 = document.getElementById('ut-item-0');
             const it1 = document.getElementById('ut-item-1');
+            const v2Chip = document.getElementById('ut-chip-v2');
+            const psTitel = document.getElementById('ut-ps100-titel');
             it0.style.transform = ''; it1.style.transform = '';
             it0.style.boxShadow = ''; it1.style.boxShadow = '';
-            uitlegMuis(15, 30);
-            await uitlegSleep(1300); if (!uitlegGeldig(runId)) return;
+            if (v2Chip) v2Chip.className = 'px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gray-100 text-gray-600 transition-colors';
+            if (psTitel) psTitel.innerText = '2. Psalm 100 vers 1, 4';
+            uitlegMuis(15, 36);
+            await uitlegSleep(1200); if (!uitlegGeldig(runId)) return;
 
-            uitlegMuis(15, 55);
-            await uitlegSleep(700); if (!uitlegGeldig(runId)) return;
+            uitlegMuisNaarEl('ut-item-1');
+            await uitlegSleep(650); if (!uitlegGeldig(runId)) return;
             uitlegKlik();
             it1.style.boxShadow = '0 8px 20px rgba(0,0,0,0.15)';
             await uitlegSleep(200); if (!uitlegGeldig(runId)) return;
 
-            it1.style.transform = 'translateY(-52px)';
-            it0.style.transform = 'translateY(52px)';
-            uitlegMuis(15, 30);
-            uitlegZetTekst("Slepen & Herschikken", "Pak een item op om de volgorde van je liturgie aan te passen.");
-            await uitlegSleep(900); if (!uitlegGeldig(runId)) return;
+            it1.style.transform = 'translateY(-44px)';
+            it0.style.transform = 'translateY(64px)';
+            uitlegMuis(15, 36);
+            uitlegZetTekst("Slepen & Volgorde", "Sleep items om de volgorde aan te passen — en tik onderaan op ↩️ Herstel als iets per ongeluk weggaat.");
+            await uitlegSleep(1200); if (!uitlegGeldig(runId)) return;
             it1.style.boxShadow = '';
 
-            await uitlegSleep(1000); if (!uitlegGeldig(runId)) return;
-            uitlegMuis(88, 30);
+            await uitlegSleep(700); if (!uitlegGeldig(runId)) return;
+            uitlegMuisNaarEl('ut-chip-v2');
             await uitlegSleep(700); if (!uitlegGeldig(runId)) return;
             uitlegKlik();
-            uitlegZetTekst("Bewerken", "Klik op het blauwe potloodje om de tekst van een onderdeel aan te passen.");
-            await uitlegSleep(2200); if (!uitlegGeldig(runId)) return;
+            if (v2Chip) v2Chip.className = 'px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#007AFF] text-white transition-colors';
+            if (psTitel) psTitel.innerText = '2. Psalm 100 vers 1, 2, 4';
+            uitlegZetTekst("Verzen direct wisselen", "Klik op de vers-knopjes [1] [2] [3] direct op de kaart om coupletten zonder modal aan of uit te zetten!");
+            await uitlegSleep(2400); if (!uitlegGeldig(runId)) return;
 
             it0.style.transform = ''; it1.style.transform = '';
-            uitlegMuis(15, 30);
-            await uitlegSleep(1500); if (!uitlegGeldig(runId)) return;
+            uitlegMuis(15, 36);
+            await uitlegSleep(1200); if (!uitlegGeldig(runId)) return;
         }
     }
 
@@ -10382,40 +10457,46 @@ Bijbelliederen`;
         }
     }
 
-    // --- Scene: Slide Preview & Tekst positioneren ---
+    // --- Scene: Slide Preview, Dia-titels & 2e Scherm ---
     function renderPreview(el) {
         el.innerHTML = `
         <div class="w-full">
-            <div id="ut-slide" class="relative aspect-video bg-black rounded-xl overflow-hidden shadow-inner">
-                <div class="absolute top-2 left-3 text-white/70 text-[9px] font-bold">Psalm 84 : 1</div>
-                <div id="ut-slidetext" class="absolute text-white text-center text-[13px] font-semibold leading-snug px-2" style="left:18%;top:34%;width:64%;border:1px dashed transparent;border-radius:6px;transition:border-color .2s,box-shadow .2s">Hoe lieflijk is uw huis,<br>o HEER der legerscharen</div>
+            <div class="flex items-center justify-between mb-1.5 px-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Live Dia-Preview</span>
+                <span class="px-2 py-0.5 rounded-md bg-purple-100 text-purple-700 text-[10px] font-bold">🖥️ 2e Scherm</span>
             </div>
-            <p class="text-center text-[10px] text-gray-400 mt-2 italic">Live voorbeeld van je dia</p>
-            ${uitlegCursorHtml(50, 40)}
+            <div id="ut-slide" class="relative aspect-video bg-black rounded-xl overflow-hidden shadow-inner">
+                <div class="absolute top-2 left-3 text-white/70 text-[9px] font-bold">Psalm 84 : 1 (1/2)</div>
+                <div id="ut-snap-line" class="hidden absolute left-1/2 top-0 bottom-0 w-0.5 bg-cyan-400/80 pointer-events-none"></div>
+                <div id="ut-slidetext" class="absolute text-white text-center text-[13px] font-semibold leading-snug px-2" style="left:12%;top:34%;width:76%;border:1px dashed transparent;border-radius:6px;transition:border-color .2s,box-shadow .2s,left .4s,top .4s">Hoe lieflijk is uw huis,<br>o HEER der legerscharen</div>
+            </div>
+            <p class="text-center text-[10px] text-gray-400 mt-2 italic">Dubbelklik op de tekst om te verplaatsen of klik op 🖥️ 2e Scherm voor live beamer-weergave</p>
+            ${uitlegCursorHtml(50, 44)}
         </div>`;
     }
     async function animatePreview(runId) {
         while (uitlegGeldig(runId)) {
             const box = document.getElementById('ut-slidetext');
-            box.style.left = '18%'; box.style.top = '34%';
+            const snap = document.getElementById('ut-snap-line');
+            box.style.left = '12%'; box.style.top = '34%';
             box.style.borderColor = 'transparent'; box.style.boxShadow = 'none';
-            uitlegMuis(50, 45);
-            uitlegZetTekst("Live voorbeeld", "Alles wat je toevoegt zie je meteen precies zoals het op de beamer komt - 1-op-1 met de PowerPoint.");
-            await uitlegSleep(2200); if (!uitlegGeldig(runId)) return;
+            if (snap) snap.classList.add('hidden');
+            uitlegMuis(50, 48);
+            uitlegZetTekst("Live voorbeeld & Dia-nummers", "Elke dia toont het vers en de voortgang (zoals 'Psalm 84 : 1 (1/2)'). 1-op-1 met PowerPoint én je 2e Beamer-scherm!");
+            await uitlegSleep(2400); if (!uitlegGeldig(runId)) return;
 
             uitlegKlik(); await uitlegSleep(120); uitlegKlik();
             box.style.borderColor = '#007AFF'; box.style.boxShadow = '0 0 0 1px rgba(0,122,255,0.4)';
-            uitlegZetTekst("Dubbelklik om te verplaatsen", "Staat de tekst niet mooi? Dubbelklik erop en sleep hem naar de perfecte plek.");
-            await uitlegSleep(1600); if (!uitlegGeldig(runId)) return;
+            uitlegZetTekst("Dubbelklik & Magnetisch Uitlijnen", "Sleep de tekst — magnetische lijnen klikken de tekst automatisch kaarsrecht in het midden.");
+            await uitlegSleep(1500); if (!uitlegGeldig(runId)) return;
 
             uitlegMuis(50, 62);
-            box.style.top = '52%';
-            await uitlegSleep(1000); if (!uitlegGeldig(runId)) return;
-            uitlegMuis(38, 60);
-            box.style.left = '10%'; box.style.top = '50%';
-            await uitlegSleep(1400); if (!uitlegGeldig(runId)) return;
+            box.style.top = '50%';
+            if (snap) snap.classList.remove('hidden');
+            await uitlegSleep(1600); if (!uitlegGeldig(runId)) return;
             box.style.borderColor = 'transparent'; box.style.boxShadow = 'none';
-            await uitlegSleep(1400); if (!uitlegGeldig(runId)) return;
+            if (snap) snap.classList.add('hidden');
+            await uitlegSleep(1300); if (!uitlegGeldig(runId)) return;
         }
     }
 
@@ -10714,23 +10795,44 @@ Bijbelliederen`;
     }
 
     const uitlegScenes = [
-        { titel: "Welkom!", tekst: "Deze rondleiding laat in een paar minuten zien hoe je een complete liturgie en PowerPoint maakt - inclusief slimme extra's zoals de meelees-versie, het archief en de Tikkie QR. Klik op 'Volgende' om te beginnen.", render: render0, animate: animate0 },
-        { titel: "0. Dienst Gegevens", tekst: "Vul de datum en de voorganger in - deze komen op de allereerste welkomstdia te staan.", render: render1, animate: animate1 },
-        { titel: "1. Liederen & Bibliotheek", tekst: "Typ een liednaam of afkorting zoals 'wk 14' - of open direct de centrale Liederen Bibliotheek & Beheer.", render: render2, animate: animate2 },
-        { titel: "2. Bijbel & HSV Teksten", tekst: "Typ de Bijbeltekst en druk op Enter. De HSV-tekst wordt foutloos geladen, en je voegt eenvoudig foto's of lege dia's toe.", render: render3, animate: animate3 },
-        { titel: "Snelkoppeling: Slim Importeren", tekst: "Plak de hele liturgie in één keer - de AI herkent zelf alle liederen en Schriftlezingen.", render: render4, animate: animate4 },
-        { titel: "3. Jouw Liturgie", tekst: "Hier verschijnt alles wat je toevoegt. Sleep items om de volgorde direct aan te passen.", render: render5, animate: animate5 },
-        { titel: "Dia Bewerken & Slimme Verskeuze", tekst: "Klik op het potloodje ✏️ om een dia aan te passen, specifieke coupletten te kiezen ([✓ Vers 1] [✓ Vers 4]) of teksten automatisch te splitsen met [🧹 Splits].", render: renderBewerkTour, animate: animateBewerkTour },
-        { titel: "Instellingen & Livestream", tekst: "Stel het lettertype en de grootte in, en kies of de dia's voor de beamer of de livestream zijn.", render: renderInstellingen, animate: animateInstellingen },
-        { titel: "Live Voorbeeld & Positie", tekst: "Bekijk elke dia live en zet de tekst met dubbelklik precies op de goede plek.", render: renderPreview, animate: animatePreview },
+        { titel: "Welkom! In 3 stappen klaar", tekst: "Nog nooit gebruikt? Je bouwt in 3 eenvoudige stappen een complete presentatie of beamer-uitzending — kies hieronder zelf of je wilt lezen, kijken of direct een voorbeeld wilt laden.", render: render0, animate: animate0 },
+        { titel: "0. Dienst Gegevens", tekst: "Vul de datum en de voorganger in - deze komen automatisch op de welkomstdia te staan.", render: render1, animate: animate1 },
+        { titel: "1. Liederen, Snel-zoeken & Bibliotheek", tekst: "Typ een lied of direct met verzen (bijv. 'ps 23:1,3' of 'wk 14:1,4'). In de vers-kiezer zie je onder elk vers meteen de eerste regel, en via 📚 Bibliotheek download of beheer je alle liederen.", render: render2, animate: animate2 },
+        { titel: "2. Bijbel & HSV Teksten", tekst: "Typ de Bijbeltekst en druk op Enter. De HSV-tekst wordt foutloos geladen (met versnummers per dia), en je voegt eenvoudig foto's of lege pauze-dia's toe.", render: render3, animate: animate3 },
+        { titel: "Snelkoppeling: Slim Importeren", tekst: "Plak de hele liturgie of e-mail van de voorganger in één keer — de AI herkent zelf alle liederen en Schriftlezingen.", render: render4, animate: animate4 },
+        { titel: "3. Jouw Liturgie, Vers-knopjes & Herstel", tekst: "Sleep items om te herschikken, klik direct op [1] [2] [3] op de kaart om verzen aan of uit te zetten, en gebruik ↩️ Herstel (⌘Z) bij elke vergissing.", render: render5, animate: animate5 },
+        { titel: "Dia Bewerken & Slimme Verskeuze", tekst: "Klik op het potloodje ✏️ om een dia aan te passen, specifieke coupletten te kiezen of teksten automatisch te splitsen met [🧹 Splits].", render: renderBewerkTour, animate: animateBewerkTour },
+        { titel: "Instellingen & Livestream", tekst: "Stel bovenaan lettertype, grootte, Vet (B) en Beamer- of Livestream-modus in. Op iPad en Mac wissel je ook tussen Split-View (2) en Studio (3).", render: renderInstellingen, animate: animateInstellingen },
+        { titel: "Live Voorbeeld, Dia-titels & 2e Scherm", tekst: "Bekijk elke dia live met vers- en voortgangsnummer (bijv. Psalm 84 : 1 (1/2)), sleep de tekst op zijn plek of projecteer direct op je 🖥️ 2e Scherm.", render: renderPreview, animate: animatePreview },
         { titel: "Tekstvak Formaat Aanpassen", tekst: "Pak een van de 4 hoekpunten vast om het tekstvak naar wens te vergroten of verkleinen. De afmetingen worden exact zo bewaard in PowerPoint.", render: renderResize, animate: animateResize },
         { titel: "Tikkie QR voor de Collecte", tekst: "Voeg met één klik een nette QR-dia toe voor de digitale collecte.", render: renderQR, animate: animateQR },
         { titel: "Meelees-versie voor de Gemeente", tekst: "Laat gemeenteleden op hun telefoon meelezen via een QR-code op de beamer.", render: renderMeeleesTour, animate: animateMeeleesTour },
         { titel: "Archief: Opslaan & Herladen", tekst: "Bewaar liturgieën en zet een eerdere dienst met één klik terug.", render: renderArchiefTour, animate: animateArchiefTour },
-        { titel: "Hulp Altijd Bij De Hand", tekst: "De AI hulp-assistent en de info-knop met OBS Live Regie staan altijd voor je klaar in de bedieningsbalk onderaan.", render: renderHulp, animate: animateHulp },
+        { titel: "Hulp Altijd Bij De Hand", tekst: "De AI hulp-assistent en Info & OBS (met livestream-regie en directe Gmail-verzending) staan altijd voor je klaar in de balk onderaan.", render: renderHulp, animate: animateHulp },
         { titel: "Zet op je Beginscherm", tekst: "Installeer de app als een echte app - werkt ook zonder internet.", render: renderInstall, animate: animateInstall },
-        { titel: "Klaar? Exporteer!", tekst: "Klik op deze knop om desgewenst de welkomstdia aan te passen en direct een kant-en-klare PowerPoint voor de beamer te downloaden.", render: render6, animate: animate6 }
+        { titel: "Klaar? Exporteer!", tekst: "Klik op Exporteer PowerPoint voor een automatische eindcontrole (inclusief welkomstdia) en download of mail direct het .pptx-bestand.", render: render6, animate: animate6 }
     ];
+
+    function uitlegUpdateHoofdstukkenBalk(index) {
+        const balk = document.getElementById('uitlegHoofdstukkenBalk');
+        if (!balk) return;
+        const buttons = Array.from(balk.querySelectorAll('.uitleg-chap-btn'));
+        let actieveBtn = null;
+        buttons.forEach(btn => {
+            const s = parseInt(btn.dataset.step, 10);
+            if (!isNaN(s) && s <= index) actieveBtn = btn;
+        });
+        buttons.forEach(btn => {
+            const isActief = (btn === actieveBtn);
+            btn.className = 'uitleg-chap-btn px-2.5 py-1 rounded-full text-[11px] whitespace-nowrap transition-all cursor-pointer ' +
+                (isActief
+                    ? 'font-bold bg-[#007AFF] text-white shadow-2xs'
+                    : 'font-semibold bg-white dark:bg-white/10 text-gray-600 dark:text-gray-300 border border-gray-200/80 dark:border-white/10 hover:text-[#007AFF]');
+        });
+        if (actieveBtn && typeof actieveBtn.scrollIntoView === 'function') {
+            try { actieveBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); } catch(e) {}
+        }
+    }
 
     function uitlegBouwDots() {
         const dots = document.getElementById('uitlegDots');
@@ -10786,6 +10888,7 @@ Bijbelliederen`;
         volgendeKnop.innerText = index === uitlegScenes.length - 1 ? 'Aan de slag! 🚀' : 'Volgende';
 
         uitlegBouwDots();
+        uitlegUpdateHoofdstukkenBalk(index);
         scene.animate(myRunId);
     }
 
@@ -11921,23 +12024,26 @@ ${veiligeTekst}
     }
 // --- FUNCTIES VOOR DE HULP ASSISTENT CHATBOT ---
     const APP_ONDERDELEN = [
-        { id: "datumInput", naam: "Datum invoerveld", sectie: "Dienst Gegevens", beschrijving: "Hier vul je de datum van de kerkdienst in (bijv. 'Zondag 18-1-2026'). Dit komt op de welkomstdia." },
+        { id: "datumInput", naam: "Datum invoerveld", sectie: "Dienst Gegevens", beschrijving: "Hier vul je de datum van de kerkdienst in (of kies via het agenda-icoon de eerstvolgende zondag). Dit komt op de welkomstdia." },
         { id: "voorgangerInput", naam: "Voorganger invoerveld", sectie: "Dienst Gegevens", beschrijving: "Hier vul je de naam van de voorganger in. Dit komt op de welkomstdia." },
-        { id: "liedInput", naam: "Liederen zoekbalk", sectie: "Liederen & Psalmen", beschrijving: "Typ hier een liednaam of afkorting (bijv. 'wk 15', 'oth 314', 'psalm 23'). Er verschijnt een lijst waaruit je kunt kiezen." },
-        { id: "bijbelInput", naam: "Bijbeltekst invoerveld", sectie: "Bijbel Via AI", beschrijving: "Typ hier een Bijbelverwijzing (bijv. 'Genesis 1:1-15') en druk op Enter. De HSV-tekst wordt automatisch opgehaald." },
-        { id: "volgordeLijst", naam: "Liturgie volgordelijst", sectie: "Volgorde", beschrijving: "Hier verschijnen alle toegevoegde items. Je kunt ze slepen om de volgorde te veranderen, bewerken met het potloodje, of verwijderen met het prullenbakje." },
-        { id: "previewVak", naam: "Slide preview", sectie: "Preview", beschrijving: "Dit zwarte vak toont een voorbeeld van hoe je tekst eruit ziet op de beamer." },
-        { id: "fontSizeSelect", naam: "Lettergrootte instelling", sectie: "Instellingen", beschrijving: "Hiermee kies je hoe groot de tekst wordt in de PowerPoint (standaard 40pt)." },
-        { id: "linesSelect", naam: "Regels per dia instelling", sectie: "Instellingen", beschrijving: "Hiermee bepaal je hoeveel regels tekst op één dia komen. 'Per Vers' splitst automatisch op witregels." }
+        { id: "liedInput", naam: "Liederen zoekbalk", sectie: "Liederen & Psalmen", beschrijving: "Typ hier een liednaam, afkorting of direct met verzen (bijv. 'ps 23:1,3', 'wk 15', 'oth 314'). Je kunt bovenin ook eerst een bundel-chip kiezen." },
+        { id: "bijbelInput", naam: "Bijbeltekst invoerveld", sectie: "Bijbel Via AI", beschrijving: "Typ hier een Bijbelverwijzing (bijv. 'Genesis 1:1-15') en druk op Enter. De HSV-tekst wordt automatisch opgehaald en per dia met exacte versnummers verdeeld." },
+        { id: "volgordeLijst", naam: "Liturgie volgordelijst", sectie: "Volgorde", beschrijving: "Hier verschijnen alle toegevoegde items. Sleep ze op volgorde, klik direct op de vers-knopjes [1] [2] [3] op de kaart, bewerk met het potloodje ✏️ of gebruik ↩️ Herstel (⌘Z)." },
+        { id: "undoLiturgieBtn", naam: "Herstel / Undo knop (⌘Z)", sectie: "Volgorde", beschrijving: "Maakt de laatste wijziging (item verplaatst, gewijzigd, verwijderd of voorbeeld geladen) direct ongedaan." },
+        { id: "previewVak", naam: "Slide preview", sectie: "Preview", beschrijving: "Dit zwarte 16:9 vak toont 1-op-1 hoe elke dia erop komt (incl. dia-titel zoals 'Psalm 23 : 1 (1/3)'). Dubbelklik op tekst om te verplaatsen of formaat te wijzigen." },
+        { id: "fontSizeSelect", naam: "Lettergrootte instelling", sectie: "Instellingen", beschrijving: "Hiermee kies je hoe groot de tekst wordt in de PowerPoint en op het 2e Scherm (standaard 40pt)." },
+        { id: "linesSelect", naam: "Regels per dia instelling", sectie: "Instellingen", beschrijving: "Bepaalt hoeveel regels op één dia komen. 'Per Vers' splitst op witregels; bij 4/5/6/8 regels blijven couplet-grenzen netjes heel." }
     ];
 
     const CHAT_ACTIES = [
-        { actie: "importeren", id: "plakLiturgieKnop", beschrijving: "De 'Plak Liturgie' knop opent een venster waar je een hele liturgie kunt plakken. De AI herkent automatisch liederen en bijbelteksten." },
+        { actie: "importeren", id: "plakLiturgieKnop", beschrijving: "De 'Plak Liturgie' knop opent een venster waar je een hele liturgie of mail kunt plakken. De AI herkent automatisch liederen (incl. versnummers) en bijbelteksten." },
         { actie: "foto", id: "fotoDiaKnop", beschrijving: "Met 'Foto Dia' kun je een afbeelding uploaden die als dia in de presentatie komt." },
         { actie: "lege_dia", id: "legeDiaKnop", beschrijving: "Met 'Lege Dia' voeg je een zwarte pauze-dia toe (handig voor de preek of collecte)." },
         { actie: "tikkie", id: "tikkieDiaKnop", beschrijving: "Met 'Tikkie QR' voeg je de actieve collecte QR-code dia toe." },
-        { actie: "exporteren", id: "exporteerKnop", beschrijving: "De grote blauwe 'Exporteer PowerPoint' knop rechtsonder maakt een kant-en-klare .pptx die je direct kunt openen." },
-        { actie: "rondleiding", id: "rondleidingKnop", beschrijving: "Het vraagteken-knopje rechtsonder start een interactieve rondleiding die de hele app uitlegt." },
+        { actie: "undo", id: "undoLiturgieBtn", beschrijving: "Met '↩️ Herstel' (of Ctrl/⌘+Z) maak je je laatste wijziging in de liturgielijst direct ongedaan." },
+        { actie: "tweede_scherm", id: "previewVak", beschrijving: "Met de knop '🖥️ 2e Scherm' boven de Slide Preview projecteer je direct live vanuit de browser zonder PowerPoint." },
+        { actie: "exporteren", id: "exporteerKnop", beschrijving: "De grote blauwe 'Exporteer PowerPoint' knop onderaan voert eerst een kwaliteitscontrole uit en maakt daarna een kant-en-klare .pptx." },
+        { actie: "rondleiding", id: "rondleidingKnop", beschrijving: "Het vraagteken-knopje onderaan start de interactieve rondleiding met hoofdstukken en een voorbeeld-dienst." },
         { actie: "leegmaken", id: "volgordeLijst", beschrijving: "Klik op 'Leegmaken' rechtsboven de volgordelijst om alles te wissen en opnieuw te beginnen." }
     ];
 
@@ -12042,33 +12148,34 @@ EXTRA ACTIES:
 ${actiesTekst}
 
 BELANGRIJKSTE UITLEG OVER DE APP:
-1. **Liederen zoeken** (highlight: "liedInput"):
-   - Typ in de zoekbalk op titel, liednummer of afkorting (bijv. "Liedboek 434", "Psalm 23", "opw 717", "wk 15" voor Weerklank, "oth 314" voor Op Toonhoogte, of "Hemelhoog").
-   - Klik op het lied en vink de gewenste verzen/strofen aan om ze toe te voegen.
-   - Ontbreekt een lied? Voeg het toe via een Vrije tekst dia of stuur Sem een berichtje.
+1. **Liederen zoeken & verzen kiezen** (highlight: "liedInput"):
+   - Typ op titel, liednummer, afkorting of direct met versnummers (bijv. **"ps 23:1,3"**, **"wk 15:1,4"**, **"oth 314"** of **"Liedboek 434"**). Gebruik optioneel de bundel-knoppen erboven.
+   - In het vers-keuzescherm staat onder elk versnummer meteen de **eerste zangregel**, zodat je altijd zeker weet dat je de juiste verzen aanklikt.
+   - Via **📚 Bibliotheek** beheer je liederen of download je de complete database (JSON, TXT of Excel CSV).
 2. **Bijbelteksten ophalen** (highlight: "bijbelInput"):
    - Typ een Bijbelverwijzing (bijv. "Johannes 3:16-18", "Psalm 121" of "Genesis 1:1-5") en druk op **Enter**.
-   - De HSV-tekst wordt via AI automatisch opgehaald en netjes over dia's verdeeld.
+   - De HSV-tekst wordt automatisch opgehaald, netjes over dia's verdeeld en toont in elke dia-titel het exacte versbereik + voortgang (bijv. \`Genesis 1 : 1–3 (1/5)\`).
 3. **Liturgie Importeren / Plakken** (highlight: "plakLiturgieKnop"):
-   - Klik op de knop **Plak Liturgie** om een complete liturgie (gekopieerd uit bijv. Word of e-mail) te plakken; liederen en lezingen worden automatisch herkend.
-4. **Volgorde & Dia's bewerken** (highlight: "volgordeLijst"):
-   - Volgorde aanpassen: sleep items met de muis omhoog of omlaag.
-   - Tekst bewerken: klik op het **blauwe potlood-icoon**.
-   - Verwijderen: klik op het **rode prullenbak-icoon**.
-   - Klik op **Opslaan** om de liturgie te bewaren in het Archief.
+   - Klik op **Plak Liturgie** om een complete mail uit Word/Gmail te plakken; liederen (ook met versnummers) en lezingen worden automatisch herkend.
+4. **Volgorde, Inline Verzen & Herstel** (highlight: "volgordeLijst"):
+   - Volgorde aanpassen: sleep items omhoog/omlaag.
+   - Snel verzen wisselen: tik direct op de vers-knopjes **[1] [2] [3]** onderaan de liedkaart in de lijst.
+   - Tekst bewerken: klik op het **blauwe potlood-icoon ✏️**.
+   - Vergissing? Klik op **↩️ Herstel** (of druk op **⌘Z / Ctrl+Z**) om je laatste actie terug te draaien.
+   - Klik op **Opslaan** om de liturgie te bewaren in het **Archief**.
 5. **Extra Dia's**:
    - **Foto Dia** (highlight: "fotoDiaKnop"): upload een afbeelding.
-   - **Tikkie QR** (highlight: "tikkieDiaKnop"): upload een screenshot van een collecte QR-code.
-   - **Lege Dia** (highlight: "legeDiaKnop"): voeg een zwarte pauzedia toe voor de preek of overdenking.
-6. **Instellingen**:
-   - **Regels per dia** (highlight: "linesSelect"): kies bijv. "Per Vers" om automatisch op witregels te splitsen.
-   - **Lettergrootte** (highlight: "fontSizeSelect"): standaard 40pt.
-   - **Preview** (highlight: "previewVak"): toont direct hoe de actieve dia er op de beamer uitziet.
-   - **Meelees-versie**: aan te zetten via het info-icoontje linksonder ("Over deze app").
-7. **Exporteren**:
-   - Klik op de grote blauwe knop **Exporteer PowerPoint** (highlight: "exporteerKnop") rechtsonder voor een kant-en-klaar breedbeeld .pptx bestand.
-8. **Rondleiding** (highlight: "rondleidingKnop"):
-   - Klik op het vraagteken-icoon rechtsonder voor een interactieve tour.
+   - **Tikkie QR** (highlight: "tikkieDiaKnop"): upload een collecte QR-code.
+   - **Lege Dia** (highlight: "legeDiaKnop"): voeg een zwarte pauze-dia toe.
+6. **Instellingen, Preview & 2e Scherm** (highlight: "previewVak"):
+   - **Regels per dia** (highlight: "linesSelect"): "Per Vers" splitst op witregels; bij 4/5/6/8 regels blijven couplet-grenzen netjes heel.
+   - **Lettergrootte** (highlight: "fontSizeSelect") & **B Vet** (highlight: "boldToggleBtn").
+   - **Preview & Dubbelklik** (highlight: "previewVak"): toont elk onderdeel met vers- én dianummering (bijv. \`Psalm 23 : 1 (1/3)\`). Dubbelklik op het tekstvak om te verplaatsen of te schalen; op iPad/Mac schakel je rechtsboven tussen **Split-View (2)** en **Studio (3)**.
+   - **🖥️ 2e Scherm & OBS** en **Meelees-versie** (QR voor op telefoon) staan in **Info & OBS** of direct boven de preview.
+7. **Exporteren & Mailen** (highlight: "exporteerKnop"):
+   - Klik op **Exporteer PowerPoint** voor de kwaliteitscontrole, optionele welkomstdia-bewerking en een 16:9 \`.pptx\` bestand (of directe verzending via Gmail).
+8. **Rondleiding & Video** (highlight: "rondleidingKnop"):
+   - Klik op **Rondleiding** of **Video Uitleg** onderaan (of laad een voorbeeld-dienst bij een lege lijst om meteen te oefenen).
 
 UITVOERFORMAAT:
 Antwoord UITSLUITEND in valide JSON:
@@ -15008,6 +15115,95 @@ Antwoord UITSLUITEND in valide JSON:
     }
     window.tekenSlidePreview = tekenSlidePreview;
 
+    // --- VOORBEELD-DIENST LADEN VOOR NIEUWE GEBRUIKERS ---
+    window.laadVoorbeeldLiturgie = function() {
+        if (Array.isArray(liturgieVolgorde) && liturgieVolgorde.length > 0) {
+            if (!confirm("Wil je een voorbeeld-dienst laden? Je huidige lijst kun je altijd terughalen met '↩️ Herstel'.")) {
+                return;
+            }
+        }
+        if (typeof window.pushLiturgieUndoState === 'function') {
+            window.pushLiturgieUndoState('Voorbeeld-dienst geladen');
+        }
+
+        // Vul datum (aankomende zondag) & voorganger in als ze nog leeg zijn
+        const datumInp = document.getElementById('datumInput');
+        if (datumInp && !datumInp.value.trim()) {
+            const nu = new Date();
+            const dagenTotZondag = (7 - nu.getDay()) % 7 || 7;
+            const zo = new Date(nu.getFullYear(), nu.getMonth(), nu.getDate() + dagenTotZondag);
+            datumInp.value = `Zondag ${zo.getDate()}-${zo.getMonth() + 1}-${zo.getFullYear()}`;
+            if (typeof bewaarGegevens === 'function') bewaarGegevens();
+        }
+        const voorgInp = document.getElementById('voorgangerInput');
+        if (voorgInp && !voorgInp.value.trim()) {
+            voorgInp.value = 'ds. M. Bot';
+            if (typeof bewaarGegevens === 'function') bewaarGegevens();
+        }
+
+        const haalCouplets = (naam, fallbackVerzen) => {
+            try {
+                if (typeof window.zoekLiedInDatabase === 'function') {
+                    const res = window.zoekLiedInDatabase(naam);
+                    if (res && res.inCloud && res.tekst) {
+                        const blokken = res.tekst.split(/\n[ \t]*\n/).filter(Boolean);
+                        if (blokken.length > 0) return blokken;
+                    }
+                }
+            } catch(e) {}
+            return fallbackVerzen;
+        };
+
+        const ps23Blokken = haalCouplets('Psalm 23', [
+            'De HEER is mijn Herder;\n\'k heb al wat mij lust;\nHij zal mij geleiden\nnaar grazige weiden.\nHij voert mij al zachtkens\naan waat\'ren der rust.',
+            'Mijn ziel zal verkwikken,\nals hijg\'nd naar Hem;\nHij leidt mij in sporen\nvan recht, mij beschoren,\nom Zijns naams wil,\ndie ik roem met mijn stem.',
+            'Al ging ik ook door een dal\nvol doodsduisternis,\nik vrees geen gevaar,\nwant Gij zijt aldaar;\nUw stok en Uw staf,\ndat mijn toevlucht wis is.'
+        ]);
+        const ps23Tekst = [ps23Blokken[0], ps23Blokken[2] || ps23Blokken[1] || ps23Blokken[0]].filter(Boolean).join('\n\n');
+
+        const wk116Blokken = haalCouplets('Weerklank Lied 116', [
+            'Groot is Uw trouw, o Heer, mijn God en Vader,\ner is geen schaduw van omkeer bij U;\nU blijft Dezelfde, Uw liefd\' kent geen einde,\nzoals U eens waart, zo bent U ook nu.',
+            'Zomer en winter, het zaaien en maaien,\nzon, maan en sterren, in hun vast\' baan,\ntuigen met heel de natuur van Uw goedheid,\nvan Uw genade, die nooit zal vergaan.'
+        ]);
+        const wk116Tekst = [wk116Blokken[0], wk116Blokken[1] || wk116Blokken[0]].filter(Boolean).join('\n\n');
+
+        liturgieVolgorde = [
+            {
+                type: 'Zang',
+                titel: 'Psalm 23 vers 1, 3',
+                basisTitel: 'Psalm 23',
+                geselecteerdeVerzen: [1, 3],
+                tekst: ps23Tekst
+            },
+            {
+                type: 'Schriftlezing',
+                titel: 'Johannes 3:16-18 (HSV)',
+                tekst: '16 Want alzo lief heeft God de wereld gehad, dat Hij Zijn eniggeboren Zoon gegeven heeft, opdat ieder die in Hem gelooft, niet verloren gaat, maar eeuwig leven heeft.\n17 Want God heeft Zijn Zoon niet in de wereld gezonden opdat Hij de wereld zou veroordelen, maar opdat de wereld door Hem behouden zou worden.\n18 Wie in Hem gelooft, wordt niet veroordeeld, maar wie niet gelooft, is al veroordeeld, omdat hij niet geloofd heeft in de Naam van de eniggeboren Zoon van God.'
+            },
+            {
+                type: 'Leeg',
+                titel: 'Preek / Verkondiging',
+                tekst: ' '
+            },
+            {
+                type: 'Zang',
+                titel: 'Weerklank Lied 116 vers 1, 2',
+                basisTitel: 'Weerklank Lied 116',
+                geselecteerdeVerzen: [1, 2],
+                tekst: wk116Tekst
+            }
+        ];
+
+        window.tekenVolgorde();
+        if (typeof renderSlidePreview === 'function') renderSlidePreview(0);
+        if (window.innerWidth < 768 && typeof window.schakelMobieleTab === 'function') {
+            window.schakelMobieleTab('volgorde');
+        }
+        if (window.toonToast) {
+            window.toonToast("✨ Voorbeeld-dienst geladen! Klik op een onderdeel of [1] [2] om uit te proberen.", "success");
+        }
+    };
+
     window.tekenVolgorde = function() {
         bewaarLiturgie();
         const lijst = document.getElementById('volgordeLijst');
@@ -15019,18 +15215,48 @@ Antwoord UITSLUITEND in valide JSON:
             previewItemIdx = -1;
             if (miniBar) miniBar.classList.add('hidden');
             lijst.innerHTML = `
-                <div class="apple-liquid-card rounded-2xl p-6 sm:p-7 text-center flex flex-col items-center justify-center gap-3 border border-dashed border-gray-200/80 dark:border-white/10">
-                    <div class="w-11 h-11 rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-[#007AFF] flex items-center justify-center text-xl shadow-2xs">📋</div>
-                    <div class="max-w-xs">
-                        <p class="text-xs sm:text-[13px] font-bold text-[#1D1D1F] dark:text-white">Liturgie is nog leeg</p>
-                        <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 leading-relaxed">Zoek links een lied of bijbeltekst, of start direct met één van deze opties:</p>
+                <div class="apple-liquid-card rounded-2xl p-4 sm:p-5 flex flex-col gap-3.5 border border-dashed border-gray-200/90 dark:border-white/10">
+                    <div class="flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-[#007AFF] flex items-center justify-center text-lg flex-shrink-0 shadow-2xs">⛪</div>
+                        <div class="min-w-0">
+                            <p class="text-[13px] sm:text-sm font-bold text-[#1D1D1F] dark:text-white leading-snug">Begin je kerkdienst in 3 simpele stappen</p>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">Nog nooit gebruikt? Volg deze volgorde of laad meteen een kant-en-klaar voorbeeld:</p>
+                        </div>
                     </div>
-                    <div class="flex flex-wrap items-center justify-center gap-1.5 pt-1">
-                        <button type="button" onclick="openImportModal()" class="px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 text-purple-700 dark:text-purple-300 text-[11px] font-semibold border border-purple-200/60 dark:border-purple-800/50 transition-all active:scale-95 cursor-pointer flex items-center gap-1">
-                            <span>✨</span><span>Plak Liturgie</span>
+
+                    <div class="flex flex-col gap-2 text-left">
+                        <button type="button" onclick="if(window.innerWidth<768&&window.schakelMobieleTab)window.schakelMobieleTab('invoer'); const i=document.getElementById('liedInput'); if(i){i.focus();i.scrollIntoView({behavior:'smooth',block:'center'});}" class="w-full text-left p-2.5 rounded-xl bg-white/80 dark:bg-white/[0.04] hover:bg-blue-50/70 dark:hover:bg-blue-950/30 border border-gray-200/70 dark:border-white/10 transition-all flex items-start gap-2.5 cursor-pointer group">
+                            <span class="w-5 h-5 rounded-full bg-[#007AFF] text-white text-[11px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+                            <div class="min-w-0">
+                                <div class="text-xs font-bold text-[#1D1D1F] dark:text-white group-hover:text-[#007AFF] transition-colors">Voeg liederen, bijbeltekst of hele mail toe</div>
+                                <div class="text-[11px] text-gray-500 dark:text-gray-400 leading-snug">Typ bijv. <span class="font-mono text-[10px] text-[#007AFF]">ps 23:1,3</span> of <span class="font-mono text-[10px] text-[#007AFF]">Johannes 3:1-16</span>, of plak een mail met <b>Plak Liturgie</b>.</div>
+                            </div>
                         </button>
-                        <button type="button" onclick="window.openLiederenBeheerModal()" class="px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 text-[#007AFF] dark:text-blue-300 text-[11px] font-semibold border border-blue-200/60 dark:border-blue-800/50 transition-all active:scale-95 cursor-pointer flex items-center gap-1">
-                            <span>📚</span><span>Bibliotheek</span>
+                        <div class="p-2.5 rounded-xl bg-white/60 dark:bg-white/[0.03] border border-gray-200/60 dark:border-white/10 flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full bg-indigo-500 text-white text-[11px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+                            <div class="min-w-0">
+                                <div class="text-xs font-bold text-[#1D1D1F] dark:text-white">Sleep op volgorde &amp; klik direct op verzen</div>
+                                <div class="text-[11px] text-gray-500 dark:text-gray-400 leading-snug">Tik onder elk lied direct op <b>[1] [2] [3]</b> om verzen te kiezen. Vergissing? Klik op <b>↩️ Herstel</b>.</div>
+                            </div>
+                        </div>
+                        <div class="p-2.5 rounded-xl bg-white/60 dark:bg-white/[0.03] border border-gray-200/60 dark:border-white/10 flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full bg-emerald-500 text-white text-[11px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
+                            <div class="min-w-0">
+                                <div class="text-xs font-bold text-[#1D1D1F] dark:text-white">Bekijk Preview &amp; Exporteer</div>
+                                <div class="text-[11px] text-gray-500 dark:text-gray-400 leading-snug">Controleer elke dia rechts live en klik op <b>Exporteer PowerPoint</b> of projecteer met <b>🖥️ 2e Scherm</b>.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-center gap-1.5 pt-0.5">
+                        <button type="button" onclick="window.laadVoorbeeldLiturgie()" class="px-3.5 py-1.5 rounded-xl bg-[#007AFF] hover:bg-blue-600 text-white text-[11px] font-bold shadow-xs transition-all active:scale-95 cursor-pointer flex items-center gap-1.5">
+                            <span>✨</span><span>Probeer Voorbeeld-dienst</span>
+                        </button>
+                        <button type="button" onclick="openImportModal()" class="px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 text-purple-700 dark:text-purple-300 text-[11px] font-semibold border border-purple-200/60 dark:border-purple-800/50 transition-all active:scale-95 cursor-pointer flex items-center gap-1">
+                            <span>⚡</span><span>Plak Liturgie</span>
+                        </button>
+                        <button type="button" onclick="startUitleg()" class="px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 text-[#007AFF] dark:text-blue-300 text-[11px] font-semibold border border-blue-200/60 dark:border-blue-800/50 transition-all active:scale-95 cursor-pointer flex items-center gap-1">
+                            <span>🧭</span><span>Korte Uitleg</span>
                         </button>
                         <button type="button" onclick="openArchief()" class="px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 text-gray-700 dark:text-gray-300 text-[11px] font-semibold transition-all active:scale-95 cursor-pointer flex items-center gap-1">
                             <span>📂</span><span>Archief</span>
