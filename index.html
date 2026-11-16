@@ -1262,7 +1262,7 @@
                     </div>
                 </div>
 
-                <button onclick="analyseerImport()" class="w-full py-3 sm:py-3.5 mt-0.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 active:scale-98 transition-all shadow-md flex items-center justify-center gap-2">
+                <button id="importAnalyseerBtn" onclick="analyseerImport()" class="w-full py-3 sm:py-3.5 mt-0.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 active:scale-98 transition-all shadow-md flex items-center justify-center gap-2">
                     <span>✨</span>
                     <span>Analyseer Liturgie</span>
                 </button>
@@ -7716,7 +7716,10 @@ Retourneer UITSLUITEND een valide JSON object:
         }
     }
 
-    async function fetchGeminiWithFallback(bodyPayload, preferredModel) {
+    async function fetchGeminiWithFallback(bodyPayload, preferredModel, options = {}) {
+        const timeoutMs = Number(options.timeoutMs) > 0 ? Number(options.timeoutMs) : 15000;
+        const externalSignal = options.signal || null;
+
         function normModel(m) {
             if (!m) return 'models/gemini-flash-lite-latest';
             return m.startsWith('models/') ? m : `models/${m}`;
@@ -7726,10 +7729,8 @@ Retourneer UITSLUITEND een valide JSON object:
             normModel(preferredModel || gevondenModel),
             'models/gemini-flash-lite-latest',
             'models/gemini-flash-latest',
-            'models/gemini-3.1-flash-lite',
-            'models/gemini-3.8-flash',
-            'models/gemini-3.5-flash-lite',
-            'models/gemini-2.5-flash-lite'
+            'models/gemini-2.5-flash-lite',
+            'models/gemini-2.5-flash'
         ];
         if (window.beschikbareAiModellen && Array.isArray(window.beschikbareAiModellen)) {
             window.beschikbareAiModellen.forEach(m => {
@@ -7741,10 +7742,18 @@ Retourneer UITSLUITEND een valide JSON object:
 
         let lastErr = null;
         for (const mod of uniekeModellen) {
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 12000);
+            if (externalSignal && externalSignal.aborted) {
+                const abortErr = new Error("Geannuleerd door gebruiker");
+                abortErr.name = "AbortError";
+                abortErr.isUserAbort = true;
+                throw abortErr;
+            }
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+            const onExternalAbort = () => controller.abort();
+            if (externalSignal) externalSignal.addEventListener('abort', onExternalAbort, { once: true });
 
+            try {
                 const response = await fetch(`${PROXY_URL}/v1beta/${mod}:generateContent`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -7752,6 +7761,7 @@ Retourneer UITSLUITEND een valide JSON object:
                     body: JSON.stringify(bodyPayload)
                 });
                 clearTimeout(timeoutId);
+                if (externalSignal) externalSignal.removeEventListener('abort', onExternalAbort);
 
                 // Safari-veilig: eerst als tekst uitlezen om JSON parse crashes / "The string did not match the expected pattern" te vermijden
                 const rawText = await response.text();
@@ -7791,9 +7801,17 @@ Retourneer UITSLUITEND een valide JSON object:
                 }
                 return data;
             } catch (err) {
+                clearTimeout(timeoutId);
+                if (externalSignal) externalSignal.removeEventListener('abort', onExternalAbort);
+                if (externalSignal && externalSignal.aborted) {
+                    const abortErr = new Error("Geannuleerd door gebruiker");
+                    abortErr.name = "AbortError";
+                    abortErr.isUserAbort = true;
+                    throw abortErr;
+                }
                 lastErr = err;
                 if (err.name === 'AbortError') {
-                    console.warn(`[AI] Model ${mod} time-out na 12 seconden, probeert alternatief model...`);
+                    console.warn(`[AI] Model ${mod} time-out na ${Math.round(timeoutMs / 1000)} seconden, probeert alternatief model...`);
                     lastErr = new Error("Het AI-verzoek duurde te lang (time-out).");
                     continue;
                 }
@@ -11440,9 +11458,28 @@ Bijbelliederen`;
         };
     };
 
+    window._resetImportAnalyseKnop = function() {
+        const knop = document.getElementById('importAnalyseerBtn') || document.querySelector('#importStap1 button');
+        if (knop) {
+            knop.innerHTML = "<span>✨</span><span>Analyseer Liturgie</span>";
+            knop.disabled = false;
+        }
+        window._importAnalyseBezig = false;
+    };
+
     window.openImportModal = function() {
+        if (window._importAbortController) {
+            try { window._importAbortController.abort(); } catch (e) {}
+            window._importAbortController = null;
+        }
+        window._resetImportAnalyseKnop();
         const tekstVak = document.getElementById('importTekst');
         if (tekstVak) tekstVak.value = '';
+        const privacyNotice = document.getElementById('importPrivacyFeedbackBadge');
+        if (privacyNotice) privacyNotice.classList.add('hidden');
+        const resultatenDiv = document.getElementById('importResultaten');
+        if (resultatenDiv) resultatenDiv.innerHTML = '';
+        window.gevondenImportItems = [];
         const stapBadge = document.getElementById('importStapBadge');
         if (stapBadge) stapBadge.innerText = 'Stap 1: Plakken';
         document.getElementById('importStap1').classList.remove('hidden');
@@ -11752,6 +11789,11 @@ Bijbelliederen`;
     };
 
     window.sluitImportModal = function() {
+        if (window._importAbortController) {
+            try { window._importAbortController.abort(); } catch (e) {}
+            window._importAbortController = null;
+        }
+        window._resetImportAnalyseKnop();
         document.getElementById('importModal').classList.add('hidden');
     };
 
@@ -11931,9 +11973,145 @@ Bijbelliederen`;
         };
     };
 
+    window.parseJsonArraySafe = function(rawText) {
+        if (!rawText || typeof rawText !== 'string') return null;
+        const cleaned = rawText.replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();
+        try {
+            const parsed = JSON.parse(cleaned);
+            if (Array.isArray(parsed)) return parsed;
+        } catch (e) {}
+        const start = cleaned.indexOf('[');
+        const end = cleaned.lastIndexOf(']');
+        if (start !== -1 && end > start) {
+            try {
+                const parsed = JSON.parse(cleaned.slice(start, end + 1));
+                if (Array.isArray(parsed)) return parsed;
+            } catch (e) {}
+        }
+        return null;
+    };
+
+    window.parseLiturgieLokaal = function(tekst) {
+        if (!tekst || !tekst.trim()) return [];
+        const boekAliasMap = [
+            [/\b(?:gen|ge)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Genesis'],
+            [/\b(?:exod|ex)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Exodus'],
+            [/\b(?:lev)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Leviticus'],
+            [/\b(?:num)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Numeri'],
+            [/\b(?:deut|dt)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Deuteronomium'],
+            [/\b(?:joz)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Jozua'],
+            [/\b(?:richt)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Richteren'],
+            [/\b(1\s*sam|1\s*samu[eë]l)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, '1 Samuël'],
+            [/\b(2\s*sam|2\s*samu[eë]l)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, '2 Samuël'],
+            [/\b(1\s*kon)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, '1 Koningen'],
+            [/\b(2\s*kon)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, '2 Koningen'],
+            [/\b(1\s*kron)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, '1 Kronieken'],
+            [/\b(2\s*kron)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, '2 Kronieken'],
+            [/\b(?:neh)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Nehemia'],
+            [/\b(?:est)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Esther'],
+            [/\b(?:spr)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Spreuken'],
+            [/\b(?:pred)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Prediker'],
+            [/\b(?:jes)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Jesaja'],
+            [/\b(?:jer)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Jeremia'],
+            [/\b(?:ez|eze)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Ezechiël'],
+            [/\b(?:dan)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Daniël'],
+            [/\b(?:hos)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Hosea'],
+            [/\b(?:mic)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Micha'],
+            [/\b(?:hab)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Habakuk'],
+            [/\b(?:zach)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Zacharia'],
+            [/\b(?:mal)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Maleachi'],
+            [/\b(?:matt?|mt)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Mattheüs'],
+            [/\b(?:marc?|mark|mc|mk)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Markus'],
+            [/\b(?:luk|luc|lc)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Lukas'],
+            [/\b(?:joh|jh)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Johannes'],
+            [/\b(?:hand)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Handelingen'],
+            [/\b(?:rom)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Romeinen'],
+            [/\b(1\s*kor)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, '1 Korinthe'],
+            [/\b(2\s*kor)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, '2 Korinthe'],
+            [/\b(?:gal)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Galaten'],
+            [/\b(?:ef|efe)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Efeze'],
+            [/\b(?:fil|filip)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Filippenzen'],
+            [/\b(?:kol)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Kolossensen'],
+            [/\b(1\s*thess?)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, '1 Thessalonicensen'],
+            [/\b(2\s*thess?)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, '2 Thessalonicensen'],
+            [/\b(1\s*tim)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, '1 Timotheüs'],
+            [/\b(2\s*tim)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, '2 Timotheüs'],
+            [/\b(?:tit)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Titus'],
+            [/\b(?:filem|film)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Filemon'],
+            [/\b(?:hebr?)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Hebreeën'],
+            [/\b(?:jak)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Jakobus'],
+            [/\b(1\s*petr?|1\s*pt)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, '1 Petrus'],
+            [/\b(2\s*petr?|2\s*pt)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, '2 Petrus'],
+            [/\b(1\s*joh|1\s*jh)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, '1 Johannes'],
+            [/\b(2\s*joh|2\s*jh)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, '2 Johannes'],
+            [/\b(3\s*joh|3\s*jh)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, '3 Johannes'],
+            [/\b(?:openb|opb)\.?\s+(\d+\s*:\s*[\d,\-\sen]+)/i, 'Openbaring']
+        ];
+        const volleBoeken = (typeof bijbelBoeken !== 'undefined' ? bijbelBoeken : [])
+            .slice()
+            .sort((a, b) => b.length - a.length);
+
+        const resultaten = [];
+        const segmenten = tekst.split(/\r?\n|;/).map(s => s.trim()).filter(Boolean);
+
+        for (const seg of segmenten) {
+            let matched = false;
+            const schoon = seg.replace(/^(?:[-•*]|\d+[.)])\s*/, '').trim();
+            if (!schoon) continue;
+
+            // 1. Check volledige Bijbelboeken (bijv. "Schriftlezing: Romeinen 8:31-39")
+            for (const boek of volleBoeken) {
+                const esc = boek.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const re = new RegExp(`\\b${esc}\\s+(\\d+\\s*:\\s*[\\d,\\-\\sen]+)`, 'i');
+                const m = schoon.match(re);
+                if (m) {
+                    const ref = m[1].replace(/\s+/g, ' ').replace(/\s*:\s*/, ':').trim();
+                    resultaten.push({ type: 'Schriftlezing', titel: `${boek} ${ref} (HSV)`, origineel: schoon, verzen: [] });
+                    matched = true;
+                    break;
+                }
+            }
+            if (matched) continue;
+
+            // 2. Check afgekorte Bijbelboeken
+            for (const [re, boekNaam] of boekAliasMap) {
+                const m = schoon.match(re);
+                if (m) {
+                    const refRaw = m[m.length - 1];
+                    const ref = refRaw.replace(/\s+/g, ' ').replace(/\s*:\s*/, ':').trim();
+                    resultaten.push({ type: 'Schriftlezing', titel: `${boekNaam} ${ref} (HSV)`, origineel: schoon, verzen: [] });
+                    matched = true;
+                    break;
+                }
+            }
+            if (matched) continue;
+
+            // 3. Check liederen & psalmen
+            const liedMatch = schoon.match(/\b(DNP\s*(?:Psalm|Ps\.?)\s*\d+|Psalm(?:en)?\s*\d+|Ps\.?\s*\d+|Weerklank(?:\s+Lied)?\s*\d+|WK\s*\d+|Op\s+Toonhoogte\s*\d+|OTH\s*\d+|Opwekking\s*\d+|Opw\.?\s*\d+|Liedboek\s*\d+|Lied\s*\d+|Gezang\s*\d+|Gez\.?\s*\d+|ELB\s*\d+|Joh\.?\s*de\s*Heer\s*\d+|JdH\s*\d+|Hemelhoog\s*\d+|HH\s*\d+|Sela\s+[^\d,;]+)\b/i);
+            if (liedMatch) {
+                let basis = liedMatch[1].replace(/\s+/g, ' ').trim();
+                if (typeof window.expandeerLiedAfkorting === 'function') {
+                    basis = window.expandeerLiedAfkorting(basis);
+                }
+                const rest = schoon.slice(liedMatch.index + liedMatch[0].length);
+                const verzen = typeof window.extractVersNummers === 'function' ? window.extractVersNummers(rest || schoon) : [];
+                resultaten.push({ type: 'Zang', titel: basis, origineel: schoon, verzen });
+            }
+        }
+        return resultaten;
+    };
+
     window.analyseerImport = async function() {
+        if (window._importAnalyseBezig) return;
         const ruweTekst = document.getElementById('importTekst').value;
         if (!ruweTekst.trim()) return;
+
+        window._importAnalyseBezig = true;
+        if (window._importAbortController) {
+            try { window._importAbortController.abort(); } catch (e) {}
+        }
+        const abortCtrl = new AbortController();
+        window._importAbortController = abortCtrl;
 
         // Pas eerst het lokale Privacy Shield toe
         const privacyResult = window.filterPastoraleGevoeligeGegevens(ruweTekst);
@@ -11954,113 +12132,159 @@ Bijbelliederen`;
         const resultatenDiv = document.getElementById('importResultaten');
         resultatenDiv.innerHTML = '';
 
-        const knop = document.querySelector('#importStap1 button');
-        const origineleKnopTekst = knop.innerHTML;
-        knop.innerHTML = "<span>⏳</span><span>AI leest de liturgie...</span>";
-        knop.disabled = true;
+        const knop = document.getElementById('importAnalyseerBtn') || document.querySelector('#importStap1 button');
+        if (knop) {
+            knop.innerHTML = "<span>⏳</span><span>AI leest de liturgie...</span>";
+            knop.disabled = true;
+        }
+
+        let gebruikteLokaleFallback = false;
 
         try {
-            if (!gevondenModel) throw new Error("Het AI-model is nog niet verbonden. Wacht een paar seconden en probeer opnieuw.");
+            let herkendeItems = null;
 
-            // Haal de complete lijst met bekende titels op als referentie voor de AI
-            let alleBekendeTitels = bouwZoekLijst();
-            let dbTitels = Object.keys(window.liederenDatabase || {});
-            let referentieTitels = [...new Set([...alleBekendeTitels, ...dbTitels])].slice(0, 500).join(", ");
+            if (gevondenModel && veiligeTekst.trim()) {
+                try {
+                    // Compacte, snelle referentielijst: alleen titels die qua bundel/nummer relevant lijken (max 80)
+                    const alleBekendeTitels = bouwZoekLijst();
+                    const dbTitels = Object.keys(window.liederenDatabase || {});
+                    const alleUnieke = [...new Set([...alleBekendeTitels, ...dbTitels])];
+                    const tekstLower = veiligeTekst.toLowerCase();
+                    const nummersInTekst = new Set((veiligeTekst.match(/\b\d{1,3}\b/g) || []));
+                    const relevanteTitels = alleUnieke.filter(t => {
+                        const tl = t.toLowerCase();
+                        const num = (t.match(/\b\d{1,3}\b/) || [])[0];
+                        if (num && nummersInTekst.has(num)) return true;
+                        const eersteWoord = tl.split(/\s+/)[0];
+                        return eersteWoord.length > 3 && tekstLower.includes(eersteWoord);
+                    }).slice(0, 80);
+                    const referentieTitels = (relevanteTitels.length > 0 ? relevanteTitels : alleUnieke.slice(0, 50)).join(", ");
 
-            const prompt = `Je analyseert een kerkelijke liturgie die is geplakt vanuit Word, WhatsApp of e-mail. Het format verschilt per voorganger (opsomming, lopende tekst, tabel, met of zonder sleutelwoorden), dus lees de hele tekst inhoudelijk.
+                    const prompt = `Je analyseert een kerkelijke liturgie (Word, WhatsApp of e-mail). Lees inhoudelijk en herken UITSLUITEND in volgorde:
+1. "Zang" — psalm, lied of gezang (Psalm, Weerklank, Op Toonhoogte, DNP, Opwekking, Liedboek, etc.).
+2. "Schriftlezing" — Bijbelgedeelte (Bijbelboek + hoofdstuk:vers).
+Negeer mededelingen, collecte, gebed, namen, votum, zegen.
 
-Herken UITSLUITEND twee soorten onderdelen, in de volgorde waarin ze voorkomen:
-1. "Zang" — een psalm, lied of gezang dat gezongen wordt (Psalm, Weerklank, Op Toonhoogte, DNP, Opwekking, etc.).
-2. "Schriftlezing" — een Bijbelgedeelte dat gelezen wordt (Bijbelboek + hoofdstuk/vers).
+Geldige Bijbelboeken: ${bijbelBoeken.join(", ")}.
+Relevante liedtitels uit database (gebruik exact deze schrijfwijze bij match): ${referentieTitels}
 
-Negeer alles wat geen lied of Schriftlezing is (namen, mededelingen, collecte, votum, zegen, etc.).
+Regels:
+- Zang: exact matchende titel uit database, of netjes uitgeschreven (bijv. "Weerklank 123", "Op Toonhoogte 45", "Psalm 84").
+- Schriftlezing: exact "<Bijbelboek> <hoofdstuk>:<verzen> (HSV)", bijv. "Johannes 3:1-16 (HSV)".
+- "origineel": het brontekst-fragment.
+- "verzen": array van versnummers (bijv. [1, 3, 5]) of [].
 
-Geldige Bijbelboeken (schrijf exact zo): ${bijbelBoeken.join(", ")}.
-
-Bekende liedtitels ter referentie — gebruik EXACT deze schrijfwijze wanneer je een match herkent, ook bij afkortingen, spatiefouten of andere volgorde in de brontekst: ${referentieTitels}
-
-Regels voor de titel in je antwoord:
-- Zang, wel herkend in de referentielijst: gebruik exact die schrijfwijze.
-- Zang, niet herkend: schrijf zo netjes mogelijk uit (bijv. "Weerklank 123", "Op Toonhoogte 45", "Psalm 84").
-- Schriftlezing: exact als "<Bijbelboek> <hoofdstuk>:<verzen> (HSV)", bijv. "Johannes 3:1-16 (HSV)".
-- Geef ook het originele stukje brontekst terug in "origineel", zodat de gebruiker kan controleren.
-- Geef eventuele vers- of coupletnummers terug in "verzen" als een array van getallen (bijv. [1, 3, 5] voor "vers 1, 3 en 5", of [] indien niet vermeld of heel het lied).
-
-Geef UITSLUITEND geldige JSON terug: een array van objecten met de keys "type", "titel", "origineel", "verzen". Geen uitleg, geen markdown-codeblok, alleen de JSON array. Als er niets te herkennen valt, geef een lege array [] terug.
+Geef UITSLUITEND een geldige JSON-array van objecten met keys "type", "titel", "origineel", "verzen" (of [] als niets herkend).
 
 Brontekst:
 """
 ${veiligeTekst}
 """`;
 
-            if (typeof consumeerAiQuota === 'function') consumeerAiQuota(2);
-            const data = await fetchGeminiWithFallback({
-                contents: [{ role: "user", parts: [{ text: prompt }] }],
-                generationConfig: { responseMimeType: "application/json", temperature: 0.1 }
-            }, gevondenModel);
-            if (data.error) throw new Error(data.error.message);
+                    if (typeof consumeerAiQuota === 'function') consumeerAiQuota(2);
+                    const data = await fetchGeminiWithFallback({
+                        contents: [{ role: "user", parts: [{ text: prompt }] }],
+                        generationConfig: { responseMimeType: "application/json", temperature: 0.1 }
+                    }, gevondenModel, { timeoutMs: 18000, signal: abortCtrl.signal });
 
-            let ruweJson = (data.candidates?.[0]?.content?.parts?.[0]?.text || "[]").trim();
-            ruweJson = ruweJson.replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();
-            let herkendeItems = JSON.parse(ruweJson);
+                    if (data && !data.error) {
+                        const ruweJson = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                        herkendeItems = window.parseJsonArraySafe(ruweJson);
+                    }
+                } catch (aiErr) {
+                    if (aiErr && (aiErr.isUserAbort || abortCtrl.signal.aborted)) {
+                        return;
+                    }
+                    console.warn("[Bulk Import] AI-analyse faalde, schakelt over naar lokale parser:", aiErr.message);
+                }
+            }
 
-            // Voor elk herkend item: controleer database en extract versnummers
-            for (let item of herkendeItems) {
-                if (item.type !== "Zang" && item.type !== "Schriftlezing") continue;
+            if (abortCtrl.signal.aborted) return;
+
+            // Fallback naar lokale parser als AI niet beschikbaar was, crashte, ongeldige JSON gaf, of 0 items vond terwijl er wel tekst was
+            if (!Array.isArray(herkendeItems) || herkendeItems.length === 0) {
+                const lokaal = window.parseLiturgieLokaal(veiligeTekst);
+                if (lokaal.length > 0) {
+                    herkendeItems = lokaal;
+                    gebruikteLokaleFallback = true;
+                } else if (!Array.isArray(herkendeItems)) {
+                    herkendeItems = [];
+                }
+            }
+
+            // Filter en normaliseer herkende items
+            const genormaliseerd = [];
+            for (const item of herkendeItems) {
+                if (!item || (item.type !== "Zang" && item.type !== "Schriftlezing")) continue;
                 let titel = (item.titel || "").trim();
                 if (!titel) continue;
                 if (item.type === "Zang" && typeof window.expandeerLiedAfkorting === 'function') {
                     titel = window.expandeerLiedAfkorting(titel);
                 }
-                let definitieveTekst = " ";
-                let inCloud = false;
-
-                // Combineer AI versnummers met lokale regex extractie voor 100% betrouwbaarheid
                 const aiVersNummers = Array.isArray(item.verzen) ? item.verzen.map(v => parseInt(v, 10)).filter(n => !isNaN(n)) : [];
                 const regexVersNummers = window.extractVersNummers(item.origineel || titel);
-                const versNummers = [...new Set([...aiVersNummers, ...regexVersNummers])].sort((a,b) => a - b);
+                const versNummers = [...new Set([...aiVersNummers, ...regexVersNummers])].sort((a, b) => a - b);
 
-                if (item.type === "Zang") {
-                    const dbResult = window.zoekLiedInDatabase(titel);
-                    if (dbResult.inCloud) {
-                        inCloud = true;
-                        definitieveTekst = dbResult.tekst;
-                    }
-                } else {
-                    let zoekTitel = titel.replace(" (HSV)", "").trim();
-                    try {
-                        const r = await fetch(DATA_URL + "/bijbel_hsv?id=" + encodeURIComponent(zoekTitel));
-                        const data = r.ok ? await r.json() : { gevonden: false };
-                        if (data.gevonden && data.tekst) {
-                            definitieveTekst = data.tekst;
-                            inCloud = true;
-                        }
-                    } catch(e) {}
-                }
-
-                window.gevondenImportItems.push({
+                genormaliseerd.push({
                     type: item.type,
                     titel,
                     origineel: item.origineel || titel,
                     gevondenVerzen: versNummers,
                     geselecteerdeVerzen: [...versNummers],
-                    inCloud,
-                    definitieveTekst
+                    inCloud: false,
+                    definitieveTekst: " "
                 });
             }
-        } catch (err) {
-            knop.innerHTML = origineleKnopTekst;
-            knop.disabled = false;
-            window.toonToast("AI-analyse is mislukt: " + err.message, "error");
-            return;
-        }
 
-        knop.innerHTML = origineleKnopTekst;
-        knop.disabled = false;
+            // Haal liederen lokaal op en Schriftlezingen parallel op met timeout (6s per fetch)
+            await Promise.all(genormaliseerd.map(async (entry) => {
+                if (entry.type === "Zang") {
+                    const dbResult = window.zoekLiedInDatabase(entry.titel);
+                    if (dbResult.inCloud) {
+                        entry.inCloud = true;
+                        entry.definitieveTekst = dbResult.tekst;
+                    }
+                } else {
+                    const zoekTitel = entry.titel.replace(" (HSV)", "").trim();
+                    const fetchCtrl = new AbortController();
+                    const fetchTimer = setTimeout(() => fetchCtrl.abort(), 6000);
+                    const onMainAbort = () => fetchCtrl.abort();
+                    abortCtrl.signal.addEventListener('abort', onMainAbort, { once: true });
+                    try {
+                        const r = await fetch(DATA_URL + "/bijbel_hsv?id=" + encodeURIComponent(zoekTitel), { signal: fetchCtrl.signal });
+                        const d = r.ok ? await r.json() : { gevonden: false };
+                        if (d.gevonden && d.tekst) {
+                            entry.definitieveTekst = d.tekst;
+                            entry.inCloud = true;
+                        }
+                    } catch (e) {
+                    } finally {
+                        clearTimeout(fetchTimer);
+                        abortCtrl.signal.removeEventListener('abort', onMainAbort);
+                    }
+                }
+            }));
+
+            if (abortCtrl.signal.aborted) return;
+            window.gevondenImportItems = genormaliseerd;
+        } catch (err) {
+            if (abortCtrl.signal.aborted) return;
+            window.toonToast("Analyse is mislukt: " + (err?.message || "Onbekende fout"), "error");
+            return;
+        } finally {
+            if (window._importAbortController === abortCtrl) {
+                window._importAbortController = null;
+            }
+            window._resetImportAnalyseKnop();
+        }
 
         if (window.gevondenImportItems.length === 0) {
             window.toonToast("Geen liederen of bijbelteksten herkend. Controleer de geplakte tekst.", "error");
             return;
+        }
+
+        if (gebruikteLokaleFallback) {
+            window.toonToast("Herkend met snelle lokale parser (AI was even bezet).", "info");
         }
 
         // Update badge in Stap 2
