@@ -603,7 +603,7 @@
             max-width: 100% !important;
             margin: 0 !important;
             max-height: calc(90dvh - env(safe-area-inset-top, 0px)) !important;
-            animation: bottomSheetSpringUp 0.36s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+            animation: bottomSheetSpringUp 0.36s cubic-bezier(0.16, 1, 0.3, 1) both;
             box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.28), 0 -1px 0 rgba(255, 255, 255, 0.18) !important;
             padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)) !important;
             background-color: #ffffff !important;
@@ -669,8 +669,11 @@
     html.engine-phone .modal-backdrop-safe > div.modal-animate {
         background-color: #ffffff !important;
         isolation: isolate !important;
-        -webkit-transform: translateZ(0) !important;
-        transform: translateZ(0) !important;
+    }
+    .sheet-dragging {
+        animation: none !important;
+        transition: none !important;
+        will-change: transform;
     }
     html.dark.engine-phone .modal-backdrop-safe > div.modal-animate,
     body.dark-mode.engine-phone .modal-backdrop-safe > div.modal-animate {
@@ -721,12 +724,10 @@
         width: 90% !important;
         max-height: 88vh !important;
         margin: auto !important;
-        animation: ipadSpringPop 0.28s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+        animation: ipadSpringPop 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
         box-shadow: 0 24px 64px -12px rgba(0, 0, 0, 0.3) !important;
         background-color: #ffffff !important;
         isolation: isolate !important;
-        -webkit-transform: translateZ(0) !important;
-        transform: translateZ(0) !important;
     }
     /* Brede werk-modalen (Liederen Bibliotheek, Welkomstdia Studio & OBS Regie) benutten het iPad scherm optimaal */
     html.engine-tablet #liederenBeheerModal > div.modal-animate,
@@ -769,7 +770,6 @@
         margin: auto !important;
         background-color: #ffffff !important;
         isolation: isolate !important;
-        transform: translateZ(0) !important;
     }
     html.dark.engine-desktop .modal-backdrop-safe > div.modal-animate,
     body.dark-mode.engine-desktop .modal-backdrop-safe > div.modal-animate {
@@ -1016,7 +1016,7 @@
     </div>
 </div>
 
-<div id="controleModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 modal-backdrop-safe transition-opacity p-2 sm:p-4">
+<div id="controleModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 modal-backdrop-safe transition-opacity p-2 sm:p-4" onclick="if(event.target === this) sluitModal()">
     <div class="bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[20px] sm:rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.22)] ring-1 ring-black/[0.05] dark:ring-white/10 w-full max-w-2xl overflow-hidden flex flex-col transform transition-all modal-animate max-h-[96dvh] sm:max-h-[92vh]">
         <!-- 1. Header -->
         <div class="px-3.5 py-2 sm:p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center flex-shrink-0 bg-white dark:bg-[#1C1C1E]">
@@ -3287,17 +3287,69 @@
         }
     }, true);
 
-    // --- 3. MOBIELE BOTTOM SHEET SWIPE-DOWN TO CLOSE (Vloeiende iOS Sheet Dismiss & Grab Handle) ---
+    // --- 3. MOBIELE BOTTOM SHEET SWIPE-DOWN TO CLOSE (Vloeiende iOS Sheet Dismiss met 1-op-1 Motion & Flick) ---
     let _sheetTouchStartY = 0;
     let _sheetTouchStartX = 0;
+    let _sheetTouchStartTime = 0;
     let _sheetCurrentTouchY = 0;
     let _activeDragSheet = null;
     let _activeDragBackdrop = null;
+    let _activeScrollHost = null;
     let _isSheetDragging = false;
     let _isMultiTouch = false;
 
+    function _vindScrollbareOuder(target, boundarySheet) {
+        let el = target;
+        while (el && el !== boundarySheet) {
+            const st = window.getComputedStyle(el);
+            const oy = st.overflowY;
+            if ((oy === 'auto' || oy === 'scroll') && el.scrollHeight > el.clientHeight + 2) {
+                return el;
+            }
+            el = el.parentElement;
+        }
+        return null;
+    }
+
+    function _sluitPopUpNetjes(backdrop, sheet) {
+        if (sheet && sheet.id === 'chatWindow' && typeof window.toggleChat === 'function') {
+            window.toggleChat();
+            return;
+        }
+        if (backdrop && backdrop.id === 'gemeenteModal') {
+            if (localStorage.getItem('actieveGemeente') && typeof window.sluitGemeenteModal === 'function') {
+                window.sluitGemeenteModal();
+            }
+            return;
+        }
+        const closeMap = {
+            tikkieModal: () => window.sluitTikkieModal && window.sluitTikkieModal(),
+            preflightModal: () => window.sluitPreflightModal && window.sluitPreflightModal(),
+            infoModal: () => window.sluitInfoModal && window.sluitInfoModal(),
+            uitlegModal: () => window.sluitUitleg && window.sluitUitleg(),
+            controleModal: () => window.sluitModal && window.sluitModal(),
+            versModal: () => window.sluitVersModal && window.sluitVersModal(),
+            importModal: () => window.sluitImportModal && window.sluitImportModal(),
+            liederenBeheerModal: () => window.sluitLiederenBeheerModal && window.sluitLiederenBeheerModal(),
+            deelModal: () => window.sluitDeelModal && window.sluitDeelModal(),
+            welkomstdiaModal: () => window.sluitWelkomstdiaModal && window.sluitWelkomstdiaModal(),
+            exportFeedbackModal: () => window.sluitExportFeedback && window.sluitExportFeedback(),
+            obsTestModal: () => window.sluitObsTestModal && window.sluitObsTestModal(),
+            videoUitlegModal: () => window.sluitVideoUitleg && window.sluitVideoUitleg(),
+            archiefModal: () => backdrop.classList.add('hidden')
+        };
+        if (backdrop && closeMap[backdrop.id]) {
+            closeMap[backdrop.id]();
+            return;
+        }
+        const closeBtn = sheet && sheet.querySelector('button[title*="sluit" i], button[title*="annuleren" i], button[onclick*="sluit" i], button[onclick*="Annuleren" i]');
+        if (closeBtn) closeBtn.click();
+        else if (backdrop) backdrop.classList.add('hidden');
+    }
+
     function _cancelSheetDrag() {
         if (_activeDragSheet) {
+            _activeDragSheet.classList.remove('sheet-dragging');
             _activeDragSheet.style.transform = '';
             _activeDragSheet.style.transition = '';
         }
@@ -3307,6 +3359,7 @@
         }
         _activeDragSheet = null;
         _activeDragBackdrop = null;
+        _activeScrollHost = null;
         _isSheetDragging = false;
         _isMultiTouch = false;
     }
@@ -3314,6 +3367,7 @@
     // Pinch-to-zoom en multi-touch gebaren annuleren direct de sheet-drag
     window.addEventListener('gesturestart', _cancelSheetDrag, { passive: true });
     window.addEventListener('gesturechange', _cancelSheetDrag, { passive: true });
+    document.addEventListener('touchcancel', _cancelSheetDrag, { passive: true });
 
     document.addEventListener('touchstart', (e) => {
         if (window.innerWidth >= 768) return;
@@ -3333,25 +3387,30 @@
             return;
         }
 
-        const sheet = e.target.closest('.modal-animate');
-        if (!sheet || sheet.id === 'videoModalDialog') return;
+        const sheet = e.target.closest('.modal-animate, #chatWindow');
+        if (!sheet) return;
+        if (sheet.id === 'videoModalDialog' && typeof window.isVideoFullscreen === 'function' && window.isVideoFullscreen()) return;
 
-        // Negeer invoervelden
+        // Negeer invoervelden en horizontaal scrollbare balken binnen een modal
         if (e.target.closest('input:not([type="button"]):not([type="submit"]):not([type="checkbox"]), textarea, select, [contenteditable="true"]')) return;
+        if (e.target.closest('#uitlegHoofdstukkenBalk, #uitlegDots, #uitlegDemoInner, .overflow-x-auto')) return;
 
         const rect = sheet.getBoundingClientRect();
         const touchY = e.touches[0].clientY;
         const touchX = e.touches[0].clientX;
+        const scrollHost = _vindScrollbareOuder(e.target, sheet);
 
-        // Slepen van de bottom sheet is ALLEEN toegestaan vanaf de bovenste drag handle bar (bovenste 48px).
-        // Dit voorkomt 100% dat scrollen binnen instellingen, lijsten of invoervelden de sheet per ongeluk versleept of transparant maakt!
-        const isHandleArea = (touchY - rect.top) < 48;
-        if (!isHandleArea) return;
+        // Sta slepen toe vanaf de header/grab-balk (bovenste 84px) OF vanuit de inhoud als de lijst bovenaan (scrollTop <= 2) staat
+        const isHandleOrHeader = (touchY - rect.top) < 84;
+        const isAtTopOfScroll = !scrollHost || scrollHost.scrollTop <= 2;
+        if (!isHandleOrHeader && !isAtTopOfScroll) return;
 
         _activeDragSheet = sheet;
         _activeDragBackdrop = sheet.closest('.modal-backdrop-safe, .fixed.inset-0');
+        _activeScrollHost = isHandleOrHeader ? null : scrollHost;
         _sheetTouchStartY = touchY;
         _sheetTouchStartX = touchX;
+        _sheetTouchStartTime = Date.now();
         _sheetCurrentTouchY = touchY;
         _isSheetDragging = false;
     }, { passive: true });
@@ -3374,13 +3433,31 @@
         const diffY = touchY - _sheetTouchStartY;
         const diffX = touchX - _sheetTouchStartX;
 
-        // Alleen naar beneden slepen vanaf de handle bar (pull to dismiss)
-        if (diffY > 8 && Math.abs(diffY) > Math.abs(diffX) * 1.2) {
-            _isSheetDragging = true;
+        // Als de gebruiker binnen de inhoud omhoog veegt (dus door de modal wil scrollen), laat de browser vrij
+        if (!_isSheetDragging && diffY < -6) {
+            _cancelSheetDrag();
+            return;
+        }
+        if (!_isSheetDragging && _activeScrollHost && _activeScrollHost.scrollTop > 2) {
+            _cancelSheetDrag();
+            return;
+        }
+
+        // Pull-to-dismiss actief wanneer vinger duidelijk naar beneden beweegt
+        if (_isSheetDragging || (diffY > 8 && Math.abs(diffY) > Math.abs(diffX) * 1.25)) {
+            if (!_isSheetDragging) {
+                _isSheetDragging = true;
+                _activeDragSheet.classList.add('sheet-dragging');
+            }
             _sheetCurrentTouchY = touchY;
-            const translateY = Math.max(0, diffY * 0.76);
-            _activeDragSheet.style.transform = `translateY(${translateY}px)`;
-            _activeDragSheet.style.transition = 'none';
+            const translateY = Math.max(0, diffY * 0.9);
+            _activeDragSheet.style.transform = `translate3d(0, ${translateY}px, 0)`;
+
+            if (_activeDragBackdrop) {
+                const progress = Math.min(1, translateY / 320);
+                _activeDragBackdrop.style.transition = 'none';
+                _activeDragBackdrop.style.opacity = String(Math.max(0.25, 1 - progress * 0.65));
+            }
 
             if (e.cancelable) e.preventDefault();
         }
@@ -3397,15 +3474,19 @@
         }
 
         const diffY = _sheetCurrentTouchY - _sheetTouchStartY;
+        const elapsedMs = Math.max(1, Date.now() - _sheetTouchStartTime);
+        const velocityY = diffY / elapsedMs;
         const sheet = _activeDragSheet;
         const backdrop = _activeDragBackdrop;
         const wasDragging = _isSheetDragging;
 
         _activeDragSheet = null;
         _activeDragBackdrop = null;
+        _activeScrollHost = null;
         _isSheetDragging = false;
 
-        if (!wasDragging || diffY <= 15) {
+        if (!wasDragging || diffY <= 12) {
+            sheet.classList.remove('sheet-dragging');
             sheet.style.transform = '';
             sheet.style.transition = '';
             if (backdrop) {
@@ -3415,44 +3496,44 @@
             return;
         }
 
-        // Duidelijke drempel (110px) om accidentele sluiting tijdens aanraken te voorkomen
-        const shouldClose = diffY > 110;
+        // Sluit bij ruime sleep (> 95px) óf snelle veeg omlaag (> 38px + velocity > 0.42 px/ms)
+        const shouldClose = diffY > 95 || (diffY > 38 && velocityY > 0.42);
 
         if (shouldClose) {
-            // Soepele iOS glide naar beneden
-            sheet.style.transition = 'transform 0.26s cubic-bezier(0.32, 0.72, 0, 1)';
-            sheet.style.transform = 'translateY(100%)';
+            if (navigator.vibrate) try { navigator.vibrate(8); } catch(err){}
+            sheet.classList.remove('sheet-dragging');
+            sheet.style.animation = 'none';
+            sheet.style.transition = 'transform 0.24s cubic-bezier(0.32, 0.72, 0, 1)';
+            sheet.style.transform = 'translate3d(0, 105%, 0)';
+            if (backdrop) {
+                backdrop.style.transition = 'opacity 0.22s ease';
+                backdrop.style.opacity = '0';
+            }
 
             setTimeout(() => {
-                // Sluit modal netjes via zijn functie of knop
-                if (backdrop && backdrop.id === 'tikkieModal' && typeof window.sluitTikkieModal === 'function') {
-                    window.sluitTikkieModal();
-                } else if (backdrop && backdrop.id === 'gemeenteModal' && typeof window.sluitGemeenteModal === 'function') {
-                    window.sluitGemeenteModal();
-                } else if (backdrop && backdrop.id === 'preflightModal' && typeof window.sluitPreflightModal === 'function') {
-                    window.sluitPreflightModal();
-                } else {
-                    const closeBtn = sheet.querySelector('button[title*="sluit" i], button[title*="annuleren" i], button[onclick*="sluit" i], button[onclick*="Annuleren" i], button[onclick*="classList.add(\'hidden\')"]');
-                    if (closeBtn) {
-                        closeBtn.click();
-                    } else if (backdrop) {
-                        backdrop.classList.add('hidden');
-                    }
-                }
+                _sluitPopUpNetjes(backdrop, sheet);
                 sheet.style.transform = '';
                 sheet.style.transition = '';
+                sheet.style.animation = '';
                 if (backdrop) {
                     backdrop.style.opacity = '';
                     backdrop.style.transition = '';
                 }
-            }, 260);
+            }, 230);
         } else {
-            // Terugveren naar normale positie (iOS bounce)
+            // Terugveren naar normale positie (iOS spring bounce)
+            sheet.classList.remove('sheet-dragging');
+            sheet.style.animation = 'none';
             sheet.style.transition = 'transform 0.28s cubic-bezier(0.16, 1, 0.3, 1)';
-            sheet.style.transform = 'translateY(0)';
+            sheet.style.transform = 'translate3d(0, 0, 0)';
+            if (backdrop) {
+                backdrop.style.transition = 'opacity 0.24s ease';
+                backdrop.style.opacity = '1';
+            }
             setTimeout(() => {
                 sheet.style.transform = '';
                 sheet.style.transition = '';
+                sheet.style.animation = '';
                 if (backdrop) {
                     backdrop.style.opacity = '';
                     backdrop.style.transition = '';
@@ -16797,7 +16878,7 @@ window.verstuurExportFeedback = async function() {
     </div>
 </div>
 
-<div id="exportFeedbackModal" class="fixed inset-0 z-[120] hidden flex items-center justify-center bg-black/40 modal-backdrop-safe transition-opacity">
+<div id="exportFeedbackModal" class="fixed inset-0 z-[120] hidden flex items-center justify-center bg-black/40 modal-backdrop-safe transition-opacity" onclick="if(event.target === this) sluitExportFeedback()">
     <div class="bg-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] w-11/12 max-w-sm overflow-hidden flex flex-col transform transition-all modal-animate">
         <div class="p-5 border-b border-gray-100 flex justify-between items-center">
             <h3 class="text-lg font-bold text-[#1D1D1F]">Hoe ging het? 🎉</h3>
