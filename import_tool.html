@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bulk Importer - Liturgie Assistent</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="js/liturgie-import.js"></script>
 </head>
 <body class="bg-gray-100 p-4 sm:p-8 font-sans text-gray-800">
     <div class="max-w-4xl mx-auto bg-white p-5 sm:p-8 rounded-xl shadow-lg border border-gray-200">
@@ -98,6 +99,9 @@
         }
 
         function parseLiederen(rawText) {
+            if (typeof window.parseBulkLiederenTekst === 'function') {
+                return window.parseBulkLiederenTekst(rawText);
+            }
             const cleaned = rawText.replace(/\u00A0/g, ' ').replace(/\r\n?/g, '\n');
             const lines = cleaned.split('\n');
             const songs = {};
