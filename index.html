@@ -3441,6 +3441,7 @@
             obsTestModal: () => window.sluitObsTestModal && window.sluitObsTestModal(),
             videoUitlegModal: () => window.sluitVideoUitleg && window.sluitVideoUitleg(),
             licentieMeldingModal: () => window.bevestigLicentieMelding && window.bevestigLicentieMelding(),
+            schriftlezingKeuzeModal: () => window.sluitSchriftlezingKeuzeModal && window.sluitSchriftlezingKeuzeModal(),
             archiefModal: () => backdrop.classList.add('hidden')
         };
         if (backdrop && closeMap[backdrop.id]) {
@@ -17207,45 +17208,11 @@ window.stuurLiturgieNaarMij = async function() {
 
         const bestandsnaam = `Liturgie_${datum ? datum.replace(/[^a-zA-Z0-9\-_]/g, '_') : 'Dienst'}.pptx`;
 
-        // 2. Groepeer liederen voor het e-mail overzicht
-        const gegroepeerd = [];
-        const gezieneBasisTitels = new Map();
-        liturgieVolgorde.filter(item => item.type === "Zang").forEach(item => {
-            const info = (typeof window.extractVersInfoVanItem === 'function')
-                ? window.extractVersInfoVanItem(item)
-                : {
-                    basisTitel: (item.basisTitel || item.titel || '').replace(/\s+(?:vers(?:en)?|vs\.?|couplet(?:ten)?)\s+[\d,\s\-–—en&]+$/i, '').trim(),
-                    versNummers: (item.geselecteerdeVerzen && item.geselecteerdeVerzen.length > 0)
-                        ? item.geselecteerdeVerzen
-                        : (typeof window.extractVersNummers === 'function' ? window.extractVersNummers(item.titel) : [])
-                };
-            const basisNaam = info.basisTitel;
-            const versNummers = info.versNummers && info.versNummers.length > 0 ? info.versNummers.map(String) : null;
-            if (gezieneBasisTitels.has(basisNaam)) {
-                const bestaand = gegroepeerd[gezieneBasisTitels.get(basisNaam)];
-                if (versNummers && bestaand.versNummers) bestaand.versNummers = bestaand.versNummers.concat(versNummers);
-                else if (versNummers) bestaand.versNummers = [...versNummers];
-            } else {
-                gezieneBasisTitels.set(basisNaam, gegroepeerd.length);
-                gegroepeerd.push({ basisNaam, versNummers: versNummers ? [...versNummers] : null });
-            }
-        });
-        const geformatteerdeLiederen = gegroepeerd.map(g => {
-            let t = g.basisNaam.split(' - ')[0].trim();
-            const afk = t.replace(/Weerklank Lied/i, "Lw")
-                         .replace(/Weerklank Psalm/i, "Pw")
-                         .replace(/Op Toonhoogte/i, "OTH")
-                         .replace(/DNP Psalm/i, "Ps DNP")
-                         .replace(/Psalm/i, "Ps")
-                         .replace(/Opwekking/i, "Opw").trim();
-            if (g.versNummers && g.versNummers.length > 0) {
-                const unique = [...new Set(g.versNummers.map(n => parseInt(n, 10)).filter(n => !isNaN(n)))].sort((a,b) => a - b);
-                return `${afk} : ${unique.join(', ')}`;
-            }
-            return afk;
-        });
-
-        const bijbelLijst = liturgieVolgorde.filter(item => item.type === "Schriftlezing").map(item => item.titel.replace(" (HSV)", ""));
+        // 2. Groepeer liederen en schriftlezingen voor het e-mail overzicht (consistent met Welkomstdia)
+        const geformatteerdeLiederen = genereerStandaardZangLijst('afkorting');
+        const bijbelLijst = (typeof window.getWelkomstdiaBijbelLijst === 'function')
+            ? window.getWelkomstdiaBijbelLijst()
+            : liturgieVolgorde.filter(item => item.type === "Schriftlezing").map(item => item.titel.replace(" (HSV)", ""));
 
         const emailBericht = `Beste Sem,
 

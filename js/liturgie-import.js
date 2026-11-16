@@ -209,7 +209,7 @@
         const regels = cleaned.split('\n');
         const out = [];
 
-        const bundelPrefixRe = /^(?:(?:DNP\s*)?(?:Psalm(?:en)?|Ps\.?|Weerklank(?:\s+Lied)?|Op\s+Toonhoogte|OTH|Opwekking|Opw\.?|Liedboek|Lied|Gezang|Gez\.?|Hemelhoog|HH|ELB|JdH)\s+)?\d+[a-zA-Z]?\s*:\s*(\d{1,2})\.?\.?(?:\s+(.*))?$/i;
+        const bundelPrefixRe = /^(?:(?:DNP\s*)?(?:Psalm(?:en)?|Ps\.?|Weerklank(?:\s+Lied)?|Op\s+Toonhoogte|OTH|Opwekking|Opw\.?|Liedboek|Lied|Gezang|Gez\.?|Hemelhoog|HH|ELB|JdH)\s+)?\d+[a-zA-Z]?\s*(?::|\b(?:vers|couplet|vs\.?)\s+)\s*(\d{1,2})\.?\.?(?:\s+(.*))?$/i;
         const versWoordRe = /^(?:Vers|Couplet|Strofe)\s+(\d{1,2})\s*[:.]?(?:\s+(.*))?$/i;
         const losNummerRe = /^(\d{1,2})\s*[:)]\s*(.*)$/;
         const inlinePuntRe = /^(\d{1,2})\.\s+(.+)$/;
