@@ -399,8 +399,6 @@
     /* --- Drag-and-Drop Volgorde & iPhone Touch Scroll --- */
     #volgordeLijst { touch-action: pan-y; -webkit-overflow-scrolling: touch; }
     .volgorde-item { transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; touch-action: pan-y; }
-    .volgorde-item[draggable="true"] { -webkit-user-drag: element; }
-    .volgorde-item button { -webkit-user-drag: none; }
     .volgorde-item.dragging { opacity: 0.35; transform: scale(0.98); border: 2px dashed #007AFF !important; background: rgba(0, 122, 255, 0.04) !important; }
     .volgorde-item.drag-over { border-color: #007AFF !important; box-shadow: 0 -3px 0 0 #007AFF, 0 4px 16px rgba(0,0,0,0.06); }
     .drag-handle { cursor: grab; touch-action: none !important; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
@@ -15872,7 +15870,7 @@ Antwoord UITSLUITEND in valide JSON:
             const isLaatste = (index === liturgieVolgorde.length - 1);
 
             lijst.innerHTML += `
-            <div ${window.innerWidth >= 768 ? 'draggable="true"' : ''} data-index="${index}" onclick="kiesItemEnPreview(${index})" class="volgorde-item bg-white dark:bg-[#1C1C1E] flex items-center gap-2.5 sm:gap-3 p-3 md:p-4 rounded-[18px] shadow-[0_2px_12px_rgba(0,0,0,0.03)] border ${isActive ? 'ring-2 ring-[#007AFF] border-transparent' : 'border-black/[0.04] dark:border-white/10'} group transition-all duration-150 ease-out select-none md:active:scale-[0.99] hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] cursor-pointer">
+            <div data-index="${index}" onclick="kiesItemEnPreview(${index})" class="volgorde-item bg-white dark:bg-[#1C1C1E] flex items-center gap-2.5 sm:gap-3 p-3 md:p-4 rounded-[18px] shadow-[0_2px_12px_rgba(0,0,0,0.03)] border ${isActive ? 'ring-2 ring-[#007AFF] border-transparent' : 'border-black/[0.04] dark:border-white/10'} group transition-all duration-150 ease-out select-none md:active:scale-[0.99] hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] cursor-pointer">
                 <div class="flex items-center gap-1 flex-shrink-0">
                     ${liturgieVolgorde.length > 1 ? `
                     <div class="flex flex-col gap-0.5 mr-0.5">
@@ -16002,89 +16000,137 @@ Antwoord UITSLUITEND in valide JSON:
         }
     };
 
-    // --- DRAG AND DROP (Desktop) ---
-    let dragSrcIndex = null;
-    let dragTargetIndex = null;
+    // --- DRAG AND DROP (Desktop Mouse Live-Reorder zonder HTML5 draggable quirks) ---
     (function() {
         const lijst = document.getElementById('volgordeLijst');
         if (!lijst) return;
-        const getVolgordeItem = (target, clientY) => {
-            const el = (target && target.nodeType === 3) ? target.parentElement : target;
-            const direct = el && typeof el.closest === 'function' ? el.closest('.volgorde-item') : null;
-            if (direct) return direct;
-            if (typeof clientY !== 'number') return null;
-            const alle = Array.from(lijst.querySelectorAll('.volgorde-item'));
-            for (const kaart of alle) {
-                const r = kaart.getBoundingClientRect();
-                if (clientY <= r.bottom + 6) return kaart;
+
+        let mouseState = null;
+        let suppressClickUntil = 0;
+
+        function verplaatsKaartLive(draggedEl, clientY) {
+            const siblings = Array.from(lijst.querySelectorAll('.volgorde-item')).filter(el => el !== draggedEl);
+            let targetEl = null;
+            for (const sib of siblings) {
+                const box = sib.getBoundingClientRect();
+                if (clientY < box.top + box.height / 2) {
+                    targetEl = sib;
+                    break;
+                }
             }
-            return alle.length ? alle[alle.length - 1] : null;
-        };
-        const voerVerplaatsingUit = (vanIdx, naarIdx) => {
-            if (vanIdx === null || naarIdx === null || isNaN(vanIdx) || isNaN(naarIdx) || vanIdx === naarIdx) return;
-            if (typeof window.pushLiturgieUndoState === 'function') {
-                window.pushLiturgieUndoState('Volgorde aangepast');
+            const currentNext = draggedEl.nextElementSibling;
+            if ((targetEl && currentNext !== targetEl) || (!targetEl && currentNext !== null)) {
+                if (targetEl) lijst.insertBefore(draggedEl, targetEl);
+                else lijst.appendChild(draggedEl);
             }
-            const [moved] = liturgieVolgorde.splice(vanIdx, 1);
-            liturgieVolgorde.splice(naarIdx, 0, moved);
-            if (previewItemIdx === vanIdx) {
-                previewItemIdx = naarIdx;
-            } else if (vanIdx < previewItemIdx && naarIdx >= previewItemIdx) {
-                previewItemIdx--;
-            } else if (vanIdx > previewItemIdx && naarIdx <= previewItemIdx) {
-                previewItemIdx++;
+        }
+
+        lijst.addEventListener('click', (e) => {
+            if (Date.now() < suppressClickUntil) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        }, true);
+
+        lijst.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return;
+            if (e.target.closest('button, a, input, select, textarea')) return;
+            const item = e.target.closest('.volgorde-item');
+            if (!item) return;
+
+            const idx = parseInt(item.dataset.index, 10);
+            if (isNaN(idx)) return;
+
+            mouseState = {
+                item,
+                startIndex: idx,
+                startX: e.clientX,
+                startY: e.clientY,
+                lastY: e.clientY,
+                actief: false,
+                ghost: null,
+                offsetY: 28,
+                scrollTimer: null
+            };
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!mouseState) return;
+            const s = mouseState;
+
+            if (!s.actief) {
+                if (Math.hypot(e.clientX - s.startX, e.clientY - s.startY) < 6) return;
+                s.actief = true;
+                const rect = s.item.getBoundingClientRect();
+                s.offsetY = Math.max(12, Math.min(rect.height - 12, s.startY - rect.top));
+                s.item.classList.add('dragging');
+                document.body.style.cursor = 'grabbing';
+
+                const ghost = s.item.cloneNode(true);
+                ghost.className = s.item.className.replace(/\bdragging\b/g, '') + ' touch-ghost';
+                ghost.style.width = rect.width + 'px';
+                ghost.style.height = rect.height + 'px';
+                ghost.style.left = rect.left + 'px';
+                ghost.style.top = (e.clientY - s.offsetY) + 'px';
+                document.body.appendChild(ghost);
+                s.ghost = ghost;
+
+                s.scrollTimer = setInterval(() => {
+                    if (!mouseState || !mouseState.actief) return;
+                    const y = mouseState.lastY;
+                    const vh = window.innerHeight || 800;
+                    if (y < 110) {
+                        window.scrollBy(0, -10);
+                        verplaatsKaartLive(mouseState.item, y);
+                    } else if (y > vh - 110) {
+                        window.scrollBy(0, 10);
+                        verplaatsKaartLive(mouseState.item, y);
+                    }
+                }, 25);
+            }
+
+            s.lastY = e.clientY;
+            if (s.ghost) s.ghost.style.top = (e.clientY - s.offsetY) + 'px';
+            verplaatsKaartLive(s.item, e.clientY);
+        });
+
+        function beeindigMouseDrag() {
+            if (!mouseState) return;
+            const s = mouseState;
+            mouseState = null;
+
+            if (s.scrollTimer) clearInterval(s.scrollTimer);
+            document.body.style.cursor = '';
+
+            if (!s.actief) return;
+            suppressClickUntil = Date.now() + 120;
+
+            if (s.ghost) s.ghost.remove();
+            s.item.classList.remove('dragging', 'drag-over');
+
+            const alleKaarten = Array.from(lijst.querySelectorAll('.volgorde-item'));
+            const dropIdx = alleKaarten.indexOf(s.item);
+            const vanIdx = s.startIndex;
+
+            if (dropIdx >= 0 && dropIdx !== vanIdx) {
+                if (typeof window.pushLiturgieUndoState === 'function') {
+                    window.pushLiturgieUndoState('Volgorde aangepast');
+                }
+                const [moved] = liturgieVolgorde.splice(vanIdx, 1);
+                liturgieVolgorde.splice(dropIdx, 0, moved);
+                if (previewItemIdx === vanIdx) {
+                    previewItemIdx = dropIdx;
+                } else if (vanIdx < previewItemIdx && dropIdx >= previewItemIdx) {
+                    previewItemIdx--;
+                } else if (vanIdx > previewItemIdx && dropIdx <= previewItemIdx) {
+                    previewItemIdx++;
+                }
             }
             window.tekenVolgorde();
-        };
-        lijst.addEventListener('dragstart', e => {
-            const item = getVolgordeItem(e.target);
-            if (!item) return;
-            dragSrcIndex = parseInt(item.dataset.index, 10);
-            dragTargetIndex = null;
-            if (e.dataTransfer) {
-                e.dataTransfer.effectAllowed = 'move';
-                try { e.dataTransfer.setData('text/plain', String(dragSrcIndex)); } catch (err) {}
-            }
-            requestAnimationFrame(() => {
-                if (dragSrcIndex !== null) item.classList.add('dragging');
-            });
-        });
-        lijst.addEventListener('dragover', e => {
-            if (dragSrcIndex === null) return;
-            e.preventDefault();
-            if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-            const item = getVolgordeItem(e.target, e.clientY);
-            if (!item) return;
-            const idx = parseInt(item.dataset.index, 10);
-            dragTargetIndex = idx;
-            document.querySelectorAll('.volgorde-item').forEach(el => el.classList.remove('drag-over'));
-            if (idx !== dragSrcIndex) item.classList.add('drag-over');
-        });
-        lijst.addEventListener('dragleave', e => {
-            const item = getVolgordeItem(e.target);
-            if (item) item.classList.remove('drag-over');
-        });
-        lijst.addEventListener('drop', e => {
-            if (dragSrcIndex === null) return;
-            e.preventDefault();
-            e.stopPropagation();
-            const item = getVolgordeItem(e.target, e.clientY);
-            const dropIndex = item ? parseInt(item.dataset.index, 10) : dragTargetIndex;
-            const vanIdx = dragSrcIndex;
-            dragSrcIndex = null;
-            dragTargetIndex = null;
-            voerVerplaatsingUit(vanIdx, dropIndex);
-        });
-        lijst.addEventListener('dragend', () => {
-            const vanIdx = dragSrcIndex;
-            const naarIdx = dragTargetIndex;
-            dragSrcIndex = null;
-            dragTargetIndex = null;
-            document.querySelectorAll('.volgorde-item').forEach(el => el.classList.remove('dragging', 'drag-over'));
-            if (vanIdx !== null && naarIdx !== null && vanIdx !== naarIdx) {
-                voerVerplaatsingUit(vanIdx, naarIdx);
-            }
-        });
+        }
+
+        window.addEventListener('mouseup', beeindigMouseDrag);
+        window.addEventListener('blur', beeindigMouseDrag);
     })();
 
     // --- DRAG AND DROP (Touch / Mobiel met live-wissel, behoud van kaartopmaak & auto-scroll) ---
