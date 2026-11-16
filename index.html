@@ -404,6 +404,9 @@
     .drag-handle:active { cursor: grabbing; }
     .volgorde-move-btn { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
     .touch-ghost { position: fixed; z-index: 9999; pointer-events: none; opacity: 0.96; box-shadow: 0 18px 44px rgba(0, 0, 0, 0.24), 0 0 0 2px #007AFF !important; border-radius: 18px; transform: scale(1.025); transition: none !important; }
+    #slideTextBox.slide-box-active { touch-action: none !important; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+    .resize-handle { touch-action: none !important; }
+    .resize-handle::after { content: ''; position: absolute; inset: -13px; }
 
     /* --- Chat Highlight Animatie --- */
     .chat-highlight {
@@ -3138,16 +3141,22 @@
     };
 
     window.toggleSlideTextBoxActive = function() {
+        if (typeof window._toggleSlideTextBox === 'function') {
+            window._toggleSlideTextBox();
+            return;
+        }
         const box = document.getElementById('slideTextBox');
         if (!box) return;
         const handles = box.querySelectorAll('.resize-handle');
-        const isActief = box.style.borderColor === 'rgb(0, 122, 255)' || box.style.borderColor === '#007AFF';
+        const isActief = box.classList.contains('slide-box-active') || box.style.borderColor === 'rgb(0, 122, 255)' || box.style.borderColor === '#007AFF';
         if (isActief) {
+            box.classList.remove('slide-box-active');
             box.style.borderColor = 'transparent';
             box.style.cursor = 'default';
             box.style.boxShadow = 'none';
             handles.forEach(h => h.style.display = 'none');
         } else {
+            box.classList.add('slide-box-active');
             box.style.borderColor = '#007AFF';
             box.style.cursor = 'grab';
             box.style.boxShadow = '0 0 0 1px rgba(0,122,255,0.4)';
@@ -3232,9 +3241,10 @@
         // Negeer te dicht bij schermranden (om iOS Safari geschiedenis-terug/vooruit te sparen)
         if (touch.clientX < 16 || touch.clientX > window.innerWidth - 16) return;
 
-        // Negeer tijdens slepen of tikken op volgorde drag-handle / verplaats-knopjes / modals
+        // Negeer tijdens slepen of tikken op volgorde drag-handle / verplaats-knopjes / actief tekstvak / modals
         if (typeof touchDragIdx !== 'undefined' && touchDragIdx !== null) return;
-        if (e.target.closest('.drag-handle, .volgorde-move-btn, .modal-animate, #unifiedControlDock, input[type="range"], select')) return;
+        if (typeof sleepActief !== 'undefined' && sleepActief) return;
+        if (e.target.closest('.drag-handle, .volgorde-move-btn, .modal-animate, #unifiedControlDock, input[type="range"], select, #slideTextBox.slide-box-active, .resize-handle')) return;
         if (e.target.closest('input:not([type="button"]):not([type="submit"]):not([type="checkbox"]), textarea, [contenteditable="true"]')) return;
 
         // CRUCIAAL: Negeer wanneer de touch plaatsvindt binnen een horizontaal scrollbare balk of container (zoals het liedboek filter)
@@ -15088,6 +15098,13 @@ Antwoord UITSLUITEND in valide JSON:
         // Drag & Resize setup
         const box = document.getElementById('slideTextBox');
         const titleEl = document.getElementById('slideTitleText');
+        const editBoxBtn = document.getElementById('slideEditBoxBtn');
+        const setEditBtnState = (actief) => {
+            if (!editBoxBtn) return;
+            editBoxBtn.classList.toggle('bg-[#007AFF]/15', actief);
+            editBoxBtn.classList.toggle('text-[#007AFF]', actief);
+            editBoxBtn.classList.toggle('dark:text-[#64D2FF]', actief);
+        };
         if (box) {
             let boxActief = false;
             let resizeActief = false;
@@ -15096,27 +15113,39 @@ Antwoord UITSLUITEND in valide JSON:
 
             function activeerBox() {
                 boxActief = true;
+                box.classList.add('slide-box-active');
                 box.style.borderColor = '#007AFF';
                 box.style.cursor = 'grab';
                 box.style.boxShadow = '0 0 0 1px rgba(0,122,255,0.4)';
                 box.querySelectorAll('.resize-handle').forEach(h => h.style.display = 'block');
                 box.onmousedown = onPointerDown;
-                box.ontouchstart = onPointerDown;
+                box.removeEventListener('touchstart', onPointerDown);
+                box.addEventListener('touchstart', onPointerDown, { passive: false });
+                setEditBtnState(true);
             }
 
             function deactiveerBox() {
                 boxActief = false;
+                box.classList.remove('slide-box-active');
                 box.style.borderColor = 'transparent';
                 box.style.cursor = 'default';
                 box.style.boxShadow = 'none';
                 box.querySelectorAll('.resize-handle').forEach(h => h.style.display = 'none');
                 box.onmousedown = null;
-                box.ontouchstart = null;
+                box.removeEventListener('touchstart', onPointerDown);
                 document.body.style.cursor = '';
+                setEditBtnState(false);
             }
+
+            window._toggleSlideTextBox = function(forceState) {
+                const target = (typeof forceState === 'boolean') ? forceState : !boxActief;
+                if (target) activeerBox();
+                else deactiveerBox();
+            };
 
             function onPointerDown(ev) {
                 if (!boxActief) return;
+                if (ev.touches && ev.touches.length > 1) return;
                 const handle = ev.target.closest('.resize-handle');
                 if (handle) {
                     ev.stopPropagation();
@@ -15133,19 +15162,44 @@ Antwoord UITSLUITEND in valide JSON:
                 activeerBox();
             });
 
+            // Double-tap ondersteuning voor iPad / iPhone
+            let _lastBoxTapTime = 0;
+            let _lastBoxTapX = 0;
+            let _lastBoxTapY = 0;
+            box.addEventListener('touchend', (e) => {
+                if (boxActief || sleepActief || resizeActief) return;
+                if (!e.changedTouches || e.changedTouches.length !== 1) return;
+                const t = e.changedTouches[0];
+                const now = Date.now();
+                if (now - _lastBoxTapTime < 340 && Math.hypot(t.clientX - _lastBoxTapX, t.clientY - _lastBoxTapY) < 28) {
+                    _lastBoxTapTime = 0;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    activeerBox();
+                } else {
+                    _lastBoxTapTime = now;
+                    _lastBoxTapX = t.clientX;
+                    _lastBoxTapY = t.clientY;
+                }
+            }, { passive: false });
+
             if (window._slideBoxWasActive) {
                 activeerBox();
                 window._slideBoxWasActive = false;
+            } else {
+                setEditBtnState(false);
             }
 
             function startSleep(ev) {
                 ev.preventDefault();
+                ev.stopPropagation();
                 sleepActief = true;
                 box.style.cursor = 'grabbing';
                 document.body.style.cursor = 'grabbing';
                 const rect = canvas.getBoundingClientRect();
-                const cx = (ev.touches ? ev.touches[0].clientX : ev.clientX);
-                const cy = (ev.touches ? ev.touches[0].clientY : ev.clientY);
+                const pt = (ev.touches && ev.touches[0]) || (ev.changedTouches && ev.changedTouches[0]) || ev;
+                const cx = pt.clientX;
+                const cy = pt.clientY;
                 sleepOffsetX = cx - box.getBoundingClientRect().left;
                 sleepOffsetY = cy - box.getBoundingClientRect().top;
 
@@ -15168,8 +15222,9 @@ Antwoord UITSLUITEND in valide JSON:
                 function beweeg(me) {
                     if (!sleepActief) return;
                     me.preventDefault();
-                    const mx = (me.touches ? me.touches[0].clientX : me.clientX);
-                    const my = (me.touches ? me.touches[0].clientY : me.clientY);
+                    const mpt = (me.touches && me.touches[0]) || (me.changedTouches && me.changedTouches[0]) || me;
+                    const mx = mpt.clientX;
+                    const my = mpt.clientY;
                     let nx = (mx - sleepOffsetX - rect.left) / rect.width * 100;
                     let ny = (my - sleepOffsetY - rect.top) / rect.height * 100;
                     const curW = parseFloat(box.style.width);
@@ -15215,22 +15270,26 @@ Antwoord UITSLUITEND in valide JSON:
                     document.removeEventListener('mouseup', stop);
                     document.removeEventListener('touchmove', beweeg);
                     document.removeEventListener('touchend', stop);
+                    document.removeEventListener('touchcancel', stop);
                 }
 
                 document.addEventListener('mousemove', beweeg);
                 document.addEventListener('mouseup', stop);
                 document.addEventListener('touchmove', beweeg, { passive: false });
                 document.addEventListener('touchend', stop);
+                document.addEventListener('touchcancel', stop);
             }
 
             function startResize(ev, handleType) {
                 ev.preventDefault();
+                ev.stopPropagation();
                 resizeActief = true;
                 const resizeCursor = (handleType === 'tl' || handleType === 'br') ? 'nwse-resize' : 'nesw-resize';
                 document.body.style.cursor = resizeCursor;
 
-                const startX = (ev.touches ? ev.touches[0].clientX : ev.clientX);
-                const startY = (ev.touches ? ev.touches[0].clientY : ev.clientY);
+                const ptStart = (ev.touches && ev.touches[0]) || (ev.changedTouches && ev.changedTouches[0]) || ev;
+                const startX = ptStart.clientX;
+                const startY = ptStart.clientY;
                 const initLeft = parseFloat(box.style.left);
                 const initTop = parseFloat(box.style.top);
                 const initWidth = parseFloat(box.style.width);
@@ -15240,8 +15299,9 @@ Antwoord UITSLUITEND in valide JSON:
                 function resizeMove(me) {
                     if (!resizeActief) return;
                     me.preventDefault();
-                    const curX = (me.touches ? me.touches[0].clientX : me.clientX);
-                    const curY = (me.touches ? me.touches[0].clientY : me.clientY);
+                    const ptCur = (me.touches && me.touches[0]) || (me.changedTouches && me.changedTouches[0]) || me;
+                    const curX = ptCur.clientX;
+                    const curY = ptCur.clientY;
                     const deltaX = (curX - startX) / rect.width * 100;
                     const deltaY = (curY - startY) / rect.height * 100;
 
@@ -15304,6 +15364,7 @@ Antwoord UITSLUITEND in valide JSON:
                     document.removeEventListener('mouseup', resizeStop);
                     document.removeEventListener('touchmove', resizeMove);
                     document.removeEventListener('touchend', resizeStop);
+                    document.removeEventListener('touchcancel', resizeStop);
 
                     window._slideBoxWasActive = true;
                     previewSubSlides = berekenSubSlidesVoorItem(item);
@@ -15315,6 +15376,7 @@ Antwoord UITSLUITEND in valide JSON:
                 document.addEventListener('mouseup', resizeStop);
                 document.addEventListener('touchmove', resizeMove, { passive: false });
                 document.addEventListener('touchend', resizeStop);
+                document.addEventListener('touchcancel', resizeStop);
             }
 
             canvas.onclick = (e) => {
