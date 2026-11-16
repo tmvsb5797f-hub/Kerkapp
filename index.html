@@ -399,6 +399,8 @@
     /* --- Drag-and-Drop Volgorde & iPhone Touch Scroll --- */
     #volgordeLijst { touch-action: pan-y; -webkit-overflow-scrolling: touch; }
     .volgorde-item { transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; touch-action: pan-y; }
+    .volgorde-item[draggable="true"] { -webkit-user-drag: element; }
+    .volgorde-item button { -webkit-user-drag: none; }
     .volgorde-item.dragging { opacity: 0.35; transform: scale(0.98); border: 2px dashed #007AFF !important; background: rgba(0, 122, 255, 0.04) !important; }
     .volgorde-item.drag-over { border-color: #007AFF !important; box-shadow: 0 -3px 0 0 #007AFF, 0 4px 16px rgba(0,0,0,0.06); }
     .drag-handle { cursor: grab; touch-action: none !important; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
@@ -16002,13 +16004,43 @@ Antwoord UITSLUITEND in valide JSON:
 
     // --- DRAG AND DROP (Desktop) ---
     let dragSrcIndex = null;
+    let dragTargetIndex = null;
     (function() {
         const lijst = document.getElementById('volgordeLijst');
         if (!lijst) return;
+        const getVolgordeItem = (target, clientY) => {
+            const el = (target && target.nodeType === 3) ? target.parentElement : target;
+            const direct = el && typeof el.closest === 'function' ? el.closest('.volgorde-item') : null;
+            if (direct) return direct;
+            if (typeof clientY !== 'number') return null;
+            const alle = Array.from(lijst.querySelectorAll('.volgorde-item'));
+            for (const kaart of alle) {
+                const r = kaart.getBoundingClientRect();
+                if (clientY <= r.bottom + 6) return kaart;
+            }
+            return alle.length ? alle[alle.length - 1] : null;
+        };
+        const voerVerplaatsingUit = (vanIdx, naarIdx) => {
+            if (vanIdx === null || naarIdx === null || isNaN(vanIdx) || isNaN(naarIdx) || vanIdx === naarIdx) return;
+            if (typeof window.pushLiturgieUndoState === 'function') {
+                window.pushLiturgieUndoState('Volgorde aangepast');
+            }
+            const [moved] = liturgieVolgorde.splice(vanIdx, 1);
+            liturgieVolgorde.splice(naarIdx, 0, moved);
+            if (previewItemIdx === vanIdx) {
+                previewItemIdx = naarIdx;
+            } else if (vanIdx < previewItemIdx && naarIdx >= previewItemIdx) {
+                previewItemIdx--;
+            } else if (vanIdx > previewItemIdx && naarIdx <= previewItemIdx) {
+                previewItemIdx++;
+            }
+            window.tekenVolgorde();
+        };
         lijst.addEventListener('dragstart', e => {
-            const item = e.target.closest('.volgorde-item');
+            const item = getVolgordeItem(e.target);
             if (!item) return;
             dragSrcIndex = parseInt(item.dataset.index, 10);
+            dragTargetIndex = null;
             if (e.dataTransfer) {
                 e.dataTransfer.effectAllowed = 'move';
                 try { e.dataTransfer.setData('text/plain', String(dragSrcIndex)); } catch (err) {}
@@ -16021,41 +16053,37 @@ Antwoord UITSLUITEND in valide JSON:
             if (dragSrcIndex === null) return;
             e.preventDefault();
             if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-            const item = e.target.closest('.volgorde-item');
+            const item = getVolgordeItem(e.target, e.clientY);
             if (!item) return;
+            const idx = parseInt(item.dataset.index, 10);
+            dragTargetIndex = idx;
             document.querySelectorAll('.volgorde-item').forEach(el => el.classList.remove('drag-over'));
-            if (parseInt(item.dataset.index, 10) !== dragSrcIndex) item.classList.add('drag-over');
+            if (idx !== dragSrcIndex) item.classList.add('drag-over');
         });
         lijst.addEventListener('dragleave', e => {
-            const item = e.target.closest('.volgorde-item');
+            const item = getVolgordeItem(e.target);
             if (item) item.classList.remove('drag-over');
         });
         lijst.addEventListener('drop', e => {
             if (dragSrcIndex === null) return;
             e.preventDefault();
             e.stopPropagation();
-            const item = e.target.closest('.volgorde-item');
-            if (!item) return;
-            const dropIndex = parseInt(item.dataset.index, 10);
-            if (isNaN(dropIndex) || dropIndex === dragSrcIndex) return;
-            if (typeof window.pushLiturgieUndoState === 'function') {
-                window.pushLiturgieUndoState('Volgorde aangepast');
-            }
-            const [moved] = liturgieVolgorde.splice(dragSrcIndex, 1);
-            liturgieVolgorde.splice(dropIndex, 0, moved);
-            if (previewItemIdx === dragSrcIndex) {
-                previewItemIdx = dropIndex;
-            } else if (dragSrcIndex < previewItemIdx && dropIndex >= previewItemIdx) {
-                previewItemIdx--;
-            } else if (dragSrcIndex > previewItemIdx && dropIndex <= previewItemIdx) {
-                previewItemIdx++;
-            }
+            const item = getVolgordeItem(e.target, e.clientY);
+            const dropIndex = item ? parseInt(item.dataset.index, 10) : dragTargetIndex;
+            const vanIdx = dragSrcIndex;
             dragSrcIndex = null;
-            window.tekenVolgorde();
+            dragTargetIndex = null;
+            voerVerplaatsingUit(vanIdx, dropIndex);
         });
         lijst.addEventListener('dragend', () => {
+            const vanIdx = dragSrcIndex;
+            const naarIdx = dragTargetIndex;
             dragSrcIndex = null;
+            dragTargetIndex = null;
             document.querySelectorAll('.volgorde-item').forEach(el => el.classList.remove('dragging', 'drag-over'));
+            if (vanIdx !== null && naarIdx !== null && vanIdx !== naarIdx) {
+                voerVerplaatsingUit(vanIdx, naarIdx);
+            }
         });
     })();
 
