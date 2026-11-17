@@ -4873,7 +4873,7 @@
             heuvelVoorOnder: '#4d7c0f',
             kruisKleur: '#5c381e',
             accentKleur: '#f59e0b',
-            motief: 'olijftak'
+            motief: 'geen'
         }, promptTekst);
     }
 
@@ -4973,13 +4973,20 @@
                     <circle cx="-6" cy="4" r="3.5" fill="#fef08a"/><circle cx="-6" cy="-3" r="3.5" fill="#fef08a"/>
                 </g>
             </g>`;
-        } else {
-            // Standaard olijftakje op de voorgrondheuvel
-            motiefSvg = `<g transform="translate(88, 134)">
-                <path d="M0 16 Q16 6 34 3" stroke="${isDonker ? '#a3e635' : '#3f6212'}" stroke-width="1.8" fill="none"/>
-                <ellipse cx="10" cy="10" rx="5" ry="2.2" transform="rotate(-25 10 10)" fill="${accentKleur}" opacity="0.9"/>
-                <ellipse cx="20" cy="6" rx="5" ry="2.2" transform="rotate(20 20 6)" fill="#84cc16"/>
-                <ellipse cx="30" cy="3" rx="4.5" ry="2" transform="rotate(-15 30 3)" fill="#a3e635"/>
+        } else if (motief === 'olijftak') {
+            // Duidelijke, vloeiende olijftak in de tinten van de omgeving (blendt natuurlijk met de heuvel)
+            const takStam = isDonker ? heuvelAchter : heuvelVoorOnder;
+            const bladLicht = isDonker ? heuvelAchter : heuvelAchter;
+            const bladMidden = heuvelVoorTop;
+            motiefSvg = `<g transform="translate(76, 130)" opacity="0.88">
+                <path d="M0 20 Q22 8 48 2" stroke="${takStam}" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+                <ellipse cx="11" cy="10" rx="6.5" ry="2.6" transform="rotate(-32 11 10)" fill="${bladLicht}"/>
+                <ellipse cx="15" cy="18" rx="6" ry="2.5" transform="rotate(24 15 18)" fill="${takStam}" opacity="0.75"/>
+                <ellipse cx="24" cy="5" rx="6.5" ry="2.6" transform="rotate(-26 24 5)" fill="${bladMidden}"/>
+                <ellipse cx="29" cy="13" rx="6" ry="2.5" transform="rotate(22 29 13)" fill="${bladLicht}"/>
+                <ellipse cx="38" cy="2" rx="6" ry="2.4" transform="rotate(-20 38 2)" fill="${bladLicht}"/>
+                <ellipse cx="42" cy="8" rx="5.5" ry="2.2" transform="rotate(18 42 8)" fill="${takStam}" opacity="0.75"/>
+                <ellipse cx="50" cy="1" rx="5.5" ry="2.2" transform="rotate(-8 50 1)" fill="${bladMidden}"/>
             </g>`;
         }
 
