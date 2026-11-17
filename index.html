@@ -4849,40 +4849,187 @@
         }
 
         // 14. Algemeen heuvellandschap (NOOIT een grijze cirkel, altijd een compleet en warm pastorale landschap)
-        const schoneNaam = promptTekst ? (promptTekst.charAt(0).toUpperCase() + promptTekst.slice(1, 15)) : 'Eigen Thema';
-        return {
+        const schoneNaam = promptTekst ? (promptTekst.charAt(0).toUpperCase() + promptTekst.slice(1, 18)) : 'Eigen Thema';
+        return maakThemaVanDesignSpec({
             naam: schoneNaam,
             icoon: '✝️',
             beschrijving: 'Warme heuvels in ochtendlicht met kruis',
-            bg: 'linear-gradient(180deg,#fef3c7 0%,#fde68a 22%,#fffbeb 100%)',
-            headerKleur: '#b45309',
-            titelKleur: '#451a03',
-            subKleur: '#78350f',
-            kaartBg: 'rgba(255,255,255,0.92)',
-            kaartTitel: '#3a2010',
-            kaartTekst: '#573318',
-            divider: 'rgba(180,83,9,0.20)',
-            schaduw: 'rgba(180,83,9,0.10)',
-            voettekst: '#b45309',
-            svg: `<svg viewBox="0 0 400 170" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
-                <defs>
-                    <linearGradient id="customLucht" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stop-color="#fed7aa"/><stop offset="55%" stop-color="#fde68a"/><stop offset="100%" stop-color="#fffbeb"/>
-                    </linearGradient>
-                    <linearGradient id="customHeuvel" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stop-color="#84cc16"/><stop offset="100%" stop-color="#65a30d"/>
-                    </linearGradient>
-                </defs>
-                <rect width="400" height="170" fill="url(#customLucht)"/>
-                <circle cx="90" cy="50" r="30" fill="#ffffff" opacity="0.85"/>
-                <circle cx="90" cy="50" r="18" fill="#ffffff"/>
-                <path d="M0 120 Q120 86 230 118 T400 108 V170 H0 Z" fill="#a3e635" opacity="0.85"/>
-                <path d="M0 136 Q140 108 270 136 T400 128 V170 H0 Z" fill="url(#customHeuvel)"/>
-                <g id="kruis" transform="translate(305, 58)">
-                    <rect x="-4.5" y="0" width="9" height="82" rx="2" fill="#5c381e"/>
-                    <rect x="-24" y="20" width="48" height="9" rx="2" fill="#5c381e"/>
+            isDonker: false,
+            luchtTop: '#fed7aa',
+            luchtMidden: '#fde68a',
+            luchtOnder: '#fffbeb',
+            zonKleur: '#fff9db',
+            heuvelAchter: '#a3e635',
+            heuvelVoorTop: '#84cc16',
+            heuvelVoorOnder: '#4d7c0f',
+            kruisKleur: '#5c381e',
+            accentKleur: '#f59e0b',
+            motief: 'olijftak'
+        }, promptTekst);
+    }
+
+    function _veiligeHex(kleur, fallback) {
+        return (typeof kleur === 'string' && /^#[0-9a-f]{6}$/i.test(kleur.trim())) ? kleur.trim() : fallback;
+    }
+
+    function bouwHarmonieBannerSvg(spec = {}) {
+        const uid = 'b' + Math.random().toString(36).slice(2, 8);
+        const isDonker = !!spec.isDonker;
+        const luchtTop = _veiligeHex(spec.luchtTop, isDonker ? '#0f172a' : '#ffd2b8');
+        const luchtMidden = _veiligeHex(spec.luchtMidden, isDonker ? '#1e1b4b' : '#ffe4b5');
+        const luchtOnder = _veiligeHex(spec.luchtOnder, isDonker ? '#312e81' : '#fff2cc');
+        const zonKleur = _veiligeHex(spec.zonKleur, isDonker ? '#fef3c7' : '#fff9db');
+        const heuvelAchter = _veiligeHex(spec.heuvelAchter, isDonker ? '#334155' : '#b9dc7f');
+        const heuvelVoorTop = _veiligeHex(spec.heuvelVoorTop, isDonker ? '#1e293b' : '#84cc16');
+        const heuvelVoorOnder = _veiligeHex(spec.heuvelVoorOnder, isDonker ? '#0f172a' : '#4d7c0f');
+        const kruisKleur = _veiligeHex(spec.kruisKleur, isDonker ? '#92400e' : '#5c381e');
+        const accentKleur = _veiligeHex(spec.accentKleur, '#f59e0b');
+        const motief = (spec.motief || 'olijftak').toLowerCase();
+
+        const hemelDecor = isDonker
+            ? `<circle cx="105" cy="54" r="78" fill="url(#${uid}Zon)"/>
+               <circle cx="105" cy="54" r="19" fill="${zonKleur}" opacity="0.92"/>
+               <g fill="#ffffff" opacity="0.75">
+                   <circle cx="44" cy="24" r="1.4"/><circle cx="168" cy="20" r="1.8"/>
+                   <circle cx="235" cy="34" r="1.3"/><circle cx="355" cy="26" r="1.6"/>
+                   <circle cx="272" cy="18" r="1.1"/><circle cx="62" cy="72" r="1.1"/>
+               </g>`
+            : `<circle cx="112" cy="76" r="115" fill="url(#${uid}Zon)"/>
+               <circle cx="112" cy="76" r="28" fill="${zonKleur}" opacity="0.9"/>
+               <circle cx="112" cy="76" r="19" fill="#ffffff" opacity="0.95"/>
+               <g stroke="#ffffff" stroke-width="1.4" opacity="0.48" stroke-dasharray="4 3">
+                   <line x1="112" y1="76" x2="28" y2="12"/><line x1="112" y1="76" x2="88" y2="8"/>
+                   <line x1="112" y1="76" x2="156" y2="10"/><line x1="112" y1="76" x2="220" y2="28"/>
+               </g>`;
+
+        let motiefSvg = '';
+        if (motief === 'regenboog') {
+            motiefSvg = `<g opacity="0.38" fill="none" stroke-width="4">
+                <path d="M40 132 A115 95 0 0 1 270 132" stroke="#f87171"/>
+                <path d="M44 132 A111 91 0 0 1 266 132" stroke="#fbbf24"/>
+                <path d="M48 132 A107 87 0 0 1 262 132" stroke="#34d399"/>
+                <path d="M52 132 A103 83 0 0 1 258 132" stroke="#60a5fa"/>
+            </g>`;
+        } else if (motief === 'duif') {
+            motiefSvg = `<g transform="translate(155, 58)">
+                <path d="M0 10 Q-14 -8 -26 -2 Q-12 6 -6 14 Q-16 18 -20 26 Q-6 20 6 16 Q16 20 24 14 Q12 8 6 10 Q14 -2 24 -8 Q8 -4 0 10 Z" fill="#ffffff" opacity="0.95"/>
+                <path d="M18 8 Q25 11 30 7" stroke="#65a30d" stroke-width="1.4" fill="none"/>
+            </g>`;
+        } else if (motief === 'bijbel') {
+            motiefSvg = `<g transform="translate(96, 122)">
+                <path d="M-24 6 Q-12 0 0 5 Q12 0 24 6 L24 22 Q12 17 0 22 Q-12 17 -24 22 Z" fill="#ffffff"/>
+                <path d="M-24 6 Q-12 0 0 5 L0 22 Q-12 17 -24 22 Z" fill="#f8fafc" stroke="${accentKleur}" stroke-width="1.2"/>
+                <path d="M24 6 Q12 0 0 5 L0 22 Q12 17 24 22 Z" fill="#ffffff" stroke="${accentKleur}" stroke-width="1.2"/>
+                <line x1="-18" y1="11" x2="-5" y2="10" stroke="#cbd5e1" stroke-width="1.2"/>
+                <line x1="5" y1="10" x2="18" y2="11" stroke="#cbd5e1" stroke-width="1.2"/>
+            </g>`;
+        } else if (motief === 'aren') {
+            motiefSvg = `<g transform="translate(95, 118)" stroke="#f59e0b" stroke-width="1.5" fill="#fbbf24">
+                <path d="M0 28 Q-2 12 4 -4" fill="none"/>
+                <ellipse cx="1" cy="2" rx="2.5" ry="4.5" transform="rotate(-20 1 2)"/>
+                <ellipse cx="6" cy="4" rx="2.5" ry="4.5" transform="rotate(20 6 4)"/>
+                <ellipse cx="-1" cy="10" rx="2.5" ry="4.5" transform="rotate(-20 -1 10)"/>
+                <ellipse cx="5" cy="12" rx="2.5" ry="4.5" transform="rotate(20 5 12)"/>
+                <path d="M16 28 Q18 14 22 0" fill="none"/>
+                <ellipse cx="19" cy="6" rx="2.3" ry="4.2" transform="rotate(-18 19 6)"/>
+                <ellipse cx="24" cy="8" rx="2.3" ry="4.2" transform="rotate(18 24 8)"/>
+            </g>`;
+        } else if (motief === 'golven') {
+            motiefSvg = `<g fill="none" stroke="#e0f2fe" stroke-width="2" opacity="0.75">
+                <path d="M24 146 Q48 139 72 146 T120 146 T168 146"/>
+                <path d="M36 154 Q60 148 84 154 T132 154 T180 154" opacity="0.55"/>
+            </g>`;
+        } else if (motief === 'kelk') {
+            motiefSvg = `<g transform="translate(96, 118)">
+                <path d="M-10 0 L10 0 L7 12 Q0 18 -7 12 Z" fill="#fbbf24"/>
+                <rect x="-2" y="15" width="4" height="10" fill="#d97706"/>
+                <ellipse cx="0" cy="26" rx="9" ry="2.5" fill="#b45309"/>
+                <ellipse cx="20" cy="23" rx="11" ry="6" fill="#fde68a" stroke="#d97706" stroke-width="1"/>
+            </g>`;
+        } else if (motief === 'vlam') {
+            motiefSvg = `<g transform="translate(102, 112)">
+                <path d="M0 0 C12 10 14 24 0 30 C-14 24 -12 10 0 0 Z" fill="#f97316" opacity="0.9"/>
+                <path d="M0 8 C7 15 8 24 0 28 C-8 24 -7 15 0 8 Z" fill="#fde047"/>
+            </g>`;
+        } else if (motief === 'bloemen') {
+            motiefSvg = `<g transform="translate(88, 128)">
+                <circle cx="0" cy="0" r="5" fill="#f59e0b"/>
+                <circle cx="0" cy="-7" r="3.5" fill="#ffffff"/><circle cx="6" cy="-3" r="3.5" fill="#ffffff"/>
+                <circle cx="6" cy="4" r="3.5" fill="#ffffff"/><circle cx="0" cy="7" r="3.5" fill="#ffffff"/>
+                <circle cx="-6" cy="4" r="3.5" fill="#ffffff"/><circle cx="-6" cy="-3" r="3.5" fill="#ffffff"/>
+                <g transform="translate(34, 8) scale(0.8)">
+                    <circle cx="0" cy="0" r="5" fill="#f59e0b"/>
+                    <circle cx="0" cy="-7" r="3.5" fill="#fef08a"/><circle cx="6" cy="-3" r="3.5" fill="#fef08a"/>
+                    <circle cx="6" cy="4" r="3.5" fill="#fef08a"/><circle cx="0" cy="7" r="3.5" fill="#fef08a"/>
+                    <circle cx="-6" cy="4" r="3.5" fill="#fef08a"/><circle cx="-6" cy="-3" r="3.5" fill="#fef08a"/>
                 </g>
-            </svg>`
+            </g>`;
+        } else {
+            // Standaard olijftakje op de voorgrondheuvel
+            motiefSvg = `<g transform="translate(88, 134)">
+                <path d="M0 16 Q16 6 34 3" stroke="${isDonker ? '#a3e635' : '#3f6212'}" stroke-width="1.8" fill="none"/>
+                <ellipse cx="10" cy="10" rx="5" ry="2.2" transform="rotate(-25 10 10)" fill="${accentKleur}" opacity="0.9"/>
+                <ellipse cx="20" cy="6" rx="5" ry="2.2" transform="rotate(20 20 6)" fill="#84cc16"/>
+                <ellipse cx="30" cy="3" rx="4.5" ry="2" transform="rotate(-15 30 3)" fill="#a3e635"/>
+            </g>`;
+        }
+
+        return `<svg viewBox="0 0 400 170" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
+            <defs>
+                <linearGradient id="${uid}Lucht" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="${luchtTop}"/>
+                    <stop offset="52%" stop-color="${luchtMidden}"/>
+                    <stop offset="100%" stop-color="${luchtOnder}"/>
+                </linearGradient>
+                <linearGradient id="${uid}Heuvel" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="${heuvelVoorTop}"/>
+                    <stop offset="100%" stop-color="${heuvelVoorOnder}"/>
+                </linearGradient>
+                <radialGradient id="${uid}Zon" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#ffffff" stop-opacity="${isDonker ? '0.55' : '0.85'}"/>
+                    <stop offset="45%" stop-color="${zonKleur}" stop-opacity="${isDonker ? '0.25' : '0.45'}"/>
+                    <stop offset="100%" stop-color="${luchtOnder}" stop-opacity="0"/>
+                </radialGradient>
+            </defs>
+            <rect width="400" height="170" fill="url(#${uid}Lucht)"/>
+            ${hemelDecor}
+            ${motief === 'regenboog' ? motiefSvg : ''}
+            <path d="M0 118 Q115 84 235 116 T400 104 V170 H0 Z" fill="${heuvelAchter}" opacity="0.55"/>
+            <path d="M0 126 Q125 94 250 124 T400 114 V170 H0 Z" fill="${heuvelAchter}" opacity="0.85"/>
+            <path d="M0 138 Q140 110 275 138 T400 128 V170 H0 Z" fill="url(#${uid}Heuvel)"/>
+            ${motief !== 'regenboog' ? motiefSvg : ''}
+            <ellipse cx="305" cy="140" rx="18" ry="3.5" fill="#000000" opacity="0.16"/>
+            <g id="kruis" transform="translate(305, 58)">
+                <rect x="-4.5" y="0" width="9" height="82" rx="2" fill="${kruisKleur}"/>
+                <rect x="-24" y="20" width="48" height="9" rx="2" fill="${kruisKleur}"/>
+            </g>
+        </svg>`;
+    }
+
+    function maakThemaVanDesignSpec(spec = {}, promptTekst = '') {
+        const isDonker = !!spec.isDonker;
+        const luchtTop = _veiligeHex(spec.luchtTop, isDonker ? '#0f172a' : '#fef3c7');
+        const luchtMidden = _veiligeHex(spec.luchtMidden, isDonker ? '#1e1b4b' : '#fde68a');
+        const luchtOnder = _veiligeHex(spec.luchtOnder, isDonker ? '#312e81' : '#fffbeb');
+        const accentKleur = _veiligeHex(spec.accentKleur, isDonker ? '#fbbf24' : '#b45309');
+
+        return {
+            naam: (spec.naam || (promptTekst ? promptTekst.charAt(0).toUpperCase() + promptTekst.slice(1, 18) : 'Eigen Thema')).trim(),
+            icoon: spec.icoon || '✝️',
+            beschrijving: spec.beschrijving || promptTekst || 'Pastoraal landschap met kruis',
+            bg: isDonker
+                ? `linear-gradient(180deg,${luchtTop} 0%,${luchtMidden} 38%,${luchtTop} 100%)`
+                : `linear-gradient(180deg,${luchtOnder} 0%,${luchtMidden} 24%,#ffffff 100%)`,
+            headerKleur: accentKleur,
+            titelKleur: isDonker ? '#fef3c7' : '#1f2937',
+            subKleur: isDonker ? '#e2e8f0' : '#4b5563',
+            kaartBg: isDonker ? 'rgba(15,23,42,0.84)' : 'rgba(255,255,255,0.94)',
+            kaartTitel: isDonker ? '#f8fafc' : '#111827',
+            kaartTekst: isDonker ? '#e2e8f0' : '#374151',
+            divider: isDonker ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.08)',
+            schaduw: isDonker ? 'rgba(0,0,0,0.35)' : 'rgba(0,0,0,0.08)',
+            voettekst: isDonker ? '#cbd5e1' : accentKleur,
+            svg: bouwHarmonieBannerSvg(spec)
         };
     }
 
@@ -5009,59 +5156,38 @@
             titelKleur = '#3b0764';
         }
 
-        const masterPrompt = `Je bent een meesterlijke liturgische Art Director en pastorale vector illustrator voor een kerkelijke liturgie app.
-De gebruiker typt de zoektermen: "${raw}".
-Vertaal deze termen naar een harmonieuze, warme vector SVG banner (viewBox="0 0 400 170") en een bijpassend kleurenpalet.
+        const masterPrompt = `Je bent een liturgische Art Director voor een christelijke liturgie-app.
+De gebruiker zoekt een passende telefoon-banner voor het thema: "${raw}".
 
-DENKPROCES VAN DE AGENT (VOER DIT INTERN STRIKT UIT VÓÓR HET ONTWERPEN):
+Vertaal dit naar een rustig, waardig en harmonieus kleurenpalet + één passend pastoraal motief (géén seculiere feestclichés zoals champagne of vuurwerk).
 
-1. KERKELIJKE BETEKENIS & PASTORALE FILTER:
-   - Vraag je af: wat betekent "${raw}" binnen een christelijke kerkdienst en liturgie?
-   - Filter seculiere, carnavaleske of platte feestclichés strikt weg!
-     * Voorbeeld "oud en nieuw": Géén champagneglazen, partytoeters, feestmutsen of discovuurwerk. Wél: Gods trouw door de tijd ("Van U is de tijd", Psalm 90), dankbaarheid voor het afgelopen jaar, hoop en zegen voor het nieuwe jaar, een warm brandende lantaarn als lamp voor onze voet (Psalm 119:105) in de nacht, en het eerste hoopvolle ochtendlicht aan de horizon.
-     * Voorbeeld "zomer / rust": Géén zonnebrillen of strandballen. Wél: rust in Gods schepping, korenvelden, zonnebloem, zachte bries.
-     * Bepaal de eerbiedige, warme kernboodschap die past bij het kerkelijke moment.
+Kies één motief uit exact deze lijst:
+- "duif" (vredesduif met olijftak — vrede, Geest, hoop)
+- "bijbel" (open Bijbel — Woord, belijdenis, studie)
+- "aren" (gouden korenaren — oogst, dankdag, biddag, zegen)
+- "golven" (lichte watergolven — doop, levend water, vernieuwing)
+- "kelk" (avondmaalsbeker & brood — Heilig Avondmaal)
+- "vlam" (warme vlam / kaarslicht — Pinksteren, zending, licht)
+- "bloemen" (witte lelies / bloemen — lente, opstanding, jeugd)
+- "regenboog" (zachte regenboog — trouw, verbond, doop, troost)
+- "olijftak" (olijftakje — rust, zegen, vrede, algemeen)
 
-2. VISUELE VERTALING NAAR VECTOR MOTIEVEN:
-   - Hoe vertaal je die betekenis naar 1 of 2 elegante, herkenbare vector elementen op de linkerheuvel (X: 50-180, Y: 100-150)?
-   - Gebruik verfijnde, harmonieuze geometrische vormen (<path>, <circle>, <ellipse>, <rect rx="...">).
-   - De motieven moeten rust en hoop ademen.
-
-3. BEWAAK HET KERKAPP DNA (DE STANDAARD LOOK):
-   - Bestudeer de officiële standaard ontwerpen van de kerkapp (Standaard, Pasen, Kerst, Hemelvaart, Biddag). Elke banner MOET direct aanvoelen als een volwaardig onderdeel van deze vertrouwde familie:
-     * Afmetingen: exact viewBox="0 0 400 170" (style="width:100%;height:auto;display:block").
-     * Lucht-verloop: altijd een zachte, warme <linearGradient id="lucht" x1="0" y1="0" x2="0" y2="1"> met 2 of 3 harmonieuze kleur-stops (${luchtVerloop}).
-     * Lichtbron / hemellichaam: een zachte zon met gloed (<circle>/<radialGradient>) of fonkelende nachtsterren.
-     * Vloeiende heuvelstructuur (2 lagen voor diepte):
-       - Achtergrondheuvel: <path d="M0 120 Q120 85 240 120 T400 110 V170 H0 Z" fill="..." opacity="..."/>
-       - Voorgrondheuvel: <path d="M0 136 Q140 108 270 136 T400 128 V170 H0 Z" fill="url(#heuvel)"/> (${heuvelVerloop}).
-     * Linkerheuvel (thematische pastorale elementen): ${motieven}.
-     * Rechterheuvel (STRIKT VERPLICHT): ALTIJD het vertrouwde houten kruis:
-       <g id="kruis" transform="translate(305, 58)">
-           <rect x="-4.5" y="0" width="9" height="82" rx="2" fill="#5c381e"/>
-           <rect x="-24" y="20" width="48" height="9" rx="2" fill="#5c381e"/>
-       </g>
-
-4. DE GOUDEN BALANS (NOOIT TE SAAI, NOOIT TE DRUK):
-   - NOOIT TE SAAI: Absoluut verboden om een minimalistisch los icoontje, een plat vlak of een grijze cirkel (#ccc, #888, #999, gray) te tekenen! Het is ALTIJD een weids, warm landschap met lucht, heuvels, diepte, zon/licht en het kruis.
-   - NOOIT TE DRUK: Geen overdaad aan details, geen schreeuwende kleuren, geen feestvuurwerk of visuele ruis. GEEN letters, cijfers of teksten in de SVG. Rustig, warm en contemplatief voor tijdens de dienst op de smartphone.
-
-Retourneer UITSLUITEND een valide JSON object:
+Geef UITSLUITEND een geldig JSON-object terug met exact deze keys (alle kleuren als 6-cijferige hex zoals "#ffd2b8"):
 {
-  "naam": "${focusNaam}",
-  "icoon": "✝️",
-  "beschrijving": "${sfeer.slice(0, 60)}",
-  "bg": "${bg}",
-  "headerKleur": "${headerKleur}",
-  "titelKleur": "${titelKleur}",
-  "subKleur": "#78350f",
-  "kaartBg": "rgba(255,255,255,0.92)",
-  "kaartTitel": "#3a2010",
-  "kaartTekst": "#573318",
-  "divider": "rgba(180,83,9,0.20)",
-  "schaduw": "rgba(180,83,9,0.10)",
-  "voettekst": "${headerKleur}",
-  "svg": "<svg viewBox=\\"0 0 400 170\\" xmlns=\\"http://www.w3.org/2000/svg\\" style=\\"width:100%;height:auto;display:block\\">...</svg>"
+  "naam": "Korte titel (max 20 tekens, bijv. '${focusNaam}')",
+  "icoon": "1 passend emoji-icoon zoals ✝️, 🕊️, 📖, 🌾, 💧, 🕯️",
+  "beschrijving": "Korte sfeerbeschrijving in max 55 tekens",
+  "isDonker": false,
+  "luchtTop": "#...",
+  "luchtMidden": "#...",
+  "luchtOnder": "#...",
+  "zonKleur": "#...",
+  "heuvelAchter": "#...",
+  "heuvelVoorTop": "#...",
+  "heuvelVoorOnder": "#...",
+  "kruisKleur": "#...",
+  "accentKleur": "#...",
+  "motief": "olijftak"
 }`;
 
         return {
@@ -5128,7 +5254,10 @@ Retourneer UITSLUITEND een valide JSON object:
                             if (clean.startsWith('```json')) clean = clean.slice(7);
                             if (clean.startsWith('```')) clean = clean.slice(3);
                             if (clean.endsWith('```')) clean = clean.slice(0, -3);
-                            themaData = JSON.parse(clean.trim());
+                            const spec = JSON.parse(clean.trim());
+                            if (spec && typeof spec === 'object') {
+                                themaData = spec.svg ? spec : maakThemaVanDesignSpec(spec, promptTekst);
+                            }
                         }
                     }
                 } catch (netErr) {
