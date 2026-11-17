@@ -2627,6 +2627,15 @@
                                 <span id="aiBannerBtnText">Genereer</span>
                             </button>
                         </div>
+                        <div id="aiBannerProgressWrap" class="hidden mt-1.5 flex flex-col gap-1">
+                            <div class="flex items-center justify-between text-[10px] font-semibold text-[#007AFF]">
+                                <span id="aiBannerProgressLabel">Ontwerp voorbereiden...</span>
+                                <span id="aiBannerProgressPct" class="tabular-nums">15%</span>
+                            </div>
+                            <div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                <div id="aiBannerProgressBar" class="h-full bg-gradient-to-r from-[#007AFF] to-[#5856D6] transition-all duration-300" style="width: 15%"></div>
+                            </div>
+                        </div>
                         <!-- Snelle suggesties -->
                         <div class="flex items-center gap-1 mt-1 flex-wrap">
                             <span class="text-[9px] text-gray-400 uppercase font-bold mr-0.5">Suggesties:</span>
@@ -5197,6 +5206,23 @@ Geef UITSLUITEND een geldig JSON-object terug met exact deze keys (alle kleuren 
         };
     }
 
+    function _setAiBannerProgress(pct, label) {
+        const wrap = document.getElementById('aiBannerProgressWrap');
+        const bar = document.getElementById('aiBannerProgressBar');
+        const lbl = document.getElementById('aiBannerProgressLabel');
+        const pctEl = document.getElementById('aiBannerProgressPct');
+        if (!wrap) return;
+        if (pct === null) {
+            wrap.classList.add('hidden');
+            return;
+        }
+        wrap.classList.remove('hidden');
+        const clamped = Math.max(0, Math.min(100, Math.round(pct)));
+        if (bar) bar.style.width = clamped + '%';
+        if (pctEl) pctEl.textContent = clamped + '%';
+        if (lbl && label) lbl.textContent = label;
+    }
+
     window.genereerAiBanner = async function() {
         const inp = document.getElementById('aiBannerPrompt');
         const promptTekst = (inp ? inp.value : '').trim();
@@ -5214,6 +5240,9 @@ Geef UITSLUITEND een geldig JSON-object terug met exact deze keys (alle kleuren 
         if (btnSpinner) btnSpinner.classList.remove('hidden');
         if (btnText) btnText.textContent = 'Ontwerpen...';
 
+        let progressTimer = null;
+        _setAiBannerProgress(18, 'Thema & sfeer analyseren...');
+
         try {
             let themaData = null;
             
@@ -5224,12 +5253,23 @@ Geef UITSLUITEND een geldig JSON-object terug met exact deze keys (alle kleuren 
             const isBekendThema = master.fallbackType !== 'algemeen';
 
             if (isBekendThema) {
-                // Direct gebruikmaken van de geteste, prachtige vector illustratie
+                _setAiBannerProgress(65, 'Vector-landschap opbouwen...');
+                await new Promise(r => setTimeout(r, 120));
                 themaData = maakLokaleThemaFallback(promptTekst);
             } else {
                 // Voor unieke/creatieve thema's sturen we de Master Prompt naar Gemini AI
-                const proxy = (typeof PROXY_URL !== 'undefined') ? PROXY_URL : "https://gemini-proxy.kerkapp.workers.dev";
                 const model = (typeof gevondenModel !== 'undefined' && gevondenModel) ? gevondenModel : 'models/gemini-flash-lite-latest';
+                let curPct = 30;
+                _setAiBannerProgress(curPct, 'AI kiest kleurenpalet & motief...');
+                progressTimer = setInterval(() => {
+                    if (curPct < 82) {
+                        curPct += 7;
+                        const tekst = curPct < 55
+                            ? 'AI kiest kleurenpalet & motief...'
+                            : 'Vector-landschap samenstellen...';
+                        _setAiBannerProgress(curPct, tekst);
+                    }
+                }, 700);
 
                 try {
                     if (typeof consumeerAiQuota === 'function') consumeerAiQuota(2);
@@ -5245,7 +5285,7 @@ Geef UITSLUITEND een geldig JSON-object terug met exact deze keys (alle kleuren 
                                 responseMimeType: "application/json",
                                 temperature: 0.2
                             }
-                        }, model);
+                        }, model, { timeoutMs: 12000 });
                     }
                     if (resJson) {
                         const part = resJson.candidates && resJson.candidates[0] && resJson.candidates[0].content && resJson.candidates[0].content.parts && resJson.candidates[0].content.parts[0];
@@ -5262,10 +5302,13 @@ Geef UITSLUITEND een geldig JSON-object terug met exact deze keys (alle kleuren 
                     }
                 } catch (netErr) {
                     console.warn("AI generation via Gemini niet gelukt, fallback wordt gebruikt:", netErr);
+                } finally {
+                    if (progressTimer) { clearInterval(progressTimer); progressTimer = null; }
                 }
 
                 // Kwaliteitscontrole: Als AI faalde of een grijze/simplistische SVG teruggaf, val terug op onze landschapsgenerator
                 if (!themaData || !themaData.svg || isSlechteOfGrijzeSvg(themaData.svg)) {
+                    _setAiBannerProgress(86, 'Alternatief landschap genereren...');
                     themaData = maakLokaleThemaFallback(promptTekst);
                 }
             }
@@ -5274,6 +5317,7 @@ Geef UITSLUITEND een geldig JSON-object terug met exact deze keys (alle kleuren 
                 themaData = maakLokaleThemaFallback(promptTekst);
             }
 
+            _setAiBannerProgress(95, 'Contrast & kruis controleren...');
             // Garandeer dat er ALTIJD een kruis in zit
             const gegarandeerdeSvg = zorgVoorKruisInSvg(themaData.svg);
 
@@ -5303,14 +5347,17 @@ Geef UITSLUITEND een geldig JSON-object terug met exact deze keys (alle kleuren 
             }
 
             window.setActiefMeeleesThema('custom');
+            _setAiBannerProgress(100, 'Klaar!');
             if (window.toonToast) window.toonToast(`Banner thema '${customThema.naam}' geactiveerd!`, "success");
         } catch (err) {
             console.error("Fout bij genereren banner:", err);
             if (window.toonToast) window.toonToast("Kon banner niet genereren: " + err.message, "error");
         } finally {
+            if (progressTimer) clearInterval(progressTimer);
             if (btn) btn.disabled = false;
             if (btnSpinner) btnSpinner.classList.add('hidden');
             if (btnText) btnText.textContent = 'Genereer';
+            setTimeout(() => _setAiBannerProgress(null), 600);
         }
     };
 
