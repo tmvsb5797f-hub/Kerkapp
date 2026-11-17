@@ -11049,15 +11049,15 @@ Bijbelliederen`;
         { titel: "0. Dienst Gegevens", tekst: "Vul de datum en de voorganger in - deze komen automatisch op de welkomstdia te staan.", render: render1, animate: animate1 },
         { titel: "1. Liederen, Snel-zoeken & Bibliotheek", tekst: "Typ een lied of direct met verzen (bijv. 'ps 23:1,3' of 'wk 14:1,4'). In de vers-kiezer zie je onder elk vers meteen de eerste regel, en via 📚 Bibliotheek download of beheer je alle liederen.", render: render2, animate: animate2 },
         { titel: "2. Bijbel & HSV Teksten", tekst: "Typ de Bijbeltekst en druk op Enter. De HSV-tekst wordt foutloos geladen (met versnummers per dia), en je voegt eenvoudig foto's of lege pauze-dia's toe.", render: render3, animate: animate3 },
-        { titel: "Snelkoppeling: Slim Importeren", tekst: "Plak de hele liturgie of e-mail van de voorganger in één keer — de AI herkent zelf alle liederen en Schriftlezingen.", render: render4, animate: animate4 },
-        { titel: "3. Jouw Liturgie, Vers-knopjes & Herstel", tekst: "Sleep items om te herschikken, klik direct op [1] [2] [3] op de kaart om verzen aan of uit te zetten, en gebruik ↩️ Herstel (⌘Z) bij elke vergissing.", render: render5, animate: animate5 },
+        { titel: "Snelkoppeling: Slim Importeren & Bestanden", tekst: "Plak de hele liturgie in één keer, of sleep op desktop een .pptx- of .txt-bestand direct in het scherm. Foutieve coupletkopjes (zoals 'Psalm 102:1') worden bij opslaan automatisch rechtgetrokken naar '1.'.", render: render4, animate: animate4 },
+        { titel: "3. Jouw Liturgie, Schriftlezing & Herstel", tekst: "Sleep kaarten (of gebruik ▲/▼ op iPhone/iPad) om te herschikken, tik op [1] [2] [3] voor verzen, kies met 📖 Welkomstdia welke Bijbeltekst op de startdia komt en gebruik ↩️ Herstel (⌘Z) bij elke vergissing.", render: render5, animate: animate5 },
         { titel: "Dia Bewerken & Slimme Verskeuze", tekst: "Klik op het potloodje ✏️ om een dia aan te passen, specifieke coupletten te kiezen of teksten automatisch te splitsen met [🧹 Splits].", render: renderBewerkTour, animate: animateBewerkTour },
-        { titel: "Instellingen & Livestream", tekst: "Stel bovenaan lettertype, grootte, Vet (B) en Beamer- of Livestream-modus in. Op iPad en Mac wissel je ook tussen Split-View (2) en Studio (3).", render: renderInstellingen, animate: animateInstellingen },
-        { titel: "Live Voorbeeld, Dia-titels & 2e Scherm", tekst: "Bekijk elke dia live met vers- en voortgangsnummer (bijv. Psalm 84 : 1 (1/2)), sleep de tekst op zijn plek of projecteer direct op je 🖥️ 2e Scherm.", render: renderPreview, animate: animatePreview },
-        { titel: "Tekstvak Formaat Aanpassen", tekst: "Pak een van de 4 hoekpunten vast om het tekstvak naar wens te vergroten of verkleinen. De afmetingen worden exact zo bewaard in PowerPoint.", render: renderResize, animate: animateResize },
-        { titel: "Tikkie QR voor de Collecte", tekst: "Voeg met één klik een nette QR-dia toe voor de digitale collecte.", render: renderQR, animate: animateQR },
+        { titel: "Instellingen, Gemeente & Livestream", tekst: "Kies bovenaan je gemeente, lettertype, grootte, Vet (B) en Beamer- of Livestream-modus. Op iPad en Mac wissel je ook tussen Split-View (2) en Studio (3); op iPhone swipe je tussen Invoer, Volgorde en Preview.", render: renderInstellingen, animate: animateInstellingen },
+        { titel: "Live Voorbeeld, 📐 Tekstvak & ✨ Alles", tekst: "Bekijk elke dia live (sneltoets W voor Welkomstdia) of projecteer op 🖥️ 2e Scherm. Dubbelklik, dubbel-tap of tik op 📐 Tekstvak om te verplaatsen, en gebruik ✨ Alles om die opmaak op alle dia's toe te passen.", render: renderPreview, animate: animatePreview },
+        { titel: "Tekstvak & QR-code Formaat Aanpassen", tekst: "Pak een van de 4 hoekpunten vast om het tekstvak of de Tikkie QR-code te vergroten of verkleinen — ook met je vinger op iPad en iPhone. Alles wordt exact zo bewaard in PowerPoint.", render: renderResize, animate: animateResize },
+        { titel: "Tikkie QR voor de Collecte", tekst: "Voeg met één klik een nette QR-dia toe voor de digitale collecte. Je kunt de QR-code vrij verplaatsen en schalen terwijl 'Collecte' strak in de hoek blijft staan.", render: renderQR, animate: animateQR },
         { titel: "Meelees-versie voor de Gemeente", tekst: "Laat gemeenteleden op hun telefoon meelezen via een QR-code op de beamer.", render: renderMeeleesTour, animate: animateMeeleesTour },
-        { titel: "Archief: Opslaan & Herladen", tekst: "Bewaar liturgieën en zet een eerdere dienst met één klik terug.", render: renderArchiefTour, animate: animateArchiefTour },
+        { titel: "Archief, Bulk-Upload & Sneltoetsen", tekst: "Bewaar diensten in het Archief, upload hele bundels via import_tool.html en gebruik handige sneltoetsen (W = Welkomstdia, ⌘Z = Herstel, Esc of omlaag vegen = pop-up sluiten).", render: renderArchiefTour, animate: animateArchiefTour },
         { titel: "Hulp Altijd Bij De Hand", tekst: "De AI hulp-assistent en Info & OBS (met livestream-regie en directe Gmail-verzending) staan altijd voor je klaar in de balk onderaan.", render: renderHulp, animate: animateHulp },
         { titel: "Zet op je Beginscherm", tekst: "Installeer de app als een echte app - werkt ook zonder internet.", render: renderInstall, animate: animateInstall },
         { titel: "Klaar? Exporteer!", tekst: "Klik op Exporteer PowerPoint voor een automatische eindcontrole (inclusief welkomstdia) en download of mail direct het .pptx-bestand.", render: render6, animate: animate6 }
@@ -12466,22 +12466,26 @@ BELANGRIJKSTE UITLEG OVER DE APP:
 2. **Bijbelteksten ophalen** (highlight: "bijbelInput"):
    - Typ een Bijbelverwijzing (bijv. "Johannes 3:16-18", "Psalm 121" of "Genesis 1:1-5") en druk op **Enter**.
    - De HSV-tekst wordt automatisch opgehaald, netjes over dia's verdeeld en toont in elke dia-titel het exacte versbereik + voortgang (bijv. \`Genesis 1 : 1–3 (1/5)\`).
-3. **Liturgie Importeren / Plakken** (highlight: "plakLiturgieKnop"):
-   - Klik op **Plak Liturgie** om een complete mail uit Word/Gmail te plakken; liederen (ook met versnummers) en lezingen worden automatisch herkend.
-4. **Volgorde, Inline Verzen & Herstel** (highlight: "volgordeLijst"):
-   - Volgorde aanpassen: sleep items omhoog/omlaag.
+3. **Liturgie Importeren / Plakken & Bestanden Slepen** (highlight: "plakLiturgieKnop"):
+   - Klik op **Plak Liturgie** om een complete mail uit Word/Gmail te plakken; liederen (ook met versnummers) en lezingen worden automatisch herkend (met lokale fallback als AI druk is).
+   - Op desktop kun je ook een **.pptx**- of **.txt**-bestand rechtstreeks het browservenster in slepen om te importeren.
+   - Foutieve coupletkopjes bij het opslaan van liederen (zoals \`Psalm 102:1\`) worden automatisch rechtgetrokken naar \`1.\`.
+4. **Volgorde, Inline Verzen, Schriftlezing & Herstel** (highlight: "volgordeLijst"):
+   - Volgorde aanpassen: sleep items omhoog/omlaag met de muis of het **⠿** handvat, of gebruik de **▲ / ▼** pijltjes op iPhone en iPad.
    - Snel verzen wisselen: tik direct op de vers-knopjes **[1] [2] [3]** onderaan de liedkaart in de lijst.
+   - Bij meerdere Bijbelteksten: klik op het **📖 Welkomstdia** knopje op de kaart om aan te geven welke tekst op de welkomstdia moet komen (bij exporteren komt er anders een handige keuze-pop-up).
    - Tekst bewerken: klik op het **blauwe potlood-icoon ✏️**.
    - Vergissing? Klik op **↩️ Herstel** (of druk op **⌘Z / Ctrl+Z**) om je laatste actie terug te draaien.
    - Klik op **Opslaan** om de liturgie te bewaren in het **Archief**.
 5. **Extra Dia's**:
    - **Foto Dia** (highlight: "fotoDiaKnop"): upload een afbeelding.
-   - **Tikkie QR** (highlight: "tikkieDiaKnop"): upload een collecte QR-code.
+   - **Tikkie QR** (highlight: "tikkieDiaKnop"): upload een collecte QR-code. De QR-code is via **📐 Tekstvak** of dubbel-tappen ook vrij te verplaatsen en te schalen, terwijl "Collecte" netjes linksboven in de hoek blijft staan.
    - **Lege Dia** (highlight: "legeDiaKnop"): voeg een zwarte pauze-dia toe.
-6. **Instellingen, Preview & 2e Scherm** (highlight: "previewVak"):
+6. **Instellingen, Preview, ✨ Alles & 2e Scherm** (highlight: "previewVak"):
    - **Regels per dia** (highlight: "linesSelect"): "Per Vers" splitst op witregels; bij 4/5/6/8 regels blijven couplet-grenzen netjes heel.
-   - **Lettergrootte** (highlight: "fontSizeSelect") & **B Vet** (highlight: "boldToggleBtn").
-   - **Preview & Dubbelklik** (highlight: "previewVak"): toont elk onderdeel met vers- én dianummering (bijv. \`Psalm 23 : 1 (1/3)\`). Dubbelklik op het tekstvak om te verplaatsen of te schalen; op iPad/Mac schakel je rechtsboven tussen **Split-View (2)** en **Studio (3)**.
+   - **Lettergrootte** (highlight: "fontSizeSelect"), **B Vet** (highlight: "boldToggleBtn") & **Gemeente-wissel** bovenaan voor een eigen kerklogo en lieddatabase.
+   - **Preview, 📐 Tekstvak & ✨ Alles** (highlight: "previewVak"): dubbelklik (desktop) of tik op **📐 Tekstvak** / dubbel-tap (iPad & iPhone) om het tekstvak te verplaatsen of aan de hoeken te schalen. Met **✨ Alles** neem je die uitlijning en positie in één klik over voor alle dia's.
+   - **Navigatie & sneltoetsen**: op iPhone swipe je tussen de tabs en veeg je pop-ups omlaag weg; op iPad/Mac schakel je tussen **Split-View (2)** en **Studio (3)**. Sneltoetsen: **W** (Welkomstdia), **⌘Z** (Herstel) en **Esc** (pop-up sluiten).
    - **🖥️ 2e Scherm & OBS** en **Meelees-versie** (QR voor op telefoon) staan in **Info & OBS** of direct boven de preview.
 7. **Exporteren & Mailen** (highlight: "exporteerKnop"):
    - Klik op **Exporteer PowerPoint** voor de kwaliteitscontrole, optionele welkomstdia-bewerking en een 16:9 \`.pptx\` bestand (of directe verzending via Gmail).
