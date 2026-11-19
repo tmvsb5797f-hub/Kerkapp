@@ -1318,6 +1318,22 @@
                 </div>
             </div>
 
+            <!-- Live Voortgangs- & Statuspop-up bij .pptx / .txt verwerking -->
+            <div id="archiefStatusBox" class="hidden p-3.5 rounded-2xl bg-purple-50/80 dark:bg-purple-950/30 border border-purple-200/80 dark:border-purple-800/50 flex flex-col gap-2">
+                <div class="flex items-center justify-between gap-2 text-xs font-bold text-purple-900 dark:text-purple-200">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span id="archiefStatusSpinner" class="w-3.5 h-3.5 border-2 border-purple-600 border-t-transparent rounded-full animate-spin flex-shrink-0"></span>
+                        <span id="archiefStatusTitel" class="truncate">Bestand verwerken...</span>
+                    </div>
+                    <span id="archiefStatusPct" class="tabular-nums text-[11px] font-bold text-purple-700 dark:text-purple-300 flex-shrink-0">0%</span>
+                </div>
+                <div class="w-full h-1.5 bg-purple-200/70 dark:bg-purple-900/50 rounded-full overflow-hidden">
+                    <div id="archiefProgressBar" class="h-full bg-gradient-to-r from-purple-600 to-[#007AFF] transition-all duration-200" style="width: 0%"></div>
+                </div>
+                <div id="archiefStatusSub" class="text-[11px] text-purple-800/80 dark:text-purple-300/80 truncate">Voorbereiden...</div>
+                <div id="archiefStatusLog" class="max-h-24 overflow-y-auto text-[10px] font-mono bg-white/80 dark:bg-black/30 rounded-xl p-2 border border-purple-200/50 dark:border-white/10 text-gray-700 dark:text-gray-300 space-y-0.5 hidden"></div>
+            </div>
+
             <!-- Lijst met ontdekte liederen -->
             <div id="archiefResultaten" class="overflow-y-auto max-h-[45vh] flex flex-col gap-2 no-scrollbar">
                 <!-- Dynamisch gevuld -->
@@ -11742,20 +11758,66 @@ Bijbelliederen`;
     // --- POWERPOINT & WEERKLANK ARCHIEF EXTRACTOR ---
     window.archiefOntdekteLiederen = [];
 
+    window._setArchiefStatus = function(titel, sub, pct, bezig = true) {
+        const box = document.getElementById('archiefStatusBox');
+        const tEl = document.getElementById('archiefStatusTitel');
+        const sEl = document.getElementById('archiefStatusSub');
+        const pEl = document.getElementById('archiefStatusPct');
+        const bar = document.getElementById('archiefProgressBar');
+        const spin = document.getElementById('archiefStatusSpinner');
+        if (!box) return;
+        box.classList.remove('hidden');
+        if (tEl && titel !== undefined) tEl.textContent = titel;
+        if (sEl && sub !== undefined) sEl.textContent = sub;
+        const cPct = Math.max(0, Math.min(100, Math.round(pct || 0)));
+        if (pEl) pEl.textContent = cPct + '%';
+        if (bar) bar.style.width = cPct + '%';
+        if (spin) spin.classList.toggle('hidden', !bezig);
+    };
+
+    window._logArchiefStap = function(regel, reset = false) {
+        const logEl = document.getElementById('archiefStatusLog');
+        if (!logEl) return;
+        if (reset) {
+            logEl.innerHTML = '';
+            logEl.classList.add('hidden');
+            if (!regel) return;
+        }
+        logEl.classList.remove('hidden');
+        const row = document.createElement('div');
+        row.textContent = regel;
+        logEl.appendChild(row);
+        logEl.scrollTop = logEl.scrollHeight;
+    };
+
     window.verwerkArchiefBestanden = async function(files) {
         if (!files || !files.length) return;
+
+        // Open direct de import-pop-up op het Archief-tabblad zodat de gebruiker live ziet wat er gebeurt
+        const importModal = document.getElementById('importModal');
+        if (importModal && importModal.classList.contains('hidden')) {
+            if (typeof window.openImportModal === 'function') window.openImportModal();
+            else importModal.classList.remove('hidden');
+        }
+        if (typeof window.wisselImportTab === 'function') {
+            window.wisselImportTab('archief');
+        }
+
         const resEl = document.getElementById('archiefResultaten');
         const actieBalk = document.getElementById('archiefActiebalk');
         const tellerBadge = document.getElementById('archiefTellerBadge');
 
-        if (resEl) {
-            resEl.innerHTML = `
-                <div class="p-6 text-center text-xs text-gray-500 dark:text-gray-400 flex flex-col items-center gap-2">
-                    <span class="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></span>
-                    <span>Bezig met analyseren van ${files.length} bestand(en)...</span>
-                </div>
-            `;
-        }
+        if (actieBalk) actieBalk.classList.add('hidden');
+        if (tellerBadge) tellerBadge.classList.add('hidden');
+        if (resEl) resEl.innerHTML = '';
+
+        window._logArchiefStap('', true);
+        window._setArchiefStatus(
+            `Bestand${files.length > 1 ? 'en' : ''} analyseren (${files.length})...`,
+            'Bezig met openen...',
+            5,
+            true
+        );
 
         const gevondenLiederen = new Map();
 
@@ -11763,11 +11825,20 @@ Bijbelliederen`;
             const file = files[i];
             const fileName = file.name;
             const ext = fileName.toLowerCase().split('.').pop();
+            const basisPct = (i / files.length) * 90;
+
+            window._logArchiefStap(`📄 Openen: ${fileName}`);
+            window._setArchiefStatus(
+                `Bestand ${i + 1} van ${files.length}: ${fileName}`,
+                ext === 'pptx' ? 'PowerPoint uitpakken...' : 'Tekstbestand lezen...',
+                basisPct + 5,
+                true
+            );
 
             try {
                 if (ext === 'pptx') {
                     if (typeof JSZip === 'undefined') {
-                        console.error("JSZip niet geladen");
+                        window._logArchiefStap(`⚠️ JSZip ontbreekt voor ${fileName}`);
                         continue;
                     }
                     const zip = await JSZip.loadAsync(file);
@@ -11778,7 +11849,19 @@ Bijbelliederen`;
                         return numA - numB;
                     });
 
-                    for (const sf of slideFiles) {
+                    window._logArchiefStap(`🔎 ${slideFiles.length} dia's gevonden in ${fileName}`);
+
+                    for (let sIdx = 0; sIdx < slideFiles.length; sIdx++) {
+                        const sf = slideFiles[sIdx];
+                        if (sIdx % 3 === 0 || sIdx === slideFiles.length - 1) {
+                            const subPct = basisPct + 8 + ((sIdx + 1) / Math.max(1, slideFiles.length)) * (82 / files.length);
+                            window._setArchiefStatus(
+                                `PowerPoint uitlezen: ${fileName}`,
+                                `Dia ${sIdx + 1} van ${slideFiles.length} · ${gevondenLiederen.size} lied(eren) herkend`,
+                                subPct,
+                                true
+                            );
+                        }
                         const xml = await zip.files[sf].async('string');
                         const paragraphs = [];
                         const pRegex = /<a:p[\s>]([\s\S]*?)<\/a:p>/gi;
@@ -11836,6 +11919,7 @@ Bijbelliederen`;
                                     coupletten: new Map(),
                                     bronnen: new Set()
                                 });
+                                window._logArchiefStap(`🎵 Gevonden: ${genormaliseerdeTitel}`);
                             }
                             const entry = gevondenLiederen.get(genormaliseerdeTitel);
                             entry.bronnen.add(fileName);
@@ -11880,6 +11964,15 @@ Bijbelliederen`;
         }
 
         window.archiefOntdekteLiederen = Array.from(gevondenLiederen.values());
+        const fileInp = document.getElementById('archiefFileInput');
+        if (fileInp) fileInp.value = '';
+        const totaalGevonden = window.archiefOntdekteLiederen.length;
+        window._setArchiefStatus(
+            totaalGevonden > 0 ? `Analyse voltooid: ${totaalGevonden} lied(eren) gevonden` : 'Analyse voltooid: geen liederen gevonden',
+            totaalGevonden > 0 ? 'Controleer de lijst hieronder en klik op Opslaan in Cloud.' : 'Controleer of het bestand geldige lied-dia’s bevat.',
+            100,
+            false
+        );
         window.renderArchiefResultatenUI();
     };
 
@@ -11960,7 +12053,14 @@ Bijbelliederen`;
         const DATA_URL = "https://kerkdata.kerkapp.workers.dev";
         const huidigeGem = window.getActieveGemeente ? window.getActieveGemeente() : "Bethelkerk Maassluis";
 
-        for (const item of lijst) {
+        for (let idx = 0; idx < lijst.length; idx++) {
+            const item = lijst[idx];
+            window._setArchiefStatus(
+                `Opslaan in Cloud (${idx + 1} / ${lijst.length})...`,
+                `Bezig met opslaan van ${item.titel}`,
+                ((idx + 1) / lijst.length) * 100,
+                true
+            );
             const verzenArray = Array.from(item.coupletten.keys()).sort((a,b) => a-b);
             const coupletBlokken = verzenArray.map(vNr => `${vNr}.\n${item.coupletten.get(vNr).trim()}`);
             const schoneTekst = coupletBlokken.join('\n\n');
@@ -11976,10 +12076,19 @@ Bijbelliederen`;
                     body: JSON.stringify({ id: item.titel, tekst: schoneTekst, toegevoegd_door: huidigeGem })
                 });
                 opgeslagen++;
+                window._logArchiefStap(`✅ Opgeslagen: ${item.titel}`);
             } catch (e) {
                 console.warn("Fout bij opslaan lied:", item.titel, e);
+                window._logArchiefStap(`❌ Mislukt: ${item.titel}`);
             }
         }
+
+        window._setArchiefStatus(
+            `Klaar! ${opgeslagen} van ${lijst.length} lied(eren) opgeslagen`,
+            'Alle liederen zijn direct beschikbaar in de app.',
+            100,
+            false
+        );
 
         try { localStorage.setItem('liederenCache', JSON.stringify(window.liederenDatabase)); } catch (e) {}
 

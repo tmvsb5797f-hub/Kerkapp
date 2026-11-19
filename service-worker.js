@@ -1,7 +1,7 @@
 // Service worker voor Liturgie Assistent Pro.
 // Doel: de app laadt en werkt ook op wankele kerk-wifi. HTML is network-first
 // (zodat updates direct binnenkomen), statische bestanden zijn cache-first.
-const CACHE = 'liturgie-v47';
+const CACHE = 'liturgie-v48';
 const APP_SHELL = [
   './',
   './index.html',

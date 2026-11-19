@@ -157,6 +157,7 @@ test('index.html bevat touch drag/resize voor tekstvak en QR-code + modulaire im
     assert.ok(html.includes('window.toggleSchriftlezingWelkomstdia'), 'toggleSchriftlezingWelkomstdia ontbreekt');
     assert.ok(html.includes('function bouwHarmonieBannerSvg'), 'Modulaire SVG banner generator ontbreekt');
     assert.ok(html.includes('function maakThemaVanDesignSpec'), 'Design spec thema builder ontbreekt');
+    assert.ok(html.includes('id="archiefStatusBox"'), 'PPTX upload voortgangs-pop-up ontbreekt');
 });
 
 test('device-engine.js negeert interne drag-and-drop bij file drop overlay', () => {
