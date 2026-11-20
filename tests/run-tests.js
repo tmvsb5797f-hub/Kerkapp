@@ -10,6 +10,7 @@ const assert = require('assert');
 
 const ROOT = path.resolve(__dirname, '..');
 const liturgieImport = require(path.join(ROOT, 'js', 'liturgie-import.js'));
+const liederenEngine = require(path.join(ROOT, 'js', 'liederen-engine.js'));
 
 let geslaagd = 0;
 let gefaald = 0;
@@ -158,6 +159,71 @@ test('index.html bevat touch drag/resize voor tekstvak en QR-code + modulaire im
     assert.ok(html.includes('function bouwHarmonieBannerSvg'), 'Modulaire SVG banner generator ontbreekt');
     assert.ok(html.includes('function maakThemaVanDesignSpec'), 'Design spec thema builder ontbreekt');
     assert.ok(html.includes('id="archiefStatusBox"'), 'PPTX upload voortgangs-pop-up ontbreekt');
+    assert.ok(html.includes('src="js/liederen-engine.js"'), 'js/liederen-engine.js script tag ontbreekt');
+    assert.ok(html.includes('id="bevestigModal"'), 'Moderne bevestigingsmodal ontbreekt');
+    assert.ok(html.includes('window.vraagBevestiging'), 'window.vraagBevestiging helper ontbreekt');
+    assert.ok(html.includes('window.sluitArchiefModal'), 'window.sluitArchiefModal ontbreekt');
+    const confirmMatches = html.match(/\bconfirm\s*\(/g) || [];
+    assert.strictEqual(confirmMatches.length, 1, `Verwachtte alleen de fallback confirm() in vraagBevestiging, vond er ${confirmMatches.length}`);
+});
+
+console.log('\n5. Unit-tests: js/liederen-engine.js');
+
+test('isSysteemSleutel en getSchoneLiedSleutels filteren __-sleutels eruit', () => {
+    const nepDb = {
+        'Psalm 23': 'De HEER is mijn Herder',
+        '__week_tikkie_bethel__': '{"url":"x"}',
+        '_intern': 'skip',
+        'Weerklank 100': 'Lof zij den Heer'
+    };
+    assert.strictEqual(liederenEngine.isSysteemSleutel('__week_tikkie_bethel__'), true);
+    assert.strictEqual(liederenEngine.isSysteemSleutel('Psalm 23'), false);
+    assert.deepStrictEqual(liederenEngine.getSchoneLiedSleutels(nepDb), ['Psalm 23', 'Weerklank 100']);
+});
+
+test('expandeerLiedAfkorting zet bundelafkortingen netjes om', () => {
+    assert.strictEqual(liederenEngine.expandeerLiedAfkorting('wk 15'), 'Weerklank 15');
+    assert.strictEqual(liederenEngine.expandeerLiedAfkorting('lw 446'), 'Weerklank Lied 446');
+    assert.strictEqual(liederenEngine.expandeerLiedAfkorting('pw 12'), 'Weerklank Psalm 12');
+    assert.strictEqual(liederenEngine.expandeerLiedAfkorting('oth 314'), 'Op Toonhoogte 314');
+    assert.strictEqual(liederenEngine.expandeerLiedAfkorting('dnp 84'), 'DNP Psalm 84');
+    assert.strictEqual(liederenEngine.expandeerLiedAfkorting('ps 23'), 'Psalm 23');
+});
+
+test('zoekLiedInDatabase vindt directe matches, multi-vers keys en normaliseert witregels', () => {
+    const nepDb = {
+        'Psalm 84 vers 1': 'Hoe lieflijk zijn Uw woningen\n\nO HEER der legerscharen!',
+        'Psalm 84 vers 2': 'Mijn ziel verlangt en smacht',
+        'Weerklank 446': 'Couplet 1\n\nCouplet 2',
+        '__meelees_geschiedenis_bethel__': 'Psalm 84'
+    };
+    const rPs = liederenEngine.zoekLiedInDatabase('ps 84: 1, 2', nepDb);
+    assert.strictEqual(rPs.inCloud, true);
+    assert.deepStrictEqual(rPs.versNummers, [1, 2]);
+    assert.strictEqual(rPs.basisTitel, 'Psalm 84');
+    assert.ok(rPs.tekst.includes('Hoe lieflijk zijn Uw woningen\nO HEER der legerscharen!'));
+
+    const rWk = liederenEngine.zoekLiedInDatabase('wk 446', nepDb);
+    assert.strictEqual(rWk.inCloud, true);
+    assert.strictEqual(rWk.basisTitel, 'Weerklank 446');
+
+    const rSys = liederenEngine.zoekLiedInDatabase('__meelees_geschiedenis_bethel__', nepDb);
+    assert.strictEqual(rSys.inCloud, false);
+});
+
+test('maakZangItem en injecteerLiedInLiturgie bouwen uniforme liturgie-items', () => {
+    const nepVolgorde = [];
+    const toegevoegd = liederenEngine.injecteerLiedInLiturgie({
+        titel: 'Weerklank 100',
+        tekst: 'Vers 1\n\nVers 2',
+        doellijst: nepVolgorde,
+        skipRender: true,
+        skipUndo: true
+    });
+    assert.strictEqual(nepVolgorde.length, 1);
+    assert.strictEqual(toegevoegd.type, 'Zang');
+    assert.strictEqual(toegevoegd.basisTitel, 'Weerklank 100');
+    assert.deepStrictEqual(toegevoegd.geselecteerdeVerzen, [1, 2]);
 });
 
 test('device-engine.js negeert interne drag-and-drop bij file drop overlay', () => {

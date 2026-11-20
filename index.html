@@ -80,6 +80,7 @@
 <script src="js/kerkdb.js"></script>
 <script src="js/vers-kiezer.js"></script>
 <script src="js/liturgie-import.js"></script>
+<script src="js/liederen-engine.js"></script>
 
 <style>
     html {
@@ -1198,17 +1199,23 @@
 </div>
 
 <div id="versModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 modal-backdrop-safe transition-opacity p-2 sm:p-4" onclick="if(event.target === this) sluitVersModal()">
-    <div class="bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] dark:ring-white/10 w-11/12 max-w-lg overflow-hidden flex flex-col transform transition-all modal-animate">
-        <div class="p-4 md:p-6 border-b border-gray-100 dark:border-white/10 flex justify-between items-center">
-            <h3 id="versModalTitel" class="text-lg font-bold text-[#1D1D1F] dark:text-white">Kies de verzen</h3>
-            <button onclick="sluitVersModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1">
+    <div class="bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[24px] sm:rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.22)] ring-1 ring-black/[0.05] dark:ring-white/10 w-11/12 max-w-lg overflow-hidden flex flex-col transform transition-all modal-animate max-h-[88dvh]">
+        <div class="p-4 sm:p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center bg-white dark:bg-[#1C1C1E] flex-shrink-0">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-9 h-9 rounded-2xl bg-blue-500/10 dark:bg-blue-500/20 text-[#007AFF] flex items-center justify-center text-lg shadow-2xs flex-shrink-0">🎵</div>
+                <div class="min-w-0">
+                    <h3 id="versModalTitel" class="text-base sm:text-lg font-bold text-[#1D1D1F] dark:text-white truncate">Kies de verzen</h3>
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400">Vink de coupletten aan voor de liturgie</p>
+                </div>
+            </div>
+            <button type="button" onclick="sluitVersModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer" title="Sluiten" aria-label="Sluiten">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
-        <div id="versLijst" class="p-4 md:p-6 overflow-y-auto max-h-80 bg-gray-50 dark:bg-[#141416] flex flex-col gap-3">
+        <div id="versLijst" class="p-4 md:p-5 overflow-y-auto max-h-80 bg-gray-50 dark:bg-[#141416] flex flex-col gap-3">
         </div>
-        <div class="p-4 md:p-6 flex justify-end bg-white dark:bg-[#1C1C1E] border-t border-gray-100 dark:border-white/10">
-            <button onclick="voegGeselecteerdeVerzenToe()" class="w-full md:w-auto px-5 py-3 md:py-2.5 rounded-full text-sm font-semibold text-white bg-[#007AFF] hover:bg-blue-600 transition-colors shadow-md">Toevoegen aan Liturgie</button>
+        <div class="p-4 md:p-5 flex justify-end bg-white dark:bg-[#1C1C1E] border-t border-gray-100 dark:border-white/10 flex-shrink-0">
+            <button type="button" onclick="voegGeselecteerdeVerzenToe()" class="w-full md:w-auto px-5 py-3 md:py-2.5 rounded-2xl text-sm font-semibold text-white bg-[#007AFF] hover:bg-blue-600 active:scale-98 transition-all shadow-md cursor-pointer">Toevoegen aan Liturgie</button>
         </div>
     </div>
 </div>
@@ -1838,6 +1845,23 @@
     </div>
 </div>
 
+<!-- MODERNE BEVESTIGINGS-MODAL (VERVANGT NATIVE CONFIRM) -->
+<div id="bevestigModal" class="fixed inset-0 z-[270] hidden items-center justify-center bg-black/50 modal-backdrop-safe transition-opacity p-3 sm:p-4" onclick="if(event.target === this && typeof window.sluitBevestigModal === 'function') window.sluitBevestigModal(false)">
+    <div class="bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[24px] sm:rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.3)] ring-1 ring-black/[0.06] dark:ring-white/10 w-full max-w-sm overflow-hidden flex flex-col transform transition-all modal-animate">
+        <div class="p-5 sm:p-6 flex flex-col items-center text-center gap-3">
+            <div id="bevestigModalIcoon" class="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-[#007AFF] flex items-center justify-center text-2xl shadow-2xs flex-shrink-0">⚠️</div>
+            <div class="flex flex-col gap-1.5">
+                <h3 id="bevestigModalTitel" class="text-base sm:text-lg font-bold text-[#1D1D1F] dark:text-white">Weet je het zeker?</h3>
+                <p id="bevestigModalTekst" class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 leading-relaxed whitespace-pre-line"></p>
+            </div>
+            <div class="flex flex-col-reverse sm:flex-row gap-2 w-full pt-2">
+                <button type="button" id="bevestigModalAnnuleerBtn" onclick="window.sluitBevestigModal(false)" class="flex-1 py-2.5 px-4 rounded-2xl text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 active:scale-98 transition-all cursor-pointer">Annuleren</button>
+                <button type="button" id="bevestigModalOkBtn" onclick="window.sluitBevestigModal(true)" class="flex-1 py-2.5 px-4 rounded-2xl text-xs sm:text-sm font-semibold text-white bg-[#007AFF] hover:bg-blue-600 active:scale-98 transition-all shadow-md cursor-pointer">Bevestigen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- SCHRIFTLEZING KEUZE VOOR WELKOMSTDIA MODAL -->
 <div id="schriftlezingKeuzeModal" class="fixed inset-0 z-[255] hidden items-center justify-center bg-black/50 modal-backdrop-safe transition-opacity p-3 sm:p-4" onclick="if(event.target === this && typeof window.sluitSchriftlezingKeuzeModal === 'function') window.sluitSchriftlezingKeuzeModal()">
     <div class="bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[24px] sm:rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.3)] ring-1 ring-black/[0.06] dark:ring-white/10 w-full max-w-md overflow-hidden flex flex-col transform transition-all modal-animate">
@@ -2370,19 +2394,22 @@
     </div>
 </main>
 
-<div id="archiefModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 modal-backdrop-safe transition-opacity p-2 sm:p-4" onclick="if(event.target === this) document.getElementById('archiefModal').classList.add('hidden')">
-    <div class="bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] dark:ring-white/10 w-11/12 max-w-md overflow-hidden flex flex-col transform transition-all modal-animate max-h-[85vh]">
-        <div class="p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center flex-shrink-0 bg-white dark:bg-[#1C1C1E]">
-            <div>
-                <h3 class="text-lg font-bold text-[#1D1D1F] dark:text-white">Archief</h3>
-                <p id="archiefGemeenteLabel" class="text-[11px] text-[#007AFF] font-medium flex items-center gap-1 mt-0.5"><span>⛪</span> <span id="archiefGemeenteNaam">Bethelkerk Maassluis</span></p>
+<div id="archiefModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 modal-backdrop-safe transition-opacity p-2 sm:p-4" onclick="if(event.target === this && typeof window.sluitArchiefModal === 'function') window.sluitArchiefModal()">
+    <div class="bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[24px] sm:rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.22)] ring-1 ring-black/[0.05] dark:ring-white/10 w-11/12 max-w-md overflow-hidden flex flex-col transform transition-all modal-animate max-h-[85vh]">
+        <div class="p-4 sm:p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center flex-shrink-0 bg-white dark:bg-[#1C1C1E]">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-9 h-9 rounded-2xl bg-blue-500/10 dark:bg-blue-500/20 text-[#007AFF] flex items-center justify-center text-lg shadow-2xs flex-shrink-0">🗂️</div>
+                <div class="min-w-0">
+                    <h3 class="text-base sm:text-lg font-bold text-[#1D1D1F] dark:text-white leading-tight">Archief</h3>
+                    <p id="archiefGemeenteLabel" class="text-[11px] text-[#007AFF] dark:text-blue-400 font-medium flex items-center gap-1 mt-0.5 truncate"><span>⛪</span> <span id="archiefGemeenteNaam">Bethelkerk Maassluis</span></p>
+                </div>
             </div>
-            <button onclick="document.getElementById('archiefModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1">
-                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            <button type="button" onclick="window.sluitArchiefModal ? window.sluitArchiefModal() : document.getElementById('archiefModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer" title="Sluiten" aria-label="Sluiten">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
-        <div class="p-5 overflow-y-auto">
-            <p class="text-xs text-gray-400 mb-3">Opgeslagen liturgieën voor deze gemeente. Klik op 'Laden' om er één terug te zetten. Foto's en QR-codes worden niet meegearchiveerd.</p>
+        <div class="p-4 sm:p-5 overflow-y-auto">
+            <p class="text-xs text-gray-500 dark:text-gray-400 mb-3 leading-relaxed">Opgeslagen liturgieën voor deze gemeente. Klik op 'Laden' om er één terug te zetten. Foto's en QR-codes worden niet meegearchiveerd.</p>
             <div id="archiefLijst" class="flex flex-col gap-2"></div>
         </div>
     </div>
@@ -3466,8 +3493,9 @@
             obsTestModal: () => window.sluitObsTestModal && window.sluitObsTestModal(),
             videoUitlegModal: () => window.sluitVideoUitleg && window.sluitVideoUitleg(),
             licentieMeldingModal: () => window.bevestigLicentieMelding && window.bevestigLicentieMelding(),
+            bevestigModal: () => window.sluitBevestigModal && window.sluitBevestigModal(false),
             schriftlezingKeuzeModal: () => window.sluitSchriftlezingKeuzeModal && window.sluitSchriftlezingKeuzeModal(),
-            archiefModal: () => backdrop.classList.add('hidden')
+            archiefModal: () => window.sluitArchiefModal ? window.sluitArchiefModal() : backdrop.classList.add('hidden')
         };
         if (backdrop && closeMap[backdrop.id]) {
             closeMap[backdrop.id]();
@@ -3477,6 +3505,76 @@
         if (closeBtn) closeBtn.click();
         else if (backdrop) backdrop.classList.add('hidden');
     }
+
+    window.sluitArchiefModal = function() {
+        const m = document.getElementById('archiefModal');
+        if (m) m.classList.add('hidden');
+    };
+
+    let _bevestigResolver = null;
+    window.sluitBevestigModal = function(resultaat = false) {
+        const modal = document.getElementById('bevestigModal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+        if (typeof _bevestigResolver === 'function') {
+            const resFn = _bevestigResolver;
+            _bevestigResolver = null;
+            resFn(!!resultaat);
+        }
+    };
+
+    window.vraagBevestiging = function(opties = {}) {
+        const {
+            titel = 'Weet je het zeker?',
+            tekst = '',
+            icoon = '⚠️',
+            okTekst = 'Bevestigen',
+            annuleerTekst = 'Annuleren',
+            destructief = false
+        } = (typeof opties === 'string') ? { tekst: opties } : (opties || {});
+
+        if (typeof _bevestigResolver === 'function') {
+            const prev = _bevestigResolver;
+            _bevestigResolver = null;
+            prev(false);
+        }
+
+        const modal = document.getElementById('bevestigModal');
+        if (!modal) {
+            return Promise.resolve(confirm(tekst || titel));
+        }
+
+        const icoonEl = document.getElementById('bevestigModalIcoon');
+        const titelEl = document.getElementById('bevestigModalTitel');
+        const tekstEl = document.getElementById('bevestigModalTekst');
+        const okBtn = document.getElementById('bevestigModalOkBtn');
+        const annBtn = document.getElementById('bevestigModalAnnuleerBtn');
+
+        if (icoonEl) {
+            icoonEl.textContent = icoon;
+            icoonEl.className = destructief
+                ? 'w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-950/50 text-[#FF3B30] flex items-center justify-center text-2xl shadow-2xs flex-shrink-0'
+                : 'w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-[#007AFF] flex items-center justify-center text-2xl shadow-2xs flex-shrink-0';
+        }
+        if (titelEl) titelEl.textContent = titel;
+        if (tekstEl) tekstEl.textContent = tekst;
+        if (annBtn) annBtn.textContent = annuleerTekst;
+        if (okBtn) {
+            okBtn.textContent = okTekst;
+            okBtn.className = destructief
+                ? 'flex-1 py-2.5 px-4 rounded-2xl text-xs sm:text-sm font-semibold text-white bg-[#FF3B30] hover:bg-red-600 active:scale-98 transition-all shadow-md cursor-pointer'
+                : 'flex-1 py-2.5 px-4 rounded-2xl text-xs sm:text-sm font-semibold text-white bg-[#007AFF] hover:bg-blue-600 active:scale-98 transition-all shadow-md cursor-pointer';
+        }
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        return new Promise((resolve) => {
+            _bevestigResolver = resolve;
+        });
+    };
 
     function _cancelSheetDrag() {
         if (_activeDragSheet) {
@@ -5840,7 +5938,13 @@ Geef UITSLUITEND een geldig JSON-object terug met exact deze keys (alle kleuren 
     };
 
     window.genereerNieuweMeeleesLink = async function() {
-        if (!confirm("Wil je een geheel NIEUWE QR-code genereren voor een nieuwe dienst? Gemeenteleden moeten dan de nieuwe QR scannen.")) return;
+        const akkoord = await window.vraagBevestiging({
+            icoon: '📱',
+            titel: 'Nieuwe Meelees-QR maken?',
+            tekst: 'Wil je een geheel nieuwe QR-code genereren voor een nieuwe dienst? Gemeenteleden moeten dan de nieuwe QR scannen.',
+            okTekst: 'Nieuwe QR maken'
+        });
+        if (!akkoord) return;
         try {
             window.toonToast("Nieuwe meelees-link genereren...", "info");
             const url = await maakMeeleesLink(true);
@@ -6142,8 +6246,15 @@ Geef UITSLUITEND een geldig JSON-object terug met exact deze keys (alle kleuren 
         window.toonToast("Item verwijderd uit geschiedenis", "info");
     };
 
-    window.wisMeeleesGeschiedenis = function() {
-        if (!confirm("Weet je zeker dat je alle opgeslagen meelees-links wilt wissen?")) return;
+    window.wisMeeleesGeschiedenis = async function() {
+        const akkoord = await window.vraagBevestiging({
+            icoon: '🗑️',
+            titel: 'Meelees-geschiedenis wissen?',
+            tekst: 'Weet je zeker dat je alle opgeslagen meelees-links definitief wilt wissen?',
+            okTekst: 'Geschiedenis wissen',
+            destructief: true
+        });
+        if (!akkoord) return;
         const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : 'bethel';
         try {
             localStorage.removeItem(`meeleesGeschiedenis_${slug}`);
@@ -7026,9 +7137,16 @@ Geef UITSLUITEND een geldig JSON-object terug met exact deze keys (alle kleuren 
     };
     setTimeout(() => { if (typeof window.upgradeLiturgieQRCodes === 'function') window.upgradeLiturgieQRCodes(); }, 200);
 
-    window.wisLiturgie = function() {
+    window.wisLiturgie = async function() {
         if (liturgieVolgorde.length === 0) return;
-        if (!confirm("Weet je zeker dat je de hele liturgielijst wilt leegmaken?")) return;
+        const akkoord = await window.vraagBevestiging({
+            icoon: '🧹',
+            titel: 'Liturgielijst leegmaken?',
+            tekst: 'Weet je zeker dat je de hele liturgielijst wilt leegmaken? Je kunt dit later eventueel nog terughalen met ↩️ Herstel.',
+            okTekst: 'Lijst leegmaken',
+            destructief: true
+        });
+        if (!akkoord) return;
         if (typeof window.pushLiturgieUndoState === 'function') {
             window.pushLiturgieUndoState("Hele liturgie gewist");
         }
@@ -7321,14 +7439,13 @@ Geef UITSLUITEND een geldig JSON-object terug met exact deze keys (alle kleuren 
                 if (data && data.gevonden && ((data.items && data.items.length > 0) || (data.slides && data.slides.length > 0))) {
                     gelukt = true;
                     const itemsAantal = (data.items && data.items.length) || data.slides.length;
-                    const bevestigd = confirm(
-                        `📬 Nieuwe liturgie per e-mail ontvangen!\n\n` +
-                        `Gemeente: ${data.gemeente_naam || actieveGemeente}\n` +
-                        `Voorganger: ${data.voorganger || 'Onbekend'}\n` +
-                        `Dienst: ${data.datum || 'Komende dienst'}\n` +
-                        `Aantal onderdelen: ${itemsAantal} items\n\n` +
-                        `Wil je deze liturgie direct inladen in de beamer presentatie?`
-                    );
+                    const bevestigd = await window.vraagBevestiging({
+                        icoon: '📬',
+                        titel: 'Nieuwe liturgie per e-mail ontvangen!',
+                        tekst: `Gemeente: ${data.gemeente_naam || actieveGemeente}\nVoorganger: ${data.voorganger || 'Onbekend'}\nDienst: ${data.datum || 'Komende dienst'}\nAantal onderdelen: ${itemsAantal} items\n\nWil je deze liturgie direct inladen in de beamer presentatie?`,
+                        okTekst: 'Direct inladen',
+                        annuleerTekst: 'Later'
+                    });
                     if (bevestigd) {
                         if (data.items && data.items.length > 0) {
                             liturgieVolgorde = [];
@@ -7630,7 +7747,14 @@ Geef UITSLUITEND een geldig JSON-object terug met exact deze keys (alle kleuren 
                     '<button class="arch-del text-gray-300 hover:text-[#FF3B30] p-1 flex-shrink-0" title="Verwijder"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>';
                 rij.querySelector('.arch-laad').onclick = () => laadArchiefLiturgie(d, doc.id);
                 rij.querySelector('.arch-del').onclick = async () => {
-                    if (!confirm(`Deze opgeslagen liturgie van ${huidigeGem} verwijderen?`)) return;
+                    const akkoord = await window.vraagBevestiging({
+                        icoon: '🗑️',
+                        titel: 'Opgeslagen liturgie verwijderen?',
+                        tekst: `Deze opgeslagen liturgie van ${huidigeGem} definitief uit het archief verwijderen?`,
+                        okTekst: 'Verwijderen',
+                        destructief: true
+                    });
+                    if (!akkoord) return;
                     if (actiefArchiefDocId === doc.id) {
                         actiefArchiefDocId = null;
                         try { 
@@ -9742,64 +9866,22 @@ Bijbelliederen`;
         });
 
         if (geselecteerdeTekst.length > 0) {
-            // Bouw een mooie titel met versnummers: "Psalm 8 vers 1, 4, 9"
             const alleVerzen = (geselecteerdeNummers.length === tijdelijkeLiedVerzen.length) &&
                 geselecteerdeNummers.every((n, i) => n === i + 1);
             const titelMetVers = alleVerzen
                 ? tijdelijkeTitel
                 : tijdelijkeTitel + ' vers ' + geselecteerdeNummers.join(', ');
-            liturgieVolgorde.push({ 
-                type: "Zang", 
+            window.injecteerLiedInLiturgie({
                 titel: titelMetVers,
-                tekst: geselecteerdeTekst.join('\n\n'),
                 basisTitel: tijdelijkeTitel,
+                tekst: geselecteerdeTekst.join('\n\n'),
                 geselecteerdeVerzen: geselecteerdeNummers
             });
-            bewaarLiturgie();
-            window.tekenVolgorde();
         }
         sluitVersModal();
     }
 
-    // --- LIEDEREN VERWERKEN & AFKORTINGEN EXPANSIE ---
-    window.expandeerLiedAfkorting = function(titel) {
-        if (!titel || typeof titel !== 'string') return '';
-        let t = titel.trim();
-        // Optionele aanduiding zoals "Zingen: ", "Slotlied: ", etc. behouden
-        const prefixMatch = t.match(/^(voorzang|slotlied|aanvangslied|zingen|lied)\s*[:\-]\s*/i);
-        let prefix = "";
-        if (prefixMatch) {
-            prefix = prefixMatch[0];
-            t = t.substring(prefix.length).trim();
-        }
-
-        // 1. Weerklank Psalm: PW15 of PW 15 -> Weerklank Psalm 15
-        t = t.replace(/^(?:PW|Pw|pw)\s*([0-9]+[a-z]?)\b/i, 'Weerklank Psalm $1');
-        // 2. Weerklank Lied: LW15 of LW 15 of WL15 -> Weerklank Lied 15
-        t = t.replace(/^(?:LW|Lw|lw|WL|Wl|wl)\s*([0-9]+[a-z]?)\b/i, 'Weerklank Lied $1');
-        // 3. Weerklank algemeen: WK15 of WK 15 -> Weerklank 15
-        t = t.replace(/^(?:WK|Wk|wk)\s*([0-9]+[a-z]?)\b/i, 'Weerklank $1');
-        // 4. Op Toonhoogte: OTH15 of OTH 15 -> Op Toonhoogte 15
-        t = t.replace(/^(?:OTH|Oth|oth)\s*([0-9]+[a-z]?)\b/i, 'Op Toonhoogte $1');
-        // 5. Opwekking: OPW15 of OPW 15 -> Opwekking 15
-        t = t.replace(/^(?:OPW|Opw|opw)\s*([0-9]+[a-z]?)\b/i, 'Opwekking $1');
-        // 6. De Nieuwe Psalmberijming: DNP15 of DNP 15 -> DNP Psalm 15
-        t = t.replace(/^(?:DNP\s*Ps(?:alm)?|DNP|Dnp|dnp)\s*([0-9]+[a-z]?)\b/i, 'DNP Psalm $1');
-        // 7. Psalmen: PS15 of PS 15 (maar niet als het al Psalm is) -> Psalm 15
-        t = t.replace(/^(?:PS|Ps|ps)(?!\s*alm|\s*DNP)\s*([0-9]+[a-z]?)\b/i, 'Psalm $1');
-        // 8. Gereformeerd Kerkboek: GK15 of GK 15 -> Gereformeerd Kerkboek 15
-        t = t.replace(/^(?:GK|Gk|gk)\s*([0-9]+[a-z]?)\b/i, 'Gereformeerd Kerkboek $1');
-        // 9. Liedboek: LB15 of LB 15 -> Liedboek 15
-        t = t.replace(/^(?:LB|Lb|lb)\s*([0-9]+[a-z]?)\b/i, 'Liedboek $1');
-        // 10. Hemelhoog: HH15 of HH 15 -> Hemelhoog 15
-        t = t.replace(/^(?:HH|Hh|hh)\s*([0-9]+[a-z]?)\b/i, 'Hemelhoog $1');
-        // 11. Johannes de Heer: JDH15 of JDH 15 -> Joh. de Heer 15
-        t = t.replace(/^(?:JDH|Jdh|JdH|jdh)\s*([0-9]+[a-z]?)\b/i, 'Joh. de Heer $1');
-        // 12. Evangelische Liedbundel: EL15 of EL 15 -> Evangelische Liedbundel 15
-        t = t.replace(/^(?:EL|El|el)\s*([0-9]+[a-z]?)\b/i, 'Evangelische Liedbundel $1');
-
-        return prefix + t;
-    };
+    // [MODULAIR: expandeerLiedAfkorting is verplaatst naar js/liederen-engine.js]
 
     window.handleLiedSelectie = async (titel, keepOpen = false, voorgeselecteerd = null) => {
         const preview = document.getElementById('previewVak');
@@ -11523,109 +11605,7 @@ Bijbelliederen`;
         return Array.from(result).sort((a,b) => a - b);
     };
 
-    // Zoek een lied in window.liederenDatabase, inclusief losse vers-sleutels ("Psalm 84 vers 1") en hoofdletter-ongevoelig
-    window.zoekLiedInDatabase = function(titel) {
-        if (!window.liederenDatabase) return { inCloud: false, tekst: "", versNummers: [] };
-        let genormaliseerd = (titel || "").trim();
-        if (typeof window.expandeerLiedAfkorting === 'function') {
-            genormaliseerd = window.expandeerLiedAfkorting(genormaliseerd);
-        }
-        // Normaliseer "Ps 119" of "Ps. 119" naar "Psalm 119"
-        genormaliseerd = genormaliseerd.replace(/^ps\.?\s*(\d+)/i, 'Psalm $1');
-        if (!genormaliseerd) return { inCloud: false, tekst: "", versNummers: [] };
-
-        // Probeer zonder vers annotatie (bijv. "Psalm 84: 1, 3", "Psalm 119 vers 85, 86, 87 en 88" -> "Psalm 119")
-        const baseTitel = genormaliseerd
-            .replace(/\s+(vers(en)?|vs\.?|couplet(ten)?)\s+[\d,\s\-–—en&]+$/i, '')
-            .replace(/:\s*[\d,\s\-–—en&]+$/, '')
-            .trim();
-
-        const alleKeys = Object.keys(window.liederenDatabase);
-
-        const zoekMultiVers = (zoekTerm) => {
-            if (!zoekTerm) return null;
-            const escaped = zoekTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-            const versRegex = new RegExp("^" + escaped + "\\s+vers\\s+(\\d+)$", "i");
-            const versKeys = alleKeys
-                .filter(k => versRegex.test(k))
-                .sort((a, b) => {
-                    const nA = parseInt(a.match(/vers\s+(\d+)$/i)?.[1] || 0, 10);
-                    const nB = parseInt(b.match(/vers\s+(\d+)$/i)?.[1] || 0, 10);
-                    return nA - nB;
-                });
-
-            if (versKeys.length > 0) {
-                // Normaliseer interne regels van elk vers:
-                // Psalm-verzen in D1 hebben dubbele witregels (\n\n of \n\n\t) tussen de dichtregels.
-                // We vervangen opeenvolgende newlines binnen één vers door een enkele \n.
-                const genormaliseerdeVerzen = versKeys.map(k => {
-                    const raw = (window.liederenDatabase[k] || '').trim();
-                    return raw.replace(/\n[ \t]*\n[ \t]*/g, '\n').trim();
-                });
-                const gecombineerdeTekst = genormaliseerdeVerzen.join("\n\n");
-                const versNummers = versKeys.map(k => parseInt(k.match(/vers\s+(\d+)$/i)?.[1] || 0, 10));
-                return { inCloud: true, tekst: gecombineerdeTekst, versNummers: versNummers, basisTitel: zoekTerm };
-            }
-            return null;
-        };
-
-        const vindDirecteMatch = (zoekTerm) => {
-            if (!zoekTerm) return null;
-            let tekst = null;
-            let gevondenKey = zoekTerm;
-            if (window.liederenDatabase[zoekTerm]) {
-                tekst = window.liederenDatabase[zoekTerm];
-            } else {
-                const lowerTerm = zoekTerm.toLowerCase();
-                const ciKey = alleKeys.find(k => k.toLowerCase() === lowerTerm);
-                if (ciKey && window.liederenDatabase[ciKey]) {
-                    tekst = window.liederenDatabase[ciKey];
-                    gevondenKey = ciKey;
-                }
-            }
-            if (!tekst) return null;
-
-            // Normaliseer regels als alle dichtregels dubbele witregels bevatten
-            let lines = tekst.split('\n');
-            let emptyLines = lines.filter(l => l.trim() === '').length;
-            let textLines = lines.filter(l => l.trim() !== '').length;
-            if (emptyLines >= textLines - 2 && textLines > 2) {
-                tekst = lines.filter(l => l.trim() !== '').join('\n');
-            }
-
-            const verzen = tekst.split(/\n[ \t]*\n/).map(v => v.trim()).filter(Boolean);
-            return { inCloud: true, tekst: tekst, versNummers: verzen.map((_, i) => i + 1), basisTitel: gevondenKey };
-        };
-
-        // 1. Zoek eerst multi-vers entries op baseTitel (zodat "Psalm 119 vers 85" alle 88 verzen van Psalm 119 vindt)
-        let resultaat = zoekMultiVers(baseTitel);
-        // 2. Probeer multi-vers op de letterlijke term indien afwijkend
-        if (!resultaat && baseTitel !== genormaliseerd) {
-            resultaat = zoekMultiVers(genormaliseerd);
-        }
-        // 3. Probeer directe match op baseTitel (bijv. "Weerklank 446: 1, 2" -> "Weerklank 446")
-        if (!resultaat) {
-            resultaat = vindDirecteMatch(baseTitel);
-        }
-        // 4. Probeer directe match op de letterlijke term
-        if (!resultaat && baseTitel !== genormaliseerd) {
-            resultaat = vindDirecteMatch(genormaliseerd);
-        }
-
-        return resultaat || { inCloud: false, tekst: "", versNummers: [] };
-    };
-
-    // Haal alle losse coupletten/verzen op uit tekst of losse database-keys
-    window.haalLiedVerzenOp = function(titel, bronTekst) {
-        if (bronTekst && bronTekst.trim() && bronTekst.trim() !== " ") {
-            return bronTekst.split(/\n[ \t]*\n/).map(v => v.trim()).filter(Boolean);
-        }
-        const dbResult = window.zoekLiedInDatabase(titel);
-        if (dbResult.inCloud && dbResult.tekst) {
-            return dbResult.tekst.split(/\n[ \t]*\n/).map(v => v.trim()).filter(Boolean);
-        }
-        return [];
-    };
+    // [MODULAIR: zoekLiedInDatabase & haalLiedVerzenOp zijn verplaatst naar js/liederen-engine.js]
 
     // Bouw de finale tekst en titel op basis van de geselecteerde verzen
     window.bouwLiedTekstEnTitel = function(item) {
@@ -13154,8 +13134,15 @@ Antwoord UITSLUITEND in valide JSON:
         modal.classList.remove('hidden');
     };
 
-    window.verwijderActieveTikkie = function() {
-        if (!confirm("Weet je zeker dat je de actieve week-Tikkie wilt wissen?")) return;
+    window.verwijderActieveTikkie = async function() {
+        const akkoord = await window.vraagBevestiging({
+            icoon: '🗑️',
+            titel: 'Actieve week-Tikkie wissen?',
+            tekst: 'Weet je zeker dat je de ingestelde week-Tikkie wilt wissen?',
+            okTekst: 'Tikkie wissen',
+            destructief: true
+        });
+        if (!akkoord) return;
         const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : 'bethel';
         try {
             localStorage.removeItem(`weekTikkieData_${slug}`);
@@ -13712,8 +13699,15 @@ Antwoord UITSLUITEND in valide JSON:
         window.toonToast("Item verwijderd uit geschiedenis", "info");
     };
 
-    window.wisTikkieGeschiedenis = function() {
-        if (!confirm("Weet je zeker dat je de hele Tikkie-geschiedenis wilt wissen?")) return;
+    window.wisTikkieGeschiedenis = async function() {
+        const akkoord = await window.vraagBevestiging({
+            icoon: '🗑️',
+            titel: 'Tikkie-geschiedenis wissen?',
+            tekst: 'Weet je zeker dat je de hele Tikkie-geschiedenis definitief wilt wissen?',
+            okTekst: 'Geschiedenis wissen',
+            destructief: true
+        });
+        if (!akkoord) return;
         const slug = (typeof window.getActieveGemeenteSlug === 'function') ? window.getActieveGemeenteSlug() : 'bethel';
         try {
             localStorage.removeItem(`tikkieGeschiedenis_${slug}`);
@@ -13771,26 +13765,7 @@ Antwoord UITSLUITEND in valide JSON:
         }
     };
 
-    window.haalLiedTekstUitDatabase = function(basisTitel) {
-        if (!window.liederenDatabase) return '';
-        if (window.liederenDatabase[basisTitel]) return window.liederenDatabase[basisTitel];
-        const ciKey = Object.keys(window.liederenDatabase).find(k => k.toLowerCase() === basisTitel.toLowerCase());
-        if (ciKey && window.liederenDatabase[ciKey]) return window.liederenDatabase[ciKey];
-        const versKeys = Object.keys(window.liederenDatabase)
-            .filter(k => {
-                const m = k.match(/^(.+?)\s+vers\s+(\d+)$/i);
-                return m && m[1].trim().toLowerCase() === basisTitel.toLowerCase();
-            })
-            .sort((a, b) => {
-                const nA = parseInt(a.match(/vers\s+(\d+)/i)[1], 10);
-                const nB = parseInt(b.match(/vers\s+(\d+)/i)[1], 10);
-                return nA - nB;
-            });
-        if (versKeys.length > 0) {
-            return versKeys.map(k => window.liederenDatabase[k]).join('\n\n');
-        }
-        return '';
-    };
+    // [MODULAIR: haalLiedTekstUitDatabase zit in js/liederen-engine.js]
 
     window.renderLiederenBeheerLijst = function() {
         const grid = document.getElementById('liedBeheerGrid');
@@ -13804,11 +13779,12 @@ Antwoord UITSLUITEND in valide JSON:
         const actieveBundel = filterSelect ? filterSelect.value : 'alle';
 
         const db = window.liederenDatabase || {};
-        const alleKeys = Object.keys(db);
+        const alleKeys = (typeof window.getSchoneLiedSleutels === 'function')
+            ? window.getSchoneLiedSleutels(db)
+            : Object.keys(db).filter(k => !k.startsWith('__'));
         const basisTitelsMap = new Map();
 
         alleKeys.forEach(k => {
-            if (k.startsWith('__')) return;
             const versMatch = k.match(/^(.+?)\s+vers\s+\d+$/i);
             const basis = versMatch ? versMatch[1].trim() : k.trim();
             if (!basisTitelsMap.has(basis.toLowerCase())) {
@@ -13984,7 +13960,14 @@ Antwoord UITSLUITEND in valide JSON:
     };
 
     window.verwijderLiedBeheer = async function(titel) {
-        if (!confirm(`Weet je zeker dat je '${titel}' definitief wilt verwijderen uit de database?`)) return;
+        const akkoord = await window.vraagBevestiging({
+            icoon: '🗑️',
+            titel: 'Lied definitief verwijderen?',
+            tekst: `Weet je zeker dat je '${titel}' definitief wilt verwijderen uit de database?`,
+            okTekst: 'Definitief verwijderen',
+            destructief: true
+        });
+        if (!akkoord) return;
         await window.verwijderLiedUitCloud(titel);
         window.toonToast(`🗑️ '${titel}' verwijderd uit database`, "info");
         window.sluitLiedEditor();
@@ -14031,8 +14014,7 @@ Antwoord UITSLUITEND in valide JSON:
             window.sluitLiederenBeheerModal();
             window.toonVersSelectie(titel, tekst);
         } else {
-            liturgieVolgorde.push({ type: "Zang", titel: titel, tekst: tekst });
-            window.tekenVolgorde();
+            window.injecteerLiedInLiturgie({ titel: titel, tekst: tekst });
             window.toonToast(`🎵 '${titel}' toegevoegd aan liturgie!`, "success");
             window.sluitLiederenBeheerModal();
         }
@@ -14052,8 +14034,7 @@ Antwoord UITSLUITEND in valide JSON:
             window.sluitLiederenBeheerModal();
             window.toonVersSelectie(titel, tekst);
         } else {
-            liturgieVolgorde.push({ type: "Zang", titel: titel, tekst: tekst });
-            window.tekenVolgorde();
+            window.injecteerLiedInLiturgie({ titel: titel, tekst: tekst });
             window.toonToast(`🎵 '${titel}' toegevoegd aan liturgie!`, "success");
             window.sluitLiederenBeheerModal();
         }
@@ -14093,11 +14074,12 @@ Antwoord UITSLUITEND in valide JSON:
         }
 
         const db = window.liederenDatabase || {};
-        const alleKeys = Object.keys(db);
+        const alleKeys = (typeof window.getSchoneLiedSleutels === 'function')
+            ? window.getSchoneLiedSleutels(db)
+            : Object.keys(db).filter(k => !k.startsWith('__'));
         const basisTitelsMap = new Map();
 
         alleKeys.forEach(k => {
-            if (k.startsWith('__')) return;
             const versMatch = k.match(/^(.+?)\s+vers\s+\d+$/i);
             const basis = versMatch ? versMatch[1].trim() : k.trim();
             if (!basisTitelsMap.has(basis.toLowerCase())) {
@@ -14234,7 +14216,13 @@ Antwoord UITSLUITEND in valide JSON:
                 inputEl.value = '';
                 return;
             }
-            if (!confirm(`Wil je ${entries.length} liederen uit '${file.name}' inladen in de lokale database en synchroniseren met de Cloud?`)) {
+            const akkoord = await window.vraagBevestiging({
+                icoon: '📥',
+                titel: 'Database-backup inladen?',
+                tekst: `Wil je ${entries.length} liederen uit '${file.name}' inladen in de lokale database en synchroniseren met de Cloud?`,
+                okTekst: 'Inladen & Syncen'
+            });
+            if (!akkoord) {
                 inputEl.value = '';
                 return;
             }
@@ -15990,9 +15978,15 @@ Antwoord UITSLUITEND in valide JSON:
     window.tekenSlidePreview = tekenSlidePreview;
 
     // --- VOORBEELD-DIENST LADEN VOOR NIEUWE GEBRUIKERS ---
-    window.laadVoorbeeldLiturgie = function() {
+    window.laadVoorbeeldLiturgie = async function() {
         if (Array.isArray(liturgieVolgorde) && liturgieVolgorde.length > 0) {
-            if (!confirm("Wil je een voorbeeld-dienst laden? Je huidige lijst kun je altijd terughalen met '↩️ Herstel'.")) {
+            const akkoord = await window.vraagBevestiging({
+                icoon: '✨',
+                titel: 'Voorbeeld-dienst laden?',
+                tekst: "Wil je een voorbeeld-dienst laden? Je huidige lijst kun je altijd terughalen met '↩️ Herstel'.",
+                okTekst: 'Voorbeeld laden'
+            });
+            if (!akkoord) {
                 return;
             }
         }
@@ -17056,6 +17050,8 @@ window.addEventListener('keydown', (e) => {
             return false;
         };
 
+        if (checkModal('bevestigModal', () => window.sluitBevestigModal && window.sluitBevestigModal(false))) return;
+        if (checkModal('schriftlezingKeuzeModal', window.sluitSchriftlezingKeuzeModal)) return;
         if (checkModal('desktopCommandPalette', () => window.DeviceEngine?.toggleCommandPalette(false))) return;
         if (checkModal('welkomstdiaModal', sluitWelkomstdiaModal)) return;
         if (checkModal('preflightModal', window.sluitPreflightModal)) return;
@@ -17064,7 +17060,7 @@ window.addEventListener('keydown', (e) => {
         if (checkModal('versModal', window.sluitVersModal)) return;
         if (checkModal('controleModal', window.sluitModal)) return;
         if (checkModal('importModal', window.sluitImportModal)) return;
-        if (checkModal('archiefModal')) return;
+        if (checkModal('archiefModal', window.sluitArchiefModal)) return;
         if (checkModal('deelModal', window.sluitDeelModal)) return;
         if (checkModal('infoModal', window.sluitInfoModal)) return;
         if (checkModal('gemeenteModal')) return;
@@ -17664,14 +17660,20 @@ window.verstuurExportFeedback = async function() {
 
 <!-- WELKOMSTDIA CUSTOMIZER MODAL -->
 <div id="welkomstdiaModal" class="fixed inset-0 z-[115] hidden flex items-center justify-center bg-black/40 modal-backdrop-safe transition-opacity p-3 md:p-6" onclick="if(event.target === this) sluitWelkomstdiaModal()">
-    <div class="bg-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] w-full max-w-4xl overflow-hidden flex flex-col transform transition-all modal-animate max-h-[92vh]">
+    <div class="bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[24px] sm:rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.25)] ring-1 ring-black/[0.05] dark:ring-white/10 w-full max-w-4xl overflow-hidden flex flex-col transform transition-all modal-animate max-h-[92vh]">
         <!-- Header -->
-        <div class="p-4 md:p-5 border-b border-gray-100 flex justify-between items-center flex-shrink-0">
-            <div class="flex items-center gap-2">
-                <span class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider">PowerPoint Export</span>
-                <span class="text-[10px] font-bold text-[#007AFF] bg-blue-50 px-2 py-0.5 rounded-full">Welkomstdia</span>
+        <div class="p-4 md:p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center flex-shrink-0 bg-white dark:bg-[#1C1C1E]">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-2xl bg-blue-500/10 dark:bg-blue-500/20 text-[#007AFF] flex items-center justify-center text-lg shadow-2xs flex-shrink-0">👋</div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm sm:text-base font-bold text-[#1D1D1F] dark:text-white">Welkomstdia Studio</span>
+                        <span class="text-[10px] font-bold text-[#007AFF] bg-blue-50 dark:bg-blue-950/60 dark:text-blue-300 px-2 py-0.5 rounded-full">PowerPoint Export</span>
+                    </div>
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400">Pas titel, kerknaam en liedopmaak voor de startdia aan</p>
+                </div>
             </div>
-            <button type="button" onclick="sluitWelkomstdiaModal()" class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors" title="Sluiten" aria-label="Sluiten">
+            <button type="button" onclick="sluitWelkomstdiaModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer" title="Sluiten" aria-label="Sluiten">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
@@ -17682,16 +17684,16 @@ window.verstuurExportFeedback = async function() {
             <div class="lg:col-span-7 flex flex-col gap-2">
                 <div class="flex items-center justify-between px-1 flex-wrap gap-2">
                     <div class="flex items-center gap-2">
-                        <span class="text-[11px] font-bold text-[#86868B] uppercase tracking-wider">Live Preview</span>
-                        <span id="welkomModusBadge" class="hidden text-[10px] font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">Beamer (16:9)</span>
+                        <span class="text-[11px] font-bold text-[#86868B] dark:text-gray-400 uppercase tracking-wider">Live Preview</span>
+                        <span id="welkomModusBadge" class="hidden text-[10px] font-semibold text-gray-500 dark:text-gray-300 bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded-full">Beamer (16:9)</span>
                     </div>
                     <!-- Directe Presentatie Modus Keuze voor PowerPoint Export: Beamer vs Livestream -->
                     <div class="inline-flex p-0.5 bg-gray-100 dark:bg-gray-800 rounded-xl border border-gray-200/80 dark:border-gray-700" id="welkomModusSegmented">
-                        <button type="button" id="welkomModusBeamerBtn" onclick="window.zetPresentatieModus(false)" class="px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs bg-white text-[#007AFF] active:scale-95 cursor-pointer">
+                        <button type="button" id="welkomModusBeamerBtn" onclick="window.zetPresentatieModus(false)" class="px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs bg-white dark:bg-[#2C2C2E] text-[#007AFF] active:scale-95 cursor-pointer">
                             <span>📽️</span>
                             <span>Beamer (16:9)</span>
                         </button>
-                        <button type="button" id="welkomModusStreamBtn" onclick="window.zetPresentatieModus(true)" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 text-gray-500 hover:text-gray-900 active:scale-95 cursor-pointer">
+                        <button type="button" id="welkomModusStreamBtn" onclick="window.zetPresentatieModus(true)" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 text-gray-500 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white active:scale-95 cursor-pointer">
                             <span>📡</span>
                             <span>Livestream</span>
                         </button>
@@ -17709,58 +17711,58 @@ window.verstuurExportFeedback = async function() {
             <!-- Right Column: Controls (lg:col-span-5) -->
             <div class="lg:col-span-5 flex flex-col gap-4">
                 <!-- Title Control -->
-                <div class="bg-[#F5F5F7]/70 rounded-2xl p-4 flex flex-col gap-2 border border-black/[0.03]">
+                <div class="bg-[#F5F5F7]/80 dark:bg-white/5 rounded-2xl p-4 flex flex-col gap-2 border border-black/[0.03] dark:border-white/10">
                     <div class="flex items-center justify-between">
-                        <label for="welkomTitelInput" class="text-xs font-bold text-[#1D1D1F]">Titel van Welkomstdia</label>
-                        <button type="button" onclick="document.getElementById('welkomTitelInput').value=''; updateWelkomstdiaPreview();" class="text-[11px] font-medium text-gray-400 hover:text-red-500 transition-colors">Wissen</button>
+                        <label for="welkomTitelInput" class="text-xs font-bold text-[#1D1D1F] dark:text-white">Titel van Welkomstdia</label>
+                        <button type="button" onclick="document.getElementById('welkomTitelInput').value=''; updateWelkomstdiaPreview();" class="text-[11px] font-medium text-gray-400 hover:text-red-500 transition-colors cursor-pointer">Wissen</button>
                     </div>
-                    <input id="welkomTitelInput" type="text" value="Welkom" placeholder="Laat leeg voor geen titel..." oninput="updateWelkomstdiaPreview()" class="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2 text-sm focus:border-[#007AFF] focus:ring-2 focus:ring-[#007AFF]/20 outline-none transition-all">
+                    <input id="welkomTitelInput" type="text" value="Welkom" placeholder="Laat leeg voor geen titel..." oninput="updateWelkomstdiaPreview()" class="w-full bg-white dark:bg-[#2C2C2E] dark:text-white border border-gray-200 dark:border-white/10 rounded-xl px-3.5 py-2 text-sm focus:border-[#007AFF] focus:ring-2 focus:ring-[#007AFF]/20 outline-none transition-all">
                 </div>
 
                 <!-- Church Name Control -->
-                <div class="bg-[#F5F5F7]/70 rounded-2xl p-4 flex flex-col gap-2 border border-black/[0.03]">
+                <div class="bg-[#F5F5F7]/80 dark:bg-white/5 rounded-2xl p-4 flex flex-col gap-2 border border-black/[0.03] dark:border-white/10">
                     <div class="flex items-center justify-between">
-                        <label for="welkomGemeenteInput" class="text-xs font-bold text-[#1D1D1F]">Kerknaam op Welkomstdia</label>
+                        <label for="welkomGemeenteInput" class="text-xs font-bold text-[#1D1D1F] dark:text-white">Kerknaam op Welkomstdia</label>
                         <label class="inline-flex items-center gap-1.5 cursor-pointer">
-                            <input type="checkbox" id="welkomToonGemeenteToggle" checked onchange="updateWelkomstdiaPreview()" class="rounded border-gray-300 text-[#007AFF] focus:ring-0">
-                            <span class="text-[11px] text-gray-500 font-medium">Tonen</span>
+                            <input type="checkbox" id="welkomToonGemeenteToggle" checked onchange="updateWelkomstdiaPreview()" class="rounded border-gray-300 dark:border-gray-600 text-[#007AFF] focus:ring-0">
+                            <span class="text-[11px] text-gray-500 dark:text-gray-300 font-medium">Tonen</span>
                         </label>
                     </div>
-                    <input id="welkomGemeenteInput" type="text" value="Bethelkerk Maassluis" placeholder="Laat leeg voor geen kerknaam..." oninput="updateWelkomstdiaPreview()" class="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2 text-sm focus:border-[#007AFF] focus:ring-2 focus:ring-[#007AFF]/20 outline-none transition-all">
+                    <input id="welkomGemeenteInput" type="text" value="Bethelkerk Maassluis" placeholder="Laat leeg voor geen kerknaam..." oninput="updateWelkomstdiaPreview()" class="w-full bg-white dark:bg-[#2C2C2E] dark:text-white border border-gray-200 dark:border-white/10 rounded-xl px-3.5 py-2 text-sm focus:border-[#007AFF] focus:ring-2 focus:ring-[#007AFF]/20 outline-none transition-all">
                 </div>
 
                 <!-- Songs Formatting Control -->
-                <div class="bg-[#F5F5F7]/70 rounded-2xl p-4 flex flex-col gap-3 border border-black/[0.03]">
+                <div class="bg-[#F5F5F7]/80 dark:bg-white/5 rounded-2xl p-4 flex flex-col gap-3 border border-black/[0.03] dark:border-white/10">
                     <div class="flex items-center justify-between">
-                        <label class="text-xs font-bold text-[#1D1D1F]">Weergave Liednummers</label>
+                        <label class="text-xs font-bold text-[#1D1D1F] dark:text-white">Weergave Liednummers</label>
                         <label class="inline-flex items-center gap-1.5 cursor-pointer">
-                            <input type="checkbox" id="welkomToonLiederenToggle" checked onchange="updateWelkomstdiaPreview()" class="rounded border-gray-300 text-[#007AFF] focus:ring-0">
-                            <span class="text-[11px] text-gray-500 font-medium">Tonen</span>
+                            <input type="checkbox" id="welkomToonLiederenToggle" checked onchange="updateWelkomstdiaPreview()" class="rounded border-gray-300 dark:border-gray-600 text-[#007AFF] focus:ring-0">
+                            <span class="text-[11px] text-gray-500 dark:text-gray-300 font-medium">Tonen</span>
                         </label>
                     </div>
 
                     <!-- Presets Selector -->
                     <div class="grid grid-cols-3 gap-1.5">
-                        <button type="button" id="preset-afkorting" onclick="stelLiedPresetIn('afkorting')" class="py-1.5 px-1.5 text-[11px] font-semibold rounded-lg bg-white hover:bg-gray-100 text-gray-700 border border-gray-200 transition-all text-center">Standaard (Lw/Ps)</button>
-                        <button type="button" id="preset-nummers" onclick="stelLiedPresetIn('nummers')" class="py-1.5 px-1.5 text-[11px] font-semibold rounded-lg bg-white hover:bg-gray-100 text-gray-700 border border-gray-200 transition-all text-center">Alleen Cijfers</button>
-                        <button type="button" id="preset-volledig" onclick="stelLiedPresetIn('volledig')" class="py-1.5 px-1.5 text-[11px] font-semibold rounded-lg bg-white hover:bg-gray-100 text-gray-700 border border-gray-200 transition-all text-center">Volledige Naam</button>
+                        <button type="button" id="preset-afkorting" onclick="stelLiedPresetIn('afkorting')" class="py-1.5 px-1.5 text-[11px] font-semibold rounded-lg bg-white dark:bg-[#2C2C2E] hover:bg-gray-100 dark:hover:bg-white/15 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-white/10 transition-all text-center cursor-pointer">Standaard (Lw/Ps)</button>
+                        <button type="button" id="preset-nummers" onclick="stelLiedPresetIn('nummers')" class="py-1.5 px-1.5 text-[11px] font-semibold rounded-lg bg-white dark:bg-[#2C2C2E] hover:bg-gray-100 dark:hover:bg-white/15 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-white/10 transition-all text-center cursor-pointer">Alleen Cijfers</button>
+                        <button type="button" id="preset-volledig" onclick="stelLiedPresetIn('volledig')" class="py-1.5 px-1.5 text-[11px] font-semibold rounded-lg bg-white dark:bg-[#2C2C2E] hover:bg-gray-100 dark:hover:bg-white/15 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-white/10 transition-all text-center cursor-pointer">Volledige Naam</button>
                     </div>
 
                     <!-- Editable Songs Textarea -->
                     <div class="flex flex-col gap-1">
                         <span class="text-[10px] text-gray-400 uppercase font-bold">Tekst op dia (één regel per lied):</span>
-                        <textarea id="welkomLiederenInput" rows="5" oninput="updateWelkomstdiaPreview(); wisPresetHighlight();" class="w-full bg-white border border-gray-200 rounded-xl p-3 text-xs leading-relaxed focus:border-[#007AFF] focus:ring-2 focus:ring-[#007AFF]/20 outline-none transition-all resize-none font-mono"></textarea>
+                        <textarea id="welkomLiederenInput" rows="5" oninput="updateWelkomstdiaPreview(); wisPresetHighlight();" class="w-full bg-white dark:bg-[#2C2C2E] dark:text-white border border-gray-200 dark:border-white/10 rounded-xl p-3 text-xs leading-relaxed focus:border-[#007AFF] focus:ring-2 focus:ring-[#007AFF]/20 outline-none transition-all resize-none font-mono"></textarea>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Footer Buttons -->
-        <div class="p-4 md:p-5 flex flex-col-reverse sm:flex-row justify-between items-center gap-3 bg-white border-t border-gray-100 flex-shrink-0">
-            <button type="button" onclick="sluitWelkomstdiaModal()" class="w-full sm:w-auto px-4 py-2.5 rounded-full text-sm font-semibold text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors">Annuleren</button>
+        <div class="p-4 md:p-5 flex flex-col-reverse sm:flex-row justify-between items-center gap-3 bg-white dark:bg-[#1C1C1E] border-t border-gray-100 dark:border-white/10 flex-shrink-0">
+            <button type="button" onclick="sluitWelkomstdiaModal()" class="w-full sm:w-auto px-4 py-2.5 rounded-2xl text-sm font-semibold text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer">Annuleren</button>
             <div class="flex gap-2.5 w-full sm:w-auto justify-end">
-                <button type="button" onclick="exporteerMetStandaardWelkomstdia()" class="flex-1 sm:flex-none px-5 py-2.5 rounded-full text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors">Gebruik standaard</button>
-                <button type="button" onclick="exporteerMetAangepasteWelkomstdia()" class="flex-1 sm:flex-none px-6 py-2.5 rounded-full text-sm font-semibold text-white bg-[#007AFF] hover:bg-blue-600 transition-colors shadow-md flex items-center justify-center gap-2">
+                <button type="button" onclick="exporteerMetStandaardWelkomstdia()" class="flex-1 sm:flex-none px-5 py-2.5 rounded-2xl text-sm font-semibold text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 transition-colors cursor-pointer">Gebruik standaard</button>
+                <button type="button" onclick="exporteerMetAangepasteWelkomstdia()" class="flex-1 sm:flex-none px-6 py-2.5 rounded-2xl text-sm font-semibold text-white bg-[#007AFF] hover:bg-blue-600 transition-colors shadow-md flex items-center justify-center gap-2 active:scale-98 cursor-pointer">
                     <span>Ga door met export</span>
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                 </button>
@@ -17769,16 +17771,19 @@ window.verstuurExportFeedback = async function() {
     </div>
 </div>
 
-<div id="exportFeedbackModal" class="fixed inset-0 z-[120] hidden flex items-center justify-center bg-black/40 modal-backdrop-safe transition-opacity" onclick="if(event.target === this) sluitExportFeedback()">
-    <div class="bg-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] w-11/12 max-w-sm overflow-hidden flex flex-col transform transition-all modal-animate">
-        <div class="p-5 border-b border-gray-100 flex justify-between items-center">
-            <h3 class="text-lg font-bold text-[#1D1D1F]">Hoe ging het? 🎉</h3>
-            <button onclick="sluitExportFeedback()" class="text-gray-400 hover:text-gray-600 p-1">
+<div id="exportFeedbackModal" class="fixed inset-0 z-[120] hidden flex items-center justify-center bg-black/40 modal-backdrop-safe transition-opacity p-3" onclick="if(event.target === this) sluitExportFeedback()">
+    <div class="bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[24px] sm:rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.22)] ring-1 ring-black/[0.05] dark:ring-white/10 w-11/12 max-w-sm overflow-hidden flex flex-col transform transition-all modal-animate">
+        <div class="p-4 sm:p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-2xl bg-blue-500/10 dark:bg-blue-500/20 text-[#007AFF] flex items-center justify-center text-lg shadow-2xs flex-shrink-0">🎉</div>
+                <h3 class="text-base sm:text-lg font-bold text-[#1D1D1F] dark:text-white">Hoe ging het?</h3>
+            </div>
+            <button type="button" onclick="sluitExportFeedback()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer" title="Sluiten" aria-label="Sluiten">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
         <div class="p-5 flex flex-col items-center gap-4">
-            <p class="text-sm text-gray-500 text-center">Je PowerPoint is klaar! Hoe tevreden ben je met het resultaat?</p>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 text-center">Je PowerPoint is klaar! Hoe tevreden ben je met het resultaat?</p>
             <div class="flex gap-2">
                 <button id="ster1" onclick="kiesExportSter(1)" class="text-3xl transition-all duration-200 hover:scale-125 cursor-pointer" style="color:#D1D1D6" title="Slecht">★</button>
                 <button id="ster2" onclick="kiesExportSter(2)" class="text-3xl transition-all duration-200 hover:scale-125 cursor-pointer" style="color:#D1D1D6" title="Matig">★</button>
@@ -17786,32 +17791,32 @@ window.verstuurExportFeedback = async function() {
                 <button id="ster4" onclick="kiesExportSter(4)" class="text-3xl transition-all duration-200 hover:scale-125 cursor-pointer" style="color:#D1D1D6" title="Goed">★</button>
                 <button id="ster5" onclick="kiesExportSter(5)" class="text-3xl transition-all duration-200 hover:scale-125 cursor-pointer" style="color:#D1D1D6" title="Uitstekend">★</button>
             </div>
-            <textarea id="exportFeedbackTekst" rows="3" placeholder="Optioneel: tips, ideeën of opmerkingen..." class="w-full bg-[#F5F5F7] border border-transparent rounded-xl py-2.5 px-3 text-sm placeholder-gray-400 apple-input transition-all resize-none"></textarea>
+            <textarea id="exportFeedbackTekst" rows="3" placeholder="Optioneel: tips, ideeën of opmerkingen..." class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-transparent dark:border-white/10 rounded-xl py-2.5 px-3 text-sm placeholder-gray-400 apple-input transition-all resize-none"></textarea>
             <div class="flex gap-2 w-full">
-                <button onclick="sluitExportFeedback()" class="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors">Overslaan</button>
-                <button onclick="verstuurExportFeedback()" class="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#007AFF] hover:bg-blue-600 transition-colors shadow-sm">Versturen</button>
+                <button type="button" onclick="sluitExportFeedback()" class="flex-1 py-2.5 rounded-2xl text-sm font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 transition-colors cursor-pointer">Overslaan</button>
+                <button type="button" onclick="verstuurExportFeedback()" class="flex-1 py-2.5 rounded-2xl text-sm font-semibold text-white bg-[#007AFF] hover:bg-blue-600 transition-colors shadow-sm cursor-pointer">Versturen</button>
             </div>
         </div>
     </div>
 </div>
 
 <!-- GEMEENTE KEUZE MODAL -->
-<div id="gemeenteModal" class="fixed inset-0 z-[130] hidden flex items-center justify-center bg-black/40 modal-backdrop-safe transition-opacity p-4" onclick="if(event.target === this && localStorage.getItem('actieveGemeente')) sluitGemeenteModal()">
-    <div class="bg-white rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.05] w-full max-w-md overflow-hidden flex flex-col transform transition-all modal-animate">
-        <div class="p-5 border-b border-gray-100 flex justify-between items-center flex-shrink-0">
-            <div class="flex items-center gap-2.5">
-                <span class="text-2xl">⛪</span>
+<div id="gemeenteModal" class="fixed inset-0 z-[130] hidden flex items-center justify-center bg-black/40 modal-backdrop-safe transition-opacity p-3 sm:p-4" onclick="if(event.target === this && localStorage.getItem('actieveGemeente')) sluitGemeenteModal()">
+    <div class="bg-white dark:bg-[#1C1C1E] dark:text-white rounded-[24px] sm:rounded-[28px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.22)] ring-1 ring-black/[0.05] dark:ring-white/10 w-full max-w-md overflow-hidden flex flex-col transform transition-all modal-animate">
+        <div class="p-4 sm:p-5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center flex-shrink-0 bg-white dark:bg-[#1C1C1E]">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-blue-500/10 dark:bg-blue-500/20 text-[#007AFF] flex items-center justify-center text-xl shadow-2xs flex-shrink-0">⛪</div>
                 <div>
-                    <h3 class="text-base font-bold text-[#1D1D1F]">Kies je Gemeente</h3>
-                    <p class="text-[11px] text-gray-400">Liturgieën en instellingen veilig per kerk gescheiden</p>
+                    <h3 class="text-base font-bold text-[#1D1D1F] dark:text-white">Kies je Gemeente</h3>
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400">Liturgieën en instellingen veilig per kerk gescheiden</p>
                 </div>
             </div>
-            <button type="button" id="sluitGemeenteModalBtn" onclick="sluitGemeenteModal()" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg">
+            <button type="button" id="sluitGemeenteModalBtn" onclick="sluitGemeenteModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer" title="Sluiten" aria-label="Sluiten">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
         <div class="p-5 flex flex-col gap-4 overflow-y-auto max-h-[75vh]">
-            <p class="text-xs text-gray-500 leading-relaxed">
+            <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
                 Kies voor welke kerk je de liturgie en PowerPoint maakt. Zo heeft elke kerk zijn eigen archief en blijven liederen en diensten netjes bewaard.
             </p>
             
@@ -17819,21 +17824,21 @@ window.verstuurExportFeedback = async function() {
             <div id="gemeenteKeuzeLijst" class="flex flex-col gap-2"></div>
 
             <!-- Nieuwe kerk toevoegen toggle/invoer -->
-            <div class="pt-2 border-t border-gray-100">
-                <button type="button" id="toonNieuweKerkBtn" onclick="toggleNieuweKerkInvoer()" class="text-xs font-semibold text-[#007AFF] hover:underline flex items-center gap-1.5 py-1">
+            <div class="pt-2 border-t border-gray-100 dark:border-white/10">
+                <button type="button" id="toonNieuweKerkBtn" onclick="toggleNieuweKerkInvoer()" class="text-xs font-semibold text-[#007AFF] hover:underline flex items-center gap-1.5 py-1 cursor-pointer">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                     <span>Andere kerk toevoegen</span>
                 </button>
                 <div id="nieuweKerkVak" class="hidden mt-2.5 flex flex-col gap-2">
-                    <input type="text" id="nieuweKerkInput" placeholder="Bijv. Kruiskerk Bergschenhoek" class="w-full bg-[#F5F5F7] border border-gray-200 rounded-xl py-2 px-3 text-sm placeholder-gray-400 outline-none focus:border-[#007AFF] transition-all" onkeypress="if(event.key === 'Enter') voegNieuweKerkToe()"/>
-                    <button type="button" onclick="voegNieuweKerkToe()" class="py-2 px-4 rounded-xl text-xs font-semibold text-white bg-[#007AFF] hover:bg-blue-600 transition-colors shadow-sm self-end">
-                        Voeg toe & Selecteer
+                    <input type="text" id="nieuweKerkInput" placeholder="Bijv. Kruiskerk Bergschenhoek" class="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] dark:text-white border border-gray-200 dark:border-white/10 rounded-xl py-2 px-3 text-sm placeholder-gray-400 outline-none focus:border-[#007AFF] transition-all" onkeypress="if(event.key === 'Enter') voegNieuweKerkToe()"/>
+                    <button type="button" onclick="voegNieuweKerkToe()" class="py-2 px-4 rounded-xl text-xs font-semibold text-white bg-[#007AFF] hover:bg-blue-600 transition-colors shadow-sm self-end cursor-pointer">
+                        Voeg toe &amp; Selecteer
                     </button>
                 </div>
             </div>
 
             <!-- Opslaan knop -->
-            <button type="button" onclick="bevestigGemeenteKeuze()" class="w-full mt-2 py-3 rounded-xl text-sm font-semibold text-white bg-[#007AFF] hover:bg-blue-600 transition-all shadow-md flex items-center justify-center gap-2">
+            <button type="button" onclick="bevestigGemeenteKeuze()" class="w-full mt-2 py-3 rounded-2xl text-sm font-semibold text-white bg-[#007AFF] hover:bg-blue-600 active:scale-98 transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer">
                 <span id="gemeenteBevestigTekst">Aan de slag met Bethelkerk Maassluis</span>
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
             </button>
