@@ -2335,9 +2335,9 @@
         <!-- SECTIE 3: VOLGORDE -->
         <section id="sectieVolgordeContainer" class="mobile-tab-view">
             <div class="min-h-[30px] flex items-center justify-between mb-1.5 sm:mb-2 ml-1 pr-1">
-                <h2 class="text-xs sm:text-[13px] font-semibold text-[#1D1D1F]/80 dark:text-white/80 tracking-tight flex items-center gap-2">
+                <h2 class="text-xs sm:text-[13px] font-semibold text-[#1D1D1F]/80 dark:text-white/80 tracking-tight flex items-center gap-1.5">
                     <span>Orde van Dienst</span>
-                    <span id="liturgieDiaTotaalBadge" class="hidden text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 text-[#007AFF] dark:text-blue-300 border border-blue-200/50 dark:border-blue-800/40 normal-case">0 dia's</span>
+                    <span id="liturgieDiaTotaalBadge" class="hidden text-[11px] font-medium text-[#86868B] dark:text-gray-400 tabular-nums normal-case">· 0 dia's</span>
                 </h2>
                 <div class="flex items-center gap-1 sm:gap-1.5">
                     <span id="autoArchiefIndicator" class="text-[10px] text-gray-400 font-medium hidden sm:inline"></span>
@@ -16155,7 +16155,7 @@ Antwoord UITSLUITEND in valide JSON:
         }
         const totalBadge = document.getElementById('liturgieDiaTotaalBadge');
         if (totalBadge) {
-            totalBadge.textContent = `${totaalDias} ${totaalDias === 1 ? 'dia' : "dia's"}`;
+            totalBadge.textContent = `· ${totaalDias} ${totaalDias === 1 ? 'dia' : "dia's"}`;
             totalBadge.classList.remove('hidden');
         }
 
