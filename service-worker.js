@@ -1,7 +1,7 @@
 // Service worker voor Liturgie Assistent Pro.
 // Doel: de app laadt en werkt ook op wankele kerk-wifi. HTML is network-first
 // (zodat updates direct binnenkomen), statische bestanden zijn cache-first.
-const CACHE = 'liturgie-v50';
+const CACHE = 'liturgie-v51';
 const APP_SHELL = [
   './',
   './index.html',
@@ -10,6 +10,7 @@ const APP_SHELL = [
   './js/vers-kiezer.js',
   './js/liturgie-import.js',
   './js/liederen-engine.js',
+  './js/preflight-check.js',
   './js/obs-regie.js',
   './js/video-uitleg.js',
   './manifest.webmanifest',
@@ -62,15 +63,26 @@ self.addEventListener('fetch', (e) => {
   }
 
   e.respondWith((async () => {
-    // Navigatie/HTML: eerst netwerk (verse versie), val terug op cache bij offline.
+    // Navigatie/HTML: eerst netwerk (verse versie), val terug op bijpassende cache bij offline.
     if (req.mode === 'navigate') {
+      const isAppRoot = url.pathname.endsWith('/') || url.pathname.endsWith('/index.html');
       try {
         const res = await fetch(req);
-        const c = await caches.open(CACHE);
-        c.put('./index.html', res.clone());
+        if (res && res.status === 200 && url.origin === location.origin) {
+          const c = await caches.open(CACHE);
+          c.put(req, res.clone());
+          if (isAppRoot) {
+            c.put('./index.html', res.clone());
+          }
+        }
         return res;
       } catch (err) {
-        return (await caches.match('./index.html')) || (await caches.match(req)) || Response.error();
+        const exactMatch = await caches.match(req);
+        if (exactMatch) return exactMatch;
+        if (isAppRoot) {
+          return (await caches.match('./index.html')) || Response.error();
+        }
+        return Response.error();
       }
     }
     // Statische bestanden: eerst cache, anders netwerk (en runtime cachen).

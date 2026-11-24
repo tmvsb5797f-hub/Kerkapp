@@ -11,6 +11,7 @@ const assert = require('assert');
 const ROOT = path.resolve(__dirname, '..');
 const liturgieImport = require(path.join(ROOT, 'js', 'liturgie-import.js'));
 const liederenEngine = require(path.join(ROOT, 'js', 'liederen-engine.js'));
+const preflightCheck = require(path.join(ROOT, 'js', 'preflight-check.js'));
 
 let geslaagd = 0;
 let gefaald = 0;
@@ -238,6 +239,62 @@ test('import_tool.html bevat timeout, retries, stop-knop en live parsePreview', 
     assert.ok(html.includes('uploadMetRetry'), 'uploadMetRetry ontbreekt');
     assert.ok(html.includes('stopUpload'), 'stopUpload ontbreekt');
     assert.ok(html.includes('updateParsePreview'), 'updateParsePreview ontbreekt');
+});
+
+console.log('\n6. Unit-tests: js/preflight-check.js & Audit/Security Regressietests');
+
+test('PreflightEngine detecteert lege liturgie, ontbrekende coupletten en HTML-entities', () => {
+    const leegRapport = preflightCheck.evalueerLiturgieRapport([], '', '');
+    assert.strictEqual(leegRapport.heeftFouten, true);
+    assert.strictEqual(leegRapport.isGereed, false);
+    assert.ok(leegRapport.foutenAantal >= 1);
+    assert.ok(leegRapport.waarschuwingenAantal >= 2);
+
+    const foutLiedRapport = preflightCheck.evalueerLiturgieRapport([
+        { type: 'Zang', titel: 'Psalm 84', tekst: 'Hoe lieflijk &ndash; zijn Uw woningen', geselecteerdeVerzen: [] }
+    ], '2026-11-29', 'Ds. J. de Vries');
+    assert.strictEqual(foutLiedRapport.heeftFouten, true);
+    assert.ok(foutLiedRapport.checks.some(c => c.categorie === 'liederen' && c.status === 'error'));
+    assert.ok(foutLiedRapport.checks.some(c => c.categorie === 'typografie' && c.status === 'warning'));
+});
+
+test('PreflightEngine markeert een complete, schone liturgie als 100% gereed', () => {
+    const schoonRapport = preflightCheck.evalueerLiturgieRapport([
+        { type: 'Zang', titel: 'Psalm 84: 1, 2', tekst: '1.\nHoe lieflijk zijn Uw woningen\n\n2.\nMijn ziel verlangt en smacht', geselecteerdeVerzen: [1, 2] },
+        { type: 'Schriftlezing', titel: 'Romeinen 8: 31-39', tekst: 'Wat zullen wij dan van deze dingen zeggen?' }
+    ], '2026-11-29', 'Ds. J. de Vries');
+    assert.strictEqual(schoonRapport.heeftFouten, false);
+    assert.strictEqual(schoonRapport.waarschuwingenAantal, 0);
+    assert.strictEqual(schoonRapport.isGereed, true);
+    assert.strictEqual(schoonRapport.stats.totaalLiederen, 1);
+    assert.strictEqual(schoonRapport.stats.totaalVerzen, 2);
+    assert.strictEqual(schoonRapport.stats.totaalLezingen, 1);
+});
+
+test('Service Worker beschermt index.html tegen cache-overschrijving door subpagina\'s', () => {
+    const sw = fs.readFileSync(path.join(ROOT, 'service-worker.js'), 'utf8');
+    assert.ok(sw.includes("'./js/preflight-check.js'"), 'js/preflight-check.js ontbreekt in APP_SHELL');
+    assert.ok(sw.includes('isAppRoot'), 'isAppRoot check ontbreekt in service-worker.js');
+    assert.ok(sw.includes('res.status === 200'), 'HTTP 200 status-check ontbreekt bij navigatie-caching');
+});
+
+test('uitleg_video.html gebruikt publieke Tailwind CDN i.p.v. interne dev-URL', () => {
+    const videoHtml = fs.readFileSync(path.join(ROOT, 'uitleg_video.html'), 'utf8');
+    assert.ok(!videoHtml.includes('gstatic.com/antigravity/web/dev'), 'Interne dev Tailwind URL staat nog in uitleg_video.html');
+    assert.ok(videoHtml.includes('https://cdn.tailwindcss.com'), 'Publieke Tailwind CDN ontbreekt in uitleg_video.html');
+});
+
+test('index.html bevat beveiliging (SVG sanitizer, HTTPS check, gehashte PIN), KerkDB-fallbacks en data-gemeente', () => {
+    const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+    assert.ok(html.includes('src="js/preflight-check.js"'), 'js/preflight-check.js script-koppeling ontbreekt');
+    assert.ok(html.includes('window.sanitizeBannerSvg'), 'SVG XSS-sanitizer ontbreekt');
+    assert.ok(html.includes('window.isVeiligeHttpsUrl'), 'HTTPS URL-validator ontbreekt');
+    assert.ok(html.includes('verifieerBeheerCode'), 'SHA-256 beheercode-verificatie ontbreekt');
+    assert.ok(!html.includes('"14825"') && !html.includes("'14825'"), 'Plaintext onderhoudscode staat nog in de broncode');
+    assert.ok(html.includes('window._adminGeautoriseerd'), 'Admin-autorisatie op publieke feedbacklijst ontbreekt');
+    assert.ok(html.includes('window.bewaarLiederenCacheVeilig'), 'Veilige KerkDB liederenCache fallback ontbreekt');
+    assert.ok(html.includes('liederenCacheVolledig'), 'IndexedDB sleutel liederenCacheVolledig ontbreekt');
+    assert.ok(html.includes('data-gemeente='), 'Apostrof-veilige data-gemeente attribuut ontbreekt');
 });
 
 console.log(`\nResultaat: ${geslaagd} geslaagd, ${gefaald} gefaald\n`);
